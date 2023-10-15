@@ -24,7 +24,6 @@ else ifeq ($(origin CI_PIPELINE_IID), environment)
 	BUILD_NUM ?= gl$(CI_PIPELINE_IID)
 endif
 
-export CGO_ENABLED=0
 export TZ=Asia/Shanghai
 export PACK=github.com/b1ug/nb1/config
 export FLAGS="-s -w -X '$(PACK).AppName=$(BINARY)' -X '$(PACK).BuildDate=`date '+%Y-%m-%dT%T%z'`' -X '$(PACK).BuildHost=`hostname`' -X '$(PACK).GoVersion=`go version`' -X '$(PACK).GitBranch=`git symbolic-ref -q --short HEAD`' -X '$(PACK).GitCommit=`git rev-parse --short HEAD`' -X '$(PACK).GitSummary=`git describe --tags --dirty --always`' -X '$(PACK).CIBuildNum=${BUILD_NUM}'"

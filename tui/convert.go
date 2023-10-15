@@ -1,3 +1,4 @@
+// Package tui provides helper functions to render text-based user interface.
 package tui
 
 import (

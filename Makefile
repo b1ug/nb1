@@ -64,6 +64,7 @@ run:
 	$(GORUN) . v
 preview:
 	./$(BINARY) v
+	./$(BINARY) ls
 clean:
 	rm -f $(BINARY)*
 

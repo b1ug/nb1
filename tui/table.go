@@ -9,6 +9,7 @@ import (
 	tw "github.com/olekukonko/tablewriter"
 )
 
+// PrintDeviceList prints a list of devices to stdout.
 func PrintDeviceList(dis []*se.DeviceDetail) error {
 	var lines [][]string
 	for _, d := range dis {
@@ -19,6 +20,7 @@ func PrintDeviceList(dis []*se.DeviceDetail) error {
 	return nil
 }
 
+// PrintDeviceListWithFirmware prints a list of devices with firmware version to stdout.
 func PrintDeviceListWithFirmware(dis []*se.DeviceDetail) error {
 	var lines [][]string
 	for _, d := range dis {

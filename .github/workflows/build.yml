@@ -47,7 +47,7 @@ jobs:
           make artifact
       - name: Go Run
         run: |
-          make run
+          make preview
       - name: Cache Artifact
         uses: actions/cache/save@v3
         if: ${{ fromJSON(env.SAVE_ARTIFACT) }}

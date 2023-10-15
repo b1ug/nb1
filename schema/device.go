@@ -1,3 +1,4 @@
+// Package schema provides the data structures for internal use of nb1 app.
 package schema
 
 import (

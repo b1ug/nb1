@@ -21,7 +21,7 @@ var listCmd = &cobra.Command{
 		If no blink(1) devices are found, a message will be printed indicating that no devices were found.
 	`),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		dis, err := hdwr.ListAllBlink1Detail(showFirmwareVersion)
+		dis, err := hdwr.ListAllBlink1Detail(showFirmwareVersion, showAllHIDDevices)
 		if err != nil {
 			return err
 		}
@@ -46,6 +46,7 @@ var listCmd = &cobra.Command{
 
 var (
 	showFirmwareVersion bool
+	showAllHIDDevices   bool
 )
 
 func init() {
@@ -57,6 +58,7 @@ func init() {
 	// and all subcommands, e.g.:
 	// listCmd.PersistentFlags().String("foo", "", "A help for foo")
 	listCmd.Flags().BoolVarP(&showFirmwareVersion, "firmware", "f", false, "show firmware version")
+	listCmd.Flags().BoolVarP(&showAllHIDDevices, "all", "a", false, "show all HID devices as well")
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:

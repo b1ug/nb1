@@ -15,13 +15,18 @@ var listCmd = &cobra.Command{
 	Short:   "List blink(1) devices with details",
 	Long: hdoc(`
 		List all attached blink(1) devices with their path, vendor id, product id, version/release number,
-		manufacturer, product name, serial number, input report size, output report size and feature report size.
-		The information will be printed in a table for each device.
+		manufacturer, product name, serial number, firmware version (optional), input report size, output 
+		report size and feature report size. The information will be printed in a table for each device.
 		
 		If no blink(1) devices are found, a message will be printed indicating that no devices were found.
 	`),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		dis := hdwr.ListAllBlink1()
+		dis, err := hdwr.ListAllBlink1Detail(showFirmwareVersion)
+		if err != nil {
+			return err
+		}
+
+		// for no devices found
 		if len(dis) == 0 {
 			log.Debugw("no blink(1) devices found")
 			fmt.Println("No blink(1) devices found.")
@@ -30,10 +35,18 @@ var listCmd = &cobra.Command{
 
 		// print device list
 		log.Debugw("blink(1) devices found", "count", len(dis))
-		tui.PrintDeviceList(dis)
+		if showFirmwareVersion {
+			_ = tui.PrintDeviceListWithFirmware(dis)
+		} else {
+			_ = tui.PrintDeviceList(dis)
+		}
 		return nil
 	},
 }
+
+var (
+	showFirmwareVersion bool
+)
 
 func init() {
 	rootCmd.AddCommand(listCmd)
@@ -43,6 +56,7 @@ func init() {
 	// Cobra supports Persistent Flags which will work for this command
 	// and all subcommands, e.g.:
 	// listCmd.PersistentFlags().String("foo", "", "A help for foo")
+	listCmd.Flags().BoolVarP(&showFirmwareVersion, "firmware", "f", false, "show firmware version")
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:

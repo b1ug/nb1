@@ -5,16 +5,26 @@ import (
 	"strings"
 
 	"bitbucket.org/ai69/amoy"
-	hid "github.com/b1ug/gid"
+	se "github.com/b1ug/nb1/schema"
 	tw "github.com/olekukonko/tablewriter"
 )
 
-func PrintDeviceList(dis []*hid.DeviceInfo) error {
+func PrintDeviceList(dis []*se.DeviceDetail) error {
 	var lines [][]string
 	for _, d := range dis {
-		lines = append(lines, []string{d.Path, u16hex(d.VendorID), u16hex(d.ProductID), u16hex(d.VersionNumber), d.Manufacturer, d.Product, d.SerialNumber, u16str(d.InputReportLength), u16str(d.OutputReportLength), u16str(d.FeatureReportLength)})
+		lines = append(lines, []string{d.Path, uint16hex(d.VendorID), uint16hex(d.ProductID), uint16hex(d.VersionNumber), d.Manufacturer, d.Product, d.SerialNumber, uint16str(d.InputReportLength), uint16str(d.OutputReportLength), uint16str(d.FeatureReportLength)})
 	}
 	headers := []string{"Path", "VID", "PID", "Ver", "Mfr", "Product", "SN", "In", "Out", "Feat"}
+	printTable(headers, lines)
+	return nil
+}
+
+func PrintDeviceListWithFirmware(dis []*se.DeviceDetail) error {
+	var lines [][]string
+	for _, d := range dis {
+		lines = append(lines, []string{d.Path, uint16hex(d.VendorID), uint16hex(d.ProductID), uint16hex(d.VersionNumber), d.Manufacturer, d.Product, d.SerialNumber, intstr(d.FirmwareVersion), uint16str(d.InputReportLength), uint16str(d.OutputReportLength), uint16str(d.FeatureReportLength)})
+	}
+	headers := []string{"Path", "VID", "PID", "Ver", "Mfr", "Product", "SN", "FW", "In", "Out", "Feat"}
 	printTable(headers, lines)
 	return nil
 }
@@ -35,25 +45,4 @@ func printTable(header []string, rows [][]string) {
 
 	table.Render()
 	fmt.Println(s.String())
-}
-
-func u8hex(u uint8) string {
-	if u == 0 {
-		return "0"
-	}
-	return fmt.Sprintf("0x%02x", u)
-}
-
-func u16hex(u uint16) string {
-	if u == 0 {
-		return "0"
-	}
-	return fmt.Sprintf("0x%04x", u)
-}
-
-func u16str(u uint16) string {
-	if u == 0 {
-		return "0"
-	}
-	return fmt.Sprintf("%d", u)
 }

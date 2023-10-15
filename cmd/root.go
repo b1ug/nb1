@@ -45,7 +45,7 @@ func Execute() {
 	winornot.EnableANSIControl()
 
 	if err := rootCmd.Execute(); err != nil {
-		util.StderrPrintln("Error:", err)
+		amoy.Eprintln("Error:", err)
 		os.Exit(1)
 	}
 }

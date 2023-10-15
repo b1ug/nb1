@@ -61,6 +61,10 @@ github.com/avast/retry-go v3.0.0+incompatible h1:4SOWQ7Qs+oroOTQOYnAHqelpCO0biHS
 github.com/avast/retry-go v3.0.0+incompatible/go.mod h1:XtSnn+n/sHqQIpZ10K1qAevBhOOCWBLXXy3hyiqqBrY=
 github.com/aymanbagabas/go-osc52 v1.0.3 h1:DTwqENW7X9arYimJrPeGZcV0ln14sGMt3pHZspWD+Mg=
 github.com/aymanbagabas/go-osc52 v1.0.3/go.mod h1:zT8H+Rk4VSabYN90pWyugflM3ZhpTZNC7cASDfUCdT4=
+github.com/b1ug/blink1-go v0.0.0-20231014084055-6c28ea171e2d h1:rUpd4ojqCrnodmspZ3xs4CTEfO1XjS+/SQtmh9CW/qY=
+github.com/b1ug/blink1-go v0.0.0-20231014084055-6c28ea171e2d/go.mod h1:lWnIARfxD/g8qPTSe69xatn3VIPknesbAOFuiqpGj7A=
+github.com/b1ug/gid v0.0.0-20231001163456-b48caa2e0938 h1:dmFHzMC2u+deomG4XrgjE6sKycNAtWKUHSRrnrTEzZM=
+github.com/b1ug/gid v0.0.0-20231001163456-b48caa2e0938/go.mod h1:b9pd+IB3F4qVXRRUOWgux7TWqxceIEGo/mhoBcOp9RM=
 github.com/benbjohnson/clock v1.1.0 h1:Q92kusRqC1XV2MjkWETPvjJVqKetz1OzxZB7mHJLju8=
 github.com/benbjohnson/clock v1.1.0/go.mod h1:J11/hYXuz8f4ySSvYwY0FKfm+ezbsZBKZxNJlLklBHA=
 github.com/census-instrumentation/opencensus-proto v0.2.1/go.mod h1:f6KPmirojxKA12rnyqOA5BBL4O983OfeGPqjHWSTneU=

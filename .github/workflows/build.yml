@@ -15,7 +15,7 @@ env:
   # GO_VERSION: 1.16.15
   OSEXT_MAP: '{"Linux": "linux", "macOS": "macos", "Windows": "exe"}'
   CACHE_PREFIX: upload-${{ github.run_id }}-${{ github.run_attempt }}
-  SAVE_ARTIFACT: ${{ github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/') || contains(github.event.head_commit.message, '[save]') }}
+  SAVE_ARTIFACT: ${{ github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/') }}
 
 jobs:
   # Job1: build and test
@@ -47,7 +47,7 @@ jobs:
           make artifact
       - name: Go Run
         run: |
-          make run
+          make preview
       - name: Cache Artifact
         uses: actions/cache/save@v3
         if: ${{ fromJSON(env.SAVE_ARTIFACT) }}

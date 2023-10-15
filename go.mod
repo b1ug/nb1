@@ -9,6 +9,7 @@ require (
 	bitbucket.org/neiku/hlog v0.1.2
 	bitbucket.org/neiku/winornot v0.0.3
 	github.com/1set/gut v0.0.0-20201117175203-a82363231997
+	github.com/b1ug/blink1-go v0.0.0-20231014084055-6c28ea171e2d
 	github.com/spf13/cobra v1.7.0
 	github.com/spf13/viper v1.16.0
 	go.uber.org/zap v1.24.0
@@ -19,6 +20,7 @@ require (
 	github.com/alecthomas/chroma v0.10.0 // indirect
 	github.com/avast/retry-go v3.0.0+incompatible // indirect
 	github.com/aymanbagabas/go-osc52 v1.0.3 // indirect
+	github.com/b1ug/gid v0.0.0-20231001163456-b48caa2e0938 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
 	github.com/dlclark/regexp2 v1.4.0 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect

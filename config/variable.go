@@ -26,6 +26,8 @@ func SetDefaults() {
 	viper.SetDefault("base_url", "")
 	viper.SetDefault("port", DefaultPort)
 	viper.SetDefault("content_dir", "")
+	viper.SetDefault("device", "")
+	viper.SetDefault("colors", map[string]string{})
 }
 
 // GetTitle returns the title of the application for website.
@@ -43,7 +45,17 @@ func GetPort() uint32 {
 	return viper.GetUint32("port")
 }
 
+// GetPreferredDevice returns the preferred device name for blink(1).
+func GetPreferredDevice() string {
+	return viper.GetString("device")
+}
+
 // GetContentDir returns the filesystem path to the content directory.
 func GetContentDir() string {
 	return viper.GetString("content_dir")
+}
+
+// GetColorMap returns the predefined colors map.
+func GetColorMap() map[string]string {
+	return viper.GetStringMapString("colors")
 }

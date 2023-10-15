@@ -4,7 +4,7 @@ SHELL := bash
 .SHELLFLAGS := -eu -o pipefail -c
 
 BINARY=nb1
-APP_VERSION := v0.0.4
+APP_VERSION := v0.0.1
 
 # for go dev
 GOCMD=go

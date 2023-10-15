@@ -83,5 +83,5 @@ func init() {
 	// configSetCmd.PersistentFlags().String("foo", "", "A help for foo")
 
 	// Local flags which will only run when this command is called directly
-	configSetCmd.Flags().BoolVarP(&configSetDryRun, "dry-run", "d", false, "preview the result without saving")
+	configSetCmd.Flags().BoolVar(&configSetDryRun, "dry-run", false, "preview the result without saving")
 }

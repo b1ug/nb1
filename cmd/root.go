@@ -70,7 +70,10 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&logFile, "log-file", "", "log file path (if non-empty, use this log file)")
 	rootCmd.PersistentFlags().StringVarP(&logLevel, "log-level", "l", "info", "log level (debug, info, warn, error, panic, fatal)")
 	rootCmd.PersistentFlags().BoolVarP(&debugMode, "debug", "D", false, "enable debug mode (if true, also use debug log level)")
+	rootCmd.PersistentFlags().StringP("device", "d", "", "preferred blink(1) device (if non-empty, use this device)")
 	// _ = rootCmd.MarkPersistentFlagRequired("config")
+
+	viper.BindPFlag("device", rootCmd.PersistentFlags().Lookup("device"))
 
 	// Local flags will only run when this action is called directly.
 	// rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")

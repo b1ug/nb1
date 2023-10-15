@@ -55,6 +55,9 @@ var versionCmd = &cobra.Command{
 		addNonBlankField("Git Commit", config.GitCommit)
 		addNonBlankField("GitSummary", config.GitSummary)
 
+		// device info
+		addNonBlankField("Device", config.GetPreferredDevice())
+
 		// output to stdout
 		fmt.Println(sb.String())
 	},

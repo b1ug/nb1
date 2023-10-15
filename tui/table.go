@@ -24,7 +24,11 @@ func PrintDeviceList(dis []*se.DeviceDetail) error {
 func PrintDeviceListWithFirmware(dis []*se.DeviceDetail) error {
 	var lines [][]string
 	for _, d := range dis {
-		lines = append(lines, []string{d.Path, uint16hex(d.VendorID), uint16hex(d.ProductID), uint16hex(d.VersionNumber), d.Manufacturer, d.Product, d.SerialNumber, intstr(d.FirmwareVersion), uint16str(d.InputReportLength), uint16str(d.OutputReportLength), uint16str(d.FeatureReportLength)})
+		var fw string
+		if d.IsBlink1 {
+			fw = intstr(d.FirmwareVersion)
+		}
+		lines = append(lines, []string{d.Path, uint16hex(d.VendorID), uint16hex(d.ProductID), uint16hex(d.VersionNumber), d.Manufacturer, d.Product, d.SerialNumber, fw, uint16str(d.InputReportLength), uint16str(d.OutputReportLength), uint16str(d.FeatureReportLength)})
 	}
 	headers := []string{"Path", "VID", "PID", "Ver", "Mfr", "Product", "SN", "FW", "In", "Out", "Feat"}
 	printTable(headers, lines)

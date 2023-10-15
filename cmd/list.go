@@ -12,13 +12,13 @@ import (
 var listCmd = &cobra.Command{
 	Use:     "list",
 	Aliases: aliasesList,
-	Short:   "List blink(1) devices",
+	Short:   "List blink(1) devices with details",
 	Long: hdoc(`
-		List all attached blink(1) devices with detailed information.
-
-		Their path, vendor id, product id, version/release number, manufacturer, product name, 
-		serial number, input report size, output report size and feature report size will be
-		printed in table for each device.
+		List all attached blink(1) devices with their path, vendor id, product id, version/release number,
+		manufacturer, product name, serial number, input report size, output report size and feature report size.
+		The information will be printed in a table for each device.
+		
+		If no blink(1) devices are found, a message will be printed indicating that no devices were found.
 	`),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		dis := hdwr.ListAllBlink1()

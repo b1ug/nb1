@@ -30,6 +30,9 @@ var rootCmd = &cobra.Command{
 	Use:   config.AppName,
 	Short: "new blink(1) command-line tool for geeks",
 	Long: colorLogo + ystring.NewLine + hdoc(`
+		// DRAFT:
+		device: args > env > config > default
+
 		// TODO:
 		This is a standard Go CLI application template.
 		It is based on Cobra and Viper. Easy to use, easy to extend.

@@ -138,3 +138,7 @@ func initConfig() {
 		log.Debugw("using config file", "path", cfp)
 	}
 }
+
+func openBlink1Device(cmd *cobra.Command, args []string) error {
+	return hdwr.OpenBlink1Device(config.GetPreferredDevice())
+}

@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/1set/gut/ystring"
 	"github.com/b1ug/nb1/config"
+	"github.com/b1ug/nb1/util"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
@@ -31,19 +33,34 @@ var configSetCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// ensure key exists
 		k, nv := args[0], args[1]
-		if ok := viper.IsSet(k); !ok {
-			log.Errorw("config key does not exist", "key", k)
+		k1, kr := util.SplitConfigKey(k)
+		log.Debugw("key for config set", "key_raw", k, "value", nv, "key1", k1, "key_rest", kr)
+		if ok := viper.IsSet(k1); !ok {
+			log.Errorw("config key does not exist", "key_raw", k, "key1", k1)
 			return errConfigKeyNotFound
 		}
 
-		// set new value
-		ov := viper.Get(k)
-		viper.Set(k, nv)
-		fv := viper.Get(k)
-		log.Debugw("config key found and set new value", "key", k, "old_value", ov, "old_type", reflect.TypeOf(ov), "new_raw", nv, "new_value", fv, "new_type", reflect.TypeOf(fv))
+		// set or insert new value, retrieve the before/after values for logging
+		ov := viper.Get(k1)
+		switch k1 {
+		case "color":
+			// color is a map, so we need to split the key and set the sub-key
+			if ystring.IsBlank(kr) {
+				log.Errorw("config sub-key is blank", "key_raw", k, "key1", k1, "key_rest", kr)
+				return errConfigSubKeyBlank
+			}
+			cm := config.GetColorMap()
+			cm[kr] = nv
+			viper.Set(k1, cm)
+		default:
+			// for other keys, just set the value
+			viper.Set(k1, nv)
+		}
+		fv := viper.Get(k1)
+		log.Debugw("config key found and set new value", "key", k1, "old_value", ov, "old_type", reflect.TypeOf(ov), "new_raw", nv, "new_value", fv, "new_type", reflect.TypeOf(fv))
 
 		// preview result
-		res := configKeyValuePairList{{Key: k, Value: fv}}
+		res := configKeyValuePairList{{Key: k1, Value: fv}}
 		fmt.Print(res.String())
 
 		// quit if dry-run

@@ -2,10 +2,10 @@ package cmd
 
 import (
 	"fmt"
-	"strings"
 
 	b1 "github.com/b1ug/blink1-go"
 	"github.com/b1ug/nb1/hdwr"
+	"github.com/b1ug/nb1/util"
 	"github.com/spf13/cobra"
 )
 
@@ -23,7 +23,7 @@ var actCmd = &cobra.Command{
 	PersistentPreRunE: openBlink1Device,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// parse query
-		query := strings.Join(args, " ")
+		query := util.NormalizeQuery(args...)
 		log.Debugw("will perform action", "query", query)
 
 		st, err := b1.ParseStateQuery(query)

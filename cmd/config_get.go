@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/b1ug/nb1/config"
+	"github.com/b1ug/nb1/util"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -32,12 +33,14 @@ var configGetCmd = &cobra.Command{
 		// lookup each key and save the value
 		var result configKeyValuePairList
 		for _, k := range args {
-			if ok := viper.IsSet(k); !ok {
-				log.Warnw("config key not found", "key", k)
+			// split key into sections, e.g. "web.port" -> ["web", "port"], and only use the first section
+			k1, _ := util.SplitConfigKey(k)
+			if ok := viper.IsSet(k1); !ok {
+				log.Warnw("config key not found", "key", k1)
 			} else {
-				v := viper.Get(k)
-				log.Debugw("config key found", "key", k, "value", v)
-				result = append(result, configKeyValuePair{Key: k, Value: v})
+				v := viper.Get(k1)
+				log.Debugw("config key found", "key", k1, "value", v)
+				result = append(result, configKeyValuePair{Key: k1, Value: v})
 			}
 		}
 

@@ -6,8 +6,10 @@ var (
 	aliasesAct        = []string{"act", "a"}
 	aliasesBlink      = []string{"blink", "bl", "bk", "pulse", "b"}
 	aliasesConfig     = []string{"cfg", "c"}
+	aliasesDelete     = []string{"remove", "del", "rm", "r"}
 	aliasesDocs       = []string{"doc", "d"}
 	aliasesExecute    = []string{"exec", "exe", "e"}
+	aliasesFade       = []string{"flip", "swap", "shift", "transform", "trans", "turn", "f"}
 	aliasesList       = []string{"ls", "l"}
 	aliasesOff        = []string{"stop", "0"}
 	aliasesOn         = []string{"1"}
@@ -16,7 +18,6 @@ var (
 	aliasesRead       = []string{"read", "rd", "r"}
 	aliasesServer     = []string{"serve", "srv", "s"}
 	aliasesTickle     = []string{"tick", "ti", "tk"}
-	aliasesTurn       = []string{"fade", "shift", "transform", "trans", "t"}
 	aliasesVersion    = []string{"ver", "v"}
 	aliasesWrite      = []string{"write", "wr", "w"}
 
@@ -31,5 +32,4 @@ var (
 	//// TODO
 	//aliasesDisable = []string{"off"}
 	//aliasesEnable  = []string{"on"}
-	//aliasesRemove  = []string{"delete", "del", "rm", "r"}
 )

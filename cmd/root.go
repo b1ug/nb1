@@ -12,6 +12,7 @@ import (
 	"github.com/1set/gut/ystring"
 	"github.com/b1ug/nb1/config"
 	"github.com/b1ug/nb1/hdwr"
+	"github.com/b1ug/nb1/parser"
 	"github.com/b1ug/nb1/util"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -73,7 +74,7 @@ func init() {
 	// Persistent flags defined here will be global for your application.
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is setting.yaml)")
 	rootCmd.PersistentFlags().StringVar(&logFile, "log-file", "", "log file path (if non-empty, use this log file)")
-	rootCmd.PersistentFlags().StringVarP(&logLevel, "log-level", "l", "info", "log level (debug, info, warn, error, panic, fatal)")
+	rootCmd.PersistentFlags().StringVar(&logLevel, "log-level", "info", "log level (debug, info, warn, error, panic, fatal)")
 	rootCmd.PersistentFlags().BoolVarP(&debugMode, "debug", "D", false, "enable debug mode (if true, also use debug log level)")
 	rootCmd.PersistentFlags().StringP("device", "d", "", "preferred blink(1) device (if non-empty, use this device)")
 	rootCmd.PersistentFlags().BoolVarP(&waitComplete, "wait", "w", false, "wait for completion")
@@ -100,6 +101,7 @@ func initConfig() {
 	// pass logger to packages
 	util.SetLog(log)
 	hdwr.SetLog(log)
+	parser.SetLog(log)
 
 	// init config
 	if cfgFile != "" {

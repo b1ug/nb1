@@ -27,7 +27,7 @@ func SetDefaults() {
 	viper.SetDefault("port", DefaultPort)
 	viper.SetDefault("content_dir", "")
 	viper.SetDefault("device", "")
-	viper.SetDefault("colors", map[string]string{})
+	viper.SetDefault("color", map[string]string{})
 }
 
 // GetTitle returns the title of the application for website.
@@ -57,5 +57,5 @@ func GetContentDir() string {
 
 // GetColorMap returns the predefined colors map.
 func GetColorMap() map[string]string {
-	return viper.GetStringMapString("colors")
+	return viper.GetStringMapString("color")
 }

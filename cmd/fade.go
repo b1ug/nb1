@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"time"
 
+	b1 "github.com/b1ug/blink1-go"
+	"github.com/b1ug/nb1/hdwr"
 	"github.com/b1ug/nb1/parser"
 	"github.com/b1ug/nb1/util"
 	"github.com/spf13/cobra"
@@ -18,19 +20,26 @@ var fadeCmd = &cobra.Command{
 		Perform a specific color changing action on a blink(1) device.
 		// TODO:
 	`),
-	Args: cobra.MinimumNArgs(1),
-	//PersistentPreRunE: openBlink1Device,
+	Args:              cobra.MinimumNArgs(1),
+	PersistentPreRunE: openBlink1Device,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		// parse query as color
 		query := util.NormalizeQuery(args...)
-		fmt.Println("fade called with query:", query)
-
 		cl, err := parser.ParseColor(query)
 		if err != nil {
 			return err
 		}
-		fmt.Println("Color:", cl)
 
-		return nil
+		// build state
+		st := b1.NewLightState(cl, fadeTimeDur, b1.LEDIndex(fadeLedNum))
+		log.Debugw("parsed blink(1) state", "state", st)
+
+		// perform action
+		fmt.Println("Fade to State:", st)
+		if waitComplete {
+			return hdwr.PlayStateAndWait(st)
+		}
+		return hdwr.PlayState(st)
 	},
 }
 

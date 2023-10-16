@@ -30,6 +30,9 @@ var rootCmd = &cobra.Command{
 	Use:   config.AppName,
 	Short: "new blink(1) command-line tool for geeks",
 	Long: colorLogo + ystring.NewLine + hdoc(`
+		// DRAFT:
+		device: args > env > config > default
+
 		// TODO:
 		This is a standard Go CLI application template.
 		It is based on Cobra and Viper. Easy to use, easy to extend.
@@ -45,17 +48,18 @@ func Execute() {
 	winornot.EnableANSIControl()
 
 	if err := rootCmd.Execute(); err != nil {
-		util.StderrPrintln("Error:", err)
+		amoy.Eprintln("Error:", err)
 		os.Exit(1)
 	}
 }
 
 // for flags
 var (
-	cfgFile   string
-	logFile   string
-	logLevel  string
-	debugMode bool
+	cfgFile      string
+	logFile      string
+	logLevel     string
+	debugMode    bool
+	waitComplete bool
 )
 
 func init() {
@@ -72,6 +76,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&logLevel, "log-level", "l", "info", "log level (debug, info, warn, error, panic, fatal)")
 	rootCmd.PersistentFlags().BoolVarP(&debugMode, "debug", "D", false, "enable debug mode (if true, also use debug log level)")
 	rootCmd.PersistentFlags().StringP("device", "d", "", "preferred blink(1) device (if non-empty, use this device)")
+	rootCmd.PersistentFlags().BoolVarP(&waitComplete, "wait", "w", false, "wait for completion")
 	// _ = rootCmd.MarkPersistentFlagRequired("config")
 
 	viper.BindPFlag("device", rootCmd.PersistentFlags().Lookup("device"))
@@ -137,4 +142,8 @@ func initConfig() {
 		cfp := viper.ConfigFileUsed()
 		log.Debugw("using config file", "path", cfp)
 	}
+}
+
+func openBlink1Device(cmd *cobra.Command, args []string) error {
+	return hdwr.OpenBlink1Device(config.GetPreferredDevice())
 }

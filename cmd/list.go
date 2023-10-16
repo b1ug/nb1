@@ -21,7 +21,7 @@ var listCmd = &cobra.Command{
 		If no blink(1) devices are found, a message will be printed indicating that no devices were found.
 	`),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		dis, err := hdwr.ListAllBlink1Detail(showFirmwareVersion, showAllHIDDevices)
+		dis, err := hdwr.ListDeviceDetails(showFirmwareVersion, showAllHIDDevices)
 		if err != nil {
 			return err
 		}

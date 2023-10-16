@@ -19,8 +19,8 @@ var actCmd = &cobra.Command{
 		The action can be described in natural language, and should contain color, duration and led number.
 		Only one action can be performed at a time.
 	`),
-	PersistentPreRunE: openBlink1Device,
 	Args:              cobra.MinimumNArgs(1),
+	PersistentPreRunE: openBlink1Device,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// parse query
 		query := strings.Join(args, " ")

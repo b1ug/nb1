@@ -12,7 +12,7 @@ import (
 var configListCmd = &cobra.Command{
 	Use:     "list",
 	Aliases: aliasesList,
-	Short:   "Print configuration",
+	Short:   "Print all configuration",
 	Long: hdoc(`
 		Print all configuration keys and values, both default and custom settings.
 	`),

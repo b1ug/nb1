@@ -55,10 +55,11 @@ func Execute() {
 
 // for flags
 var (
-	cfgFile   string
-	logFile   string
-	logLevel  string
-	debugMode bool
+	cfgFile      string
+	logFile      string
+	logLevel     string
+	debugMode    bool
+	waitComplete bool
 )
 
 func init() {
@@ -75,6 +76,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&logLevel, "log-level", "l", "info", "log level (debug, info, warn, error, panic, fatal)")
 	rootCmd.PersistentFlags().BoolVarP(&debugMode, "debug", "D", false, "enable debug mode (if true, also use debug log level)")
 	rootCmd.PersistentFlags().StringP("device", "d", "", "preferred blink(1) device (if non-empty, use this device)")
+	rootCmd.PersistentFlags().BoolVarP(&waitComplete, "wait", "w", false, "wait for completion")
 	// _ = rootCmd.MarkPersistentFlagRequired("config")
 
 	viper.BindPFlag("device", rootCmd.PersistentFlags().Lookup("device"))

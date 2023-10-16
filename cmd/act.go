@@ -34,16 +34,12 @@ var actCmd = &cobra.Command{
 
 		// perform action
 		fmt.Println("Perform Action:", st)
-		if waitForCompletion {
+		if waitComplete {
 			return hdwr.PlayStateAndWait(st)
 		}
 		return hdwr.PlayState(st)
 	},
 }
-
-var (
-	waitForCompletion bool
-)
 
 func init() {
 	rootCmd.AddCommand(actCmd)
@@ -53,7 +49,6 @@ func init() {
 	// Cobra supports Persistent Flags which will work for this command
 	// and all subcommands, e.g.:
 	// actCmd.PersistentFlags().String("foo", "", "A help for foo")
-	actCmd.PersistentFlags().BoolVarP(&waitForCompletion, "wait", "w", false, "wait for completion")
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:

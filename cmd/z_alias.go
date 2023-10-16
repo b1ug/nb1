@@ -6,6 +6,7 @@ var (
 	aliasesAct        = []string{"act", "a"}
 	aliasesBlink      = []string{"blink", "bl", "bk", "pulse", "b"}
 	aliasesConfig     = []string{"cfg", "c"}
+	aliasesDelete     = []string{"remove", "del", "rm", "r"}
 	aliasesDocs       = []string{"doc", "d"}
 	aliasesExecute    = []string{"exec", "exe", "e"}
 	aliasesFade       = []string{"flip", "swap", "shift", "transform", "trans", "turn", "f"}
@@ -31,5 +32,4 @@ var (
 	//// TODO
 	//aliasesDisable = []string{"off"}
 	//aliasesEnable  = []string{"on"}
-	//aliasesRemove  = []string{"delete", "del", "rm", "r"}
 )

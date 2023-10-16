@@ -6,11 +6,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// turnCmd represents the turn command
-var turnCmd = &cobra.Command{
-	Use:     "turn",
-	Aliases: aliasesTurn,
-	Short:   "Turn blink(1) into a given color",
+// fadeCmd represents the turn command
+var fadeCmd = &cobra.Command{
+	Use:     "fade",
+	Aliases: aliasesFade,
+	Short:   "Fade blink(1) into a given color",
 	Long: hdoc(`
 		Perform a specific color changing action on a blink(1) device.
 		// TODO:
@@ -25,12 +25,12 @@ var turnCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(turnCmd)
+	rootCmd.AddCommand(fadeCmd)
 
 	// Here you will define your flags and configuration settings.
 	// Cobra supports Persistent Flags which will work for this command and all subcommands, e.g.:
-	// turnCmd.PersistentFlags().String("foo", "", "A help for foo")
+	// fadeCmd.PersistentFlags().String("foo", "", "A help for foo")
 
 	// Cobra supports local flags which will only run when this command is called directly, e.g.:
-	// turnCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	// fadeCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }

@@ -3,6 +3,7 @@ package tui
 
 import (
 	"fmt"
+	"image/color"
 	"strconv"
 )
 
@@ -32,4 +33,35 @@ func intstr(i int) string {
 		return "0"
 	}
 	return strconv.Itoa(i)
+}
+
+// convColorToHex converts color.Color to hex string.
+func convColorToHex(c color.Color) string {
+	r, g, b, _ := c.RGBA()
+	return fmt.Sprintf("#%02X%02X%02X", r>>8, g>>8, b>>8)
+}
+
+// invertColor returns its inverse color.
+func invertColor(inputColor color.Color) color.Color {
+	// extract RGB components
+	r, g, b, a := inputColor.RGBA()
+
+	// bit shifting with '>> 8' is used here to convert these 16-bit values to 8 bits
+	r8 := r >> 8
+	g8 := g >> 8
+	b8 := b >> 8
+
+	// invert the color components
+	rInv := 255 - r8
+	gInv := 255 - g8
+	bInv := 255 - b8
+	return color.RGBA{uint8(rInv), uint8(gInv), uint8(bInv), uint8(a >> 8)}
+}
+
+// convDoneEmoji converts playing state to emoji.
+func convDoneEmoji(done bool) string {
+	if done {
+		return `⌛`
+	}
+	return `⏳`
 }

@@ -1,7 +1,11 @@
 package cmd
 
 import (
+	"fmt"
+
+	b1 "github.com/b1ug/blink1-go"
 	"github.com/b1ug/nb1/hdwr"
+	"github.com/b1ug/nb1/tui"
 	"github.com/spf13/cobra"
 )
 
@@ -13,8 +17,10 @@ var offCmd = &cobra.Command{
 	Long: hdoc(`
 		Turn blink(1) black and stop playing any patterns immediately.
 	`),
+	Args:              cobra.NoArgs,
 	PersistentPreRunE: openBlink1Device,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		fmt.Println("Turn to", tui.FormatNamedColor(b1.ColorBlack))
 		return hdwr.StopPlaying()
 	},
 }

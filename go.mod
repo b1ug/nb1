@@ -10,6 +10,7 @@ require (
 	github.com/1set/gut v0.0.0-20201117175203-a82363231997
 	github.com/b1ug/blink1-go v0.0.0-20231017051739-b7a9ddd111e7
 	github.com/b1ug/gid v0.0.0-20231001163456-b48caa2e0938
+	github.com/muesli/termenv v0.13.0
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/spf13/cobra v1.7.0
 	github.com/spf13/viper v1.16.0
@@ -32,7 +33,6 @@ require (
 	github.com/mattn/go-runewidth v0.0.14 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
-	github.com/muesli/termenv v0.13.0 // indirect
 	github.com/pelletier/go-toml/v2 v2.1.0 // indirect
 	github.com/rivo/uniseg v0.2.0 // indirect
 	github.com/rodolfoag/gow32 v0.0.0-20160917004320-d95ff468acf8 // indirect

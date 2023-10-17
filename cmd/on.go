@@ -1,8 +1,11 @@
 package cmd
 
 import (
+	"fmt"
+
 	b1 "github.com/b1ug/blink1-go"
 	"github.com/b1ug/nb1/hdwr"
+	"github.com/b1ug/nb1/tui"
 	"github.com/spf13/cobra"
 )
 
@@ -14,9 +17,12 @@ var onCmd = &cobra.Command{
 	Long: hdoc(`
 		Turn blink(1) full-on white immediately.
 	`),
+	Args:              cobra.NoArgs,
 	PersistentPreRunE: openBlink1Device,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return hdwr.SetColor(b1.ColorWhite)
+		cl := b1.ColorWhite
+		fmt.Println("Turn to", tui.FormatNamedColor(cl))
+		return hdwr.SetColor(cl)
 	},
 }
 

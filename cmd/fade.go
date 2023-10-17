@@ -16,10 +16,17 @@ var fadeCmd = &cobra.Command{
 	Use:     "fade",
 	Aliases: aliasesFade,
 	Short:   "Fade blink(1) into a given color",
-	Long: hdoc(`
+	Long: hdocf(`
 		Perform a specific color changing action on a blink(1) device.
-		// TODO:
-	`),
+		
+		Special colors:
+		  %s
+
+		Supported preset colors:
+		  %s
+	`,
+		util.JoinWrapSlice([]string{"random", "off", "on"}, ", ", 100),
+		util.JoinWrapSlice(b1.GetColorNames(), ", ", 100)),
 	Args:              cobra.MinimumNArgs(1),
 	PersistentPreRunE: openBlink1Device,
 	RunE: func(cmd *cobra.Command, args []string) error {

@@ -16,17 +16,17 @@ var (
 func OpenBlink1Device(hint string) (err error) {
 	// if hint is empty, open the first blink(1) controller found
 	if ystring.IsBlank(hint) {
-		log.Debugw("open first blink(1) controller for blank hint", "hint", hint)
+		log.Debugw("attempting to open first available blink(1) controller", "hint", hint)
 		ctrl, err = b1.OpenNextController()
 		return
 	}
 
 	// if hint is a normal number, i.e. between 1 and 128, list and open the blink(1) controller by number
 	if num, e := strconv.Atoi(hint); e == nil && num >= 1 && num <= 128 {
-		log.Debugw("open blink(1) controller by number", "hint", hint, "number", num)
+		log.Debugw("attempting to open blink(1) controller by number", "hint", hint, "provided_number", num)
 		di := b1.ListDeviceInfo()
 		if dc := len(di); dc < num {
-			err = fmt.Errorf("no blink(1) controller found by number %d, only %d found", num, dc)
+			err = fmt.Errorf("unable to find corresponding device, provided number: %d, available devices: %d", num, dc)
 			return
 		}
 		ctrl, err = b1.OpenController(di[num-1])
@@ -34,7 +34,7 @@ func OpenBlink1Device(hint string) (err error) {
 	}
 
 	// if hint is a serial number, list and open the blink(1) controller by serial number
-	log.Debugw("open blink(1) controller by serial number", "hint", hint)
+	log.Debugw("attempting to open blink(1) controller by serial number", "hint", hint, "serial_number", hint)
 	ctrl, err = b1.OpenControllerBySerialNumber(hint)
 	return
 }

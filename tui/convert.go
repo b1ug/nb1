@@ -35,12 +35,6 @@ func intstr(i int) string {
 	return strconv.Itoa(i)
 }
 
-// convColorToHex converts color.Color to hex string.
-func convColorToHex(c color.Color) string {
-	r, g, b, _ := c.RGBA()
-	return fmt.Sprintf("#%02X%02X%02X", r>>8, g>>8, b>>8)
-}
-
 // invertColor returns its inverse color.
 func invertColor(inputColor color.Color) color.Color {
 	// extract RGB components

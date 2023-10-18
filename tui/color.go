@@ -6,12 +6,12 @@ import (
 	"sync"
 
 	"github.com/b1ug/blink1-go"
+	"github.com/b1ug/nb1/util"
 	"github.com/muesli/termenv"
 )
 
 var (
-	block = `█`
-
+	block     = `█`
 	onceColor sync.Once
 	hexToName = map[string]string{}
 )
@@ -23,7 +23,7 @@ func initColor() {
 		if !ok {
 			continue
 		}
-		h := convColorToHex(c)
+		h := util.ConvColorToHex(c)
 		hexToName[h] = n
 	}
 }
@@ -34,7 +34,7 @@ func FormatNamedColor(c color.Color) string {
 	onceColor.Do(initColor)
 
 	// get optional color name
-	hex := convColorToHex(c)
+	hex := util.ConvColorToHex(c)
 	name, ok := hexToName[hex]
 
 	// colorize text

@@ -12,9 +12,9 @@ func ParsePlayText(lines []string) (*schema.PatternSet, error) {
 	// parse it
 	log.Infow("parse input file", "lines", len(lines))
 
-	// turn into states
+	// turn into sequence
 	var (
-		states          []blink1.LightState
+		seq             blink1.StateSequence
 		title           string
 		repeatTimes     uint
 		findRepeatTimes bool
@@ -37,7 +37,7 @@ func ParsePlayText(lines []string) (*schema.PatternSet, error) {
 		}
 		// parse as state query
 		if st, err := blink1.ParseStateQuery(line); err == nil {
-			states = append(states, st)
+			seq = append(seq, st)
 			continue
 		}
 		// parse as repeat times, only take the first one
@@ -50,11 +50,11 @@ func ParsePlayText(lines []string) (*schema.PatternSet, error) {
 			findRepeatTimes = true
 		}
 	}
-	log.Infow("parsed states", "states", len(states), "repeat_times", repeatTimes)
+	log.Infow("parsed state sequence", "seq", len(seq), "repeat_times", repeatTimes)
 
 	// handle results
-	if len(states) == 0 {
-		return nil, errors.New("no valid states found")
+	if len(seq) == 0 {
+		return nil, errors.New("no valid seq found")
 	}
 	if !findRepeatTimes {
 		// default repeat times is 1
@@ -63,6 +63,7 @@ func ParsePlayText(lines []string) (*schema.PatternSet, error) {
 	return &schema.PatternSet{
 		Name:        title,
 		RepeatTimes: repeatTimes,
-		Sequence:    states,
+		Sequence:    seq,
+		Count:       uint(len(seq)),
 	}, nil
 }

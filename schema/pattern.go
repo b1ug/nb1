@@ -7,4 +7,5 @@ type PatternSet struct {
 	Name        string           `json:"name,omitempty"` // Name of the pattern
 	RepeatTimes uint             `json:"repeat"`         // How many times to repeat, 0 means infinite
 	Sequence    b1.StateSequence `json:"seq,omitempty"`  // Slice of states to execute in pattern, non-empty patterns will be set to the device automatically
+	Count       uint             `json:"count"`          // Length of the sequence, it's not necessary to set this field, it will be set automatically
 }

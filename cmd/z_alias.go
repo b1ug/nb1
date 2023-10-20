@@ -5,7 +5,8 @@ var (
 	// main
 	aliasesAct        = []string{"act", "a"}
 	aliasesBlink      = []string{"blink", "bl", "bk", "pulse", "b"}
-	aliasesConfig     = []string{"cfg", "c"}
+	aliasesConfig     = []string{"cfg"}
+	aliasesConvert    = []string{"conv", "cnv", "cv", "c"}
 	aliasesDelete     = []string{"remove", "del", "rm", "r"}
 	aliasesDocs       = []string{"doc", "d"}
 	aliasesExecute    = []string{"exec", "exe", "e"}

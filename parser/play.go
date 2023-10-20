@@ -15,12 +15,24 @@ func ParsePlayText(lines []string) (*schema.PatternSet, error) {
 	// turn into states
 	var (
 		states          []blink1.LightState
+		title           string
 		repeatTimes     uint
 		findRepeatTimes bool
+		findTitle       bool
 	)
 	for _, line := range lines {
 		// skip blank lines
 		if ystring.IsBlank(line) {
+			continue
+		}
+		// parse as title
+		if tl, err := blink1.ParseTitle(line); err == nil {
+			if findTitle {
+				log.Warnw("duplicate title, take the first one", "line", line, "old_value", title, "new_value", tl)
+			} else {
+				title = tl
+				findTitle = true
+			}
 			continue
 		}
 		// parse as state query
@@ -49,8 +61,8 @@ func ParsePlayText(lines []string) (*schema.PatternSet, error) {
 		repeatTimes = 1
 	}
 	return &schema.PatternSet{
-		Name:        "play_text",
+		Name:        title,
 		RepeatTimes: repeatTimes,
-		States:      states,
+		Sequence:    states,
 	}, nil
 }

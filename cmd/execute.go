@@ -36,10 +36,9 @@ var executeCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		// HACK: serialize
-		ss := parser.EncodePatternSet(ps)
-		fmt.Println(ss)
+		fmt.Println("Play", ps)
+		amoy.PrintOneLineJSON(ps)
+		amoy.PrintJSON(ps)
 
 		// TODO:
 		return fmt.Errorf("not implemented")

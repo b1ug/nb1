@@ -5,6 +5,7 @@ import (
 
 	"bitbucket.org/ai69/amoy"
 	"github.com/b1ug/nb1/exchange"
+	"github.com/b1ug/nb1/schema"
 	"github.com/b1ug/nb1/util"
 	"github.com/spf13/cobra"
 )
@@ -78,7 +79,7 @@ var convertText2JSONCmd = &cobra.Command{
 	PersistentPreRunE: getInOutPathArgs("converting text to json", ".json"),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// read & parse
-		lines, err := amoy.ReadFileLines(inputPath)
+		lines, err := exchange.LoadFromLine(inputPath)
 		if err != nil {
 			return err
 		}
@@ -103,10 +104,22 @@ var convertJSON2TextCmd = &cobra.Command{
 	Long: hdoc(`
 		Convert a Pattern JSON file to a Play Text file.
 	`),
-	Args: cobra.MinimumNArgs(1),
+	Args:              cobra.MinimumNArgs(1),
+	PersistentPreRunE: getInOutPathArgs("converting json to text", ".txt"),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		//
-		return errors.New("not implemented")
+		// load from file
+		var ps schema.PatternSet
+		if err := exchange.LoadFromJSON(&ps, inputPath); err != nil {
+			return err
+		}
+		ps.Length = uint(len(ps.Sequence)) // TODO: may auto calculate length with helper methods
+
+		// output
+		if convertPreviewPattern {
+			amoy.PrintJSON(ps)
+		}
+		ls := exchange.EncodePlayText(&ps)
+		return exchange.SaveAsLine(ls, outputPath)
 	},
 }
 

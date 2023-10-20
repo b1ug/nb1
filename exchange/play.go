@@ -2,10 +2,14 @@ package exchange
 
 import (
 	"errors"
+	"fmt"
+	"strconv"
+	"time"
 
 	"github.com/1set/gut/ystring"
 	"github.com/b1ug/blink1-go"
 	"github.com/b1ug/nb1/schema"
+	"github.com/b1ug/nb1/util"
 )
 
 func ParsePlayText(lines []string) (*schema.PatternSet, error) {
@@ -64,6 +68,64 @@ func ParsePlayText(lines []string) (*schema.PatternSet, error) {
 		Name:        title,
 		RepeatTimes: repeatTimes,
 		Sequence:    seq,
-		Count:       uint(len(seq)),
+		Length:      uint(len(seq)),
 	}, nil
+}
+
+// EncodePlayText encodes a pattern set into a slice of strings.
+func EncodePlayText(ps *schema.PatternSet) []string {
+	if ps == nil {
+		return nil
+	}
+
+	ls := make([]string, 0, len(ps.Sequence)+2)
+	if t := ps.Name; ystring.IsNotBlank(t) {
+		ls = append(ls, "Title: "+t)
+	}
+
+	if r := ps.RepeatTimes; r == 0 {
+		ls = append(ls, "(Repeat Forever)")
+	} else {
+		ls = append(ls, fmt.Sprintf("(Repeat: %d times)", r))
+	}
+
+	var (
+		lastLED   blink1.LEDIndex
+		lastColor string
+	)
+	for _, st := range ps.Sequence {
+		// color
+		hn, _ := util.ConvColorToNameOrHex(st.Color)
+		var l, t string
+
+		// led
+		switch st.LED {
+		case blink1.LEDAll:
+			l = "all leds"
+		default:
+			l = "led " + strconv.Itoa(int(st.LED))
+		}
+
+		// fade time
+		switch f := st.FadeTime; {
+		case f < 10*time.Millisecond:
+			t = "now"
+		default:
+			t = fmt.Sprintf("in %v", f)
+		}
+
+		// sentence format template
+		var sf string
+		if lastLED == st.LED && lastColor == hn {
+			sf = `Keep %s in %s %s`
+		} else {
+			sf = `Turn %s into %s %s`
+		}
+		ls = append(ls, fmt.Sprintf(sf, l, hn, t))
+
+		// for next run
+		lastLED, lastColor = st.LED, hn
+	}
+
+	return ls
 }

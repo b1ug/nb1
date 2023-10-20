@@ -5,8 +5,8 @@ import (
 	"time"
 
 	b1 "github.com/b1ug/blink1-go"
+	"github.com/b1ug/nb1/exchange"
 	"github.com/b1ug/nb1/hdwr"
-	"github.com/b1ug/nb1/parser"
 	"github.com/b1ug/nb1/tui"
 	"github.com/b1ug/nb1/util"
 	"github.com/spf13/cobra"
@@ -33,7 +33,7 @@ var fadeCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// parse query as color
 		query := util.NormalizeQuery(args...)
-		cl, err := parser.ParseColor(query)
+		cl, err := exchange.ParseColor(query)
 		if err != nil {
 			return err
 		}

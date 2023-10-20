@@ -11,8 +11,8 @@ import (
 	"bitbucket.org/neiku/winornot"
 	"github.com/1set/gut/ystring"
 	"github.com/b1ug/nb1/config"
+	"github.com/b1ug/nb1/exchange"
 	"github.com/b1ug/nb1/hdwr"
-	"github.com/b1ug/nb1/parser"
 	"github.com/b1ug/nb1/util"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -103,7 +103,7 @@ func initConfig() {
 	// pass logger to packages
 	util.SetLog(log)
 	hdwr.SetLog(log)
-	parser.SetLog(log)
+	exchange.SetLog(log)
 
 	// init config
 	if cfgFile != "" {

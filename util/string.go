@@ -1,6 +1,9 @@
 package util
 
-import "strings"
+import (
+	"path/filepath"
+	"strings"
+)
 
 // NormalizeQuery joins the given query strings and returns a normalized query string.
 func NormalizeQuery(raw ...string) string {
@@ -45,4 +48,12 @@ func JoinWrapSlice(elems []string, separator string, maxLen int) string {
 	}
 
 	return result.String()
+}
+
+// ChangeFileExt changes the file extension of the given file path to the given new extension.
+func ChangeFileExt(filePath string, newExt string) string {
+	ext := filepath.Ext(filePath)
+	base := filePath[:len(filePath)-len(ext)]
+	newFilePath := base + newExt
+	return newFilePath
 }

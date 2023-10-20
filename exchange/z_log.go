@@ -1,4 +1,4 @@
-package parser
+package exchange
 
 import (
 	"bitbucket.org/neiku/hlog"

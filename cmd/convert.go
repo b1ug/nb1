@@ -2,6 +2,10 @@ package cmd
 
 import (
 	"errors"
+
+	"bitbucket.org/ai69/amoy"
+	"github.com/b1ug/nb1/exchange"
+	"github.com/b1ug/nb1/util"
 	"github.com/spf13/cobra"
 )
 
@@ -42,6 +46,26 @@ func init() {
 	convertCmd.AddCommand(convertJSON2ScriptCmd)
 }
 
+var (
+	inputPath  string
+	outputPath string
+)
+
+// getInOutPathArgs returns a PersistentPreRunE function that sets inputPath and outputPath from args.
+func getInOutPathArgs(msg, extName string) func(cmd *cobra.Command, args []string) error {
+	return func(cmd *cobra.Command, args []string) error {
+		// input and output path
+		inputPath = args[0]
+		if len(args) >= 2 {
+			outputPath = args[1]
+		} else {
+			outputPath = util.ChangeFileExt(args[0], extName)
+		}
+		log.Infow(msg, "input_path", inputPath, "output_path", outputPath)
+		return nil
+	}
+}
+
 // convertText2JSONCmd represents the text2json command
 var convertText2JSONCmd = &cobra.Command{
 	Use:     "text2json",
@@ -50,10 +74,24 @@ var convertText2JSONCmd = &cobra.Command{
 	Long: hdoc(`
 		Convert a Play Text file to a Pattern JSON file.
 	`),
-	Args: cobra.MinimumNArgs(1),
+	Args:              cobra.MinimumNArgs(1),
+	PersistentPreRunE: getInOutPathArgs("converting text to json", ".json"),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		//
-		return errors.New("not implemented")
+		// read & parse
+		lines, err := amoy.ReadFileLines(inputPath)
+		if err != nil {
+			return err
+		}
+		ps, err := exchange.ParsePlayText(lines)
+		if err != nil {
+			return err
+		}
+
+		// output
+		if convertPreviewPattern {
+			amoy.PrintOneLineJSON(ps)
+		}
+		return exchange.SaveAsJSON(ps, outputPath)
 	},
 }
 

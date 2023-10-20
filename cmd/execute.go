@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"bitbucket.org/ai69/amoy"
-	"github.com/b1ug/nb1/parser"
+	"github.com/b1ug/nb1/exchange"
 	"github.com/spf13/cobra"
 )
 
@@ -32,7 +32,7 @@ var executeCmd = &cobra.Command{
 		}
 
 		// parsed
-		ps, err := parser.ParsePlayText(ls)
+		ps, err := exchange.ParsePlayText(ls)
 		if err != nil {
 			return err
 		}

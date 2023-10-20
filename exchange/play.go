@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/1set/gut/ystring"
@@ -95,15 +96,18 @@ func EncodePlayText(ps *schema.PatternSet) []string {
 	)
 	for _, st := range ps.Sequence {
 		// color
-		hn, _ := util.ConvColorToNameOrHex(st.Color)
-		var l, t string
+		hn, ok := util.ConvColorToNameOrHex(st.Color)
+		if ok {
+			hn = strings.ToTitle(hn)
+		}
 
 		// led
+		var l, t string
 		switch st.LED {
 		case blink1.LEDAll:
-			l = "all leds"
+			l = "all LEDs"
 		default:
-			l = "led " + strconv.Itoa(int(st.LED))
+			l = "LED " + strconv.Itoa(int(st.LED))
 		}
 
 		// fade time
@@ -119,6 +123,7 @@ func EncodePlayText(ps *schema.PatternSet) []string {
 		if lastLED == st.LED && lastColor == hn {
 			sf = `Keep %s in %s %s`
 		} else {
+			ls = append(ls, "")
 			sf = `Turn %s into %s %s`
 		}
 		ls = append(ls, fmt.Sprintf(sf, l, hn, t))

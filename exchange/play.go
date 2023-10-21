@@ -86,6 +86,10 @@ func EncodePlayText(ps *schema.PatternSet) []string {
 
 	if r := ps.RepeatTimes; r == 0 {
 		ls = append(ls, "(Repeat Forever)")
+	} else if r == 1 {
+		ls = append(ls, "(Repeat Once)")
+	} else if r == 2 {
+		ls = append(ls, "(Repeat Twice)")
 	} else {
 		ls = append(ls, fmt.Sprintf("(Repeat: %d times)", r))
 	}
@@ -94,7 +98,7 @@ func EncodePlayText(ps *schema.PatternSet) []string {
 		lastLED   blink1.LEDIndex
 		lastColor string
 	)
-	for _, st := range ps.Sequence {
+	for i, st := range ps.Sequence {
 		// color
 		hn, ok := util.ConvColorToNameOrHex(st.Color)
 		if ok {
@@ -112,21 +116,36 @@ func EncodePlayText(ps *schema.PatternSet) []string {
 
 		// fade time
 		switch f := st.FadeTime; {
-		case f < 10*time.Millisecond:
-			t = "now"
+		case f < time.Second:
+			t = fmt.Sprintf("%d msec", f.Milliseconds())
+		case f == time.Second:
+			t = "1 second"
 		default:
-			t = fmt.Sprintf("in %v", f)
+			t = fmt.Sprintf("%v seconds", f.Seconds())
 		}
 
-		// sentence format template
-		var sf string
-		if lastLED == st.LED && lastColor == hn {
-			sf = `Keep %s in %s %s`
+		// check state
+		instantly := st.FadeTime < 10*time.Millisecond
+		isMaintain := lastLED == st.LED && lastColor == hn
+
+		// sentence
+		var sent string
+		if isMaintain {
+			if instantly {
+				sent = fmt.Sprintf("Shift %s to %s instantly", l, hn)
+			} else {
+				sent = fmt.Sprintf("Maintain %s in %s for %s", l, hn, t)
+			}
 		} else {
-			ls = append(ls, "")
-			sf = `Turn %s into %s %s`
+			if instantly {
+				sent = fmt.Sprintf("Immediately transition %s to %s", l, hn)
+			} else {
+				sent = fmt.Sprintf("Transition %s to %s over %s", l, hn, t)
+			}
 		}
-		ls = append(ls, fmt.Sprintf(sf, l, hn, t))
+
+		// add index
+		ls = append(ls, strconv.Itoa(i+1)+". "+sent)
 
 		// for next run
 		lastLED, lastColor = st.LED, hn

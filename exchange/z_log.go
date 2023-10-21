@@ -1,3 +1,4 @@
+// Package exchange contains functions for converting between different formats.
 package exchange
 
 import (

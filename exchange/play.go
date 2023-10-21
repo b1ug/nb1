@@ -13,6 +13,7 @@ import (
 	"github.com/b1ug/nb1/util"
 )
 
+// ParsePlayText parses a slice of strings in play.txt format into a pattern set.
 func ParsePlayText(lines []string) (*schema.PatternSet, error) {
 	// parse it
 	log.Infow("parse input file", "lines", len(lines))
@@ -73,27 +74,30 @@ func ParsePlayText(lines []string) (*schema.PatternSet, error) {
 	}, nil
 }
 
-// EncodePlayText encodes a pattern set into a slice of strings.
-func EncodePlayText(ps *schema.PatternSet) []string {
-	if ps == nil {
-		return nil
-	}
-
+// EncodePlayText encodes a pattern set into a slice of strings in play.txt format.
+func EncodePlayText(ps schema.PatternSet) []string {
 	ls := make([]string, 0, len(ps.Sequence)+2)
+
+	// title
 	if t := ps.Name; ystring.IsNotBlank(t) {
 		ls = append(ls, "Title: "+t)
 	}
 
-	if r := ps.RepeatTimes; r == 0 {
-		ls = append(ls, "(Repeat Forever)")
-	} else if r == 1 {
-		ls = append(ls, "(Repeat Once)")
-	} else if r == 2 {
-		ls = append(ls, "(Repeat Twice)")
-	} else {
-		ls = append(ls, fmt.Sprintf("(Repeat: %d times)", r))
+	// repeat times
+	var rt string
+	switch ps.RepeatTimes {
+	case 0:
+		rt = "Repeat Forever"
+	case 1:
+		rt = "Repeat Once"
+	case 2:
+		rt = "Repeat Twice"
+	default:
+		rt = fmt.Sprintf("Repeat: %d times", ps.RepeatTimes)
 	}
+	ls = append(ls, "("+rt+")")
 
+	// sequence
 	var (
 		lastLED   blink1.LEDIndex
 		lastColor string
@@ -102,7 +106,7 @@ func EncodePlayText(ps *schema.PatternSet) []string {
 		// color
 		hn, ok := util.ConvColorToNameOrHex(st.Color)
 		if ok {
-			hn = strings.ToTitle(hn)
+			hn = strings.Title(hn)
 		}
 
 		// led
@@ -124,11 +128,11 @@ func EncodePlayText(ps *schema.PatternSet) []string {
 			t = fmt.Sprintf("%v seconds", f.Seconds())
 		}
 
-		// check state
+		// special flags
 		instantly := st.FadeTime < 10*time.Millisecond
 		isMaintain := lastLED == st.LED && lastColor == hn
 
-		// sentence
+		// combined as sentence
 		var sent string
 		if isMaintain {
 			if instantly {
@@ -144,7 +148,7 @@ func EncodePlayText(ps *schema.PatternSet) []string {
 			}
 		}
 
-		// add index
+		// add with index
 		ls = append(ls, strconv.Itoa(i+1)+". "+sent)
 
 		// for next run

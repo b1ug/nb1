@@ -6,7 +6,6 @@ import (
 
 	"bitbucket.org/ai69/amoy"
 	"github.com/b1ug/nb1/config"
-	"github.com/b1ug/nb1/util"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -26,7 +25,6 @@ var serverCmd = &cobra.Command{
 		fmt.Println("Port:", config.GetPort())
 		fmt.Println("Base:", config.GetBaseURL())
 		fmt.Println(amoy.Quote())
-		fmt.Println(util.Voice())
 
 		return errNotImplemented
 	},

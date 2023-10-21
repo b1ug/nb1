@@ -1,4 +1,4 @@
-package tui
+package util
 
 import (
 	"fmt"
@@ -8,6 +8,17 @@ import (
 	se "github.com/b1ug/nb1/schema"
 	tw "github.com/olekukonko/tablewriter"
 )
+
+// PrintPatternSequence prints a sequence of patterns to stdout.
+func PrintPatternSequence(ps *se.PatternSet) error {
+	var lines [][]string
+	for _, p := range ps.Sequence {
+		lines = append(lines, []string{FormatNamedColor(p.Color), convLEDEmoji(p.LED), fmtDurationBlock(p.FadeTime)})
+	}
+	headers := []string{"Color", "LED", "Fade Time"}
+	printTable(headers, lines)
+	return nil
+}
 
 // PrintDeviceList prints a list of devices to stdout.
 func PrintDeviceList(dis []*se.DeviceDetail) error {

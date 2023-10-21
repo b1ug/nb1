@@ -3,6 +3,8 @@ package cmd
 import (
 	"fmt"
 
+	"bitbucket.org/ai69/amoy"
+	"github.com/b1ug/nb1/exchange"
 	"github.com/spf13/cobra"
 )
 
@@ -18,6 +20,25 @@ var executeCmd = &cobra.Command{
 	Args:              cobra.MinimumNArgs(1),
 	PersistentPreRunE: openBlink1Device,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		// read file content
+		fp := args[0]
+
+		// TODO: check file types, and THEN read
+
+		// read
+		ls, err := amoy.ReadFileLines(fp)
+		if err != nil {
+			return err
+		}
+
+		// parsed
+		ps, err := exchange.ParsePlayText(ls)
+		if err != nil {
+			return err
+		}
+		fmt.Println("Play", ps)
+		amoy.PrintOneLineJSON(ps)
+		amoy.PrintJSON(ps)
 
 		// TODO:
 		return fmt.Errorf("not implemented")

@@ -1,4 +1,4 @@
-package parser
+package exchange
 
 import (
 	"image/color"
@@ -7,6 +7,7 @@ import (
 	"github.com/b1ug/nb1/config"
 )
 
+// ParseColor parses a natural language query string into a color.Color object.
 func ParseColor(raw string) (color.Color, error) {
 	// 1. for special colors
 	switch raw {

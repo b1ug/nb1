@@ -11,8 +11,8 @@ import (
 	"bitbucket.org/neiku/winornot"
 	"github.com/1set/gut/ystring"
 	"github.com/b1ug/nb1/config"
+	"github.com/b1ug/nb1/exchange"
 	"github.com/b1ug/nb1/hdwr"
-	"github.com/b1ug/nb1/parser"
 	"github.com/b1ug/nb1/util"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -49,7 +49,7 @@ func Execute() {
 	winornot.EnableANSIControl()
 
 	if err := rootCmd.Execute(); err != nil {
-		amoy.Eprintln("Error:", err)
+		amoy.Eprintln("🚨Error:", err)
 		os.Exit(1)
 	}
 }
@@ -61,6 +61,7 @@ var (
 	logLevel     string
 	debugMode    bool
 	waitComplete bool
+	allowAbsent  bool
 )
 
 func init() {
@@ -78,6 +79,7 @@ func init() {
 	rootCmd.PersistentFlags().BoolVarP(&debugMode, "debug", "D", false, "enable debug mode (if true, also use debug log level)")
 	rootCmd.PersistentFlags().StringP("device", "d", "", "preferred blink(1) device (if non-empty, use this device)")
 	rootCmd.PersistentFlags().BoolVarP(&waitComplete, "wait", "w", false, "wait for completion")
+	rootCmd.PersistentFlags().BoolVar(&allowAbsent, "allow-absent", false, "ignore opening errors for absent blink(1) devices")
 	// _ = rootCmd.MarkPersistentFlagRequired("config")
 
 	viper.BindPFlag("device", rootCmd.PersistentFlags().Lookup("device"))
@@ -101,7 +103,7 @@ func initConfig() {
 	// pass logger to packages
 	util.SetLog(log)
 	hdwr.SetLog(log)
-	parser.SetLog(log)
+	exchange.SetLog(log)
 
 	// init config
 	if cfgFile != "" {
@@ -147,5 +149,9 @@ func initConfig() {
 }
 
 func openBlink1Device(cmd *cobra.Command, args []string) error {
-	return hdwr.OpenBlink1Device(config.GetPreferredDevice())
+	err := hdwr.OpenBlink1Device(config.GetPreferredDevice())
+	if allowAbsent {
+		return nil
+	}
+	return err
 }

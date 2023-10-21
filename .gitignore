@@ -212,3 +212,6 @@ $RECYCLE.BIN/
 *.db
 /nb1*
 /setting.*
+/*.txt
+/*.json
+/*.star

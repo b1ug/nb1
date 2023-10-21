@@ -5,14 +5,15 @@ import (
 	"strings"
 
 	"bitbucket.org/ai69/amoy"
+	"github.com/b1ug/blink1-go"
 	se "github.com/b1ug/nb1/schema"
 	tw "github.com/olekukonko/tablewriter"
 )
 
-// PrintPatternSequence prints a sequence of patterns to stdout.
-func PrintPatternSequence(ps *se.PatternSet) error {
+// PrintStateSequence prints a state sequence to stdout in table format.
+func PrintStateSequence(seq blink1.StateSequence) error {
 	var lines [][]string
-	for _, p := range ps.Sequence {
+	for _, p := range seq {
 		lines = append(lines, []string{FormatNamedColor(p.Color), convLEDEmoji(p.LED), fmtDurationBlock(p.FadeTime)})
 	}
 	headers := []string{"Color", "LED", "Fade Time"}
@@ -20,7 +21,7 @@ func PrintPatternSequence(ps *se.PatternSet) error {
 	return nil
 }
 
-// PrintDeviceList prints a list of devices to stdout.
+// PrintDeviceList prints a list of devices to stdout in table format.
 func PrintDeviceList(dis []*se.DeviceDetail) error {
 	var lines [][]string
 	for _, d := range dis {
@@ -31,7 +32,7 @@ func PrintDeviceList(dis []*se.DeviceDetail) error {
 	return nil
 }
 
-// PrintDeviceListWithFirmware prints a list of devices with firmware version to stdout.
+// PrintDeviceListWithFirmware prints a list of devices with firmware version to stdout in table format.
 func PrintDeviceListWithFirmware(dis []*se.DeviceDetail) error {
 	var lines [][]string
 	for _, d := range dis {

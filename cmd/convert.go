@@ -89,7 +89,7 @@ var convertText2JSONCmd = &cobra.Command{
 
 		// output
 		if convertPreviewPattern {
-			util.PrintPatternSequence(ps)
+			util.PrintStateSequence(ps.Sequence)
 		}
 		return exchange.SaveAsJSON(ps, outputPath)
 	},
@@ -115,7 +115,7 @@ var convertJSON2TextCmd = &cobra.Command{
 
 		// output
 		if convertPreviewPattern {
-			util.PrintPatternSequence(&ps)
+			util.PrintStateSequence(ps.Sequence)
 		}
 		ls := exchange.EncodePlayText(ps)
 		return exchange.SaveAsLine(ls, outputPath)

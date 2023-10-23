@@ -28,6 +28,11 @@ var executeCmd = &cobra.Command{
 			return err
 		}
 
+		// override repeat times
+		if cmd.Flag("times").Changed {
+			ps.RepeatTimes = execRepeatTimes
+		}
+
 		// preview
 		if execPreviewPattern {
 			_ = util.PrintPatternSet(ps)
@@ -61,6 +66,7 @@ var executeCmd = &cobra.Command{
 
 var (
 	execPreviewPattern bool
+	execRepeatTimes    uint
 )
 
 func init() {
@@ -70,6 +76,7 @@ func init() {
 	// Cobra supports Persistent Flags which will work for this command and all subcommands, e.g.:
 	// executeCmd.PersistentFlags().String("foo", "", "A help for foo")
 	executeCmd.PersistentFlags().BoolVarP(&execPreviewPattern, "preview", "p", false, "Preview the pattern to be executed")
+	executeCmd.PersistentFlags().UintVarP(&execRepeatTimes, "times", "t", 1, "Override the pattern repeat times (0 means forever)")
 
 	// Cobra supports local flags which will only run when this command is called directly, e.g.:
 	// executeCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")

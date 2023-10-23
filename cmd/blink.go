@@ -99,7 +99,9 @@ var blinkCmd = &cobra.Command{
 				return err
 			}
 		}
-		return nil
+
+		// stop playing
+		return hdwr.StopPlaying()
 	},
 }
 
@@ -115,7 +117,7 @@ func init() {
 	// Here you will define your flags and configuration settings.
 	// Cobra supports Persistent Flags which will work for this command and all subcommands, e.g.:
 	// blinkCmd.PersistentFlags().String("foo", "", "A help for foo")
-	blinkCmd.PersistentFlags().DurationVarP(&blinkTimeDur, "blink-time", "m", 100*time.Millisecond, "duration of blink on/off")
+	blinkCmd.PersistentFlags().DurationVarP(&blinkTimeDur, "blink-time", "m", 200*time.Millisecond, "duration of blink on/off")
 	blinkCmd.PersistentFlags().UintVarP(&blinkLedNum, "led", "l", 0, "which led number to blink, 0=all/1=top/2=bottom (mk2+)")
 	blinkCmd.PersistentFlags().UintVarP(&blinkTimes, "times", "t", 5, "how many times to blink")
 

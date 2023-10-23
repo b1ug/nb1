@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"errors"
-
 	"github.com/b1ug/nb1/exchange"
 	"github.com/b1ug/nb1/schema"
 	"github.com/b1ug/nb1/util"
@@ -20,7 +18,6 @@ var convertCmd = &cobra.Command{
 		Supported formats:
 		  - Play Text (e.g. "red blink 3 times")
 		  - Pattern JSON (e.g. '{"repeat":1,"seq":"#FF0000L0T1500;#FF0000L0T3500"...}')
-		  - Starlark Script (e.g. 'play(red, blue, green)')
 	`),
 }
 
@@ -42,8 +39,8 @@ func init() {
 	// Subcommands
 	convertCmd.AddCommand(convertText2JSONCmd)
 	convertCmd.AddCommand(convertJSON2TextCmd)
-	convertCmd.AddCommand(convertText2ScriptCmd)
-	convertCmd.AddCommand(convertJSON2ScriptCmd)
+	//convertCmd.AddCommand(convertText2ScriptCmd)
+	//convertCmd.AddCommand(convertJSON2ScriptCmd)
 }
 
 var (
@@ -89,7 +86,7 @@ var convertText2JSONCmd = &cobra.Command{
 
 		// output
 		if convertPreviewPattern {
-			util.PrintStateSequence(ps.Sequence)
+			_ = util.PrintPatternSet(ps)
 		}
 		return exchange.SaveAsJSON(ps, outputPath)
 	},
@@ -111,17 +108,18 @@ var convertJSON2TextCmd = &cobra.Command{
 		if err := exchange.LoadFromJSON(&ps, inputPath); err != nil {
 			return err
 		}
-		ps.Length = uint(len(ps.Sequence)) // TODO: may auto calculate length with helper methods
+		ps.AutoFill()
 
 		// output
 		if convertPreviewPattern {
-			util.PrintStateSequence(ps.Sequence)
+			_ = util.PrintPatternSet(&ps)
 		}
 		ls := exchange.EncodePlayText(ps)
 		return exchange.SaveAsLine(ls, outputPath)
 	},
 }
 
+/*
 // convertText2ScriptCmd represents the text2script command
 var convertText2ScriptCmd = &cobra.Command{
 	Use:     "text2script",
@@ -151,3 +149,4 @@ var convertJSON2ScriptCmd = &cobra.Command{
 		return errors.New("not implemented")
 	},
 }
+*/

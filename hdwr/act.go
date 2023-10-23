@@ -42,3 +42,41 @@ func SetColor(cl color.Color) error {
 	}
 	return ctrl.PlayColor(cl)
 }
+
+// PlayStateSequence plays a blink(1) state sequence on the opened device.
+func PlayStateSequence(seq b1.StateSequence) error {
+	if ctrl == nil {
+		return errMissingDevice
+	}
+	// play state sequence one by one
+	for _, st := range seq {
+		if err := ctrl.PlayStateBlocking(st); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// ReadOnChipSequence reads a blink(1) state sequence from the opened device.
+func ReadOnChipSequence() (b1.StateSequence, error) {
+	if ctrl == nil {
+		return nil, errMissingDevice
+	}
+	return ctrl.ReadPattern()
+}
+
+// PlayOnChipPattern starts playing a blink(1) pattern on the opened device.
+func PlayOnChipPattern(start, end, times int, wait bool) error {
+	if ctrl == nil {
+		return errMissingDevice
+	}
+	pt := b1.Pattern{
+		StartPosition: uint(start),
+		EndPosition:   uint(end),
+		RepeatTimes:   uint(times),
+	}
+	if wait {
+		return ctrl.PlayPatternBlocking(pt)
+	}
+	return ctrl.PlayPattern(pt)
+}

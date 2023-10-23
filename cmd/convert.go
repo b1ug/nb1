@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"errors"
-
 	"github.com/b1ug/nb1/exchange"
 	"github.com/b1ug/nb1/schema"
 	"github.com/b1ug/nb1/util"
@@ -20,7 +18,6 @@ var convertCmd = &cobra.Command{
 		Supported formats:
 		  - Play Text (e.g. "red blink 3 times")
 		  - Pattern JSON (e.g. '{"repeat":1,"seq":"#FF0000L0T1500;#FF0000L0T3500"...}')
-		  - Starlark Script (e.g. 'play(red, blue, green)')
 	`),
 }
 
@@ -42,28 +39,8 @@ func init() {
 	// Subcommands
 	convertCmd.AddCommand(convertText2JSONCmd)
 	convertCmd.AddCommand(convertJSON2TextCmd)
-	convertCmd.AddCommand(convertText2ScriptCmd)
-	convertCmd.AddCommand(convertJSON2ScriptCmd)
-}
-
-var (
-	inputPath  string
-	outputPath string
-)
-
-// getInOutPathArgs returns a PersistentPreRunE function that sets inputPath and outputPath from args.
-func getInOutPathArgs(msg, extName string) func(cmd *cobra.Command, args []string) error {
-	return func(cmd *cobra.Command, args []string) error {
-		// input and output path
-		inputPath = args[0]
-		if len(args) >= 2 {
-			outputPath = args[1]
-		} else {
-			outputPath = util.ChangeFileExt(args[0], extName)
-		}
-		log.Infow(msg, "input_path", inputPath, "output_path", outputPath)
-		return nil
-	}
+	//convertCmd.AddCommand(convertText2ScriptCmd)
+	//convertCmd.AddCommand(convertJSON2ScriptCmd)
 }
 
 // convertText2JSONCmd represents the text2json command
@@ -89,7 +66,7 @@ var convertText2JSONCmd = &cobra.Command{
 
 		// output
 		if convertPreviewPattern {
-			util.PrintStateSequence(ps.Sequence)
+			_ = util.PrintPatternSet(ps)
 		}
 		return exchange.SaveAsJSON(ps, outputPath)
 	},
@@ -111,17 +88,18 @@ var convertJSON2TextCmd = &cobra.Command{
 		if err := exchange.LoadFromJSON(&ps, inputPath); err != nil {
 			return err
 		}
-		ps.Length = uint(len(ps.Sequence)) // TODO: may auto calculate length with helper methods
+		ps.AutoFill()
 
 		// output
 		if convertPreviewPattern {
-			util.PrintStateSequence(ps.Sequence)
+			_ = util.PrintPatternSet(&ps)
 		}
 		ls := exchange.EncodePlayText(ps)
 		return exchange.SaveAsLine(ls, outputPath)
 	},
 }
 
+/*
 // convertText2ScriptCmd represents the text2script command
 var convertText2ScriptCmd = &cobra.Command{
 	Use:     "text2script",
@@ -151,3 +129,4 @@ var convertJSON2ScriptCmd = &cobra.Command{
 		return errors.New("not implemented")
 	},
 }
+*/

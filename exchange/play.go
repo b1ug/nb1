@@ -66,12 +66,15 @@ func ParsePlayText(lines []string) (*schema.PatternSet, error) {
 		// default repeat times is 1
 		repeatTimes = 1
 	}
-	return &schema.PatternSet{
+	ps := &schema.PatternSet{
 		Name:        title,
 		RepeatTimes: repeatTimes,
 		Sequence:    seq,
-		Length:      uint(len(seq)),
-	}, nil
+	}
+	ps.AutoFill()
+
+	// return
+	return ps, nil
 }
 
 // EncodePlayText encodes a pattern set into a slice of strings in play.txt format.

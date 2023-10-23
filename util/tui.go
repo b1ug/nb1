@@ -10,6 +10,25 @@ import (
 	tw "github.com/olekukonko/tablewriter"
 )
 
+// PrintPatternSet prints a pattern set to stdout in table format.
+func PrintPatternSet(ps *se.PatternSet) error {
+	if ps == nil {
+		return fmt.Errorf("nil pattern set")
+	}
+
+	if ps.Name == "" {
+		fmt.Println(">  Title:", "(none)")
+	} else {
+		fmt.Println(">  Title:", ps.Name)
+	}
+	if ps.RepeatTimes == 0 {
+		fmt.Println("> Repeat:", "forever")
+	} else {
+		fmt.Println("> Repeat:", ps.RepeatTimes)
+	}
+	return PrintStateSequence(ps.Sequence)
+}
+
 // PrintStateSequence prints a state sequence to stdout in table format.
 func PrintStateSequence(seq blink1.StateSequence) error {
 	var lines [][]string

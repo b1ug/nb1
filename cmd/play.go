@@ -1,9 +1,6 @@
 package cmd
 
 import (
-	"strconv"
-	"strings"
-
 	"github.com/b1ug/nb1/hdwr"
 	"github.com/b1ug/nb1/util"
 	"github.com/spf13/cobra"
@@ -33,7 +30,7 @@ var playCmd = &cobra.Command{
 
 		// preview full pattern
 		if playPreviewPattern {
-			seq, err := hdwr.ReadStateSequence()
+			seq, err := hdwr.ReadOnChipSequence()
 			if err != nil {
 				return err
 			}
@@ -45,14 +42,14 @@ var playCmd = &cobra.Command{
 		// play and wait
 		if waitComplete {
 			log.Infow("start playing pattern and wait", "start", patternStartPos, "end", patternEndPos, "repeat", playRepeatTimes)
-			if err := hdwr.StartPlayPattern(patternStartPos, patternEndPos, playRepeatTimes, true); err != nil {
+			if err := hdwr.PlayOnChipPattern(patternStartPos, patternEndPos, playRepeatTimes, true); err != nil {
 				return err
 			}
 			return hdwr.StopPlaying()
 		}
 
 		log.Infow("start playing pattern", "start", patternStartPos, "end", patternEndPos, "repeat", playRepeatTimes)
-		return hdwr.StartPlayPattern(patternStartPos, patternEndPos, playRepeatTimes, false)
+		return hdwr.PlayOnChipPattern(patternStartPos, patternEndPos, playRepeatTimes, false)
 	},
 }
 
@@ -72,38 +69,4 @@ func init() {
 
 	// Cobra supports local flags which will only run when this command is called directly, e.g.:
 	// playCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-}
-
-var (
-	patternStartPos int
-	patternEndPos   int
-)
-
-func getPatternPosArgs(cmd *cobra.Command, args []string) error {
-	// default start-end is 0-0
-	if len(args) == 0 {
-		patternStartPos = 0
-		patternEndPos = 0
-		return nil
-	}
-
-	// split by "-"
-	var err error
-	as := strings.SplitN(args[0], "-", 2)
-	if len(as) == 1 {
-		// only start
-		if patternStartPos, err = strconv.Atoi(as[0]); err != nil {
-			return err
-		}
-		patternEndPos = 0
-		return nil
-	} else if len(as) == 2 {
-		if patternStartPos, err = strconv.Atoi(as[0]); err != nil {
-			return err
-		}
-		if patternEndPos, err = strconv.Atoi(as[1]); err != nil {
-			return err
-		}
-	}
-	return nil
 }

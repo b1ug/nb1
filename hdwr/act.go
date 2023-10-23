@@ -57,8 +57,16 @@ func PlayStateSequence(seq b1.StateSequence) error {
 	return nil
 }
 
-// StartPlayPattern starts playing a blink(1) pattern on the opened device.
-func StartPlayPattern(start, end, times int, wait bool) error {
+// ReadOnChipSequence reads a blink(1) state sequence from the opened device.
+func ReadOnChipSequence() (b1.StateSequence, error) {
+	if ctrl == nil {
+		return nil, errMissingDevice
+	}
+	return ctrl.ReadPattern()
+}
+
+// PlayOnChipPattern starts playing a blink(1) pattern on the opened device.
+func PlayOnChipPattern(start, end, times int, wait bool) error {
 	if ctrl == nil {
 		return errMissingDevice
 	}

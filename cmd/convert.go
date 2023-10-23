@@ -43,26 +43,6 @@ func init() {
 	//convertCmd.AddCommand(convertJSON2ScriptCmd)
 }
 
-var (
-	inputPath  string
-	outputPath string
-)
-
-// getInOutPathArgs returns a PersistentPreRunE function that sets inputPath and outputPath from args.
-func getInOutPathArgs(msg, extName string) func(cmd *cobra.Command, args []string) error {
-	return func(cmd *cobra.Command, args []string) error {
-		// input and output path
-		inputPath = args[0]
-		if len(args) >= 2 {
-			outputPath = args[1]
-		} else {
-			outputPath = util.ChangeFileExt(args[0], extName)
-		}
-		log.Infow(msg, "input_path", inputPath, "output_path", outputPath)
-		return nil
-	}
-}
-
 // convertText2JSONCmd represents the text2json command
 var convertText2JSONCmd = &cobra.Command{
 	Use:     "text2json",

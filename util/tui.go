@@ -14,7 +14,7 @@ import (
 func PrintStateSequence(seq blink1.StateSequence) error {
 	var lines [][]string
 	for _, p := range seq {
-		lines = append(lines, []string{FormatNamedColor(p.Color), convLEDEmoji(p.LED), fmtDurationBlock(p.FadeTime)})
+		lines = append(lines, []string{FormatNamedColor(p.Color), convLEDEmoji(p.LED), convDurationBlock(p.FadeTime)})
 	}
 	headers := []string{"Color", "LED", "Fade Time"}
 	printTable(headers, lines)

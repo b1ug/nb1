@@ -81,14 +81,14 @@ func convLEDEmoji(led blink1.LEDIndex) string {
 	}
 }
 
-// fmtDurationBlock formats duration as a color block.
-func fmtDurationBlock(dur time.Duration) string {
+// convDurationBlock formats duration as a color block.
+func convDurationBlock(dur time.Duration) string {
 	if dur == 0 {
 		return `no time`
 	}
 	const (
 		charBlk = `░`
-		mpBlk   = 500 * time.Millisecond
+		mpBlk   = 250 * time.Millisecond
 		maxBlk  = 10
 	)
 	// colorize text

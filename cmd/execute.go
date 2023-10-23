@@ -1,9 +1,8 @@
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/b1ug/nb1/exchange"
+	"github.com/b1ug/nb1/hdwr"
 	"github.com/b1ug/nb1/util"
 	"github.com/spf13/cobra"
 )
@@ -34,8 +33,29 @@ var executeCmd = &cobra.Command{
 			_ = util.PrintPatternSet(ps)
 		}
 
-		// TODO:
-		return fmt.Errorf("not implemented")
+		// execute
+		if times := int(ps.RepeatTimes); times == 0 {
+			log.Debugw("executing pattern set forever", "pattern", ps, "times", times)
+			idx := 0
+			for {
+				log.Debugw("playing state sequence", "index", idx, "length", len(ps.Sequence))
+				if err := hdwr.PlayStateSequence(ps.Sequence); err != nil {
+					return err
+				}
+				idx++
+			}
+		} else {
+			log.Debugw("executing pattern set for limited times", "pattern", ps, "times", times)
+			for idx := 0; idx < times; idx++ {
+				log.Debugw("playing state sequence", "index", idx, "length", len(ps.Sequence))
+				if err := hdwr.PlayStateSequence(ps.Sequence); err != nil {
+					return err
+				}
+			}
+		}
+
+		// TODO: handle Ctrl+C
+		return hdwr.StopPlaying()
 	},
 }
 

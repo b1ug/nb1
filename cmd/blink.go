@@ -101,6 +101,7 @@ var blinkCmd = &cobra.Command{
 		}
 
 		// stop playing
+		// TODO: handle Ctrl+C
 		return hdwr.StopPlaying()
 	},
 }

@@ -42,3 +42,17 @@ func SetColor(cl color.Color) error {
 	}
 	return ctrl.PlayColor(cl)
 }
+
+// PlayStateSequence plays a blink(1) state sequence on the opened device.
+func PlayStateSequence(seq b1.StateSequence) error {
+	if ctrl == nil {
+		return errMissingDevice
+	}
+	// play state sequence one by one
+	for _, st := range seq {
+		if err := ctrl.PlayStateBlocking(st); err != nil {
+			return err
+		}
+	}
+	return nil
+}

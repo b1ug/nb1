@@ -56,3 +56,19 @@ func PlayStateSequence(seq b1.StateSequence) error {
 	}
 	return nil
 }
+
+// StartPlayPattern starts playing a blink(1) pattern on the opened device.
+func StartPlayPattern(start, end, times int, wait bool) error {
+	if ctrl == nil {
+		return errMissingDevice
+	}
+	pt := b1.Pattern{
+		StartPosition: uint(start),
+		EndPosition:   uint(end),
+		RepeatTimes:   uint(times),
+	}
+	if wait {
+		return ctrl.PlayPatternBlocking(pt)
+	}
+	return ctrl.PlayPattern(pt)
+}

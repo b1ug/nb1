@@ -2,12 +2,8 @@ package cmd
 
 import (
 	"fmt"
-	"path/filepath"
-	"strings"
 
-	"github.com/1set/gut/yos"
 	"github.com/b1ug/nb1/exchange"
-	"github.com/b1ug/nb1/schema"
 	"github.com/b1ug/nb1/util"
 	"github.com/spf13/cobra"
 )
@@ -27,43 +23,15 @@ var executeCmd = &cobra.Command{
 	Args:              cobra.ExactArgs(1),
 	PersistentPreRunE: openBlink1Device,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		// check input file
-		fp := args[0]
-		if !yos.ExistFile(fp) {
-			return fmt.Errorf("file not exist: %s", fp)
-		}
-		ext := strings.ToLower(filepath.Ext(fp))
-
-		// read input file
-		var ps schema.PatternSet
-		switch ext {
-		case ".txt":
-			// read & parse
-			lines, err := exchange.LoadFromLine(fp)
-			if err != nil {
-				return err
-			}
-			if ts, err := exchange.ParsePlayText(lines); err != nil {
-				return err
-			} else if ts != nil {
-				ps = *ts
-			}
-		case ".json":
-			if err := exchange.LoadFromJSON(&ps, fp); err != nil {
-				return err
-			}
-		default:
-			return fmt.Errorf("unsupported file type: %s", ext)
-		}
-
-		// check pattern
-		if err := ps.Validate(); err != nil {
+		// load and parse pattern file
+		ps, err := exchange.LoadPatternFile(args[0])
+		if err != nil {
 			return err
 		}
 
 		// preview
 		if execPreviewPattern {
-			_ = util.PrintPatternSet(&ps)
+			_ = util.PrintPatternSet(ps)
 		}
 
 		// TODO:

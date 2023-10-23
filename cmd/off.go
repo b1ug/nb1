@@ -5,7 +5,7 @@ import (
 
 	b1 "github.com/b1ug/blink1-go"
 	"github.com/b1ug/nb1/hdwr"
-	"github.com/b1ug/nb1/tui"
+	"github.com/b1ug/nb1/util"
 	"github.com/spf13/cobra"
 )
 
@@ -20,7 +20,7 @@ var offCmd = &cobra.Command{
 	Args:              cobra.NoArgs,
 	PersistentPreRunE: openBlink1Device,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		fmt.Println("Turn to", tui.FormatNamedColor(b1.ColorBlack))
+		fmt.Println("Turn to", util.FormatNamedColor(b1.ColorBlack))
 		return hdwr.StopPlaying()
 	},
 }

@@ -7,7 +7,6 @@ import (
 	b1 "github.com/b1ug/blink1-go"
 	"github.com/b1ug/nb1/exchange"
 	"github.com/b1ug/nb1/hdwr"
-	"github.com/b1ug/nb1/tui"
 	"github.com/b1ug/nb1/util"
 	"github.com/spf13/cobra"
 )
@@ -43,7 +42,7 @@ var fadeCmd = &cobra.Command{
 		log.Debugw("parsed blink(1) state", "state", st)
 
 		// perform action
-		fmt.Println("Fade to State:", tui.FormatLightState(st))
+		fmt.Println("Fade to State:", util.FormatLightState(st))
 		if waitComplete {
 			return hdwr.PlayStateAndWait(st)
 		}

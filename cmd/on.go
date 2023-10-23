@@ -5,7 +5,7 @@ import (
 
 	b1 "github.com/b1ug/blink1-go"
 	"github.com/b1ug/nb1/hdwr"
-	"github.com/b1ug/nb1/tui"
+	"github.com/b1ug/nb1/util"
 	"github.com/spf13/cobra"
 )
 
@@ -21,7 +21,7 @@ var onCmd = &cobra.Command{
 	PersistentPreRunE: openBlink1Device,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cl := b1.ColorWhite
-		fmt.Println("Turn to", tui.FormatNamedColor(cl))
+		fmt.Println("Turn to", util.FormatNamedColor(cl))
 		return hdwr.SetColor(cl)
 	},
 }

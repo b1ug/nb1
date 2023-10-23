@@ -79,7 +79,7 @@ func init() {
 	rootCmd.PersistentFlags().BoolVarP(&debugMode, "debug", "D", false, "enable debug mode (if true, also use debug log level)")
 	rootCmd.PersistentFlags().StringP("device", "d", "", "preferred blink(1) device (if non-empty, use this device)")
 	rootCmd.PersistentFlags().BoolVarP(&waitComplete, "wait", "w", false, "wait for completion")
-	rootCmd.PersistentFlags().BoolVar(&allowAbsent, "allow-absent", false, "ignore opening errors for absent blink(1) devices")
+	rootCmd.PersistentFlags().BoolVarP(&allowAbsent, "allow-absent", "a", false, "ignore opening error for absent blink(1) devices")
 	// _ = rootCmd.MarkPersistentFlagRequired("config")
 
 	viper.BindPFlag("device", rootCmd.PersistentFlags().Lookup("device"))

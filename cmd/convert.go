@@ -3,7 +3,6 @@ package cmd
 import (
 	"errors"
 
-	"bitbucket.org/ai69/amoy"
 	"github.com/b1ug/nb1/exchange"
 	"github.com/b1ug/nb1/schema"
 	"github.com/b1ug/nb1/util"
@@ -90,7 +89,7 @@ var convertText2JSONCmd = &cobra.Command{
 
 		// output
 		if convertPreviewPattern {
-			amoy.PrintOneLineJSON(ps)
+			util.PrintStateSequence(ps.Sequence)
 		}
 		return exchange.SaveAsJSON(ps, outputPath)
 	},
@@ -116,9 +115,9 @@ var convertJSON2TextCmd = &cobra.Command{
 
 		// output
 		if convertPreviewPattern {
-			amoy.PrintJSON(ps)
+			util.PrintStateSequence(ps.Sequence)
 		}
-		ls := exchange.EncodePlayText(&ps)
+		ls := exchange.EncodePlayText(ps)
 		return exchange.SaveAsLine(ls, outputPath)
 	},
 }
@@ -133,7 +132,7 @@ var convertText2ScriptCmd = &cobra.Command{
 	`),
 	Args: cobra.MinimumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		//
+		// TODO: implement
 		return errors.New("not implemented")
 	},
 }
@@ -148,7 +147,7 @@ var convertJSON2ScriptCmd = &cobra.Command{
 	`),
 	Args: cobra.MinimumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		//
+		// TODO: implement
 		return errors.New("not implemented")
 	},
 }

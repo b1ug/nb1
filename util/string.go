@@ -27,7 +27,6 @@ func JoinWrapSlice(elems []string, separator string, maxLen int) string {
 
 	// Iterating over slice to join return string
 	for i, str := range elems {
-
 		sepLen := len(separator)
 		strLenWithSep := len(str) + sepLen
 

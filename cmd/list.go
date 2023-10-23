@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/b1ug/nb1/hdwr"
-	"github.com/b1ug/nb1/tui"
+	"github.com/b1ug/nb1/util"
 	"github.com/spf13/cobra"
 )
 
@@ -36,9 +36,9 @@ var listCmd = &cobra.Command{
 		// print device list
 		log.Debugw("blink(1) devices found", "count", len(dis))
 		if showFirmwareVersion {
-			_ = tui.PrintDeviceListWithFirmware(dis)
+			_ = util.PrintDeviceListWithFirmware(dis)
 		} else {
-			_ = tui.PrintDeviceList(dis)
+			_ = util.PrintDeviceList(dis)
 		}
 		return nil
 	},
@@ -58,7 +58,7 @@ func init() {
 	// and all subcommands, e.g.:
 	// listCmd.PersistentFlags().String("foo", "", "A help for foo")
 	listCmd.Flags().BoolVarP(&showFirmwareVersion, "firmware", "f", false, "show firmware version")
-	listCmd.Flags().BoolVarP(&showAllHIDDevices, "all", "a", false, "show all HID devices as well")
+	listCmd.Flags().BoolVar(&showAllHIDDevices, "all", false, "show all HID devices as well")
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:

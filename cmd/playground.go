@@ -18,7 +18,6 @@ var playgroundCmd = &cobra.Command{
 	Args:              cobra.MinimumNArgs(1),
 	PersistentPreRunE: openBlink1Device,
 	RunE: func(cmd *cobra.Command, args []string) error {
-
 		// TODO:
 		return fmt.Errorf("not implemented")
 	},

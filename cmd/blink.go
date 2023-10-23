@@ -32,7 +32,6 @@ var blinkCmd = &cobra.Command{
 	`,
 		util.JoinWrapSlice([]string{"random", "on"}, ", ", 100),
 		util.JoinWrapSlice(b1.GetColorNames(), ", ", 100)),
-	//Args:              cobra.MinimumNArgs(1),
 	PersistentPreRunE: openBlink1Device,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// clean up args
@@ -56,13 +55,13 @@ var blinkCmd = &cobra.Command{
 		log.Debugw("raw colors to blink blink(1)", "count", len(colorRaw), "colors", colorRaw, "interval", blinkTimeDur, "led", blinkLedNum, "times", blinkTimes)
 
 		// set color now
-		setColorNow := func(index int, cl color.Color) error {
-			// set state now
+		performColorChange := func(index int, cl color.Color) error {
 			led := b1.LEDIndex(blinkLedNum)
 			st := b1.NewLightState(cl, 0, led)
 			log.Debugw("set blink(1) state now", "index", index, "state", st)
+
+			// set state
 			if err := hdwr.PlayState(st); err != nil {
-				//log.Warnw("failed to set blink(1) state", "state", st, zap.Error(err))
 				return err
 			}
 
@@ -71,7 +70,6 @@ var blinkCmd = &cobra.Command{
 
 			// wait for next blink
 			time.Sleep(blinkTimeDur)
-
 			return nil
 		}
 
@@ -90,12 +88,12 @@ var blinkCmd = &cobra.Command{
 			}
 
 			// blink on
-			if err := setColorNow(i, cl); err != nil {
+			if err := performColorChange(i, cl); err != nil {
 				return err
 			}
 
 			// blink off
-			if err := setColorNow(i, b1.ColorBlack); err != nil {
+			if err := performColorChange(i, b1.ColorBlack); err != nil {
 				return err
 			}
 		}

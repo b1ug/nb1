@@ -18,6 +18,7 @@ var (
 	errConfigSubKeyBlank = errors.New("config sub-key is blank")
 )
 
+// openBlink1Device works as a PersistentPreRunE function that opens a blink(1) device for use.
 func openBlink1Device(cmd *cobra.Command, args []string) error {
 	err := hdwr.OpenBlink1Device(config.GetPreferredDevice())
 	if allowAbsent {
@@ -31,6 +32,7 @@ var (
 	patternEndPos   int
 )
 
+// getPatternPosArgs works as a PersistentPreRunE function that sets patternStartPos and patternEndPos from args.
 func getPatternPosArgs(cmd *cobra.Command, args []string) error {
 	// default start-end is 0-0
 	if len(args) == 0 {

@@ -9,7 +9,7 @@ import (
 
 // executeCmd represents the execute command
 var executeCmd = &cobra.Command{
-	Use:     "execute",
+	Use:     "execute <file>",
 	Aliases: aliasesExecute,
 	Short:   "Execute pattern files",
 	Long: hdoc(`

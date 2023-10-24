@@ -3,6 +3,7 @@ package hdwr
 import (
 	"errors"
 	"image/color"
+	"time"
 
 	b1 "github.com/b1ug/blink1-go"
 )
@@ -57,14 +58,6 @@ func PlayStateSequence(seq b1.StateSequence) error {
 	return nil
 }
 
-// ReadOnChipSequence reads a blink(1) state sequence from the opened device.
-func ReadOnChipSequence() (b1.StateSequence, error) {
-	if ctrl == nil {
-		return nil, errMissingDevice
-	}
-	return ctrl.ReadPattern()
-}
-
 // PlayOnChipPattern starts playing a blink(1) pattern on the opened device.
 func PlayOnChipPattern(start, end, times int, wait bool) error {
 	if ctrl == nil {
@@ -79,4 +72,52 @@ func PlayOnChipPattern(start, end, times int, wait bool) error {
 		return ctrl.PlayPatternBlocking(pt)
 	}
 	return ctrl.PlayPattern(pt)
+}
+
+// TickleOnChipPattern starts playing a blink(1) pattern on the opened device.
+func TickleOnChipPattern(start, end int, waitTimeout time.Duration) error {
+	if ctrl == nil {
+		return errMissingDevice
+	}
+	return ctrl.SimpleTickle(uint(start), uint(end), waitTimeout, true)
+}
+
+// WriteOnChipPattern writes a blink(1) pattern on the opened device.
+func WriteOnChipPattern(start, end int, seq b1.StateSequence) error {
+	if ctrl == nil {
+		return errMissingDevice
+	}
+	return ctrl.LoadPattern(uint(start), uint(end), seq)
+}
+
+// SaveOnChipPattern saves a blink(1) pattern on the opened device.
+func SaveOnChipPattern() error {
+	if ctrl == nil {
+		return errMissingDevice
+	}
+	return ctrl.WritePattern()
+}
+
+// ReadOnChipSequence reads a blink(1) state sequence from the opened device.
+func ReadOnChipSequence() (b1.StateSequence, error) {
+	if ctrl == nil {
+		return nil, errMissingDevice
+	}
+	return ctrl.ReadPattern()
+}
+
+// ReadPlayingState reads the playing state of the opened device.
+func ReadPlayingState() (b1.PatternState, error) {
+	if ctrl == nil {
+		return b1.PatternState{}, errMissingDevice
+	}
+	return ctrl.GetPatternState()
+}
+
+// ReadLEDColor reads the color of the opened device.
+func ReadLEDColor(n int) (color.Color, error) {
+	if ctrl == nil {
+		return nil, errMissingDevice
+	}
+	return ctrl.ReadColor(b1.LEDIndex(n))
 }

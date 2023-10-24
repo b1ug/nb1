@@ -88,7 +88,7 @@ func getInOutPathArgs(msg, extName string) func(cmd *cobra.Command, args []strin
 var (
 	outputJSONPath string
 	outputTextPath string
-	saveJSONData   map[string]interface{}
+	saveJSONData   interface{}
 	saveTextLine   []string
 )
 

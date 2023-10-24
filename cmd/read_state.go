@@ -47,13 +47,13 @@ var readStateCmd = &cobra.Command{
 		}
 
 		// handle result
-		saveJSONData := make(map[string]interface{})
+		jm := make(map[string]interface{})
 		saveTextLine = make([]string, 0)
 		outputLEDColor := func(ledNum uint, lc color.Color) {
 			if lc != nil {
 				ln := fmt.Sprintf("LED%d", ledNum)
 				cn := util.ConvColorToHex(lc)
-				saveJSONData[ln] = cn
+				jm[ln] = cn
 				saveTextLine = append(saveTextLine, ln+": "+cn)
 				if readPreviewResult {
 					fmt.Println(ln+":", util.FormatNamedColor(lc))
@@ -62,6 +62,7 @@ var readStateCmd = &cobra.Command{
 		}
 		outputLEDColor(1, lc1)
 		outputLEDColor(2, lc2)
+		saveJSONData = jm
 
 		return nil
 	},

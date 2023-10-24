@@ -5,7 +5,9 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/1set/gut/ystring"
 	"github.com/b1ug/nb1/config"
+	"github.com/b1ug/nb1/exchange"
 	"github.com/b1ug/nb1/hdwr"
 	"github.com/b1ug/nb1/util"
 	"github.com/spf13/cobra"
@@ -81,4 +83,21 @@ func getInOutPathArgs(msg, extName string) func(cmd *cobra.Command, args []strin
 		log.Infow(msg, "input_path", inputPath, "output_path", outputPath)
 		return nil
 	}
+}
+
+var (
+	outputJSONPath string
+	outputTextPath string
+	saveJSONData   interface{}
+	saveTextLine   []string
+)
+
+func saveResultData(cmd *cobra.Command, args []string) error {
+	if saveJSONData != nil && ystring.IsNotEmpty(outputJSONPath) {
+		return exchange.SaveAsJSON(saveJSONData, outputPath)
+	}
+	if len(saveTextLine) > 0 && ystring.IsNotEmpty(outputTextPath) {
+		return exchange.SaveAsLine(saveTextLine, outputPath)
+	}
+	return nil
 }

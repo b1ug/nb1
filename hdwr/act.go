@@ -3,6 +3,7 @@ package hdwr
 import (
 	"errors"
 	"image/color"
+	"time"
 
 	b1 "github.com/b1ug/blink1-go"
 )
@@ -79,4 +80,12 @@ func PlayOnChipPattern(start, end, times int, wait bool) error {
 		return ctrl.PlayPatternBlocking(pt)
 	}
 	return ctrl.PlayPattern(pt)
+}
+
+// TickleOnChipPattern starts playing a blink(1) pattern on the opened device.
+func TickleOnChipPattern(start, end int, waitTimeout time.Duration) error {
+	if ctrl == nil {
+		return errMissingDevice
+	}
+	return ctrl.SimpleTickle(uint(start), uint(end), waitTimeout, true)
 }

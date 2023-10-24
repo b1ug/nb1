@@ -14,6 +14,7 @@ import (
 // Errors for commands and subcommands
 var (
 	errNotImplemented    = errors.New("not implemented")
+	errNoAction          = errors.New("no action specified")
 	errConfigKeyNotFound = errors.New("config key not found")
 	errConfigSubKeyBlank = errors.New("config sub-key is blank")
 )

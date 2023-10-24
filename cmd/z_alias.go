@@ -18,7 +18,7 @@ var (
 	aliasesPlayground = []string{"pg"}
 	aliasesRead       = []string{"read", "rd", "r"}
 	aliasesServer     = []string{"serve", "srv", "s"}
-	aliasesTickle     = []string{"tick", "ti", "tk"}
+	aliasesTickle     = []string{"tick", "ti", "tk", "t"}
 	aliasesVersion    = []string{"ver", "v"}
 	aliasesWrite      = []string{"write", "wr", "w"}
 

@@ -89,3 +89,19 @@ func TickleOnChipPattern(start, end int, waitTimeout time.Duration) error {
 	}
 	return ctrl.SimpleTickle(uint(start), uint(end), waitTimeout, true)
 }
+
+// WriteOnChipPattern writes a blink(1) pattern on the opened device.
+func WriteOnChipPattern(start, end int, seq b1.StateSequence) error {
+	if ctrl == nil {
+		return errMissingDevice
+	}
+	return ctrl.LoadPattern(uint(start), uint(end), seq)
+}
+
+// SaveOnChipPattern saves a blink(1) pattern on the opened device.
+func SaveOnChipPattern() error {
+	if ctrl == nil {
+		return errMissingDevice
+	}
+	return ctrl.WritePattern()
+}

@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
 )
 
@@ -10,17 +8,12 @@ import (
 var readCmd = &cobra.Command{
 	Use:     "read",
 	Aliases: aliasesRead,
-	Short:   "Read blink(1) into a given color",
+	Short:   "Read from a blink(1) device",
 	Long: hdoc(`
 		Perform a specific color changing action on a blink(1) device.
 		// TODO:
 	`),
-	Args:              cobra.MinimumNArgs(1),
 	PersistentPreRunE: openBlink1Device,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		// TODO:
-		return fmt.Errorf("not implemented")
-	},
 }
 
 func init() {

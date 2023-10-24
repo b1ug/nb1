@@ -106,6 +106,14 @@ func ReadOnChipSequence() (b1.StateSequence, error) {
 	return ctrl.ReadPattern()
 }
 
+// ReadPlayingState reads the playing state of the opened device.
+func ReadPlayingState() (b1.PatternState, error) {
+	if ctrl == nil {
+		return b1.PatternState{}, errMissingDevice
+	}
+	return ctrl.GetPatternState()
+}
+
 // ReadLEDColor reads the color of the opened device.
 func ReadLEDColor(n int) (color.Color, error) {
 	if ctrl == nil {

@@ -1,6 +1,9 @@
 package cmd
 
 import (
+	"github.com/b1ug/nb1/hdwr"
+	"github.com/b1ug/nb1/schema"
+	"github.com/b1ug/nb1/util"
 	"github.com/spf13/cobra"
 )
 
@@ -14,7 +17,32 @@ var readPatternCmd = &cobra.Command{
 	`),
 	Args: cobra.NoArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		// TODO:
+		seq, err := hdwr.ReadOnChipSequence()
+		if err != nil {
+			return err
+		}
+
+		// preview
+		if readPreviewResult {
+			_ = util.PrintStateSequence(seq)
+		}
+
+		// save json result
+		ps := schema.PatternSet{
+			Name:        "from_device",
+			RepeatTimes: 1,
+			Sequence:    seq,
+		}
+		ps.AutoFill()
+		saveJSONData = ps
+
+		// save text result
+		saveTextLine = make([]string, len(seq))
+		for i, s := range seq {
+			b, _ := s.MarshalText()
+			saveTextLine[i] = string(b)
+		}
+
 		return errNotImplemented
 	},
 }

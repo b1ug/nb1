@@ -1,9 +1,9 @@
 package cmd
 
 import (
+	"fmt"
+
 	"github.com/b1ug/nb1/hdwr"
-	"github.com/b1ug/nb1/schema"
-	"github.com/b1ug/nb1/util"
 	"github.com/spf13/cobra"
 )
 
@@ -17,30 +17,26 @@ var readPlayCmd = &cobra.Command{
 	`),
 	Args: cobra.NoArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		seq, err := hdwr.ReadOnChipSequence()
+		pls, err := hdwr.ReadPlayingState()
 		if err != nil {
 			return err
 		}
 
 		// preview
 		if readPreviewResult {
-			_ = util.PrintStateSequence(seq)
+			fmt.Println("Playing:", pls.IsPlaying)
+			fmt.Println("Start:", pls.StartPosition)
+			fmt.Println("End:", pls.EndPosition)
+			fmt.Println("Repeat:", pls.RepeatTimes)
 		}
 
-		// save json result
-		ps := schema.PatternSet{
-			Name:        "from_device",
-			RepeatTimes: 1,
-			Sequence:    seq,
-		}
-		ps.AutoFill()
-		saveJSONData = ps
-
-		// save text result
-		saveTextLine = make([]string, len(seq))
-		for i, s := range seq {
-			b, _ := s.MarshalText()
-			saveTextLine[i] = string(b)
+		// save result
+		saveJSONData = pls
+		saveTextLine = []string{
+			fmt.Sprintf("Playing: %v", pls.IsPlaying),
+			fmt.Sprintf("Start: %d", pls.StartPosition),
+			fmt.Sprintf("End: %d", pls.EndPosition),
+			fmt.Sprintf("Repeat: %d", pls.RepeatTimes),
 		}
 
 		return nil

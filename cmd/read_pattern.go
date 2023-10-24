@@ -7,10 +7,10 @@ import (
 // readPatternCmd represents the pattern command
 var readPatternCmd = &cobra.Command{
 	Use:     "pattern",
-	Aliases: aliasesConvert,
-	Short:   "A brief description of your command",
+	Aliases: aliasesPattern,
+	Short:   "Read all patterns from the RAM",
 	Long: hdoc(`
-
+		Read all patterns from the RAM of a blink(1) device.
 	`),
 	Args: cobra.NoArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {

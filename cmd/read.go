@@ -28,8 +28,8 @@ func init() {
 	// Cobra supports Persistent Flags which will work for this command and all subcommands, e.g.:
 	// readCmd.PersistentFlags().String("foo", "", "A help for foo")
 	readCmd.PersistentFlags().BoolVarP(&readPreviewResult, "preview", "p", false, "whether to preview the result")
-	readCmd.PersistentFlags().StringVar(&outputJSONPath, "json", "", "output JSON file path")
-	readCmd.PersistentFlags().StringVar(&outputTextPath, "text", "", "output Text file path")
+	readCmd.PersistentFlags().StringVarP(&outputJSONPath, "json", "j", "", "output JSON file path")
+	readCmd.PersistentFlags().StringVarP(&outputTextPath, "text", "t", "", "output Text file path")
 
 	// Cobra supports local flags which will only run when this command is called directly, e.g.:
 	// readCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")

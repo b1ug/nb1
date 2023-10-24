@@ -7,10 +7,10 @@ import (
 // readPlayCmd represents the play command
 var readPlayCmd = &cobra.Command{
 	Use:     "play",
-	Aliases: aliasesConvert,
-	Short:   "A brief description of your command",
+	Aliases: aliasesPlay,
+	Short:   "Read the playing state of pattern",
 	Long: hdoc(`
-
+		Read the pattern playing state from a blink(1) device.
 	`),
 	Args: cobra.NoArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {

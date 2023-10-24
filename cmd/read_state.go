@@ -7,10 +7,10 @@ import (
 // readStateCmd represents the state command
 var readStateCmd = &cobra.Command{
 	Use:     "state",
-	Aliases: aliasesConvert,
-	Short:   "A brief description of your command",
+	Aliases: aliasesState,
+	Short:   "Read the state of LED",
 	Long: hdoc(`
-
+		Read the current state of LED from a blink(1) device.
 	`),
 	Args: cobra.NoArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {

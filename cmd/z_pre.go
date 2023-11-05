@@ -19,6 +19,7 @@ var (
 	errNoAction          = errors.New("no action specified")
 	errConfigKeyNotFound = errors.New("config key not found")
 	errConfigSubKeyBlank = errors.New("config sub-key is blank")
+	errInvalidColor      = errors.New("color is invalid")
 )
 
 // openBlink1Device works as a PersistentPreRunE function that opens a blink(1) device for use.

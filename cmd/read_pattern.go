@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"time"
+
 	"github.com/b1ug/nb1/hdwr"
 	"github.com/b1ug/nb1/schema"
 	"github.com/b1ug/nb1/util"
@@ -17,10 +19,12 @@ var readPatternCmd = &cobra.Command{
 	`),
 	Args: cobra.NoArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		ts := time.Now()
 		seq, err := hdwr.ReadOnChipSequence()
 		if err != nil {
 			return err
 		}
+		log.Infow("read device pattern sequence", "pattern_sequence", seq, "time_cost", time.Since(ts))
 
 		// preview
 		if readPreviewResult {
@@ -43,7 +47,7 @@ var readPatternCmd = &cobra.Command{
 			saveTextLine[i] = string(b)
 		}
 
-		return errNotImplemented
+		return nil
 	},
 }
 

@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"image/color"
+	"time"
 
 	"github.com/b1ug/nb1/hdwr"
 	"github.com/b1ug/nb1/util"
@@ -21,6 +22,7 @@ var readStateCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// read
 		var (
+			ts  = time.Now()
 			lc1 color.Color
 			lc2 color.Color
 			err error
@@ -45,6 +47,7 @@ var readStateCmd = &cobra.Command{
 				return err
 			}
 		}
+		log.Infow("read device led state", "time_cost", time.Since(ts))
 
 		// handle result
 		jm := make(map[string]interface{})

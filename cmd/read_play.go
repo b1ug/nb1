@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/b1ug/nb1/hdwr"
 	"github.com/spf13/cobra"
@@ -17,10 +18,12 @@ var readPlayCmd = &cobra.Command{
 	`),
 	Args: cobra.NoArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		ts := time.Now()
 		pls, err := hdwr.ReadPlayingState()
 		if err != nil {
 			return err
 		}
+		log.Infow("read device playing state", "play_state", pls, "time_cost", time.Since(ts))
 
 		// preview
 		if readPreviewResult {

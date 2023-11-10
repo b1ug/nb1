@@ -1,6 +1,6 @@
 workflows:
   build-nb1:
-    name: nb1 m1 build
+    name: build mac m1
     instance_type: mac_mini_m1
     max_build_duration: 10
     triggering:
@@ -18,7 +18,6 @@ workflows:
     environment:
       xcode: 14.3
       vars:
-        GO_VERSION: "1.18.10"
         OSEXT: "macos_m1"
     scripts:
       - name: Go Check

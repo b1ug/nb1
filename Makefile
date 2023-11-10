@@ -22,6 +22,8 @@ else ifeq ($(origin GITHUB_RUN_NUMBER), environment)
 	BUILD_NUM ?= gh$(GITHUB_RUN_NUMBER)
 else ifeq ($(origin CI_PIPELINE_IID), environment)
 	BUILD_NUM ?= gl$(CI_PIPELINE_IID)
+else ifeq ($(origin CM_BUILD_ID), environment)
+	BUILD_NUM ?= cm$(PROJECT_BUILD_NUMBER)
 endif
 
 export TZ=Asia/Shanghai

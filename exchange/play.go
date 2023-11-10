@@ -10,7 +10,6 @@ import (
 	"github.com/1set/gut/ystring"
 	"github.com/b1ug/blink1-go"
 	"github.com/b1ug/nb1/schema"
-	"github.com/b1ug/nb1/util"
 )
 
 // ParsePlayText parses a slice of strings in play.txt format into a pattern set.
@@ -107,7 +106,7 @@ func EncodePlayText(ps schema.PatternSet) []string {
 	)
 	for i, st := range ps.Sequence {
 		// color
-		hn, ok := util.ConvColorToNameOrHex(st.Color)
+		hn, ok := blink1.GetNameByColor(st.Color)
 		if ok {
 			hn = strings.Title(hn)
 		}

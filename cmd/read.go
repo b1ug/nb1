@@ -27,7 +27,7 @@ func init() {
 	// Here you will define your flags and configuration settings.
 	// Cobra supports Persistent Flags which will work for this command and all subcommands, e.g.:
 	// readCmd.PersistentFlags().String("foo", "", "A help for foo")
-	readCmd.PersistentFlags().BoolVarP(&readPreviewResult, "preview", "p", false, "whether to preview the result")
+	readCmd.PersistentFlags().BoolVarP(&readPreviewResult, "preview", "p", true, "whether to preview the result")
 	readCmd.PersistentFlags().StringVarP(&outputJSONPath, "json", "j", "", "output JSON file path")
 	readCmd.PersistentFlags().StringVarP(&outputTextPath, "text", "t", "", "output Text file path")
 

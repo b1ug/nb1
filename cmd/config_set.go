@@ -5,6 +5,7 @@ import (
 	"reflect"
 
 	"github.com/1set/gut/ystring"
+	b1 "github.com/b1ug/blink1-go"
 	"github.com/b1ug/nb1/config"
 	"github.com/b1ug/nb1/util"
 	"github.com/spf13/cobra"
@@ -48,6 +49,10 @@ var configSetCmd = &cobra.Command{
 			if ystring.IsBlank(kr) {
 				log.Errorw("config sub-key is blank", "key_raw", k, "key1", k1, "key_rest", kr)
 				return errConfigSubKeyBlank
+			}
+			if _, err := b1.ParseColor(nv); err != nil {
+				log.Errorw("color is invalid", "key_raw", k, "key1", k1, "key_rest", kr, "value", nv, zap.Error(err))
+				return errInvalidColor
 			}
 			cm := config.GetColorMap()
 			cm[kr] = nv

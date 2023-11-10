@@ -1,0 +1,42 @@
+workflows:
+  build-nb1:
+    name: nb1 m1 build
+    instance_type: mac_mini_m1
+    max_build_duration: 10
+    triggering:
+      cancel_previous_builds: true
+      events:
+        - push
+        - pull_request
+      branch_patterns:
+        - pattern: 'master'
+          include: true
+          source: true
+        - pattern: 'master'
+          include: true
+          source: false
+    environment:
+      xcode: 14.3
+      vars:
+        GO_VERSION: "1.18.10"
+        OSEXT: "macos_m1"
+    scripts:
+      - name: Go Check
+        script: |
+          uname -a
+          export
+          go env
+          go version
+          gcc --version
+          clang --version
+          make --version
+      - name: Go Build
+        script: |
+          make build
+          make artifact
+      - name: Go Run
+        script: |
+          make preview
+    artifacts:
+      - _upload/**
+

@@ -1,0 +1,105 @@
+version: 2.1
+orbs:
+  go: circleci/go@1.9.0
+jobs:
+  build-linux:
+    working_directory: ~/repo
+    resource_class: arm.medium
+    machine:
+      image: ubuntu-2004:2023.07.1
+    environment:
+      OSEXT: linux
+    steps:
+      - checkout
+      - go/install:
+          version: 1.18.10
+      - go/load-cache
+      - run:
+          name: Install Dependencies
+          command: |
+            go mod download
+      - go/save-cache
+      - run:
+          name: Go Build
+          shell: /bin/bash
+          command: |
+            uname -a
+            go version
+            git status
+            make build
+            make preview
+            make artifact
+      - persist_to_workspace:
+          root: _upload
+          paths: "*.*"
+
+  build-macos:
+    working_directory: ~/repo
+    # resource_class: macos.m1.medium.gen1
+    resource_class: macos.x86.medium.gen2
+    macos:
+      xcode: 14.2.0
+    environment:
+      OSEXT: macos
+    steps:
+      - checkout
+      - go/install:
+          version: 1.18.10
+      - go/load-cache
+      - run:
+          name: Install Dependencies
+          shell: /bin/bash
+          command: |
+            go mod download
+      - go/save-cache
+      - run:
+          name: Go Test
+          shell: /bin/bash
+          command: |
+            cd trygid; go test -v -race -cover -covermode=atomic -count 1 .
+      - run:
+          name: Go Build
+          shell: /bin/bash
+          command: |
+            go version
+            git status
+            make build
+            make preview
+            make artifact
+      - persist_to_workspace:
+          root: _upload
+          paths: "*.*"
+
+  # pack and upload artifacts
+  upload-artifact:
+    working_directory: ~/repo
+    resource_class: medium
+    machine:
+      image: ubuntu-2004:2022.10.1
+    steps:
+      - attach_workspace:
+          at: ~/artifacts
+      - run:
+          name: Zip All
+          command: |
+            export ARTNAME="dist_${CIRCLE_BUILD_NUM}_${CIRCLE_SHA1}.zip"
+            zip -9 -j -r "$ARTNAME" ~/artifacts/*.*
+            mv "$ARTNAME" ~/artifacts
+      - store_artifacts:
+          path: ~/artifacts
+
+# Entrypoint
+workflows:
+  build:
+    jobs:
+      - build-linux
+      - build-macos
+      - upload-artifact:
+          requires:
+            - build-linux
+            - build-macos
+          filters:
+            branches:
+              only:
+                - master
+                - /^art.*/

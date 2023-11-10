@@ -12,7 +12,6 @@ defaults:
 
 env:
   GO_VERSION: 1.18.10
-  # GO_VERSION: 1.16.15
   OSEXT_MAP: '{"Linux": "linux", "macOS": "macos", "Windows": "exe"}'
   CACHE_PREFIX: upload-${{ github.run_id }}-${{ github.run_attempt }}
   SAVE_ARTIFACT: ${{ github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/') }}
@@ -20,14 +19,14 @@ env:
 jobs:
   # Job1: build and test
   build:
-    # For various OSes
+    # For various OS
     name: Build on ${{ matrix.vm-os }}
     runs-on: ${{ matrix.vm-os }}
     strategy:
       max-parallel: 10
       fail-fast: false
       matrix:
-        vm-os: [ubuntu-20.04, macos-12, windows-2022]
+        vm-os: [ubuntu-20.04, macos-12, windows-2019]
     outputs:
       save_artifact: ${{ env.SAVE_ARTIFACT }}
     steps:

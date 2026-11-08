@@ -119,7 +119,7 @@ JSON必须是一个对象，最多1MiB；未知字段、非规范字段大小写
 
 ## 6. HTTP API
 
-机器可读契约为 [openapi.json](openapi.json)，使用已核对的 [OpenAPI 3.2.1](https://spec.openapis.org/oas/v3.2.1.html) 和JSON Schema 2020-12。当前作为本地文件交付，没有宣称存在 `/openapi.json` 网络路由。
+机器可读契约为 [openapi.json](openapi.json)，使用已核对的 [OpenAPI 3.2.1](https://spec.openapis.org/oas/v3.2.1.html) 和JSON Schema 2020-12。当前作为本地文件交付，没有宣称存在 `/openapi.json` 网络路由。客户端不主动重试提交；Go HTTP传输层可能安全重试只读GET，回执查询始终不创建任务。查询失败只能说明回执暂不可得，不能推断旧意图未执行。
 
 | 方法与路径 | 返回 |
 | --- | --- |

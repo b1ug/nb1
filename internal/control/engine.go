@@ -368,24 +368,30 @@ func (e *Engine) Cancel(ctx context.Context, id string) (Job, error) {
 }
 
 func (w *worker) offline(err error) {
-	if w.backend != nil {
-		w.backend.Close()
-		w.backend = nil
-	}
 	e := w.engine
 	e.mu.Lock()
-	defer e.mu.Unlock()
 	connection := "offline"
 	if errors.Is(err, ErrBusy) {
 		connection = "busy"
 	}
 	w.state.LastError = err.Error()
-	w.connectionLocked(connection)
+	if !e.closed {
+		w.connectionLocked(connection)
+	}
 	for _, r := range w.queue {
 		e.finishLocked(r, "failed", fmt.Errorf("%w: %v", ErrOffline, err))
 	}
 	w.queue = nil
 	w.state.QueueDepth = 0
+	e.mu.Unlock()
+	// Publish the known failure before native Close, which may block. New
+	// requests must not queue behind a handle already known to have failed.
+	// The worker still owns this handle and its lease until Close returns;
+	// only then may its loop reopen the serial or complete shutdown.
+	if w.backend != nil {
+		w.backend.Close()
+		w.backend = nil
+	}
 }
 func (w *worker) connect() bool {
 	b, err := w.engine.driver.Open(w.serial)

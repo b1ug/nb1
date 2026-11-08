@@ -94,7 +94,7 @@ func TestDaemonContextShutdownCleansActiveJob(t *testing.T) {
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	output := runtimeOutput{line: make(chan []byte, 1)}
+	output := runtimeOutput{line: make(chan []byte, 64)}
 	done := make(chan error, 1)
 	go func() { done <- serveRuntime(ctx, listener, engine, output, 2*time.Second) }()
 	var address struct {

@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -145,19 +144,18 @@ func serveRuntime(parent context.Context, listener net.Listener, engine *control
 	served := make(chan error, 1)
 	go func() { served <- server.Serve(listener) }()
 	var cause error
-	if err := json.NewEncoder(output).Encode(map[string]interface{}{"event": "daemon_listening", "url": "http://" + listener.Addr().String(), "api_version": "v1", "devices": engine.Devices()}); err != nil {
+	logging := startRuntimeLogging(engine, output, map[string]interface{}{"event": "daemon_listening", "url": "http://" + listener.Addr().String(), "api_version": "v1", "devices": engine.Devices()})
+	select {
+	case err := <-logging.startupErrors:
 		cause = err
-	} else {
-		select {
-		case <-parent.Done():
-		case <-engine.Done():
-			if parent.Err() == nil {
-				cause = fmt.Errorf("device runtime stopped")
-			}
-		case err := <-served:
-			if !errors.Is(err, http.ErrServerClosed) {
-				cause = err
-			}
+	case <-parent.Done():
+	case <-engine.Done():
+		if parent.Err() == nil {
+			cause = fmt.Errorf("device runtime stopped")
+		}
+	case err := <-served:
+		if !errors.Is(err, http.ErrServerClosed) {
+			cause = err
 		}
 	}
 	stopCtx, stop := context.WithTimeout(context.Background(), shutdownTimeout)

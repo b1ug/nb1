@@ -26,22 +26,29 @@ type worker struct {
 	queue  []*record
 	active *record
 	// Only this worker goroutine touches its native backend.
-	backend Backend
+	backend         Backend
+	eventReported   bool
+	eventConnection string
+	eventPath       string
 }
 
 type Engine struct {
-	mu          sync.Mutex
-	driver      Driver
-	options     Options
-	workers     map[string]*worker
-	jobs        map[string]*record
-	history     []string
-	started     bool
-	closed      bool
-	stop        chan struct{}
-	done        chan struct{}
-	shutdownErr error
-	wg          sync.WaitGroup
+	mu            sync.Mutex
+	driver        Driver
+	options       Options
+	workers       map[string]*worker
+	jobs          map[string]*record
+	history       []string
+	started       bool
+	closed        bool
+	stop          chan struct{}
+	done          chan struct{}
+	shutdownErr   error
+	wg            sync.WaitGroup
+	events        chan ConnectionEvent
+	eventsClosed  bool
+	eventSequence uint64
+	droppedEvents uint64
 }
 
 func New(driver Driver, options Options) (*Engine, error) {
@@ -63,7 +70,7 @@ func New(driver Driver, options Options) (*Engine, error) {
 	if options.QueueSize < 1 || options.QueueSize > 1024 || options.MaxHistory < 1 || options.MaxHistory > 100000 || options.PollInterval < 10*time.Millisecond || (options.ShutdownMode != "off" && options.ShutdownMode != "hold") {
 		return nil, fmt.Errorf("%w: invalid runtime limits or shutdown mode", ErrInvalid)
 	}
-	e := &Engine{driver: driver, options: options, workers: make(map[string]*worker), jobs: make(map[string]*record), stop: make(chan struct{}), done: make(chan struct{})}
+	e := &Engine{driver: driver, options: options, workers: make(map[string]*worker), jobs: make(map[string]*record), stop: make(chan struct{}), done: make(chan struct{}), events: make(chan ConnectionEvent, connectionEventBufferSize)}
 	for _, serial := range options.Serials {
 		if serial == "" || len(serial) > 128 || strings.IndexFunc(serial, func(r rune) bool {
 			return !(r >= '0' && r <= '9' || r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' || r == '-' || r == '_')
@@ -89,10 +96,17 @@ func (e *Engine) Start(ctx context.Context) error {
 	}
 	e.started = true
 	for _, w := range e.workers {
+		e.emitConnectionLocked(w)
 		e.wg.Add(1)
 		go w.loop()
 	}
-	go func() { e.wg.Wait(); close(e.done) }()
+	go func() {
+		e.wg.Wait()
+		e.mu.Lock()
+		defer e.mu.Unlock()
+		e.closeEventsLocked()
+		close(e.done)
+	}()
 	go func() {
 		select {
 		case <-ctx.Done():
@@ -114,7 +128,7 @@ func (e *Engine) beginClose() {
 	e.closed = true
 	close(e.stop)
 	for _, w := range e.workers {
-		w.state.Connection = "closing"
+		w.connectionLocked("closing")
 		if w.active != nil {
 			e.cancelLocked(w.active)
 		}
@@ -125,6 +139,7 @@ func (e *Engine) beginClose() {
 		w.state.QueueDepth = 0
 	}
 	if !e.started {
+		e.closeEventsLocked()
 		close(e.done)
 	}
 }
@@ -360,11 +375,12 @@ func (w *worker) offline(err error) {
 	e := w.engine
 	e.mu.Lock()
 	defer e.mu.Unlock()
-	w.state.Connection = "offline"
+	connection := "offline"
 	if errors.Is(err, ErrBusy) {
-		w.state.Connection = "busy"
+		connection = "busy"
 	}
 	w.state.LastError = err.Error()
+	w.connectionLocked(connection)
 	for _, r := range w.queue {
 		e.finishLocked(r, "failed", fmt.Errorf("%w: %v", ErrOffline, err))
 	}
@@ -395,7 +411,10 @@ func (w *worker) connect() bool {
 	w.state.Observed = &obs
 	w.state.LastError = ""
 	if !e.closed {
-		w.state.Connection = "online"
+		w.connectionLocked("online")
+	} else {
+		// A connect already in flight may reveal a new path during shutdown.
+		e.emitConnectionLocked(w)
 	}
 	return true
 }
@@ -419,13 +438,13 @@ func (w *worker) loop() {
 				w.backend = nil
 			}
 			e.mu.Lock()
-			w.state.Connection = "closed"
 			if err != nil {
 				w.state.LastError = err.Error()
 				if e.shutdownErr == nil {
 					e.shutdownErr = err
 				}
 			}
+			w.connectionLocked("closed")
 			e.mu.Unlock()
 			return
 		}
@@ -513,8 +532,8 @@ func (w *worker) execute(r *record) {
 	e.mu.Lock()
 	cancelled = cancelled || r.cancelled
 	if runErr != nil {
-		w.state.Connection = "error"
 		w.state.LastError = runErr.Error()
+		w.connectionLocked("error")
 	}
 	e.mu.Unlock()
 	for {

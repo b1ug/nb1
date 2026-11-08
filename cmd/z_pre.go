@@ -95,10 +95,12 @@ var (
 
 func saveResultData(cmd *cobra.Command, args []string) error {
 	if saveJSONData != nil && ystring.IsNotEmpty(outputJSONPath) {
-		return exchange.SaveAsJSON(saveJSONData, outputPath)
+		if err := exchange.SaveAsJSON(saveJSONData, outputJSONPath); err != nil {
+			return err
+		}
 	}
 	if len(saveTextLine) > 0 && ystring.IsNotEmpty(outputTextPath) {
-		return exchange.SaveAsLine(saveTextLine, outputPath)
+		return exchange.SaveAsLine(saveTextLine, outputTextPath)
 	}
 	return nil
 }

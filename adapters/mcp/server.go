@@ -32,6 +32,7 @@ type runArgs struct {
 
 func newServer(d *daemon) *mcp.Server {
 	s := mcp.NewServer(&mcp.Implementation{Name: "nb1-local-device-adapter", Version: "0.1.0-dev"}, &mcp.ServerOptions{Instructions: "Use only devices selected by the local daemon. RGB values are exact raw #RRGGBB, without implicit gamma. Job acceptance is not completion: inspect get_job and its actual status. cancel_job may return cancelling until hardware cleanup succeeds. HTTP timeout or closing this MCP session does not cancel accepted daemon jobs. This adapter never opens USB or silently falls back to direct control. Dry-run validates a program locally and sends no HTTP request."})
+	s.AddReceivingMiddleware(rawArgumentsGuard)
 	mcp.AddTool(s, tool("list_devices", "List configured daemon devices with connection, capabilities and timestamped observations.", objectSchema(map[string]any{}), true, true), func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, output, error) {
 		return result(d.request(ctx, http.MethodGet, "/v1/devices", "devices", nil))
 	})

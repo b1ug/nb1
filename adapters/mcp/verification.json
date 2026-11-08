@@ -7,13 +7,14 @@
   "checks": {
     "go_test_race": "PASS; official SDK client over in-memory and real stdio subprocess transports",
     "go_vet": "PASS",
+    "raw_argument_guard": "PASS; official SDK receives original RawMessage before typed AddTool; duplicate/escaped keys, null, depth, size and noncanonical aliases never reach HTTP",
     "native_build": "PASS on current darwin/arm64",
     "windows_amd64_cross_build": "PASS; not native execution",
     "linux_arm64_cross_build": "PASS; not native execution",
     "live_daemon_test": "SKIPPED by default; explicit endpoint/serial required, not run by this agent",
     "usb_imports": "none; go list dependency inspection found no GID/blink1-go imports"
   },
-  "evidence": [".build/test-race.log", ".build/vet.log"],
+  "evidence": [".build/test-race.log", ".build/vet.log", ".build/argument-guard-before.log"],
   "limits": [
     "No hardware I/O or actual daemon call performed by this agent",
     "Wire types and input normalization currently mirror the daemon and need joint contract maintenance",

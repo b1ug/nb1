@@ -43,7 +43,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           repository: b1ug/gid
-          ref: 6d51cae30f53a1e645724c88dd9c7ea5fd2c1ed8
+          ref: 1ea70d86ea1625558012a06f0cf3c0e0a4a4b576
           path: gid
           persist-credentials: false
       - uses: actions/setup-go@v7
@@ -87,7 +87,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           repository: b1ug/gid
-          ref: 6d51cae30f53a1e645724c88dd9c7ea5fd2c1ed8
+          ref: 1ea70d86ea1625558012a06f0cf3c0e0a4a4b576
           path: gid
           persist-credentials: false
       - uses: actions/setup-go@v7
@@ -116,7 +116,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           repository: b1ug/gid
-          ref: 6d51cae30f53a1e645724c88dd9c7ea5fd2c1ed8
+          ref: 1ea70d86ea1625558012a06f0cf3c0e0a4a4b576
           path: gid
           persist-credentials: false
       - uses: actions/setup-go@v7
@@ -134,3 +134,75 @@ jobs:
         run: |
           go build ./...
           go test -count=1 -timeout=3m ./...
+
+  windows-386:
+    # A 32-bit process under WOW64 exercises the Go/C ABI; it is not evidence
+    # for an older 32-bit Windows installation or physical USB behavior.
+    name: Windows 386 runtime / WOW64
+    runs-on: windows-2022
+    timeout-minutes: 20
+    env:
+      GOOS: windows
+      GOARCH: "386"
+      CGO_ENABLED: "1"
+      CC: gcc
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          path: cli
+          persist-credentials: false
+      - uses: actions/checkout@v7
+        with:
+          repository: b1ug/blink1-go
+          ref: 6847b168438ed7ffba44345f130c0a6cd199de88
+          path: sdk
+          persist-credentials: false
+      - uses: actions/checkout@v7
+        with:
+          repository: b1ug/gid
+          ref: 1ea70d86ea1625558012a06f0cf3c0e0a4a4b576
+          path: gid
+          persist-credentials: false
+      - uses: actions/setup-go@v7
+        with:
+          go-version: "1.27.x"
+          architecture: x64
+          cache: false
+      # MINGW32 is deprecated but currently still provides the i686 compiler;
+      # UCRT64 and CLANG64 do not replace this 32-bit target.
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW32
+          update: true
+          install: mingw-w64-i686-gcc
+          path-type: inherit
+      - name: Workspace and Windows 386 toolchain
+        shell: msys2 {0}
+        run: |
+          set -euo pipefail
+          test "$(gcc -dumpmachine | tr -d '\r')" = i686-w64-mingw32
+          test "$(go env GOOS)" = windows
+          test "$(go env GOARCH)" = 386
+          test "$(go env CGO_ENABLED)" = 1
+          test "$(go env CC)" = gcc
+          go version
+          go env GOHOSTARCH GOOS GOARCH CGO_ENABLED CC
+          gcc -dumpmachine
+          GOWORK=off go work init ./cli ./sdk ./gid
+      - name: Build, ordinary tests and vet without Windows 386 race support
+        shell: msys2 {0}
+        run: |
+          set -euo pipefail
+          go build ./cli/... ./sdk/... ./gid/...
+          go test -count=1 -timeout=3m ./cli/... ./sdk/... ./gid/...
+          go vet ./cli/... ./sdk/... ./gid/...
+      - name: Independent MCP module on Windows 386
+        shell: msys2 {0}
+        working-directory: cli/adapters/mcp
+        env:
+          GOWORK: "off"
+        run: |
+          set -euo pipefail
+          go build ./...
+          go test -count=1 -timeout=3m ./...
+          go vet ./...

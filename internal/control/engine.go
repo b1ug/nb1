@@ -2,7 +2,6 @@ package control
 
 import (
 	"context"
-	"crypto/rand"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -16,6 +15,7 @@ type record struct {
 	job       Job
 	cancel    chan struct{}
 	cancelled bool
+	receipt   *receiptEntry
 }
 
 type worker struct {
@@ -49,6 +49,7 @@ type Engine struct {
 	eventsClosed  bool
 	eventSequence uint64
 	droppedEvents uint64
+	receipts      *receiptState
 }
 
 func New(driver Driver, options Options) (*Engine, error) {
@@ -81,6 +82,11 @@ func New(driver Driver, options Options) (*Engine, error) {
 			return nil, fmt.Errorf("%w: duplicate device %s", ErrInvalid, serial)
 		}
 		e.workers[serial] = &worker{engine: e, serial: serial, wake: make(chan struct{}, 1), state: DeviceState{DeviceInfo: DeviceInfo{Serial: serial, Capabilities: []string{}}, Connection: "connecting"}}
+	}
+	var err error
+	e.receipts, err = newReceiptState(nil, nil)
+	if err != nil {
+		return nil, fmt.Errorf("initialize daemon instance: %w", err)
 	}
 	return e, nil
 }
@@ -255,41 +261,67 @@ func (e *Engine) Submit(ctx context.Context, serial string, program Program, pol
 	if err := ctx.Err(); err != nil {
 		return Job{}, err
 	}
-	p, err := Normalize(program)
+	p, policy, err := normalizeSubmission(program, policy)
 	if err != nil {
 		return Job{}, err
+	}
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	w, err := e.canAdmitLocked(serial, policy)
+	if err != nil {
+		return Job{}, err
+	}
+	r, err := e.newRecordLocked(serial, p)
+	if err != nil {
+		return Job{}, err
+	}
+	e.publishLocked(w, r, policy)
+	return cloneJob(r.job), nil
+}
+
+func normalizeSubmission(program Program, policy string) (Program, string, error) {
+	p, err := Normalize(program)
+	if err != nil {
+		return Program{}, "", err
 	}
 	if policy == "" {
 		policy = "replace"
 	}
 	if policy != "replace" && policy != "queue" && policy != "reject" {
-		return Job{}, fmt.Errorf("%w: policy must be replace, queue or reject", ErrInvalid)
+		return Program{}, "", fmt.Errorf("%w: policy must be replace, queue or reject", ErrInvalid)
 	}
-	var random [16]byte
-	if _, err := rand.Read(random[:]); err != nil {
-		return Job{}, err
-	}
-	e.mu.Lock()
-	defer e.mu.Unlock()
+	return p, policy, nil
+}
+
+func (e *Engine) canAdmitLocked(serial, policy string) (*worker, error) {
 	if !e.started || e.closed {
-		return Job{}, ErrClosed
+		return nil, ErrClosed
 	}
 	if e.options.ReadOnly {
-		return Job{}, fmt.Errorf("%w: runtime is read-only", ErrInvalid)
+		return nil, fmt.Errorf("%w: runtime is read-only", ErrInvalid)
 	}
 	w, ok := e.workers[serial]
 	if !ok {
-		return Job{}, ErrNotFound
+		return nil, ErrNotFound
 	}
 	if w.state.Connection != "online" {
 		if w.state.Connection == "busy" {
-			return Job{}, ErrBusy
+			return nil, ErrBusy
 		}
-		return Job{}, fmt.Errorf("%w: %s", ErrOffline, w.state.LastError)
+		return nil, fmt.Errorf("%w: %s", ErrOffline, w.state.LastError)
 	}
 	if policy == "reject" && (w.active != nil || len(w.queue) > 0) {
-		return Job{}, ErrBusy
+		return nil, ErrBusy
 	}
+	if policy != "replace" && len(w.queue) >= e.options.QueueSize {
+		return nil, ErrQueueFull
+	}
+	return w, nil
+}
+
+// Nothing after newRecordLocked may fail admission: replace must not cancel
+// existing work when capacity, state checks or random ID generation fail.
+func (e *Engine) publishLocked(w *worker, r *record, policy string) {
 	if policy == "replace" {
 		if w.active != nil {
 			e.cancelLocked(w.active)
@@ -299,10 +331,6 @@ func (e *Engine) Submit(ctx context.Context, serial string, program Program, pol
 		}
 		w.queue = nil
 	}
-	if len(w.queue) >= e.options.QueueSize {
-		return Job{}, ErrQueueFull
-	}
-	r := &record{job: Job{ID: "job_" + hex.EncodeToString(random[:]), Device: serial, Status: "queued", Program: p, TotalSteps: len(p.Steps) * p.Repeat, CreatedAt: time.Now().UTC()}, cancel: make(chan struct{})}
 	e.jobs[r.job.ID] = r
 	w.queue = append(w.queue, r)
 	w.state.QueueDepth = len(w.queue)
@@ -310,7 +338,6 @@ func (e *Engine) Submit(ctx context.Context, serial string, program Program, pol
 	case w.wake <- struct{}{}:
 	default:
 	}
-	return cloneJob(r.job), nil
 }
 
 func (e *Engine) cancelLocked(r *record) {
@@ -330,6 +357,12 @@ func (e *Engine) finishLocked(r *record, status string, err error) {
 	r.job.FinishedAt = &now
 	if err != nil {
 		r.job.Error = err.Error()
+	}
+	if r.receipt != nil {
+		r.receipt.expiresAtMS = e.receipts.nowMS() + e.receipts.retentionMS
+		if r.receipt.expiresAtMS < r.receipt.acceptUntilMS {
+			r.receipt.expiresAtMS = r.receipt.acceptUntilMS
+		}
 	}
 	e.history = append(e.history, r.job.ID)
 	for len(e.history) > e.options.MaxHistory {

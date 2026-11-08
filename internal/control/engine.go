@@ -27,6 +27,7 @@ type worker struct {
 	active *record
 	// Only this worker goroutine touches its native backend.
 	backend         Backend
+	nextObservation time.Time // Worker-owned monotonic deadline, shared across steps.
 	eventReported   bool
 	eventConnection string
 	eventPath       string
@@ -442,6 +443,7 @@ func (w *worker) connect() bool {
 		w.offline(err)
 		return false
 	}
+	w.nextObservation = time.Now().Add(w.engine.options.PollInterval)
 	e := w.engine
 	e.mu.Lock()
 	defer e.mu.Unlock()
@@ -521,6 +523,7 @@ func (w *worker) loop() {
 			if err != nil {
 				w.offline(err)
 			} else {
+				w.nextObservation = time.Now().Add(e.options.PollInterval)
 				e.mu.Lock()
 				w.state.Observed = &obs
 				e.mu.Unlock()
@@ -584,6 +587,9 @@ func (w *worker) execute(r *record) {
 		var obs Observation
 		if cleanupErr == nil {
 			obs, cleanupErr = w.backend.Read()
+			if cleanupErr == nil {
+				w.nextObservation = time.Now().Add(e.options.PollInterval)
+			}
 		}
 		e.mu.Lock()
 		// Cancellation may arrive during finish/hold cleanup. Serialize the
@@ -623,27 +629,46 @@ func (w *worker) execute(r *record) {
 	}
 }
 
-// Observe during long fades/holds too: a disconnected device must not remain
-// apparently online until a multi-hour program step finishes.
+// Keep one observation deadline across short steps as well as long holds.
+// Reads stay on this worker and may extend wall time beyond the nominal budget.
 func (w *worker) wait(r *record, duration time.Duration) (bool, error) {
 	timer := time.NewTimer(duration)
 	defer timer.Stop()
-	poll := time.NewTicker(w.engine.options.PollInterval)
-	defer poll.Stop()
 	for {
+		// Never issue a new observation when cancellation/shutdown is already
+		// known. An in-flight native Read still has to return before cleanup.
 		select {
-		case <-timer.C:
-			return false, nil
 		case <-r.cancel:
 			return true, nil
-		case <-poll.C:
+		case <-w.engine.stop:
+			return true, nil
+		default:
+		}
+		if !time.Now().Before(w.nextObservation) {
 			obs, err := w.backend.Read()
 			if err != nil {
 				return false, err
 			}
+			// Schedule from completion, not an old missed tick: slow native I/O
+			// must not cause a burst of catch-up reads.
+			w.nextObservation = time.Now().Add(w.engine.options.PollInterval)
 			w.engine.mu.Lock()
 			w.state.Observed = &obs
 			w.engine.mu.Unlock()
+			continue
+		}
+		poll := time.NewTimer(time.Until(w.nextObservation))
+		select {
+		case <-timer.C:
+			poll.Stop()
+			return false, nil
+		case <-r.cancel:
+			poll.Stop()
+			return true, nil
+		case <-w.engine.stop:
+			poll.Stop()
+			return true, nil
+		case <-poll.C:
 		}
 	}
 }

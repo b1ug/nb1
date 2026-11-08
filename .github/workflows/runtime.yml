@@ -1,0 +1,136 @@
+name: Runtime integration
+
+on:
+  push:
+    branches: [validation/runtime-native]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: runtime-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  CGO_ENABLED: "1"
+  GOWORK: ${{ github.workspace }}/go.work
+
+jobs:
+  native:
+    name: Native runtime / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, ubuntu-24.04-arm, macos-15, macos-15-intel, windows-2022]
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          path: cli
+          persist-credentials: false
+      - uses: actions/checkout@v7
+        with:
+          repository: b1ug/blink1-go
+          ref: e0b9201d937d5807960be26983c16b29cf91e509
+          path: sdk
+          persist-credentials: false
+      - uses: actions/checkout@v7
+        with:
+          repository: b1ug/gid
+          ref: f520a7e8cdb8567ebeb14239cbc3fe794b7bdffb
+          path: gid
+          persist-credentials: false
+      - uses: actions/setup-go@v7
+        with:
+          go-version: "1.27.x"
+          cache: false
+      - name: Workspace and native toolchain
+        run: |
+          go version
+          go env GOOS GOARCH CGO_ENABLED CC
+          GOWORK=off go work init ./cli ./sdk ./gid
+      - name: Build, race tests and vet
+        run: |
+          go build ./cli/... ./sdk/... ./gid/...
+          go test -race -count=1 -timeout=3m ./cli/... ./sdk/... ./gid/...
+          go vet ./cli/... ./sdk/... ./gid/...
+      - name: Independent MCP module
+        working-directory: cli/adapters/mcp
+        env:
+          GOWORK: "off"
+        run: |
+          go build ./...
+          go test -race -count=1 -timeout=3m ./...
+          go vet ./...
+
+  legacy-cli:
+    name: Go 1.18 CLI source / ubuntu-22.04
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          path: cli
+          persist-credentials: false
+      - uses: actions/checkout@v7
+        with:
+          repository: b1ug/blink1-go
+          ref: e0b9201d937d5807960be26983c16b29cf91e509
+          path: sdk
+          persist-credentials: false
+      - uses: actions/checkout@v7
+        with:
+          repository: b1ug/gid
+          ref: f520a7e8cdb8567ebeb14239cbc3fe794b7bdffb
+          path: gid
+          persist-credentials: false
+      - uses: actions/setup-go@v7
+        with:
+          go-version: "1.18.10"
+          cache: false
+      - name: Test CLI source floor without the Go 1.25 MCP module
+        run: |
+          GOWORK=off go work init ./cli ./sdk ./gid
+          go build ./cli/...
+          go test -count=1 -timeout=3m ./cli/...
+
+  legacy-sdk:
+    name: Go 1.13 SDK and GID source / ubuntu-22.04
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    env:
+      GOWORK: "off"
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          repository: b1ug/blink1-go
+          ref: e0b9201d937d5807960be26983c16b29cf91e509
+          path: sdk
+          persist-credentials: false
+      - uses: actions/checkout@v7
+        with:
+          repository: b1ug/gid
+          ref: f520a7e8cdb8567ebeb14239cbc3fe794b7bdffb
+          path: gid
+          persist-credentials: false
+      - uses: actions/setup-go@v7
+        with:
+          go-version: "1.13.15"
+          cache: false
+      - name: Test SDK with the selected GID source
+        working-directory: sdk
+        run: |
+          go mod edit -replace github.com/b1ug/gid=../gid
+          go build ./...
+          go test -count=1 -timeout=3m ./...
+      - name: Test GID source floor
+        working-directory: gid
+        run: |
+          go build ./...
+          go test -count=1 -timeout=3m ./...

@@ -1,0 +1,15 @@
+{
+  "program": {
+    "steps": [
+      {
+        "led": 1,
+        "color": "#800000",
+        "fade_ms": 100,
+        "hold_ms": 0
+      }
+    ],
+    "repeat": 1,
+    "on_finish": "hold"
+  },
+  "policy": "replace"
+}

@@ -1,0 +1,944 @@
+{
+  "openapi": "3.2.1",
+  "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
+  "info": {
+    "title": "nb1 本地设备执行 API",
+    "version": "0.1.0-local",
+    "description": "当前本地候选实现，未发布。仅loopback HTTP，无用户认证；拒绝非本地Host及跨源浏览器控制。请求使用规范小写字段名；未知字段、非规范字段大小写、重复对象键、显式null、尾随JSON和超过64层的嵌套被拒绝。省略默认字段合法，repeat=0规范为1。"
+  },
+  "servers": [
+    {
+      "url": "http://127.0.0.1:{port}",
+      "description": "以server启动JSON事件的url为准。",
+      "variables": {
+        "port": {
+          "default": "8931"
+        }
+      }
+    }
+  ],
+  "tags": [
+    {
+      "name": "health"
+    },
+    {
+      "name": "devices"
+    },
+    {
+      "name": "jobs"
+    }
+  ],
+  "paths": {
+    "/healthz": {
+      "get": {
+        "operationId": "getHealth",
+        "tags": [
+          "health"
+        ],
+        "summary": "查询HTTP服务是否响应",
+        "description": "ok不表示任何硬件在线；设备状态另查devices。",
+        "responses": {
+          "200": {
+            "description": "服务正在响应。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "405": {
+            "$ref": "#/components/responses/405"
+          }
+        }
+      }
+    },
+    "/v1/devices": {
+      "get": {
+        "operationId": "listDevices",
+        "tags": [
+          "devices"
+        ],
+        "summary": "列出daemon已配置设备",
+        "description": "包含配置中但离线的设备；不是对所有USB进行即刻枚举。直控CLI devices为另一种元数据发现入口。",
+        "responses": {
+          "200": {
+            "description": "设备缓存状态，按序列号排序。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DeviceState"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "405": {
+            "$ref": "#/components/responses/405"
+          }
+        }
+      }
+    },
+    "/v1/devices/{serial}": {
+      "parameters": [
+        {
+          "name": "serial",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{1,128}$",
+            "description": "明确配置的真实序列号；无索引或别名解析。"
+          }
+        }
+      ],
+      "get": {
+        "operationId": "getDeviceState",
+        "tags": [
+          "devices"
+        ],
+        "summary": "取得最近设备状态快照",
+        "responses": {
+          "200": {
+            "description": "状态存在，即使connection为offline仍返回200。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeviceState"
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "405": {
+            "$ref": "#/components/responses/405"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      }
+    },
+    "/v1/devices/{serial}/jobs": {
+      "parameters": [
+        {
+          "name": "serial",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{1,128}$",
+            "description": "明确配置的真实序列号；无索引或别名解析。"
+          }
+        }
+      ],
+      "post": {
+        "operationId": "runProgram",
+        "tags": [
+          "jobs"
+        ],
+        "summary": "提交结构化灯光程序",
+        "description": "job在daemon中继续执行，不随HTTP请求连接结束而取消。无自动USB回退、无Flash/模式写入。当前无幂等键；未知接受结果时勿自动重发非幂等序列。",
+        "x-max-body-bytes": 1048576,
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "已接受；查看返回的job.status，并保存id或Location。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Job"
+                }
+              }
+            },
+            "headers": {
+              "Location": {
+                "description": "新job查询的相对路径。",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "405": {
+            "$ref": "#/components/responses/405"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "413": {
+            "$ref": "#/components/responses/413"
+          },
+          "415": {
+            "$ref": "#/components/responses/415"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          },
+          "503": {
+            "$ref": "#/components/responses/503"
+          }
+        },
+        "x-max-json-depth": 64
+      }
+    },
+    "/v1/jobs/{jobId}": {
+      "parameters": [
+        {
+          "name": "jobId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "pattern": "^job_[0-9a-f]{32}$"
+          }
+        }
+      ],
+      "get": {
+        "operationId": "getJob",
+        "tags": [
+          "jobs"
+        ],
+        "summary": "查询一个内存任务记录",
+        "responses": {
+          "200": {
+            "description": "当前任务状态。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Job"
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "405": {
+            "$ref": "#/components/responses/405"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        }
+      }
+    },
+    "/v1/jobs/{jobId}/cancel": {
+      "parameters": [
+        {
+          "name": "jobId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "pattern": "^job_[0-9a-f]{32}$"
+          }
+        }
+      ],
+      "post": {
+        "operationId": "cancelJob",
+        "tags": [
+          "jobs"
+        ],
+        "summary": "请求取消任务",
+        "description": "可不带请求体；如携带，则必须是application/json空对象。返回202及真实job状态，活动任务通常先cancelling，停止/熄灯/读回成功后才cancelled；已有终态不改变。排队任务直接移除，不停止其他活动任务。",
+        "x-max-body-bytes": 1048576,
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmptyObject"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "取消请求已处理；不能把202当作设备已经停止。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Job"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "405": {
+            "$ref": "#/components/responses/405"
+          },
+          "413": {
+            "$ref": "#/components/responses/413"
+          },
+          "415": {
+            "$ref": "#/components/responses/415"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        },
+        "x-max-json-depth": 64
+      }
+    },
+    "/v1/transport-metrics": {
+      "get": {
+        "operationId": "getTransportMetrics",
+        "tags": [
+          "devices"
+        ],
+        "summary": "查询SDK操作级传输与重试计数",
+        "description": "不额外访问USB。driver未提供计数时返回空数组。calls是逻辑SDK操作，attempts含初次尝试，retries是额外尝试，failures是最终失败；不是原始USB transfer计数。last_error可能来自已恢复操作。",
+        "responses": {
+          "200": {
+            "description": "累积计数快照，进程重启后不保留。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TransportMetric"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "405": {
+            "$ref": "#/components/responses/405"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "StepRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "color"
+        ],
+        "properties": {
+          "led": {
+            "type": "integer",
+            "enum": [
+              0,
+              1,
+              2
+            ],
+            "default": 0,
+            "description": "0=两颗，1/2=单颗；省略按0，显式null拒绝。"
+          },
+          "color": {
+            "type": "string",
+            "pattern": "^#[0-9A-Fa-f]{6}$",
+            "description": "原始RGB，无隐式Gamma；字母会规范为小写。"
+          },
+          "fade_ms": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 600000,
+            "multipleOf": 10,
+            "default": 0,
+            "description": "淡入毫秒数，10ms整数倍；省略按0，显式null拒绝。"
+          },
+          "hold_ms": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 3600000,
+            "default": 0,
+            "description": "淡入后的保持毫秒数；省略按0，显式null拒绝。"
+          }
+        },
+        "description": "整数字段请使用普通十进制JSON整数字面量；Go int解码不接受1.0或1e0，JSON Schema本身不约束数值的词法拼写。"
+      },
+      "Step": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "led",
+          "color",
+          "fade_ms",
+          "hold_ms"
+        ],
+        "properties": {
+          "led": {
+            "type": "integer",
+            "enum": [
+              0,
+              1,
+              2
+            ]
+          },
+          "color": {
+            "type": "string",
+            "pattern": "^#[0-9a-f]{6}$"
+          },
+          "fade_ms": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 600000,
+            "multipleOf": 10
+          },
+          "hold_ms": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 3600000
+          }
+        }
+      },
+      "ProgramRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "steps"
+        ],
+        "description": "服务端还检查 repeat × Σ(fade_ms+hold_ms+10) <= 86400000ms。10ms为每步固件更新等待；原生I/O与调度开销不属于该名义预算，不是墙钟期限。",
+        "properties": {
+          "steps": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 1024,
+            "items": {
+              "$ref": "#/components/schemas/StepRequest"
+            }
+          },
+          "repeat": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10000,
+            "default": 1,
+            "description": "省略或0规范为1，显式null拒绝；0不是无限循环。"
+          },
+          "on_finish": {
+            "type": "string",
+            "enum": [
+              "",
+              "off",
+              "hold"
+            ],
+            "default": "off",
+            "description": "省略或空字符串按off；显式null拒绝。hold保留结束时当前读回颜色；取消和daemon退出仍off。"
+          }
+        },
+        "examples": [
+          {
+            "steps": [
+              {
+                "led": 1,
+                "color": "#800000",
+                "fade_ms": 100,
+                "hold_ms": 0
+              }
+            ],
+            "repeat": 1,
+            "on_finish": "hold"
+          },
+          {
+            "steps": [
+              {
+                "led": 0,
+                "color": "#ff0000",
+                "fade_ms": 300,
+                "hold_ms": 500
+              },
+              {
+                "led": 0,
+                "color": "#00ff00",
+                "fade_ms": 300,
+                "hold_ms": 500
+              },
+              {
+                "led": 0,
+                "color": "#0000ff",
+                "fade_ms": 300,
+                "hold_ms": 500
+              }
+            ],
+            "repeat": 2,
+            "on_finish": "off"
+          }
+        ]
+      },
+      "Program": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "steps",
+          "repeat",
+          "on_finish"
+        ],
+        "properties": {
+          "steps": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 1024,
+            "items": {
+              "$ref": "#/components/schemas/Step"
+            }
+          },
+          "repeat": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10000
+          },
+          "on_finish": {
+            "type": "string",
+            "enum": [
+              "off",
+              "hold"
+            ]
+          }
+        }
+      },
+      "SubmitRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "program"
+        ],
+        "properties": {
+          "program": {
+            "$ref": "#/components/schemas/ProgramRequest"
+          },
+          "policy": {
+            "type": "string",
+            "enum": [
+              "",
+              "replace",
+              "queue",
+              "reject"
+            ],
+            "default": "replace",
+            "description": "省略或空串按replace；显式null拒绝；replace取消旧活动/队列，queue排队，reject有工作则409。"
+          }
+        },
+        "description": "最大1MiB。当前不支持幂等键；响应丢失后不能从传输错误断定未接受。",
+        "examples": [
+          {
+            "program": {
+              "steps": [
+                {
+                  "led": 1,
+                  "color": "#800000",
+                  "fade_ms": 100,
+                  "hold_ms": 0
+                }
+              ],
+              "repeat": 1,
+              "on_finish": "hold"
+            },
+            "policy": "replace"
+          }
+        ]
+      },
+      "DeviceState": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "serial",
+          "product",
+          "capabilities",
+          "connection",
+          "queue_depth"
+        ],
+        "properties": {
+          "serial": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{1,128}$",
+            "description": "明确配置的真实序列号；无索引或别名解析。"
+          },
+          "product": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "firmware": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "capabilities": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "description": "已知能力列表；连接初期的兼容输出可能为null。"
+          },
+          "connection": {
+            "type": "string",
+            "enum": [
+              "connecting",
+              "online",
+              "busy",
+              "offline",
+              "error",
+              "closing",
+              "closed"
+            ]
+          },
+          "active_job": {
+            "type": "string",
+            "pattern": "^job_[0-9a-f]{32}$"
+          },
+          "queue_depth": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1024
+          },
+          "desired": {
+            "$ref": "#/components/schemas/Step"
+          },
+          "observed": {
+            "$ref": "#/components/schemas/Observation"
+          },
+          "last_error": {
+            "type": "string"
+          }
+        }
+      },
+      "Observation": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "led1",
+          "led2",
+          "sampled_at"
+        ],
+        "properties": {
+          "led1": {
+            "type": "string",
+            "pattern": "^#[0-9a-f]{6}$"
+          },
+          "led2": {
+            "type": "string",
+            "pattern": "^#[0-9a-f]{6}$"
+          },
+          "sampled_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "description": "最后一次设备RGB报告的缓存快照；不是本次GET触发的实时读，也不是相机或光学校准结果。离线时仍可保留旧采样，须同时看connection与时间。"
+      },
+      "Job": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "device",
+          "status",
+          "program",
+          "completed_steps",
+          "total_steps",
+          "created_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^job_[0-9a-f]{32}$"
+          },
+          "device": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{1,128}$",
+            "description": "明确配置的真实序列号；无索引或别名解析。"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "running",
+              "cancelling",
+              "succeeded",
+              "cancelled",
+              "failed"
+            ]
+          },
+          "program": {
+            "$ref": "#/components/schemas/Program"
+          },
+          "completed_steps": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "total_steps": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "started_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "finished_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "error": {
+            "type": "string"
+          }
+        },
+        "description": "202只表示请求已接受；job终态/设备读回/相机观察不同。活动job仅在硬件停止并清理读回后才能cancelled；排队job可直接移除且不影响其他活动job。终态历史默认128条，内存保存，重启不恢复。"
+      },
+      "Error": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "error"
+        ],
+        "properties": {
+          "error": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "code",
+              "message"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "enum": [
+                  "invalid_request",
+                  "invalid_json",
+                  "not_found",
+                  "busy",
+                  "queue_full",
+                  "unavailable",
+                  "internal_error",
+                  "local_only",
+                  "method_not_allowed",
+                  "json_required",
+                  "body_too_large"
+                ]
+              },
+              "message": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "Health": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "status",
+          "api_version"
+        ],
+        "properties": {
+          "status": {
+            "const": "ok",
+            "type": "string"
+          },
+          "api_version": {
+            "const": "v1",
+            "type": "string"
+          }
+        }
+      },
+      "EmptyObject": {
+        "type": "object",
+        "additionalProperties": false,
+        "maxProperties": 0
+      },
+      "TransportMetric": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "serial",
+          "operation",
+          "calls",
+          "attempts",
+          "retries",
+          "failures"
+        ],
+        "description": "当前driver生命周期内累积的SDK操作级计数，不是raw USB transfer数。last_error保留历史，即使操作后来恢复。进程重启后重新累计。",
+        "properties": {
+          "serial": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{1,128}$",
+            "description": "明确配置的真实序列号；无索引或别名解析。"
+          },
+          "operation": {
+            "type": "string"
+          },
+          "calls": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "attempts": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "retries": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "failures": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "last_error": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "responses": {
+      "400": {
+        "description": "请求/JSON无效，未创建新job。",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "403": {
+        "description": "Host不是loopback或浏览器Origin不是同源。",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "404": {
+        "description": "未知路由、未配置设备或不存在/已淘汰的job。",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "405": {
+        "description": "方法不支持；Allow头指出允许方法。",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "409": {
+        "description": "设备已有工作/其他合作进程持有，或队列已满；code区分busy/queue_full。",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "413": {
+        "description": "JSON体超过1MiB。",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "415": {
+        "description": "携带JSON体时Content-Type必须为application/json。",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "500": {
+        "description": "服务/原生调用错误；读取error.message。传输层没有有效HTTP响应时，不能据此推断接受结果。",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "503": {
+        "description": "执行器已关闭或目标设备不在线；结构化拒绝响应表示此提交没有创建job。",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    }
+  },
+  "x-verification": {
+    "date": "2026-11-09",
+    "hardware": "macOS 27.2 arm64 / blink(1) mk2 firmware204 only",
+    "limits": [
+      "No physical unplug/replug test",
+      "No mk3 hardware validation",
+      "CGO=0 cross-build is a stub, not native USB proof",
+      "Jobs/history are volatile; no restart recovery or idempotency key",
+      "Native synchronous I/O may exceed shutdown waiting deadlines"
+    ]
+  },
+  "x-specification-source": "https://spec.openapis.org/oas/v3.2.1.html"
+}

@@ -1,0 +1,27 @@
+{
+  "program": {
+    "steps": [
+      {
+        "led": 0,
+        "color": "#ff0000",
+        "fade_ms": 300,
+        "hold_ms": 500
+      },
+      {
+        "led": 0,
+        "color": "#00ff00",
+        "fade_ms": 300,
+        "hold_ms": 500
+      },
+      {
+        "led": 0,
+        "color": "#0000ff",
+        "fade_ms": 300,
+        "hold_ms": 500
+      }
+    ],
+    "repeat": 2,
+    "on_finish": "off"
+  },
+  "policy": "queue"
+}

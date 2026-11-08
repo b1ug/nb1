@@ -135,7 +135,24 @@ func transientMK2Transport(err error) bool {
 	if err == nil {
 		return false
 	}
-	// Current GID Darwin IOReturn errors have no exported native type/code.
+	// Prefer raw IOKit codes; the structural interface also keeps the older
+	// supported GID release buildable without this additive diagnostic API.
+	var native interface {
+		NativePlatform() string
+		NativeCode() uint64
+	}
+	if errors.As(err, &native) {
+		if native.NativePlatform() != "darwin" {
+			return false
+		}
+		switch native.NativeCode() {
+		case 0xe00002bc, 0xe00002d5, 0xe00002d6: // Error, Busy, Timeout (IOReturn.h)
+			return true
+		default:
+			return false
+		}
+	}
+	// Older GID releases expose only plain native leaf messages.
 	// Match complete leaf causes, never substrings of wrapped validation or
 	// disconnection messages. These may be permanent too: the bound still
 	// applies and the final cause must be returned after the last failure.

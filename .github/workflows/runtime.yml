@@ -43,7 +43,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           repository: b1ug/gid
-          ref: 1ea70d86ea1625558012a06f0cf3c0e0a4a4b576
+          ref: 7d9978debbdf4f268117ffde32bf48938fd49920
           path: gid
           persist-credentials: false
       - uses: actions/setup-go@v7
@@ -87,7 +87,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           repository: b1ug/gid
-          ref: 1ea70d86ea1625558012a06f0cf3c0e0a4a4b576
+          ref: 7d9978debbdf4f268117ffde32bf48938fd49920
           path: gid
           persist-credentials: false
       - uses: actions/setup-go@v7
@@ -116,7 +116,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           repository: b1ug/gid
-          ref: 1ea70d86ea1625558012a06f0cf3c0e0a4a4b576
+          ref: 7d9978debbdf4f268117ffde32bf48938fd49920
           path: gid
           persist-credentials: false
       - uses: actions/setup-go@v7
@@ -160,7 +160,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           repository: b1ug/gid
-          ref: 1ea70d86ea1625558012a06f0cf3c0e0a4a4b576
+          ref: 7d9978debbdf4f268117ffde32bf48938fd49920
           path: gid
           persist-credentials: false
       - uses: actions/setup-go@v7

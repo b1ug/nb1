@@ -52,13 +52,13 @@ daemon 会先绑定端口，再尝试打开硬件；启动和只读监控不会�
 ../bin/nb1-runtime control --mode direct state 20005601
 ```
 
-直控 `set/run` 等待程序完成后才返回，成功的 `hold` 结果在释放句柄后保留。直控 `state` 是只读监控，不冻结、不熄灯，也不停止原有自主模式。直控中途被取消或超时时，活动程序仍按熄灯清理；不是“退出CLI就放任程序继续”。
+直控 `set/run/effect` 等待程序完成后才返回，成功的 `hold` 结果在释放句柄后保留。直控 `state` 是只读监控，不冻结、不熄灯，也不停止原有自主模式。直控中途被取消或超时时，活动程序仍按熄灯清理；不是“退出CLI就放任程序继续”。
 
 daemon正在占用时，新旧CLI的合作式直控都会报设备占用。默认daemon模式连接失败不会静默回退到USB；需要直控时必须显式选择 `--mode direct`。跨命令的任务查询与取消使用daemon模式；单次直控退出后没有常驻任务存储。
 
 ## 4. 结构化程序
 
-示例文件分为两类：`*.program.json` 是CLI读取的程序；`*.request.json` 是包含 `program/policy` 的HTTP请求。不要把HTTP信封直接交给 `control run`。
+示例文件分为三类：`*.program.json` 是 `control run` 的程序；`*.effect.json` 是 `control effect` 的高层意图；`*.request.json` 是HTTP信封，必须且仅有 `program/effect` 之一，可带policy与回执二元组。不要把HTTP信封直接交给CLI的run或effect。
 
 ```sh
 ../bin/nb1-runtime control run 20005601 examples/runtime/sequence.program.json --wait
@@ -92,6 +92,43 @@ daemon正在占用时，新旧CLI的合作式直控都会报设备占用。默�
 JSON必须是一个对象，最多1MiB；未知字段、非规范字段大小写、显式 `null`、重复对象键、尾随JSON与超过64层的嵌套均拒绝。整数字段使用普通十进制JSON整数，不发送 `1.0` 或 `1e0`。CLI程序与HTTP请求使用相同的严格输入入口。
 
 `on_finish: hold` 表示在正常结束时停止自主活动并冻结当前设备读回颜色；它不改变活动任务被取消时的熄灯策略。`sequence.program.json` 默认结束熄灯；`long-running.program.json` 适合观察和取消，若在直控中完整等待，请将 `--timeout` 提高到例如45秒。
+
+### 高层效果：steady 与 pulse
+
+当前候选新增两种有限效果，统一调用 `control.CompileEffect` 编译为普通Program；不另建定时器、设备所有者或持久播放模式。新二进制与真机验收状态单独记录，旧主路径通过不意味着这些新增效果已经上机验证。
+
+```sh
+../bin/nb1-runtime control effect 20005601 examples/runtime/steady.effect.json --wait
+../bin/nb1-runtime control effect 20005601 examples/runtime/pulse.effect.json --policy queue --wait
+```
+
+daemon模式发送原effect，由服务端权威编译，再走同一Submit/回执路径；返回job中的program是编译后的实际程序。direct模式先严格解码文件并调用同一编译器，所有字段与编译错误发生在设备锁/USB之前。两种模式继续使用原policy、等待、取消和退出清理；direct不接受回执扩展。
+
+```json
+{"kind":"steady","color":"#102030","led":0,"fade_ms":100}
+```
+
+steady只允许kind、color、led、fade_ms，编译为一个步骤、repeat=1、on_finish=hold。省略fade_ms为0，范围和10ms单位与Program相同。不能提供cycles、period_ms或on_finish，即使给0或hold也拒绝。
+
+```json
+{"kind":"pulse","color":"#102030","led":0,"cycles":2,"period_ms":800,"on_finish":"off"}
+```
+
+| pulse字段 | 契约 |
+| --- | --- |
+| color / led | 同Program的原始RGB和0/1/2选择 |
+| cycles | 省略为1，范围1–10000；显式0不表示无限 |
+| period_ms | 省略为1000，范围60–1200000，10ms整数倍 |
+| on_finish | 省略off；显式仅off或hold，空串拒绝 |
+| fade_ms | pulse不接受，即使为0也拒绝 |
+
+pulse每周期执行同一LED的黑→目标色→黑三个步骤。令 `U=floor(period_ms/20)*10`、`D=period_ms-U`，三个fade_ms分别为0、U−20、D−10，hold_ms均0；cycles保持为Program.repeat，不展开步骤。800ms得到0/380/390，再计三个10ms更新等待正好是800ms名义周期；810ms得到0/380/400。原生I/O、调度与前后清理还会增加墙钟耗时，这不是硬实时保证。`cycles × period_ms`仍受24小时总预算校验。
+
+pulse的hold保留的是结束时读回：选中的LED此时已为黑色，不是目标色。off、活动取消和daemon退出沿用整设备熄灯策略；未选中LED不等于获得了独立任务所有权。所有颜色仍是原始RGB，不自动Gamma，也不上传设备Pattern或Flash。
+
+HTTP可使用 `{"effect":{...},"policy":"replace"}`，参见 [pulse-effect.request.json](../examples/runtime/pulse-effect.request.json)。program与effect缺失或同时出现都拒绝；内部null、未知字段、重复键、非规范大小写等严格规则不变。
+
+效果可沿用prepare产生的回执二元组。去重比较编译后规范化的Program与policy，而非原始effect JSON，所以同一实例/设备/键下，effect与完全等价的raw program返回同一job；编译后不同的有效程序返回冲突，非法shape或编译失败直接拒绝且不触发replace。
 
 ## 5. 队列、替换与取消
 
@@ -128,7 +165,7 @@ JSON必须是一个对象，最多1MiB；未知字段、非规范字段大小写
 | `GET /v1/devices` | daemon配置设备的缓存状态数组 |
 | `GET /v1/devices/{serial}` | 单设备状态；离线目标仍可返回200状态记录 |
 | `GET /v1/transport-metrics` | SDK操作级 calls/attempts/retries/failures 累积快照 |
-| `POST /v1/devices/{serial}/jobs` | 接受程序后返回202、job及Location |
+| `POST /v1/devices/{serial}/jobs` | 接受program或effect后返回202、job及Location |
 | `GET /v1/devices/{serial}/requests/{request_id}?expected_daemon_instance_id=…` | 原实例下的请求回执与job最新状态 |
 | `GET /v1/jobs/{id}` | job当前状态与步骤进度 |
 | `POST /v1/jobs/{id}/cancel` | 返回202及取消请求处理后的真实job状态 |
@@ -143,7 +180,7 @@ curl -i -X POST http://127.0.0.1:8931/v1/devices/20005601/jobs \
 curl -sS -X POST http://127.0.0.1:8931/v1/jobs/JOB_ID/cancel
 ```
 
-普通提交体仍是 `{"program":{...},"policy":"replace"}`，`policy`省略或空串时为replace；无需先prepare。可选的请求二元组见下文。取消可不带请求体；如果携带，只接受 `application/json` 空对象。没有raw HID、固件升级或Flash写入入口。
+普通程序提交体仍是 `{"program":{...},"policy":"replace"}`；高层效果使用互斥的 `effect` 字段。`policy`省略或空串时为replace，无需先prepare。可选的请求二元组见下文。取消可不带请求体；如果携带，只接受 `application/json` 空对象。没有raw HID、固件升级或Flash写入入口。
 
 状态中的 `desired` 是最后的逻辑目标，`observed` 是带时间戳的原始RGB采样。GET读取缓存，不额外并发访问USB；离线时旧采样仍可能保留。HTTP202、job终态、设备报告和相机观察是不同证据，不能互相替代。
 
@@ -190,7 +227,7 @@ DAEMON_INSTANCE_ID='粘贴prepare输出的expected_daemon_instance_id'
   --expected-daemon-instance-id "$DAEMON_INSTANCE_ID"
 ```
 
-`run` 接受相同两项flag，程序文件仍只包含Program。`prepare`只读取实例信息并在客户端生成16随机字节的nonce，不预留回执、不创建job、不操作USB。二元组必须同时提供非空值；`--mode direct`遇到prepare、request或任意回执flag会在设备锁/USB之前拒绝，包括显式空flag。没有自动重试、自动prepare或USB回退。
+`run`和`effect`接受相同两项flag，文件仍只包含各自的Program或Effect。`prepare`只读取实例信息并在客户端生成16随机字节的nonce，不预留回执、不创建job、不操作USB。二元组必须同时提供非空值；`--mode direct`遇到prepare、request或任意回执flag会在设备锁/USB之前拒绝，包括显式空flag。没有自动重试、自动prepare或USB回退。
 
 同一实例、同一设备、同一request_id与规范化后相同的program/policy，只准入一个逻辑任务；重复提交仍返回HTTP202和原job的最新状态，即使已经failed/cancelled/succeeded，也不重新运行。不同payload返回409 `idempotency_conflict`。HTTP响应头 `X-NB1-Replayed` 与 `X-NB1-Daemon-Instance-ID` 标明结果；带键提交的Location指向回执查询。CLI输出仍是job，`--wait`在带键时查询回执，不依赖普通128条历史。
 

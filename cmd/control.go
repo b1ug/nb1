@@ -27,13 +27,13 @@ type controlFlags struct {
 
 func newControlCommand() *cobra.Command {
 	options := &controlFlags{}
-	command := &cobra.Command{Use: "control", Aliases: []string{"ctl"}, Short: "Control devices through the shared executor", Long: "Use the local daemon by default. Direct mode embeds the same executor and cooperates with the same device ownership lock. Colors are exact raw #RRGGBB values without implicit gamma conversion. Jobs belong to the daemon or the lifetime of one direct command. Use --wait to await terminal set/run/cancel results; a client timeout does not cancel a daemon job."}
+	command := &cobra.Command{Use: "control", Aliases: []string{"ctl"}, Short: "Control devices through the shared executor", Long: "Use the local daemon by default. Direct mode embeds the same executor and cooperates with the same device ownership lock. Colors are exact raw #RRGGBB values without implicit gamma conversion. Jobs belong to the daemon or the lifetime of one direct command. Use --wait to await terminal set/run/effect/cancel results; a client timeout does not cancel a daemon job."}
 	command.PersistentFlags().StringVar(&options.mode, "mode", "daemon", "daemon or direct; never silently falls back to USB")
 	command.PersistentFlags().StringVar(&options.endpoint, "endpoint", daemonclient.DefaultEndpoint, "loopback daemon HTTP origin")
 	command.PersistentFlags().StringVar(&options.lockDir, "lock-dir", os.Getenv("NB1_LOCK_DIR"), "shared ownership directory for direct mode (NB1_LOCK_DIR or persistent per-user config)")
 	command.PersistentFlags().StringVar(&options.policy, "policy", "replace", "replace, queue or reject when a device already has work")
 	command.PersistentFlags().DurationVar(&options.timeout, "timeout", 30*time.Second, "client request/direct execution deadline")
-	command.PersistentFlags().StringVar(&options.requestID, "request-id", "", "optional prepared request ID for daemon set/run; requires the matching instance")
+	command.PersistentFlags().StringVar(&options.requestID, "request-id", "", "optional prepared request ID for daemon set/run/effect; requires the matching instance")
 	command.PersistentFlags().StringVar(&options.expectedInstance, "expected-daemon-instance-id", "", "bind a daemon submission or receipt lookup to this prepared instance")
 	command.PersistentPreRunE = func(cmd *cobra.Command, _ []string) error {
 		if options.mode != "daemon" && options.mode != "direct" {
@@ -51,7 +51,7 @@ func newControlCommand() *cobra.Command {
 			return fmt.Errorf("request receipts belong to the daemon; direct mode cannot prepare, query or submit a request binding")
 		}
 		switch cmd.Name() {
-		case "set", "run":
+		case "set", "run", "effect":
 			if requestFlag != instanceFlag || requestFlag && (options.requestID == "" || options.expectedInstance == "") {
 				return fmt.Errorf("--request-id and --expected-daemon-instance-id must both be nonempty or both omitted")
 			}
@@ -61,7 +61,7 @@ func newControlCommand() *cobra.Command {
 			}
 		default:
 			if requestFlag || instanceFlag {
-				return fmt.Errorf("request binding flags apply only to set/run or the request lookup command")
+				return fmt.Errorf("request binding flags apply only to set/run/effect or the request lookup command")
 			}
 		}
 		return nil
@@ -154,6 +154,21 @@ func newControlCommand() *cobra.Command {
 		}
 		return options.submit(cmd, args[0], program)
 	}})
+	command.AddCommand(&cobra.Command{Use: "effect <serial> <effect.json>", Short: "Submit a strict steady or pulse effect through the same executor", Args: cobra.ExactArgs(2), RunE: func(cmd *cobra.Command, args []string) error {
+		effect, err := readControlEffect(args[1])
+		if err != nil {
+			return err
+		}
+		if options.mode == "direct" {
+			// All direct shape/compile errors precede lock acquisition or USB.
+			program, err := control.CompileEffect(effect)
+			if err != nil {
+				return err
+			}
+			return options.submit(cmd, args[0], program)
+		}
+		return options.submitRemote(cmd, args[0], nil, &effect)
+	}})
 	command.AddCommand(&cobra.Command{Use: "job <id>", Short: "Inspect a daemon job", Args: cobra.ExactArgs(1), RunE: func(cmd *cobra.Command, args []string) error {
 		if options.mode != "daemon" {
 			return fmt.Errorf("job history belongs to the daemon; use --mode daemon")
@@ -236,6 +251,10 @@ func (o *controlFlags) submit(cmd *cobra.Command, serial string, program control
 			}
 		})
 	}
+	return o.submitRemote(cmd, serial, &program, nil)
+}
+
+func (o *controlFlags) submitRemote(cmd *cobra.Command, serial string, program *control.Program, effect *control.Effect) error {
 	client, ctx, done, err := o.client(cmd.Context())
 	if err != nil {
 		return err
@@ -246,10 +265,18 @@ func (o *controlFlags) submit(cmd *cobra.Command, serial string, program control
 	if o.requestID != "" {
 		receipt = &control.ReceiptRequest{RequestID: o.requestID, ExpectedDaemonInstanceID: o.expectedInstance}
 		var result control.ReceiptResult
-		result, err = client.SubmitWithReceipt(ctx, serial, program, o.policy, *receipt)
+		if effect != nil {
+			result, err = client.SubmitEffectWithReceipt(ctx, serial, *effect, o.policy, *receipt)
+		} else {
+			result, err = client.SubmitWithReceipt(ctx, serial, *program, o.policy, *receipt)
+		}
 		job = result.Job
 	} else {
-		job, err = client.Submit(ctx, serial, program, o.policy)
+		if effect != nil {
+			job, err = client.SubmitEffect(ctx, serial, *effect, o.policy)
+		} else {
+			job, err = client.Submit(ctx, serial, *program, o.policy)
+		}
 	}
 	if err != nil {
 		return err
@@ -356,23 +383,31 @@ func waitDirectDevice(ctx context.Context, engine *control.Engine, serial string
 
 func readControlProgram(path string) (control.Program, error) {
 	var program control.Program
+	err := readControlObject(path, "program", &program)
+	return program, err
+}
+
+func readControlEffect(path string) (control.Effect, error) {
+	var effect control.Effect
+	err := readControlObject(path, "effect", &effect)
+	return effect, err
+}
+
+func readControlObject(path, kind string, out interface{}) error {
 	file, err := os.Open(path)
 	if err != nil {
-		return program, err
+		return err
 	}
 	defer file.Close()
 	reader := io.LimitReader(file, httpapi.MaxBodyBytes+1)
 	data, err := io.ReadAll(reader)
 	if err != nil {
-		return program, err
+		return err
 	}
 	if len(data) > httpapi.MaxBodyBytes {
-		return program, fmt.Errorf("program file exceeds 1 MiB")
+		return fmt.Errorf("%s file exceeds 1 MiB", kind)
 	}
-	if err := jsoninput.DecodeObject(data, &program); err != nil {
-		return program, err
-	}
-	return program, nil
+	return jsoninput.DecodeObject(data, out)
 }
 
 func printControlJSON(output io.Writer, value interface{}) error {

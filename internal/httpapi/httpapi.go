@@ -19,10 +19,11 @@ import (
 const MaxBodyBytes = 1 << 20
 
 type SubmitRequest struct {
-	Program                  control.Program `json:"program"`
-	Policy                   string          `json:"policy"`
-	RequestID                *string         `json:"request_id,omitempty"`
-	ExpectedDaemonInstanceID *string         `json:"expected_daemon_instance_id,omitempty"`
+	Program                  *control.Program `json:"program,omitempty"`
+	Effect                   *control.Effect  `json:"effect,omitempty"`
+	Policy                   string           `json:"policy"`
+	RequestID                *string          `json:"request_id,omitempty"`
+	ExpectedDaemonInstanceID *string          `json:"expected_daemon_instance_id,omitempty"`
 }
 
 type ErrorBody struct {
@@ -116,6 +117,21 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			if !decodeJSON(w, r, &input) {
 				return
 			}
+			if (input.Program == nil) == (input.Effect == nil) {
+				writeError(w, http.StatusBadRequest, "invalid_request", "exactly one of program or effect is required")
+				return
+			}
+			var program control.Program
+			if input.Effect != nil {
+				var err error
+				program, err = control.CompileEffect(*input.Effect)
+				if err != nil {
+					serviceError(w, err)
+					return
+				}
+			} else {
+				program = *input.Program
+			}
 			if input.RequestID != nil || input.ExpectedDaemonInstanceID != nil {
 				if input.RequestID == nil || input.ExpectedDaemonInstanceID == nil || *input.RequestID == "" || *input.ExpectedDaemonInstanceID == "" {
 					writeError(w, http.StatusBadRequest, "invalid_request", "request_id and expected_daemon_instance_id must both be nonempty or both omitted")
@@ -125,7 +141,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				if !ok {
 					return
 				}
-				result, err := service.SubmitWithReceipt(r.Context(), parts[2], input.Program, input.Policy, control.ReceiptRequest{
+				result, err := service.SubmitWithReceipt(r.Context(), parts[2], program, input.Policy, control.ReceiptRequest{
 					RequestID: *input.RequestID, ExpectedDaemonInstanceID: *input.ExpectedDaemonInstanceID,
 				})
 				if err != nil {
@@ -138,7 +154,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				writeJSON(w, http.StatusAccepted, result.Job)
 				return
 			}
-			job, err := h.service.Submit(r.Context(), parts[2], input.Program, input.Policy)
+			job, err := h.service.Submit(r.Context(), parts[2], program, input.Policy)
 			if err != nil {
 				serviceError(w, err)
 				return

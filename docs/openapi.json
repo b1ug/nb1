@@ -151,8 +151,8 @@
         "tags": [
           "jobs"
         ],
-        "summary": "提交结构化灯光程序",
-        "description": "job不随HTTP连接结束而取消。无自动USB回退、无Flash/设备模式写入。可选二元组启用同实例有限去重；首次与重放均202并返回原Job当前状态，失败/取消任务不重执行。无键调用保留每次新任务行为。",
+        "summary": "提交精确程序或有限高层效果",
+        "description": "job不随HTTP连接结束而取消。无自动USB回退、无Flash/设备模式写入。可选二元组启用同实例有限去重；首次与重放均202并返回原Job当前状态，失败/取消任务不重执行。无键调用保留每次新任务行为。 program/effect互斥，steady/pulse先编译到普通Program再走同一队列、回执与清理；返回Job.program展开结果。",
         "x-max-body-bytes": 1048576,
         "requestBody": {
           "required": true,
@@ -695,9 +695,6 @@
       "SubmitRequest": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "program"
-        ],
         "properties": {
           "program": {
             "$ref": "#/components/schemas/ProgramRequest"
@@ -722,9 +719,12 @@
             "type": "string",
             "pattern": "^daemon_[0-9a-f]{32}$",
             "description": "原daemon实例绑定；实例改变时旧结果仍可能未知，不可自动换绑。"
+          },
+          "effect": {
+            "$ref": "#/components/schemas/Effect"
           }
         },
-        "description": "最大1MiB。两个可选回执字段必须同时省略或同时非空。无键调用每次新建任务；带键时同实例/serial/key的等价program及policy返回同一任务，不同payload为409。超时不能推断是否已接受，不自动降级为无键提交。",
+        "description": "最大1MiB，program/effect必须且仅有一个；effect由同一权威编译器产生普通Program后才准入。两回执字段同时省略或同时非空。去重比较规范化Program/policy，因此效果与完全相同raw Program共享同key同job；所有shape/编译失败均不创建任务或replace旧工作。",
         "examples": [
           {
             "program": {
@@ -740,6 +740,15 @@
               "on_finish": "hold"
             },
             "policy": "replace"
+          },
+          {
+            "effect": {
+              "kind": "pulse",
+              "color": "#102030",
+              "cycles": 2,
+              "period_ms": 800
+            },
+            "policy": "replace"
           }
         ],
         "dependentRequired": {
@@ -749,7 +758,19 @@
           "expected_daemon_instance_id": [
             "request_id"
           ]
-        }
+        },
+        "oneOf": [
+          {
+            "required": [
+              "program"
+            ]
+          },
+          {
+            "required": [
+              "effect"
+            ]
+          }
+        ]
       },
       "DeviceState": {
         "type": "object",
@@ -1098,6 +1119,109 @@
             "description": "原daemon实例绑定；实例改变时旧结果仍可能未知，不可自动换绑。"
           }
         }
+      },
+      "SteadyEffect": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "color"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "steady"
+          },
+          "color": {
+            "type": "string",
+            "pattern": "^#[0-9A-Fa-f]{6}$",
+            "description": "原始RGB，无隐式Gamma；字母会规范为小写。"
+          },
+          "led": {
+            "type": "integer",
+            "enum": [
+              0,
+              1,
+              2
+            ],
+            "default": 0,
+            "description": "0=两颗，1/2=单颗；省略按0，显式null拒绝。"
+          },
+          "fade_ms": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 600000,
+            "multipleOf": 10,
+            "default": 0,
+            "description": "淡入毫秒数，10ms整数倍；省略按0，显式null拒绝。"
+          }
+        },
+        "description": "编译为一个步骤、repeat=1、on_finish=hold；仅允许kind/color/led/fade_ms。色彩为原始RGB。即使提供cycles=0、period_ms或on_finish=hold也拒绝。"
+      },
+      "PulseEffect": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "color"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "pulse"
+          },
+          "color": {
+            "type": "string",
+            "pattern": "^#[0-9A-Fa-f]{6}$",
+            "description": "原始RGB，无隐式Gamma；字母会规范为小写。"
+          },
+          "led": {
+            "type": "integer",
+            "enum": [
+              0,
+              1,
+              2
+            ],
+            "default": 0,
+            "description": "0=两颗，1/2=单颗；省略按0，显式null拒绝。"
+          },
+          "cycles": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10000,
+            "default": 1,
+            "description": "省略为1，显式0不合法；不展开为无限程序。"
+          },
+          "period_ms": {
+            "type": "integer",
+            "minimum": 60,
+            "maximum": 1200000,
+            "multipleOf": 10,
+            "default": 1000,
+            "description": "名义周期包含每周期三个10ms更新等待，仍须cycles*period_ms<=86400000；原生I/O和前后清理另计，非墙钟/实时保证。"
+          },
+          "on_finish": {
+            "type": "string",
+            "enum": [
+              "off",
+              "hold"
+            ],
+            "default": "off",
+            "description": "hold保留结束时读回：选中LED在pulse最后已为黑；off/cancel/daemon退出沿用整设备熄灯策略。"
+          }
+        },
+        "description": "有限黑→目标色→黑，拒绝fade_ms（即使0）。令U=floor(period_ms/20)*10、D=period_ms-U；三步fade为0、U-20、D-10，hold=0，repeat=cycles。通过同一Normalize预算，不上传设备Pattern/Flash。"
+      },
+      "Effect": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/SteadyEffect"
+          },
+          {
+            "$ref": "#/components/schemas/PulseEffect"
+          }
+        ],
+        "description": "权威control.CompileEffect编译为普通规范化Program。JSON边界仍拒绝null、重复键、字段别名与未知字段。"
       }
     },
     "responses": {
@@ -1232,7 +1356,8 @@
       "CGO=0 cross-build is a stub, not native USB proof",
       "Jobs/receipts are volatile; optional same-instance receipts do not provide restart recovery or durable exactly-once",
       "Native synchronous I/O may exceed shutdown waiting deadlines",
-      "Request-receipt transport/CLI checks use fake services; this extension has no new USB hardware acceptance claim"
+      "Request-receipt transport/CLI checks use fake services; this extension has no new USB hardware acceptance claim",
+      "High-level effect compiler/API/CLI checks use fake backends; new effect hardware acceptance is recorded separately"
     ]
   },
   "x-specification-source": "https://spec.openapis.org/oas/v3.2.1.html"

@@ -1,0 +1,8 @@
+{
+  "kind": "pulse",
+  "color": "#102030",
+  "led": 0,
+  "cycles": 2,
+  "period_ms": 800,
+  "on_finish": "off"
+}

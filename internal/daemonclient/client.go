@@ -77,7 +77,14 @@ func (c *Client) Device(ctx context.Context, serial string) (out control.DeviceS
 	return
 }
 func (c *Client) Submit(ctx context.Context, serial string, program control.Program, policy string) (out control.Job, err error) {
-	err = c.do(ctx, http.MethodPost, "/v1/devices/"+url.PathEscape(serial)+"/jobs", httpapi.SubmitRequest{Program: program, Policy: policy}, &out)
+	err = c.do(ctx, http.MethodPost, "/v1/devices/"+url.PathEscape(serial)+"/jobs", httpapi.SubmitRequest{Program: &program, Policy: policy}, &out)
+	return
+}
+
+// SubmitEffect sends the high-level intent to the daemon's authoritative
+// compiler; this HTTP adapter does not maintain a second effect compiler.
+func (c *Client) SubmitEffect(ctx context.Context, serial string, effect control.Effect, policy string) (out control.Job, err error) {
+	err = c.do(ctx, http.MethodPost, "/v1/devices/"+url.PathEscape(serial)+"/jobs", httpapi.SubmitRequest{Effect: &effect, Policy: policy}, &out)
 	return
 }
 
@@ -134,12 +141,19 @@ func lowerHex(value string) bool {
 }
 
 func (c *Client) SubmitWithReceipt(ctx context.Context, serial string, program control.Program, policy string, receipt control.ReceiptRequest) (out control.ReceiptResult, err error) {
+	return c.submitWithReceipt(ctx, serial, httpapi.SubmitRequest{Program: &program, Policy: policy}, receipt)
+}
+
+func (c *Client) SubmitEffectWithReceipt(ctx context.Context, serial string, effect control.Effect, policy string, receipt control.ReceiptRequest) (out control.ReceiptResult, err error) {
+	return c.submitWithReceipt(ctx, serial, httpapi.SubmitRequest{Effect: &effect, Policy: policy}, receipt)
+}
+
+func (c *Client) submitWithReceipt(ctx context.Context, serial string, input httpapi.SubmitRequest, receipt control.ReceiptRequest) (out control.ReceiptResult, err error) {
 	if receipt.RequestID == "" || receipt.ExpectedDaemonInstanceID == "" {
 		return out, fmt.Errorf("request_id and expected_daemon_instance_id must both be nonempty")
 	}
-	headers, err := c.doResponse(ctx, http.MethodPost, "/v1/devices/"+url.PathEscape(serial)+"/jobs", httpapi.SubmitRequest{
-		Program: program, Policy: policy, RequestID: &receipt.RequestID, ExpectedDaemonInstanceID: &receipt.ExpectedDaemonInstanceID,
-	}, &out.Job)
+	input.RequestID, input.ExpectedDaemonInstanceID = &receipt.RequestID, &receipt.ExpectedDaemonInstanceID
+	headers, err := c.doResponse(ctx, http.MethodPost, "/v1/devices/"+url.PathEscape(serial)+"/jobs", input, &out.Job)
 	if err != nil {
 		return out, receiptError(err, receipt)
 	}

@@ -8,18 +8,23 @@
     "go_test_race": "PASS; official SDK client over in-memory and real stdio subprocess transports",
     "go_vet": "PASS",
     "raw_argument_guard": "PASS; official SDK receives original RawMessage before typed AddTool; duplicate/escaped keys, null, depth, size and noncanonical aliases never reach HTTP",
+    "optional_receipts": "PASS; official SDK stdio six-tool legacy compatibility, random ticket preparation, paired input, mutually exclusive receipt lookup, terminal 202, original ticket preservation, unknown outcomes and no retry/fallback",
+    "keyed_dry_run": "PASS; program and ticket syntax only, instance_binding_verified=false, zero HTTP",
+    "go125_source_floor": "PASS; Go1.25.0 ordinary test of the independent module, x/sys remains v0.44.0; no new module dependencies",
+    "live_receipts_test": "SKIPPED; TestLiveReceiptsOptIn requires RECEIPTS=1 plus explicit endpoint/serial/color, not run by this agent",
     "native_build": "PASS on current darwin/arm64",
     "windows_amd64_cross_build": "PASS; not native execution",
     "linux_arm64_cross_build": "PASS; not native execution",
     "live_daemon_test": "SKIPPED by default; explicit endpoint/serial required, not run by this agent",
     "usb_imports": "none; go list dependency inspection found no GID/blink1-go imports"
   },
-  "evidence": [".build/test-race.log", ".build/vet.log", ".build/argument-guard-before.log"],
+  "evidence": [".build/test-race.log", ".build/vet.log", ".build/argument-guard-before.log", ".build/receipts-test-race.log", ".build/receipts-vet.log", ".build/receipts-go125.log"],
   "limits": [
     "No hardware I/O or actual daemon call performed by this agent",
     "Wire types and input normalization currently mirror the daemon and need joint contract maintenance",
     "No MCP Tasks extension, persistent job store, authentication, or remote HTTP transport is added",
-    "POST transport failures preserve outcome_unknown; accepted jobs are not canceled by MCP disconnect"
+    "POST transport failures preserve outcome_unknown and supplied request_ticket; accepted jobs are not canceled by MCP disconnect",
+    "Optional receipt behavior has software stdio/fake-HTTP evidence only in this branch; no automatic retry, rebinding, key replacement or persistent receipt journal is added"
   ],
   "sources": [
     "https://github.com/modelcontextprotocol/go-sdk/releases/tag/v1.8.0",

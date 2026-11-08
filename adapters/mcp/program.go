@@ -21,8 +21,10 @@ type program struct {
 	OnFinish string `json:"on_finish,omitempty"`
 }
 type submission struct {
-	Program program `json:"program"`
-	Policy  string  `json:"policy"`
+	Program                  program `json:"program"`
+	Policy                   string  `json:"policy"`
+	RequestID                string  `json:"request_id,omitempty"`
+	ExpectedDaemonInstanceID string  `json:"expected_daemon_instance_id,omitempty"`
 }
 
 func validToken(value string) bool {

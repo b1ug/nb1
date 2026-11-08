@@ -27,16 +27,22 @@ type failure struct {
 	Message    string `json:"message"`
 	HTTPStatus int    `json:"http_status,omitempty"`
 	// A transport error after POST cannot prove that the daemon rejected it.
+	// An expired/missing receipt or changed instance can also leave the old
+	// keyed intent unknown, even when its lookup returns a definite HTTP error.
 	OutcomeUnknown bool `json:"outcome_unknown,omitempty"`
 }
 
 type output struct {
-	Kind        string   `json:"kind"`
-	Data        any      `json:"data,omitempty"`
-	Accepted    bool     `json:"accepted"`
-	DryRun      bool     `json:"dry_run,omitempty"`
-	PollAfterMS int      `json:"poll_after_ms,omitempty"`
-	Error       *failure `json:"error,omitempty"`
+	Kind          string         `json:"kind"`
+	Data          any            `json:"data,omitempty"`
+	Accepted      bool           `json:"accepted"`
+	DryRun        bool           `json:"dry_run,omitempty"`
+	PollAfterMS   int            `json:"poll_after_ms,omitempty"`
+	Error         *failure       `json:"error,omitempty"`
+	RequestTicket *requestTicket `json:"request_ticket,omitempty"`
+	// Only emitted for keyed dry-runs. Local syntax checks cannot verify the
+	// daemon instance, receipt existence or monotonic admission deadline.
+	InstanceBindingVerified *bool `json:"instance_binding_verified,omitempty"`
 }
 
 func newDaemon(endpoint string, timeout time.Duration) (*daemon, error) {

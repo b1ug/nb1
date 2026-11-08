@@ -11,30 +11,43 @@ import (
 type deviceArgs struct {
 	Serial string `json:"serial"`
 }
+type listArgs struct {
+	PrepareRequest bool `json:"prepare_request,omitempty"`
+}
 type jobArgs struct {
 	ID string `json:"id"`
 }
+type getJobArgs struct {
+	ID                       string `json:"id,omitempty"`
+	Serial                   string `json:"serial,omitempty"`
+	RequestID                string `json:"request_id,omitempty"`
+	ExpectedDaemonInstanceID string `json:"expected_daemon_instance_id,omitempty"`
+}
 type setArgs struct {
-	Serial string `json:"serial"`
-	Color  string `json:"color"`
-	LED    int    `json:"led,omitempty"`
-	FadeMS int    `json:"fade_ms,omitempty"`
-	HoldMS int    `json:"hold_ms,omitempty"`
-	Policy string `json:"policy,omitempty"`
-	DryRun bool   `json:"dry_run,omitempty"`
+	Serial                   string `json:"serial"`
+	Color                    string `json:"color"`
+	LED                      int    `json:"led,omitempty"`
+	FadeMS                   int    `json:"fade_ms,omitempty"`
+	HoldMS                   int    `json:"hold_ms,omitempty"`
+	Policy                   string `json:"policy,omitempty"`
+	DryRun                   bool   `json:"dry_run,omitempty"`
+	RequestID                string `json:"request_id,omitempty"`
+	ExpectedDaemonInstanceID string `json:"expected_daemon_instance_id,omitempty"`
 }
 type runArgs struct {
-	Serial  string  `json:"serial"`
-	Program program `json:"program"`
-	Policy  string  `json:"policy,omitempty"`
-	DryRun  bool    `json:"dry_run,omitempty"`
+	Serial                   string  `json:"serial"`
+	Program                  program `json:"program"`
+	Policy                   string  `json:"policy,omitempty"`
+	DryRun                   bool    `json:"dry_run,omitempty"`
+	RequestID                string  `json:"request_id,omitempty"`
+	ExpectedDaemonInstanceID string  `json:"expected_daemon_instance_id,omitempty"`
 }
 
 func newServer(d *daemon) *mcp.Server {
-	s := mcp.NewServer(&mcp.Implementation{Name: "nb1-local-device-adapter", Version: "0.1.0-dev"}, &mcp.ServerOptions{Instructions: "Use only devices selected by the local daemon. RGB values are exact raw #RRGGBB, without implicit gamma. Job acceptance is not completion: inspect get_job and its actual status. cancel_job may return cancelling until hardware cleanup succeeds. HTTP timeout or closing this MCP session does not cancel accepted daemon jobs. This adapter never opens USB or silently falls back to direct control. Dry-run validates a program locally and sends no HTTP request."})
+	s := mcp.NewServer(&mcp.Implementation{Name: "nb1-local-device-adapter", Version: "0.1.0-dev"}, &mcp.ServerOptions{Instructions: "Use only devices selected by the local daemon. RGB values are exact raw #RRGGBB, without implicit gamma. Job acceptance is not completion: inspect get_job and its actual status. cancel_job may return cancelling until hardware cleanup succeeds. HTTP timeout or closing this MCP session does not cancel accepted daemon jobs. This adapter never opens USB or silently falls back to direct control. Optional request tickets bind one intent to its original daemon instance; save the complete ticket before submission and keep it when an outcome is unknown. The adapter never automatically retries writes or replaces old tickets after expiry or restart. Dry-run validates a program and ticket syntax locally, sends no HTTP request and cannot verify instance identity or deadlines."})
 	s.AddReceivingMiddleware(rawArgumentsGuard)
-	mcp.AddTool(s, tool("list_devices", "List configured daemon devices with connection, capabilities and timestamped observations.", objectSchema(map[string]any{}), true, true), func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, output, error) {
-		return result(d.request(ctx, http.MethodGet, "/v1/devices", "devices", nil))
+	mcp.AddTool(s, tool("list_devices", "List configured daemon devices. Optional prepare_request returns a fresh request_ticket bound to this daemon instance, without submitting or reserving a job; save it before submission. Repeated preparation creates different tickets.", objectSchema(map[string]any{"prepare_request": map[string]any{"type": "boolean"}}), true, true), func(ctx context.Context, _ *mcp.CallToolRequest, args listArgs) (*mcp.CallToolResult, output, error) {
+		return result(listDevices(ctx, d, args.PrepareRequest))
 	})
 	mcp.AddTool(s, tool("get_device_state", "Get the daemon's latest observed raw RGB and timestamp; this is a snapshot, not a camera measurement.", objectSchema(map[string]any{"serial": tokenSchema()}, "serial"), true, true), func(ctx context.Context, _ *mcp.CallToolRequest, args deviceArgs) (*mcp.CallToolResult, output, error) {
 		if !validToken(args.Serial) {
@@ -43,17 +56,14 @@ func newServer(d *daemon) *mcp.Server {
 		return result(d.request(ctx, http.MethodGet, "/v1/devices/"+url.PathEscape(args.Serial), "device", nil))
 	})
 	setProperties := map[string]any{"serial": tokenSchema(), "color": colorSchema(), "led": map[string]any{"type": "integer", "enum": []int{0, 1, 2}, "description": "0=both, 1=top, 2=bottom"}, "fade_ms": fadeSchema(), "hold_ms": holdSchema(), "policy": policySchema(), "dry_run": map[string]any{"type": "boolean", "description": "Validate and return the program without contacting the daemon"}}
-	mcp.AddTool(s, tool("set_device_state", "Submit one exact RGB state; successful completion retains the color. Returns a daemon job, not a completion guarantee. dry_run previews locally.", objectSchema(setProperties, "serial", "color"), false, false), func(ctx context.Context, _ *mcp.CallToolRequest, args setArgs) (*mcp.CallToolResult, output, error) {
-		return submit(ctx, d, args.Serial, program{Steps: []step{{LED: args.LED, Color: args.Color, FadeMS: args.FadeMS, HoldMS: args.HoldMS}}, Repeat: 1, OnFinish: "hold"}, args.Policy, args.DryRun)
+	mcp.AddTool(s, tool("set_device_state", "Submit one exact RGB state; successful completion retains the color. Optional request_id and expected_daemon_instance_id must be supplied together and are never regenerated or retried automatically. Returns a job, not completion. dry_run only checks local syntax; it does not verify instance binding.", submissionSchema(setProperties, "serial", "color"), false, false), func(ctx context.Context, _ *mcp.CallToolRequest, args setArgs) (*mcp.CallToolResult, output, error) {
+		return submit(ctx, d, args.Serial, program{Steps: []step{{LED: args.LED, Color: args.Color, FadeMS: args.FadeMS, HoldMS: args.HoldMS}}, Repeat: 1, OnFinish: "hold"}, args.Policy, args.DryRun, args.RequestID, args.ExpectedDaemonInstanceID)
 	})
-	mcp.AddTool(s, tool("run_program", "Submit a bounded structured program to one device worker. replace cancels old work, queue is bounded, reject reports busy. Cancel and daemon shutdown clean up with off.", objectSchema(map[string]any{"serial": tokenSchema(), "program": programSchema(), "policy": policySchema(), "dry_run": map[string]any{"type": "boolean"}}, "serial", "program"), false, false), func(ctx context.Context, _ *mcp.CallToolRequest, args runArgs) (*mcp.CallToolResult, output, error) {
-		return submit(ctx, d, args.Serial, args.Program, args.Policy, args.DryRun)
+	mcp.AddTool(s, tool("run_program", "Submit a bounded program. replace cancels old work, queue is bounded, reject reports busy. Optional request_id and expected_daemon_instance_id must be supplied together; no automatic retry or rebinding. dry_run does not verify instance identity or deadline. Cancel and shutdown clean up with off.", submissionSchema(map[string]any{"serial": tokenSchema(), "program": programSchema(), "policy": policySchema(), "dry_run": map[string]any{"type": "boolean"}}, "serial", "program"), false, false), func(ctx context.Context, _ *mcp.CallToolRequest, args runArgs) (*mcp.CallToolResult, output, error) {
+		return submit(ctx, d, args.Serial, args.Program, args.Policy, args.DryRun, args.RequestID, args.ExpectedDaemonInstanceID)
 	})
-	mcp.AddTool(s, tool("get_job", "Inspect actual job status: queued, running, cancelling, succeeded, cancelled or failed. Terminal cancellation confirms cleanup; history is bounded and not persistent.", objectSchema(map[string]any{"id": tokenSchema()}, "id"), true, true), func(ctx context.Context, _ *mcp.CallToolRequest, args jobArgs) (*mcp.CallToolResult, output, error) {
-		if !validToken(args.ID) {
-			return invalid("invalid job id")
-		}
-		return result(d.request(ctx, http.MethodGet, "/v1/jobs/"+url.PathEscape(args.ID), "job", nil))
+	mcp.AddTool(s, tool("get_job", "Inspect actual job status using id, or the mutually exclusive serial plus complete original request ticket. Receipt lookup never submits work. Expired receipts or changed daemon instances leave the old outcome unknown; keep the original ticket. History is bounded and not persistent.", getJobSchema(), true, true), func(ctx context.Context, _ *mcp.CallToolRequest, args getJobArgs) (*mcp.CallToolResult, output, error) {
+		return result(getJob(ctx, d, args))
 	})
 	mcp.AddTool(s, tool("cancel_job", "Request cancellation of a daemon job. A returned cancelling status is still in progress; poll get_job. Repeated cancellation is safe.", objectSchema(map[string]any{"id": tokenSchema()}, "id"), false, true), func(ctx context.Context, _ *mcp.CallToolRequest, args jobArgs) (*mcp.CallToolResult, output, error) {
 		if !validToken(args.ID) {
@@ -64,7 +74,7 @@ func newServer(d *daemon) *mcp.Server {
 	return s
 }
 
-func submit(ctx context.Context, d *daemon, serial string, p program, policy string, dry bool) (*mcp.CallToolResult, output, error) {
+func submit(ctx context.Context, d *daemon, serial string, p program, policy string, dry bool, requestID, instanceID string) (*mcp.CallToolResult, output, error) {
 	if !validToken(serial) {
 		return invalid("invalid serial")
 	}
@@ -76,11 +86,21 @@ func submit(ctx context.Context, d *daemon, serial string, p program, policy str
 	if err != nil {
 		return invalid(err.Error())
 	}
-	request := submission{Program: p, Policy: policy}
-	if dry {
-		return result(output{Kind: "preview", DryRun: true, Data: map[string]any{"serial": serial, "request": request}})
+	ticket, err := optionalTicket(requestID, instanceID)
+	if err != nil {
+		return invalid(err.Error())
 	}
-	return result(d.request(ctx, http.MethodPost, "/v1/devices/"+url.PathEscape(serial)+"/jobs", "job", request))
+	request := submission{Program: p, Policy: policy, RequestID: requestID, ExpectedDaemonInstanceID: instanceID}
+	if dry {
+		out := output{Kind: "preview", DryRun: true, Data: map[string]any{"serial": serial, "request": request}, RequestTicket: ticket}
+		if ticket != nil {
+			verified := false
+			out.InstanceBindingVerified = &verified
+		}
+		return result(out)
+	}
+	out := d.request(ctx, http.MethodPost, "/v1/devices/"+url.PathEscape(serial)+"/jobs", "job", request)
+	return result(preserveTicket(out, ticket))
 }
 
 func result(out output) (*mcp.CallToolResult, output, error) {

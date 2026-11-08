@@ -2,39 +2,92 @@ package hdwr
 
 import (
 	"fmt"
+	"os"
 	"strconv"
 
 	"github.com/1set/gut/ystring"
 	b1 "github.com/b1ug/blink1-go"
+	"github.com/b1ug/gid"
+	"github.com/b1ug/nb1/internal/ownership"
 )
 
 var (
-	ctrl *b1.Controller
+	ctrl        *b1.Controller
+	deviceLease *ownership.Lease
 )
 
 // OpenBlink1Device opens a corresponding blink(1) device by hint.
 func OpenBlink1Device(hint string) (err error) {
+	if err = CloseBlink1Device(); err != nil {
+		return err
+	}
+	defer func() {
+		if err != nil {
+			CloseBlink1Device()
+		}
+	}()
+	_, indexErr := strconv.Atoi(hint)
+	number, _ := strconv.Atoi(hint)
+	isIndex := indexErr == nil && number >= 1 && number <= 128
+	// Explicit serials can be checked before enumeration. Some native backends
+	// hide exclusively owned devices from another process's enumeration.
+	if !ystring.IsBlank(hint) && !isIndex {
+		deviceLease, err = ownership.Acquire(os.Getenv("NB1_LOCK_DIR"), hint)
+		if err != nil {
+			return err
+		}
+	}
+	infos := b1.ListDeviceInfo()
+	var selected *gid.DeviceInfo
 	// if hint is empty, open the first blink(1) controller found
 	if ystring.IsBlank(hint) {
-		log.Debugw("attempting to open first available blink(1) controller", "hint", hint)
-		ctrl, err = b1.OpenNextController()
-		return
-	}
-
-	// if hint is a normal number, i.e. between 1 and 128, list and open the blink(1) controller by number
-	if num, e := strconv.Atoi(hint); e == nil && num >= 1 && num <= 128 {
-		log.Debugw("attempting to open blink(1) controller by number", "hint", hint, "provided_number", num)
-		di := b1.ListDeviceInfo()
-		if dc := len(di); dc < num {
-			err = fmt.Errorf("unable to find corresponding device, provided number: %d, available devices: %d", num, dc)
-			return
+		if len(infos) > 0 {
+			selected = infos[0]
 		}
-		ctrl, err = b1.OpenController(di[num-1])
-		return
+	} else if num, e := strconv.Atoi(hint); e == nil && num >= 1 && num <= 128 {
+		if len(infos) < num {
+			return fmt.Errorf("unable to find corresponding device, provided number: %d, available devices: %d", num, len(infos))
+		}
+		selected = infos[num-1]
+	} else {
+		for _, info := range infos {
+			if info.SerialNumber != hint {
+				continue
+			}
+			if selected != nil {
+				return fmt.Errorf("serial %s matches multiple interfaces", hint)
+			}
+			selected = info
+		}
 	}
+	if selected == nil {
+		return fmt.Errorf("blink(1) device not found for %q", hint)
+	}
+	if deviceLease == nil {
+		deviceLease, err = ownership.Acquire(os.Getenv("NB1_LOCK_DIR"), selected.SerialNumber)
+		if err != nil {
+			return err
+		}
+	}
+	ctrl, err = b1.OpenController(selected)
+	if err != nil {
+		deviceLease.Close()
+		deviceLease = nil
+	}
+	return err
+}
 
-	// if hint is a serial number, list and open the blink(1) controller by serial number
-	log.Debugw("attempting to open blink(1) controller by serial number", "hint", hint, "serial_number", hint)
-	ctrl, err = b1.OpenControllerBySerialNumber(hint)
-	return
+// CloseBlink1Device stops SDK goroutines, closes HID, then releases ownership.
+// It preserves stable output; turning off is an explicit command in legacy CLI.
+func CloseBlink1Device() error {
+	if ctrl != nil {
+		ctrl.Close()
+		ctrl = nil
+	}
+	if deviceLease != nil {
+		err := deviceLease.Close()
+		deviceLease = nil
+		return err
+	}
+	return nil
 }

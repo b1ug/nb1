@@ -1,0 +1,591 @@
+package control
+
+import (
+	"context"
+	"crypto/rand"
+	"encoding/hex"
+	"errors"
+	"fmt"
+	"sort"
+	"strings"
+	"sync"
+	"time"
+)
+
+type record struct {
+	job       Job
+	cancel    chan struct{}
+	cancelled bool
+}
+
+type worker struct {
+	engine *Engine
+	serial string
+	wake   chan struct{}
+	state  DeviceState
+	queue  []*record
+	active *record
+	// Only this worker goroutine touches its native backend.
+	backend Backend
+}
+
+type Engine struct {
+	mu          sync.Mutex
+	driver      Driver
+	options     Options
+	workers     map[string]*worker
+	jobs        map[string]*record
+	history     []string
+	started     bool
+	closed      bool
+	stop        chan struct{}
+	done        chan struct{}
+	shutdownErr error
+	wg          sync.WaitGroup
+}
+
+func New(driver Driver, options Options) (*Engine, error) {
+	if driver == nil || len(options.Serials) == 0 || len(options.Serials) > 64 {
+		return nil, fmt.Errorf("%w: driver and 1–64 explicit device serials required", ErrInvalid)
+	}
+	if options.QueueSize == 0 {
+		options.QueueSize = 8
+	}
+	if options.MaxHistory == 0 {
+		options.MaxHistory = 128
+	}
+	if options.PollInterval == 0 {
+		options.PollInterval = time.Second
+	}
+	if options.ShutdownMode == "" {
+		options.ShutdownMode = "off"
+	}
+	if options.QueueSize < 1 || options.QueueSize > 1024 || options.MaxHistory < 1 || options.MaxHistory > 100000 || options.PollInterval < 10*time.Millisecond || (options.ShutdownMode != "off" && options.ShutdownMode != "hold") {
+		return nil, fmt.Errorf("%w: invalid runtime limits or shutdown mode", ErrInvalid)
+	}
+	e := &Engine{driver: driver, options: options, workers: make(map[string]*worker), jobs: make(map[string]*record), stop: make(chan struct{}), done: make(chan struct{})}
+	for _, serial := range options.Serials {
+		if serial == "" || len(serial) > 128 || strings.IndexFunc(serial, func(r rune) bool {
+			return !(r >= '0' && r <= '9' || r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' || r == '-' || r == '_')
+		}) >= 0 {
+			return nil, fmt.Errorf("%w: invalid device serial", ErrInvalid)
+		}
+		if _, exists := e.workers[serial]; exists {
+			return nil, fmt.Errorf("%w: duplicate device %s", ErrInvalid, serial)
+		}
+		e.workers[serial] = &worker{engine: e, serial: serial, wake: make(chan struct{}, 1), state: DeviceState{DeviceInfo: DeviceInfo{Serial: serial, Capabilities: []string{}}, Connection: "connecting"}}
+	}
+	return e, nil
+}
+
+func (e *Engine) Start(ctx context.Context) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	if e.closed || e.started {
+		return ErrClosed
+	}
+	e.started = true
+	for _, w := range e.workers {
+		e.wg.Add(1)
+		go w.loop()
+	}
+	go func() { e.wg.Wait(); close(e.done) }()
+	go func() {
+		select {
+		case <-ctx.Done():
+			e.beginClose()
+		case <-e.done:
+		}
+	}()
+	return nil
+}
+
+func (e *Engine) Done() <-chan struct{} { return e.done }
+
+func (e *Engine) beginClose() {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	if e.closed {
+		return
+	}
+	e.closed = true
+	close(e.stop)
+	for _, w := range e.workers {
+		w.state.Connection = "closing"
+		if w.active != nil {
+			e.cancelLocked(w.active)
+		}
+		for _, r := range w.queue {
+			e.finishLocked(r, "cancelled", nil)
+		}
+		w.queue = nil
+		w.state.QueueDepth = 0
+	}
+	if !e.started {
+		close(e.done)
+	}
+}
+
+// A deadline stops waiting, not the native operation. The worker keeps its
+// handle and ownership lease until native I/O and cleanup really finish.
+func (e *Engine) Close(ctx context.Context) error {
+	e.beginClose()
+	select {
+	case <-e.done:
+		e.mu.Lock()
+		defer e.mu.Unlock()
+		return e.shutdownErr
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+}
+
+func cloneProgram(p Program) Program { p.Steps = append([]Step(nil), p.Steps...); return p }
+func cloneJob(j Job) Job {
+	j.Program = cloneProgram(j.Program)
+	if j.StartedAt != nil {
+		t := *j.StartedAt
+		j.StartedAt = &t
+	}
+	if j.FinishedAt != nil {
+		t := *j.FinishedAt
+		j.FinishedAt = &t
+	}
+	return j
+}
+func cloneState(s DeviceState) DeviceState {
+	s.Capabilities = append([]string{}, s.Capabilities...)
+	if s.Desired != nil {
+		v := *s.Desired
+		s.Desired = &v
+	}
+	if s.Observed != nil {
+		v := *s.Observed
+		s.Observed = &v
+	}
+	return s
+}
+
+func (e *Engine) Devices() []DeviceState {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	states := make([]DeviceState, 0, len(e.workers))
+	for _, w := range e.workers {
+		states = append(states, cloneState(w.state))
+	}
+	sort.Slice(states, func(i, j int) bool { return states[i].Serial < states[j].Serial })
+	return states
+}
+func (e *Engine) Device(serial string) (DeviceState, error) {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	w, ok := e.workers[serial]
+	if !ok {
+		return DeviceState{}, ErrNotFound
+	}
+	return cloneState(w.state), nil
+}
+func (e *Engine) Job(id string) (Job, error) {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	r, ok := e.jobs[id]
+	if !ok {
+		return Job{}, ErrNotFound
+	}
+	return cloneJob(r.job), nil
+}
+
+func Normalize(p Program) (Program, error) {
+	if len(p.Steps) == 0 || len(p.Steps) > 1024 {
+		return Program{}, fmt.Errorf("%w: program requires 1–1024 steps", ErrInvalid)
+	}
+	p = cloneProgram(p)
+	if p.Repeat == 0 {
+		p.Repeat = 1
+	}
+	if p.Repeat < 1 || p.Repeat > 10000 {
+		return Program{}, fmt.Errorf("%w: repeat must be 1–10000", ErrInvalid)
+	}
+	if p.OnFinish == "" {
+		p.OnFinish = "off"
+	}
+	if p.OnFinish != "off" && p.OnFinish != "hold" {
+		return Program{}, fmt.Errorf("%w: on_finish must be off or hold", ErrInvalid)
+	}
+	var total int64
+	for i := range p.Steps {
+		s := &p.Steps[i]
+		if s.LED < 0 || s.LED > 2 || s.FadeMS < 0 || s.FadeMS > 600000 || s.FadeMS%10 != 0 || s.HoldMS < 0 || s.HoldMS > 3600000 {
+			return Program{}, fmt.Errorf("%w: step %d requires led 0–2, fade_ms 0–600000 in 10ms units and hold_ms 0–3600000", ErrInvalid, i)
+		}
+		if len(s.Color) != 7 || s.Color[0] != '#' {
+			return Program{}, fmt.Errorf("%w: step %d color must be #RRGGBB", ErrInvalid, i)
+		}
+		if _, err := hex.DecodeString(s.Color[1:]); err != nil {
+			return Program{}, fmt.Errorf("%w: step %d color must be #RRGGBB", ErrInvalid, i)
+		}
+		s.Color = strings.ToLower(s.Color)
+		total += int64(s.FadeMS) + int64(s.HoldMS) + 10 // firmware update tick
+	}
+	if total*int64(p.Repeat) > int64(24*time.Hour/time.Millisecond) {
+		return Program{}, fmt.Errorf("%w: program duration exceeds 24 hours", ErrInvalid)
+	}
+	return p, nil
+}
+
+func (e *Engine) Submit(ctx context.Context, serial string, program Program, policy string) (Job, error) {
+	if err := ctx.Err(); err != nil {
+		return Job{}, err
+	}
+	p, err := Normalize(program)
+	if err != nil {
+		return Job{}, err
+	}
+	if policy == "" {
+		policy = "replace"
+	}
+	if policy != "replace" && policy != "queue" && policy != "reject" {
+		return Job{}, fmt.Errorf("%w: policy must be replace, queue or reject", ErrInvalid)
+	}
+	var random [16]byte
+	if _, err := rand.Read(random[:]); err != nil {
+		return Job{}, err
+	}
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	if !e.started || e.closed {
+		return Job{}, ErrClosed
+	}
+	if e.options.ReadOnly {
+		return Job{}, fmt.Errorf("%w: runtime is read-only", ErrInvalid)
+	}
+	w, ok := e.workers[serial]
+	if !ok {
+		return Job{}, ErrNotFound
+	}
+	if w.state.Connection != "online" {
+		if w.state.Connection == "busy" {
+			return Job{}, ErrBusy
+		}
+		return Job{}, fmt.Errorf("%w: %s", ErrOffline, w.state.LastError)
+	}
+	if policy == "reject" && (w.active != nil || len(w.queue) > 0) {
+		return Job{}, ErrBusy
+	}
+	if policy == "replace" {
+		if w.active != nil {
+			e.cancelLocked(w.active)
+		}
+		for _, r := range w.queue {
+			e.finishLocked(r, "cancelled", nil)
+		}
+		w.queue = nil
+	}
+	if len(w.queue) >= e.options.QueueSize {
+		return Job{}, ErrQueueFull
+	}
+	r := &record{job: Job{ID: "job_" + hex.EncodeToString(random[:]), Device: serial, Status: "queued", Program: p, TotalSteps: len(p.Steps) * p.Repeat, CreatedAt: time.Now().UTC()}, cancel: make(chan struct{})}
+	e.jobs[r.job.ID] = r
+	w.queue = append(w.queue, r)
+	w.state.QueueDepth = len(w.queue)
+	select {
+	case w.wake <- struct{}{}:
+	default:
+	}
+	return cloneJob(r.job), nil
+}
+
+func (e *Engine) cancelLocked(r *record) {
+	if r.job.FinishedAt != nil || r.cancelled {
+		return
+	}
+	r.cancelled = true
+	close(r.cancel)
+	r.job.Status = "cancelling"
+}
+func (e *Engine) finishLocked(r *record, status string, err error) {
+	if r.job.FinishedAt != nil {
+		return
+	}
+	now := time.Now().UTC()
+	r.job.Status = status
+	r.job.FinishedAt = &now
+	if err != nil {
+		r.job.Error = err.Error()
+	}
+	e.history = append(e.history, r.job.ID)
+	for len(e.history) > e.options.MaxHistory {
+		id := e.history[0]
+		e.history = e.history[1:]
+		delete(e.jobs, id)
+	}
+}
+func (e *Engine) Cancel(ctx context.Context, id string) (Job, error) {
+	if err := ctx.Err(); err != nil {
+		return Job{}, err
+	}
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	r, ok := e.jobs[id]
+	if !ok {
+		return Job{}, ErrNotFound
+	}
+	if r.job.FinishedAt != nil {
+		return cloneJob(r.job), nil
+	}
+	w := e.workers[r.job.Device]
+	if w.active == r {
+		e.cancelLocked(r)
+	} else {
+		for i, pending := range w.queue {
+			if pending == r {
+				w.queue = append(w.queue[:i], w.queue[i+1:]...)
+				break
+			}
+		}
+		w.state.QueueDepth = len(w.queue)
+		e.finishLocked(r, "cancelled", nil)
+	}
+	return cloneJob(r.job), nil
+}
+
+func (w *worker) offline(err error) {
+	if w.backend != nil {
+		w.backend.Close()
+		w.backend = nil
+	}
+	e := w.engine
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	w.state.Connection = "offline"
+	if errors.Is(err, ErrBusy) {
+		w.state.Connection = "busy"
+	}
+	w.state.LastError = err.Error()
+	for _, r := range w.queue {
+		e.finishLocked(r, "failed", fmt.Errorf("%w: %v", ErrOffline, err))
+	}
+	w.queue = nil
+	w.state.QueueDepth = 0
+}
+func (w *worker) connect() bool {
+	b, err := w.engine.driver.Open(w.serial)
+	if err != nil {
+		w.offline(err)
+		return false
+	}
+	if b == nil {
+		w.offline(fmt.Errorf("driver returned nil backend"))
+		return false
+	}
+	w.backend = b
+	obs, err := b.Read()
+	if err != nil {
+		w.offline(err)
+		return false
+	}
+	e := w.engine
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	w.state.DeviceInfo = b.Info()
+	w.state.Serial = w.serial
+	w.state.Observed = &obs
+	w.state.LastError = ""
+	if !e.closed {
+		w.state.Connection = "online"
+	}
+	return true
+}
+func (w *worker) loop() {
+	defer w.engine.wg.Done()
+	e := w.engine
+	for {
+		e.mu.Lock()
+		closing := e.closed
+		e.mu.Unlock()
+		if closing {
+			var err error
+			if w.backend != nil {
+				// Successful jobs have already quiesced and verified output;
+				// interrupted jobs have already cleaned up with off. Direct hold
+				// release therefore only closes the handle, avoiding duplicate I/O.
+				if !e.options.ReadOnly && e.options.ShutdownMode != "hold" {
+					err = w.backend.Stop(e.options.ShutdownMode)
+				}
+				w.backend.Close()
+				w.backend = nil
+			}
+			e.mu.Lock()
+			w.state.Connection = "closed"
+			if err != nil {
+				w.state.LastError = err.Error()
+				if e.shutdownErr == nil {
+					e.shutdownErr = err
+				}
+			}
+			e.mu.Unlock()
+			return
+		}
+		if w.backend == nil && !w.connect() {
+			select {
+			case <-time.After(e.options.PollInterval):
+			case <-e.stop:
+			}
+			continue
+		}
+		e.mu.Lock()
+		if e.closed {
+			e.mu.Unlock()
+			continue
+		}
+		if len(w.queue) > 0 {
+			r := w.queue[0]
+			w.queue = w.queue[1:]
+			w.state.QueueDepth = len(w.queue)
+			w.active = r
+			w.state.ActiveJob = r.job.ID
+			now := time.Now().UTC()
+			r.job.StartedAt = &now
+			r.job.Status = "running"
+			e.mu.Unlock()
+			w.execute(r)
+			continue
+		}
+		e.mu.Unlock()
+		select {
+		case <-w.wake:
+		case <-e.stop:
+		case <-time.After(e.options.PollInterval):
+			obs, err := w.backend.Read()
+			if err != nil {
+				w.offline(err)
+			} else {
+				e.mu.Lock()
+				w.state.Observed = &obs
+				e.mu.Unlock()
+			}
+		}
+	}
+}
+
+func (w *worker) execute(r *record) {
+	e := w.engine
+	// Device discovery and monitoring do not change output. First quiesce any
+	// autonomous activity only when an actual control job takes ownership.
+	runErr := w.backend.Stop("hold")
+	cancelled := false
+	for repeat := 0; repeat < r.job.Program.Repeat && runErr == nil && !cancelled; repeat++ {
+		for _, step := range r.job.Program.Steps {
+			select {
+			case <-r.cancel:
+				cancelled = true
+			default:
+			}
+			if cancelled {
+				break
+			}
+			if runErr = w.backend.Set(step); runErr != nil {
+				break
+			}
+			e.mu.Lock()
+			desired := step
+			w.state.Desired = &desired
+			e.mu.Unlock()
+			// The mk2 applies even zero-time fades at its next 10ms LED update.
+			// Allow that update before freezing a completed output.
+			wait := time.Duration(step.FadeMS+step.HoldMS)*time.Millisecond + 10*time.Millisecond
+			if wait > 0 {
+				cancelled, runErr = w.wait(r, wait)
+			}
+			if cancelled || runErr != nil {
+				break
+			}
+			e.mu.Lock()
+			r.job.CompletedSteps++
+			e.mu.Unlock()
+		}
+	}
+	// A cancellation arriving while native Set was in flight must still clean
+	// up with off, even if the program's normal finish policy is hold.
+	e.mu.Lock()
+	cancelled = cancelled || r.cancelled
+	if runErr != nil {
+		w.state.Connection = "error"
+		w.state.LastError = runErr.Error()
+	}
+	e.mu.Unlock()
+	for {
+		mode := r.job.Program.OnFinish
+		if cancelled || runErr != nil {
+			mode = "off"
+		}
+		cleanupErr := w.backend.Stop(mode)
+		var obs Observation
+		if cleanupErr == nil {
+			obs, cleanupErr = w.backend.Read()
+		}
+		e.mu.Lock()
+		// Cancellation may arrive during finish/hold cleanup. Serialize the
+		// final decision with Cancel, and perform off before acknowledging it.
+		if r.cancelled && !cancelled && cleanupErr == nil {
+			cancelled = true
+			e.mu.Unlock()
+			continue
+		}
+		if cleanupErr != nil {
+			if e.closed && e.shutdownErr == nil {
+				e.shutdownErr = cleanupErr
+			}
+			e.finishLocked(r, "failed", fmt.Errorf("hardware cleanup/readback failed: %v (execution: %v)", cleanupErr, runErr))
+		} else if runErr != nil {
+			e.finishLocked(r, "failed", runErr)
+		} else if cancelled {
+			e.finishLocked(r, "cancelled", nil)
+		} else {
+			e.finishLocked(r, "succeeded", nil)
+		}
+		if cleanupErr == nil {
+			w.state.Observed = &obs
+			if mode == "off" {
+				w.state.Desired = &Step{Color: "#000000"}
+			}
+		}
+		w.active = nil
+		w.state.ActiveJob = ""
+		e.mu.Unlock()
+		if cleanupErr != nil {
+			w.offline(cleanupErr)
+		} else if runErr != nil {
+			w.offline(runErr)
+		}
+		return
+	}
+}
+
+// Observe during long fades/holds too: a disconnected device must not remain
+// apparently online until a multi-hour program step finishes.
+func (w *worker) wait(r *record, duration time.Duration) (bool, error) {
+	timer := time.NewTimer(duration)
+	defer timer.Stop()
+	poll := time.NewTicker(w.engine.options.PollInterval)
+	defer poll.Stop()
+	for {
+		select {
+		case <-timer.C:
+			return false, nil
+		case <-r.cancel:
+			return true, nil
+		case <-poll.C:
+			obs, err := w.backend.Read()
+			if err != nil {
+				return false, err
+			}
+			w.engine.mu.Lock()
+			w.state.Observed = &obs
+			w.engine.mu.Unlock()
+		}
+	}
+}

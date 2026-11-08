@@ -48,7 +48,11 @@ func Execute() {
 	// fix for Windows terminal output
 	winornot.EnableANSIControl()
 
-	if err := rootCmd.Execute(); err != nil {
+	err := rootCmd.Execute()
+	if closeErr := hdwr.CloseBlink1Device(); err == nil {
+		err = closeErr
+	}
+	if err != nil {
 		amoy.Eprintln("🚨Error:", err)
 		os.Exit(1)
 	}

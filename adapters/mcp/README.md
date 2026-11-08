@@ -28,11 +28,37 @@ GOWORK=off go build -o ../../../bin/nb1-mcp .
 | `list_devices` | 原 `{}` 返回设备数组。可选 `prepare_request:true` 额外读取实例信息，在输出外层加入 `request_ticket`；`data` 仍是设备数组。准备不会创建任务或预留回执。 |
 | `get_device_state` | `serial`。返回逻辑目标和带时间戳的原始 RGB 观测快照，保留其采样时间。 |
 | `set_device_state` | `serial`、`color`，可选 `led`、`fade_ms`、`hold_ms`、`policy`、`dry_run` 及齐全的请求二元组。编译成完成后保留颜色的单步程序，返回 job。 |
-| `run_program` | `serial`、`program`，可选 `policy`、`dry_run` 及齐全的请求二元组。提交严格结构化程序。 |
+| `run_program` | `serial` 和互斥的 `program` / `effect`，可选 `policy`、`dry_run` 及齐全的请求二元组。原始程序或高层效果均由同一 daemon 设备执行器管理。 |
 | `get_job` | 原 `{id}`，或互斥的 `{serial,request_id,expected_daemon_instance_id}`。后者只查询原回执，不提交任务；任务历史与回执均有界且不跨 daemon 重启保存。 |
 | `cancel_job` | `id`。请求取消；可能返回 `cancelling`，此时还不能认为硬件已停止。 |
 
-输入仅接受声明的字段。`color` 为原始 `#RRGGBB`，不隐式应用 Gamma；`led` 为0（全部）、1或2。`fade_ms` 在0–600000之间且必须是10的倍数；`hold_ms` 在0–3600000之间。程序有1–1024步，repeat为0或省略时运行一次，最大10000次；每步的淡入、保持及10ms固件更新余量计入24小时名义上限，原生 I/O 仍有额外开销。`on_finish` 默认为 `off`，也可指定 `hold`。能力与实际支持型号以 daemon 结果为准，不据协议模拟声称 mk3 已经实测。
+输入仅接受声明的字段。`color` 为原始 `#RRGGBB`，不隐式应用 Gamma；`led` 为0（全部）、1或2。原始 `program` 的 `fade_ms` 在0–600000之间且必须是10的倍数；`hold_ms` 在0–3600000之间。程序有1–1024步，repeat为0或省略时运行一次，最大10000次；每步的淡入、保持及10ms固件更新余量计入24小时名义上限，原生 I/O 仍有额外开销。`on_finish` 默认为 `off`，也可指定 `hold`。能力与实际支持型号以 daemon 结果为准，不据协议模拟声称 mk3 已经实测。
+
+## 高层效果
+
+`run_program` 必须且只能提供 `program` 或 `effect` 之一；工具名称和其它五个工具保持不变。效果仍提交到同一个 HTTP jobs 路由，MCP只发送意图，不自行展开 USB 指令或程序时序：
+
+```json
+{
+  "serial": "20005601",
+  "effect": {
+    "kind": "pulse",
+    "color": "#102030",
+    "led": 0,
+    "cycles": 2,
+    "period_ms": 800,
+    "on_finish": "off"
+  },
+  "dry_run": true
+}
+```
+
+| 效果 | 结构字段与服务端默认 |
+| --- | --- |
+| `steady` | 必须 `kind`、`color`；可选 `led`、`fade_ms`（0–600000，10ms单位，省略0）。完成后保留颜色；拒绝 `cycles`、`period_ms`、`on_finish`，即使显式0或`hold`。 |
+| `pulse` | 必须 `kind`、`color`；可选 `led`、`cycles`（1–10000，省略1）、`period_ms`（60–1200000，10ms单位，省略1000）、`on_finish`（`off`/`hold`，省略`off`）。拒绝 `fade_ms`，即使显式0。 |
+
+MCP仅校验字段、枚举和基本范围，并将RGB规范为小写；省略的字段继续省略，由 daemon 的唯一权威 `CompileEffect` 应用默认、展开时序并校验总程序预算。效果的 `dry_run` 完全不发送 HTTP，`data` 明确包含 `compiled:false` 和 `validation_level:"structure_only"`；有请求二元组时还包含 `instance_binding_verified:false`。结构预览通过不表示 daemon 能在24小时预算内编译该意图，也不表示实例或准入期限已确认。实际提交后，`data.program` 如有则来自 daemon 的编译结果。
 
 接收中间件在 SDK 类型转换前检查原始工具 `arguments`：拒绝重复键（包括转义后同名的键）、任何显式 `null`、超过64层或1 MiB的对象。省略 `arguments` 按空对象处理，之后仍须满足对应工具的必填字段；非规范大小写和未知字段由 SDK 的严格 schema 拦截。这样不会把先给出的设备/LED选择静默替换成后一个值。
 
@@ -52,7 +78,7 @@ GOWORK=off go build -o ../../../bin/nb1-mcp .
 }
 ```
 
-`dry_run` 只做本地验证并返回规范化程序，完全不访问 HTTP 或 USB。
+原始 `program` 的 `dry_run` 保持原形状：只做本地验证并返回规范化程序，完全不访问 HTTP 或 USB；效果预览的限制见上文。
 
 ## 可选的请求回执
 
@@ -95,7 +121,7 @@ GOWORK=off go build -o ../../../bin/nb1-mcp .
 
 回执查询的任何失败都不能确认旧意图的执行结果，因此保留 `outcome_unknown:true`，包括网络错误、5xx、损坏响应，以及替换/降级 daemon 没有该路由时的通用404或501。原 `{id}` 查询和其他无键工具的错误语义保持不变；带键提交收到明确的首次400、429或 payload 冲突仍与不确定提交区分。
 
-有二元组的 `dry_run` 仍然零 HTTP，只检查字段格式及程序边界，预览保留原二元组并明确返回 `instance_binding_verified:false`。它不能验证 daemon 实例是否匹配、回执是否存在、准入期限是否过期；期限是 daemon 单调运行时间，不能与客户端墙钟比较。
+有二元组的 `dry_run` 仍然零 HTTP，只检查字段格式及原始程序边界，效果仅检查结构；预览保留原二元组并明确返回 `instance_binding_verified:false`。它不能验证 daemon 实例是否匹配、回执是否存在、准入期限是否过期；期限是 daemon 单调运行时间，不能与客户端墙钟比较。
 
 该可选扩展已实现并覆盖模拟 HTTP 与官方 SDK stdio 软件测试；此分支未执行新的硬件回执验收，实物结果由主工作区集成后单独记录。
 
@@ -122,6 +148,8 @@ GOWORK=off go vet ./...
 
 回执测试同样使用官方 stdio 客户端，覆盖六工具旧输入、准备键的随机性、成对字段与查询互斥、原 payload/键保留、终态202、响应header和设备绑定、查询失败的未知结果、POST丢失响应不重试，以及带键 dry-run 零 HTTP。没有引入额外 Go 依赖或提高模块 Go1.25 下限。
 
+效果测试覆盖官方 stdio 下的原始程序兼容、program/effect二选一、重复键/null/大小写/结构范围拦截、纯意图转发、回执与响应绑定保留，以及效果结构预览零 HTTP。MCP未引入核心编译器或设备依赖；此轮没有执行效果硬件验收。
+
 另有默认跳过的真实链路验收：显式提供 endpoint 和 serial 时只查询；额外提供 `NB1_MCP_LIVE_COLOR` 才会发送设色任务。它通过官方 MCP 客户端启动实际适配器二进制，整个过程中仍由 daemon 持有 USB。
 
 ```bash
@@ -140,6 +168,16 @@ NB1_MCP_LIVE_ENDPOINT=http://127.0.0.1:8931 \
 NB1_MCP_LIVE_SERIAL=20005601 \
 NB1_MCP_LIVE_COLOR='#000000' \
 GOWORK=off go test -run '^TestLiveReceiptsOptIn$' -v
+```
+
+`TestLiveEffectsOptIn` 同样默认跳过，需另设 `NB1_MCP_LIVE_EFFECTS=1` 和显式 endpoint/serial/color。它只提交有限的2次、每周期800ms的 pulse，等待 daemon job 成功，检查最终双LED原始RGB熄灭，并另发独立 off 清理；不会据此宣称摄像头已观察到脉冲：
+
+```bash
+NB1_MCP_LIVE_EFFECTS=1 \
+NB1_MCP_LIVE_ENDPOINT=http://127.0.0.1:8931 \
+NB1_MCP_LIVE_SERIAL=20005601 \
+NB1_MCP_LIVE_COLOR='#000000' \
+GOWORK=off go test -run '^TestLiveEffectsOptIn$' -v
 ```
 
 接口依据为工作区 `nb1/internal/control/types.go` 与 `internal/httpapi`。适配器当前保留独立 wire 类型和相同校验，避免导入 HID 模块；今后接口演进需要共享 schema/契约测试，不应单边修改。

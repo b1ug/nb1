@@ -115,7 +115,7 @@ JSON必须是一个对象，最多1MiB；未知字段、非规范字段大小写
 
 取消尚未运行的排队job会直接移除，不干扰另一个活动job，因此该设备可能继续亮灯。对已终结job重复取消，返回已有终态。
 
-当前默认在内存中保留全局最近128条终态job，活动和排队记录另行保留。历史被淘汰或daemon重启后，查询可能返回404；没有磁盘恢复、跨重启任务续跑或幂等键。
+当前默认在内存中保留全局最近128条终态job，活动和排队记录另行保留。普通历史被淘汰后job查询可能404；显式启用的有效回执独立保留，仍能返回原job。daemon重启会丢失两者，没有磁盘恢复或跨重启任务续跑。
 
 ## 6. HTTP API
 
@@ -124,10 +124,12 @@ JSON必须是一个对象，最多1MiB；未知字段、非规范字段大小写
 | 方法与路径 | 返回 |
 | --- | --- |
 | `GET /healthz` | HTTP服务是否响应；不表示硬件在线 |
+| `GET /v1/instance` | 可选请求回执能力、实例ID、准入前缀与限额；不提交任务 |
 | `GET /v1/devices` | daemon配置设备的缓存状态数组 |
 | `GET /v1/devices/{serial}` | 单设备状态；离线目标仍可返回200状态记录 |
 | `GET /v1/transport-metrics` | SDK操作级 calls/attempts/retries/failures 累积快照 |
 | `POST /v1/devices/{serial}/jobs` | 接受程序后返回202、job及Location |
+| `GET /v1/devices/{serial}/requests/{request_id}?expected_daemon_instance_id=…` | 原实例下的请求回执与job最新状态 |
 | `GET /v1/jobs/{id}` | job当前状态与步骤进度 |
 | `POST /v1/jobs/{id}/cancel` | 返回202及取消请求处理后的真实job状态 |
 
@@ -141,7 +143,7 @@ curl -i -X POST http://127.0.0.1:8931/v1/devices/20005601/jobs \
 curl -sS -X POST http://127.0.0.1:8931/v1/jobs/JOB_ID/cancel
 ```
 
-提交体是 `{"program":{...},"policy":"replace"}`，`policy`省略或空串时为replace。取消可不带请求体；如果携带，只接受 `application/json` 空对象。没有raw HID、固件升级或Flash写入入口。
+普通提交体仍是 `{"program":{...},"policy":"replace"}`，`policy`省略或空串时为replace；无需先prepare。可选的请求二元组见下文。取消可不带请求体；如果携带，只接受 `application/json` 空对象。没有raw HID、固件升级或Flash写入入口。
 
 状态中的 `desired` 是最后的逻辑目标，`observed` 是带时间戳的原始RGB采样。GET读取缓存，不额外并发访问USB；离线时旧采样仍可能保留。HTTP202、job终态、设备报告和相机观察是不同证据，不能互相替代。
 
@@ -162,12 +164,48 @@ curl -sS -X POST http://127.0.0.1:8931/v1/jobs/JOB_ID/cancel
 | 400 | `invalid_json` / `invalid_request`，修正输入后再提交 |
 | 403 | `local_only`，使用loopback Host；浏览器请求须同源 |
 | 404 | `not_found`，目标未配置、job不存在或历史已淘汰 |
-| 409 | `busy` / `queue_full`，选择queue/replace/reject策略，或释放其他合作进程的所有权 |
+| 404 | 回执 `request_not_found` 只表示查询当时未找到；原POST可能仍在途中 |
+| 409 | `busy` / `queue_full`；回执还区分 `idempotency_conflict` 与 `daemon_instance_changed` |
+| 410 | `request_expired`，无可用回执且token过期；不能判断旧意图是否执行 |
+| 429 | `idempotency_capacity`，回执数量/步数预算已满；不驱逐未过期记录 |
 | 413 / 415 | 请求过大 / JSON Content-Type错误 |
 | 503 | `unavailable`，设备离线、未准备好或执行器已关闭；查设备状态 |
 | 500 | `internal_error`，检查具体错误和设备连接；不要假设原生操作已经停止 |
+| 501 | `idempotency_unsupported`，该服务没有可选回执扩展；不能移除字段后自动降级提交 |
 
-取得明确的400/404/409/503拒绝响应时，该次提交没有创建新job。如果连接在发送或读取响应时超时、重置，没有收到有效响应，结果可能未知：服务端可能已经接受。拿到job ID就查询；没拿到时，设备的 `active_job/observed` 只能帮助判断，不能可靠关联此前请求。本版没有按幂等键查询的接口，勿对未知结果自动重发非幂等序列。
+无键提交在取得明确的参数、设备或队列拒绝时，该次提交没有创建新job。如果连接在发送或读取响应时超时、重置，没有收到有效响应，结果可能未知：服务端可能已经接受。拿到job ID就查询；没拿到时，设备的 `active_job/observed` 不能可靠关联此前请求。不要对未知结果自动重发非幂等序列。
+
+### 可选请求回执：先保存原二元组，再提交
+
+该扩展用于应对提交响应丢失，不改变旧命令的默认行为。当前候选代码提供接口，运行中的旧二进制不一定包含它；以 `control prepare` 或 `/v1/instance` 的实际响应为准。普通设色不需要增加准备步骤。
+
+```sh
+../bin/nb1-runtime control prepare
+# 将输出的两个完整字符串保存到变量；不要自己重算或修改实例。
+REQUEST_ID='粘贴prepare输出的request_id'
+DAEMON_INSTANCE_ID='粘贴prepare输出的expected_daemon_instance_id'
+../bin/nb1-runtime control set 20005601 '#102030' \
+  --request-id "$REQUEST_ID" --expected-daemon-instance-id "$DAEMON_INSTANCE_ID"
+../bin/nb1-runtime control request 20005601 "$REQUEST_ID" \
+  --expected-daemon-instance-id "$DAEMON_INSTANCE_ID"
+```
+
+`run` 接受相同两项flag，程序文件仍只包含Program。`prepare`只读取实例信息并在客户端生成16随机字节的nonce，不预留回执、不创建job、不操作USB。二元组必须同时提供非空值；`--mode direct`遇到prepare、request或任意回执flag会在设备锁/USB之前拒绝，包括显式空flag。没有自动重试、自动prepare或USB回退。
+
+同一实例、同一设备、同一request_id与规范化后相同的program/policy，只准入一个逻辑任务；重复提交仍返回HTTP202和原job的最新状态，即使已经failed/cancelled/succeeded，也不重新运行。不同payload返回409 `idempotency_conflict`。HTTP响应头 `X-NB1-Replayed` 与 `X-NB1-Daemon-Instance-ID` 标明结果；带键提交的Location指向回执查询。CLI输出仍是job，`--wait`在带键时查询回执，不依赖普通128条历史。
+
+HTTP样例见 [with-receipt.request.json](../examples/runtime/with-receipt.request.json)：其中固定示例键和实例仅用于说明格式，真正提交前必须替换为本次prepare的二元组。两个字段不能单独提供，显式null、重复键及字段大小写歧义仍被拒绝。
+
+| 情况 | 正确处理 |
+| --- | --- |
+| 提交响应丢失 | 保留原实例、键、设备和原payload；先查询，调用方可显式重发完全相同的绑定与payload |
+| 查询404 `request_not_found` | 仅说明查询当时没有记录，原POST可能尚在途中；不能据此自动换键 |
+| 410过期或409实例变化 | 旧执行结果可能未知；不自动绑定到新实例或获取新键补发 |
+| 明确的新键容量/参数拒绝 | 此次未准入；处理原因，不能把它当作此前未知请求未执行的证明 |
+
+请求ID前缀的截止点是daemon的单调运行毫秒，不是墙钟。新键准入窗口默认60秒；到期后未命中的旧键拒绝执行。终态回执至少保留完成后60秒且不早于token截止点，活动回执不因TTL被删，查询/重放不续期。当前默认4096条与65536个保留steps，不展开repeat；额度满时新键429，已有有效键仍可查/重放。
+
+普通历史与回执均在内存中。重启产生新实例，断线重连本身不换实例。该机制保证一个键最多准入一个逻辑任务，不保证任务成功、USB只发送一次或跨重启exactly-once；runtime既有安全幂等操作的局部USB重试是另一层机制。回执扩展新增的软件测试不等于新增真机验收。
 
 `--timeout` 默认30秒，是CLI请求/直控执行的等待预算；HTTP客户端单次传输另有10秒上限。等待daemon任务超时不取消任务。直控中断会请求取消自己的活动任务，并等待清理。
 

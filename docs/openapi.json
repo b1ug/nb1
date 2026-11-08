@@ -4,7 +4,7 @@
   "info": {
     "title": "nb1 本地设备执行 API",
     "version": "0.1.0-local",
-    "description": "当前本地候选实现，未发布。仅loopback HTTP，无用户认证；拒绝非本地Host及跨源浏览器控制。请求使用规范小写字段名；未知字段、非规范字段大小写、重复对象键、显式null、尾随JSON和超过64层的嵌套被拒绝。省略默认字段合法，repeat=0规范为1。"
+    "description": "当前本地候选实现，未发布。仅loopback HTTP，无用户认证；拒绝非本地Host及跨源浏览器控制。请求使用规范小写字段名；未知字段、非规范字段大小写、重复对象键、显式null、尾随JSON和超过64层的嵌套被拒绝。省略默认字段合法，repeat=0规范为1。可选request_id/expected_daemon_instance_id绑定仅在同一daemon实例的有限回执内去重；旧提交无需准备步骤，客户端无自动重试，不提供跨重启exactly-once。"
   },
   "servers": [
     {
@@ -152,7 +152,7 @@
           "jobs"
         ],
         "summary": "提交结构化灯光程序",
-        "description": "job在daemon中继续执行，不随HTTP请求连接结束而取消。无自动USB回退、无Flash/模式写入。当前无幂等键；未知接受结果时勿自动重发非幂等序列。",
+        "description": "job不随HTTP连接结束而取消。无自动USB回退、无Flash/设备模式写入。可选二元组启用同实例有限去重；首次与重放均202并返回原Job当前状态，失败/取消任务不重执行。无键调用保留每次新任务行为。",
         "x-max-body-bytes": 1048576,
         "requestBody": {
           "required": true,
@@ -166,7 +166,7 @@
         },
         "responses": {
           "202": {
-            "description": "已接受；查看返回的job.status，并保存id或Location。",
+            "description": "首次准入或原任务重放，均返回202，包括原任务已终态；保存原binding和Location。",
             "content": {
               "application/json": {
                 "schema": {
@@ -176,9 +176,27 @@
             },
             "headers": {
               "Location": {
-                "description": "新job查询的相对路径。",
+                "description": "无键时为job查询路径；有键时为含原实例query的回执查询路径。",
                 "schema": {
                   "type": "string"
+                }
+              },
+              "X-NB1-Replayed": {
+                "description": "仅有键提交存在；true代表返回既有任务，非重新执行。",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "true",
+                    "false"
+                  ]
+                }
+              },
+              "X-NB1-Daemon-Instance-ID": {
+                "description": "仅有键提交存在，确认原实例绑定。",
+                "schema": {
+                  "type": "string",
+                  "pattern": "^daemon_[0-9a-f]{32}$",
+                  "description": "原daemon实例绑定；实例改变时旧结果仍可能未知，不可自动换绑。"
                 }
               }
             }
@@ -209,6 +227,15 @@
           },
           "503": {
             "$ref": "#/components/responses/503"
+          },
+          "410": {
+            "$ref": "#/components/responses/410"
+          },
+          "429": {
+            "$ref": "#/components/responses/429"
+          },
+          "501": {
+            "$ref": "#/components/responses/501"
           }
         },
         "x-max-json-depth": 64
@@ -351,6 +378,134 @@
           },
           "405": {
             "$ref": "#/components/responses/405"
+          }
+        }
+      }
+    },
+    "/v1/instance": {
+      "get": {
+        "operationId": "getDaemonInstance",
+        "tags": [
+          "health"
+        ],
+        "summary": "读取可选回执能力与新请求前缀",
+        "description": "只读，不分配回执或操作USB。客户端将prefix与16随机字节的小写hex组合并保存实例二元组；旧服务可404/501，不自动降级。",
+        "responses": {
+          "200": {
+            "description": "本实例与有限回执限额。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InstanceInfo"
+                }
+              }
+            },
+            "headers": {
+              "X-NB1-Daemon-Instance-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^daemon_[0-9a-f]{32}$",
+                  "description": "原daemon实例绑定；实例改变时旧结果仍可能未知，不可自动换绑。"
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "405": {
+            "$ref": "#/components/responses/405"
+          },
+          "501": {
+            "$ref": "#/components/responses/501"
+          }
+        }
+      }
+    },
+    "/v1/devices/{serial}/requests/{request_id}": {
+      "parameters": [
+        {
+          "name": "serial",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{1,128}$",
+            "description": "明确配置的真实序列号；无索引或别名解析。"
+          }
+        },
+        {
+          "name": "request_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "pattern": "^req_[1-9][0-9]{0,18}_[0-9a-f]{32}$",
+            "description": "服务端request_id_prefix追加128bit小写hex nonce。截止点是daemon单调uptime毫秒；服务端另查int64溢出、过期及最大60000ms准入窗口。"
+          }
+        },
+        {
+          "name": "expected_daemon_instance_id",
+          "in": "query",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "pattern": "^daemon_[0-9a-f]{32}$",
+            "description": "原daemon实例绑定；实例改变时旧结果仍可能未知，不可自动换绑。"
+          },
+          "description": "必须恰好一个非空参数；不接受未知或重复query参数。"
+        }
+      ],
+      "get": {
+        "operationId": "getRequestReceipt",
+        "tags": [
+          "jobs"
+        ],
+        "summary": "按原实例与请求键查原Job",
+        "description": "普通job历史淘汰后，有效回执仍可返回原任务的当前状态。404仅表示查询时未找到，410/实例409保留旧结果未知，不重建或重绑任务。",
+        "responses": {
+          "200": {
+            "description": "原Job当前快照，无新任务副作用。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Job"
+                }
+              }
+            },
+            "headers": {
+              "X-NB1-Daemon-Instance-ID": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^daemon_[0-9a-f]{32}$",
+                  "description": "原daemon实例绑定；实例改变时旧结果仍可能未知，不可自动换绑。"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "405": {
+            "$ref": "#/components/responses/405"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "410": {
+            "$ref": "#/components/responses/410"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          },
+          "501": {
+            "$ref": "#/components/responses/501"
           }
         }
       }
@@ -557,9 +712,19 @@
             ],
             "default": "replace",
             "description": "省略或空串按replace；显式null拒绝；replace取消旧活动/队列，queue排队，reject有工作则409。"
+          },
+          "request_id": {
+            "type": "string",
+            "pattern": "^req_[1-9][0-9]{0,18}_[0-9a-f]{32}$",
+            "description": "服务端request_id_prefix追加128bit小写hex nonce。截止点是daemon单调uptime毫秒；服务端另查int64溢出、过期及最大60000ms准入窗口。"
+          },
+          "expected_daemon_instance_id": {
+            "type": "string",
+            "pattern": "^daemon_[0-9a-f]{32}$",
+            "description": "原daemon实例绑定；实例改变时旧结果仍可能未知，不可自动换绑。"
           }
         },
-        "description": "最大1MiB。当前不支持幂等键；响应丢失后不能从传输错误断定未接受。",
+        "description": "最大1MiB。两个可选回执字段必须同时省略或同时非空。无键调用每次新建任务；带键时同实例/serial/key的等价program及policy返回同一任务，不同payload为409。超时不能推断是否已接受，不自动降级为无键提交。",
         "examples": [
           {
             "program": {
@@ -576,7 +741,15 @@
             },
             "policy": "replace"
           }
-        ]
+        ],
+        "dependentRequired": {
+          "request_id": [
+            "expected_daemon_instance_id"
+          ],
+          "expected_daemon_instance_id": [
+            "request_id"
+          ]
+        }
       },
       "DeviceState": {
         "type": "object",
@@ -834,6 +1007,91 @@
             "type": "string"
           }
         }
+      },
+      "InstanceInfo": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "daemon_instance_id",
+          "idempotency"
+        ],
+        "properties": {
+          "daemon_instance_id": {
+            "type": "string",
+            "pattern": "^daemon_[0-9a-f]{32}$",
+            "description": "原daemon实例绑定；实例改变时旧结果仍可能未知，不可自动换绑。"
+          },
+          "idempotency": {
+            "$ref": "#/components/schemas/IdempotencyInfo"
+          }
+        }
+      },
+      "IdempotencyInfo": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "supported",
+          "request_id_prefix",
+          "accept_until_uptime_ms",
+          "max_accept_window_ms",
+          "receipt_retention_ms",
+          "max_entries",
+          "max_retained_steps"
+        ],
+        "properties": {
+          "supported": {
+            "type": "boolean"
+          },
+          "request_id_prefix": {
+            "type": "string",
+            "pattern": "^req_[1-9][0-9]{0,18}_$",
+            "description": "追加32个小写hex随机字符；准备不预留回执、不提交任务。"
+          },
+          "accept_until_uptime_ms": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "max_accept_window_ms": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "当前默认60000ms。"
+          },
+          "receipt_retention_ms": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "当前默认终态后至少60000ms，且不早于准入截止点；查询/重放不续期。"
+          },
+          "max_entries": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "当前默认全Engine4096条，不驱逐未过期/活动回执。"
+          },
+          "max_retained_steps": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "当前默认65536步，按原steps长度计算，不展开repeat。"
+          }
+        }
+      },
+      "RequestTicket": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "request_id",
+          "expected_daemon_instance_id"
+        ],
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "pattern": "^req_[1-9][0-9]{0,18}_[0-9a-f]{32}$",
+            "description": "服务端request_id_prefix追加128bit小写hex nonce。截止点是daemon单调uptime毫秒；服务端另查int64溢出、过期及最大60000ms准入窗口。"
+          },
+          "expected_daemon_instance_id": {
+            "type": "string",
+            "pattern": "^daemon_[0-9a-f]{32}$",
+            "description": "原daemon实例绑定；实例改变时旧结果仍可能未知，不可自动换绑。"
+          }
+        }
       }
     },
     "responses": {
@@ -858,7 +1116,7 @@
         }
       },
       "404": {
-        "description": "未知路由、未配置设备或不存在/已淘汰的job。",
+        "description": "未知路由、未配置设备或不存在/已淘汰的job。回执request_not_found仅表示查询当时无记录；原POST可能仍在途中。",
         "content": {
           "application/json": {
             "schema": {
@@ -878,7 +1136,7 @@
         }
       },
       "409": {
-        "description": "设备已有工作/其他合作进程持有，或队列已满；code区分busy/queue_full。",
+        "description": "设备已有工作/其他合作进程持有，或队列已满；code区分busy/queue_full。可选回执还区分idempotency_conflict与daemon_instance_changed；实例变化不证明旧意图未执行。",
         "content": {
           "application/json": {
             "schema": {
@@ -926,6 +1184,36 @@
             }
           }
         }
+      },
+      "410": {
+        "description": "request_expired：旧token已过期且无可用回执，不再按新请求执行；不能推断此前是否执行。",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "429": {
+        "description": "idempotency_capacity：回执数量或步数预算已满，新键未准入；已有键仍可命中。",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "501": {
+        "description": "idempotency_unsupported：该服务未实现可选回执能力；不得移除绑定后自动降级提交。",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
       }
     }
   },
@@ -936,8 +1224,9 @@
       "No physical unplug/replug test",
       "No mk3 hardware validation",
       "CGO=0 cross-build is a stub, not native USB proof",
-      "Jobs/history are volatile; no restart recovery or idempotency key",
-      "Native synchronous I/O may exceed shutdown waiting deadlines"
+      "Jobs/receipts are volatile; optional same-instance receipts do not provide restart recovery or durable exactly-once",
+      "Native synchronous I/O may exceed shutdown waiting deadlines",
+      "Request-receipt transport/CLI checks use fake services; this extension has no new USB hardware acceptance claim"
     ]
   },
   "x-specification-source": "https://spec.openapis.org/oas/v3.2.1.html"

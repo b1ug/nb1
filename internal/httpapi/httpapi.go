@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 
 	"github.com/b1ug/nb1/internal/control"
@@ -18,8 +19,10 @@ import (
 const MaxBodyBytes = 1 << 20
 
 type SubmitRequest struct {
-	Program control.Program `json:"program"`
-	Policy  string          `json:"policy"`
+	Program                  control.Program `json:"program"`
+	Policy                   string          `json:"policy"`
+	RequestID                *string         `json:"request_id,omitempty"`
+	ExpectedDaemonInstanceID *string         `json:"expected_daemon_instance_id,omitempty"`
 }
 
 type ErrorBody struct {
@@ -51,6 +54,19 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		writeJSON(w, http.StatusOK, map[string]string{"status": "ok", "api_version": "v1"})
+		return
+	}
+	if r.URL.Path == "/v1/instance" {
+		if !method(w, r, http.MethodGet) {
+			return
+		}
+		service, ok := h.receiptService(w)
+		if !ok {
+			return
+		}
+		instance := service.Instance()
+		w.Header().Set("X-NB1-Daemon-Instance-ID", instance.DaemonInstanceID)
+		writeJSON(w, http.StatusOK, instance)
 		return
 	}
 	if r.URL.Path == "/v1/transport-metrics" {
@@ -100,6 +116,28 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			if !decodeJSON(w, r, &input) {
 				return
 			}
+			if input.RequestID != nil || input.ExpectedDaemonInstanceID != nil {
+				if input.RequestID == nil || input.ExpectedDaemonInstanceID == nil || *input.RequestID == "" || *input.ExpectedDaemonInstanceID == "" {
+					writeError(w, http.StatusBadRequest, "invalid_request", "request_id and expected_daemon_instance_id must both be nonempty or both omitted")
+					return
+				}
+				service, ok := h.receiptService(w)
+				if !ok {
+					return
+				}
+				result, err := service.SubmitWithReceipt(r.Context(), parts[2], input.Program, input.Policy, control.ReceiptRequest{
+					RequestID: *input.RequestID, ExpectedDaemonInstanceID: *input.ExpectedDaemonInstanceID,
+				})
+				if err != nil {
+					serviceError(w, err)
+					return
+				}
+				w.Header().Set("X-NB1-Replayed", strconv.FormatBool(result.Replayed))
+				w.Header().Set("X-NB1-Daemon-Instance-ID", result.DaemonInstanceID)
+				w.Header().Set("Location", receiptLocation(parts[2], *input.RequestID, *input.ExpectedDaemonInstanceID))
+				writeJSON(w, http.StatusAccepted, result.Job)
+				return
+			}
 			job, err := h.service.Submit(r.Context(), parts[2], input.Program, input.Policy)
 			if err != nil {
 				serviceError(w, err)
@@ -107,6 +145,28 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 			w.Header().Set("Location", "/v1/jobs/"+url.PathEscape(job.ID))
 			writeJSON(w, http.StatusAccepted, job)
+			return
+		case len(parts) == 5 && parts[3] == "requests" && parts[4] != "":
+			if !method(w, r, http.MethodGet) {
+				return
+			}
+			query, err := url.ParseQuery(r.URL.RawQuery)
+			values := query["expected_daemon_instance_id"]
+			if err != nil || len(query) != 1 || len(values) != 1 || values[0] == "" {
+				writeError(w, http.StatusBadRequest, "invalid_request", "exactly one nonempty expected_daemon_instance_id query parameter is required")
+				return
+			}
+			service, ok := h.receiptService(w)
+			if !ok {
+				return
+			}
+			job, err := service.Request(parts[2], parts[4], values[0])
+			if err != nil {
+				serviceError(w, err)
+				return
+			}
+			w.Header().Set("X-NB1-Daemon-Instance-ID", values[0])
+			writeJSON(w, http.StatusOK, job)
 			return
 		}
 	}
@@ -143,6 +203,19 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	writeError(w, http.StatusNotFound, "not_found", "unknown API route")
+}
+
+func (h *handler) receiptService(w http.ResponseWriter) (control.ReceiptService, bool) {
+	service, ok := h.service.(control.ReceiptService)
+	if !ok {
+		writeError(w, http.StatusNotImplemented, "idempotency_unsupported", "this service does not support request receipts; do not resubmit without the request binding")
+	}
+	return service, ok
+}
+
+func receiptLocation(serial, requestID, instance string) string {
+	return "/v1/devices/" + url.PathEscape(serial) + "/requests/" + url.PathEscape(requestID) +
+		"?expected_daemon_instance_id=" + url.QueryEscape(instance)
 }
 
 func localHost(host string) bool {
@@ -209,6 +282,16 @@ func jsonError(w http.ResponseWriter, err error) bool {
 
 func serviceError(w http.ResponseWriter, err error) {
 	switch {
+	case errors.Is(err, control.ErrRequestConflict):
+		writeError(w, http.StatusConflict, "idempotency_conflict", err.Error())
+	case errors.Is(err, control.ErrInstanceChanged):
+		writeError(w, http.StatusConflict, "daemon_instance_changed", err.Error())
+	case errors.Is(err, control.ErrRequestExpired):
+		writeError(w, http.StatusGone, "request_expired", err.Error())
+	case errors.Is(err, control.ErrReceiptCapacity):
+		writeError(w, http.StatusTooManyRequests, "idempotency_capacity", err.Error())
+	case errors.Is(err, control.ErrRequestNotFound):
+		writeError(w, http.StatusNotFound, "request_not_found", err.Error())
 	case errors.Is(err, control.ErrInvalid):
 		writeError(w, http.StatusBadRequest, "invalid_request", err.Error())
 	case errors.Is(err, control.ErrNotFound):

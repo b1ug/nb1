@@ -21,6 +21,7 @@ import (
 
 type controlFlags struct {
 	mode, endpoint, lockDir, policy string
+	requestID, expectedInstance     string
 	timeout                         time.Duration
 }
 
@@ -32,7 +33,9 @@ func newControlCommand() *cobra.Command {
 	command.PersistentFlags().StringVar(&options.lockDir, "lock-dir", os.Getenv("NB1_LOCK_DIR"), "shared ownership directory for direct mode (NB1_LOCK_DIR or persistent per-user config)")
 	command.PersistentFlags().StringVar(&options.policy, "policy", "replace", "replace, queue or reject when a device already has work")
 	command.PersistentFlags().DurationVar(&options.timeout, "timeout", 30*time.Second, "client request/direct execution deadline")
-	command.PersistentPreRunE = func(_ *cobra.Command, _ []string) error {
+	command.PersistentFlags().StringVar(&options.requestID, "request-id", "", "optional prepared request ID for daemon set/run; requires the matching instance")
+	command.PersistentFlags().StringVar(&options.expectedInstance, "expected-daemon-instance-id", "", "bind a daemon submission or receipt lookup to this prepared instance")
+	command.PersistentPreRunE = func(cmd *cobra.Command, _ []string) error {
 		if options.mode != "daemon" && options.mode != "direct" {
 			return fmt.Errorf("--mode must be daemon or direct")
 		}
@@ -42,8 +45,51 @@ func newControlCommand() *cobra.Command {
 		if options.policy != "replace" && options.policy != "queue" && options.policy != "reject" {
 			return fmt.Errorf("--policy must be replace, queue or reject")
 		}
+		requestFlag := cmd.Flags().Changed("request-id")
+		instanceFlag := cmd.Flags().Changed("expected-daemon-instance-id")
+		if options.mode == "direct" && (requestFlag || instanceFlag || cmd.Name() == "prepare" || cmd.Name() == "request") {
+			return fmt.Errorf("request receipts belong to the daemon; direct mode cannot prepare, query or submit a request binding")
+		}
+		switch cmd.Name() {
+		case "set", "run":
+			if requestFlag != instanceFlag || requestFlag && (options.requestID == "" || options.expectedInstance == "") {
+				return fmt.Errorf("--request-id and --expected-daemon-instance-id must both be nonempty or both omitted")
+			}
+		case "request":
+			if requestFlag || !instanceFlag || options.expectedInstance == "" {
+				return fmt.Errorf("request takes a positional request ID and requires nonempty --expected-daemon-instance-id")
+			}
+		default:
+			if requestFlag || instanceFlag {
+				return fmt.Errorf("request binding flags apply only to set/run or the request lookup command")
+			}
+		}
 		return nil
 	}
+	command.AddCommand(&cobra.Command{Use: "prepare", Short: "Prepare an optional daemon request binding without submitting a job", Args: cobra.NoArgs, RunE: func(cmd *cobra.Command, _ []string) error {
+		client, ctx, done, err := options.client(cmd.Context())
+		if err != nil {
+			return err
+		}
+		defer done()
+		value, err := client.Prepare(ctx)
+		if err != nil {
+			return err
+		}
+		return printControlJSON(cmd.OutOrStdout(), value)
+	}})
+	command.AddCommand(&cobra.Command{Use: "request <serial> <request_id>", Short: "Look up a request receipt in its original daemon instance", Args: cobra.ExactArgs(2), RunE: func(cmd *cobra.Command, args []string) error {
+		client, ctx, done, err := options.client(cmd.Context())
+		if err != nil {
+			return err
+		}
+		defer done()
+		value, err := client.Request(ctx, args[0], control.ReceiptRequest{RequestID: args[1], ExpectedDaemonInstanceID: options.expectedInstance})
+		if err != nil {
+			return err
+		}
+		return printControlJSON(cmd.OutOrStdout(), value)
+	}})
 	command.AddCommand(&cobra.Command{Use: "devices", Short: "List daemon-selected devices or discover metadata in direct mode", Args: cobra.NoArgs, RunE: func(cmd *cobra.Command, _ []string) error {
 		if options.mode == "direct" {
 			infos := devicebackend.Discover()
@@ -195,12 +241,25 @@ func (o *controlFlags) submit(cmd *cobra.Command, serial string, program control
 		return err
 	}
 	defer done()
-	job, err := client.Submit(ctx, serial, program, o.policy)
+	var job control.Job
+	var receipt *control.ReceiptRequest
+	if o.requestID != "" {
+		receipt = &control.ReceiptRequest{RequestID: o.requestID, ExpectedDaemonInstanceID: o.expectedInstance}
+		var result control.ReceiptResult
+		result, err = client.SubmitWithReceipt(ctx, serial, program, o.policy, *receipt)
+		job = result.Job
+	} else {
+		job, err = client.Submit(ctx, serial, program, o.policy)
+	}
 	if err != nil {
 		return err
 	}
 	if waitComplete {
-		job, err = waitRemoteJob(ctx, client, job.ID)
+		if receipt != nil {
+			job, err = waitRemoteSnapshot(ctx, func() (control.Job, error) { return client.Request(ctx, serial, *receipt) })
+		} else {
+			job, err = waitRemoteJob(ctx, client, job.ID)
+		}
 		if err != nil {
 			return err
 		}
@@ -213,10 +272,14 @@ func (o *controlFlags) submit(cmd *cobra.Command, serial string, program control
 }
 
 func waitRemoteJob(ctx context.Context, client *daemonclient.Client, id string) (control.Job, error) {
+	return waitRemoteSnapshot(ctx, func() (control.Job, error) { return client.Job(ctx, id) })
+}
+
+func waitRemoteSnapshot(ctx context.Context, snapshot func() (control.Job, error)) (control.Job, error) {
 	ticker := time.NewTicker(50 * time.Millisecond)
 	defer ticker.Stop()
 	for {
-		job, err := client.Job(ctx, id)
+		job, err := snapshot()
 		if err != nil {
 			return job, err
 		}
@@ -233,6 +296,9 @@ func waitRemoteJob(ctx context.Context, client *daemonclient.Client, id string) 
 }
 
 func (o *controlFlags) direct(cmd *cobra.Command, serial string, readOnly bool, run func(context.Context, *control.Engine) error) (result error) {
+	if o.requestID != "" || o.expectedInstance != "" {
+		return fmt.Errorf("request receipts require --mode daemon")
+	}
 	lockDir := o.lockDir
 	var err error
 	if lockDir == "" {

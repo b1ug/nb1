@@ -79,10 +79,13 @@ func TestStdioSixLegacyToolsAndOptionalReceipts(t *testing.T) {
 				fmt.Fprint(w, `{"error":{"code":"idempotency_conflict","message":"different accepted payload"}}`)
 				return
 			}
-			w.WriteHeader(http.StatusAccepted)
 			if body.RequestID != "" {
-				fmt.Fprint(w, `{"id":"job_receipt","status":"succeeded"}`)
+				w.Header().Set("X-NB1-Daemon-Instance-ID", testInstanceID)
+				w.Header().Set("X-NB1-Replayed", "true")
+				w.WriteHeader(http.StatusAccepted)
+				fmt.Fprint(w, `{"id":"job_receipt","device":"20005601","status":"succeeded"}`)
 			} else {
+				w.WriteHeader(http.StatusAccepted)
 				fmt.Fprint(w, `{"id":"job_legacy","status":"queued"}`)
 			}
 		case r.URL.Path == "/v1/jobs/job_legacy":
@@ -94,7 +97,8 @@ func TestStdioSixLegacyToolsAndOptionalReceipts(t *testing.T) {
 			if r.URL.Query().Get("expected_daemon_instance_id") != testInstanceID {
 				t.Error("receipt lookup lost original instance query")
 			}
-			fmt.Fprint(w, `{"id":"job_receipt","status":"succeeded"}`)
+			w.Header().Set("X-NB1-Daemon-Instance-ID", testInstanceID)
+			fmt.Fprint(w, `{"id":"job_receipt","device":"20005601","status":"succeeded"}`)
 		default:
 			t.Errorf("unexpected route %s", r.URL.RequestURI())
 			http.NotFound(w, r)
@@ -250,6 +254,10 @@ func TestStdioReceiptErrorsKeepOriginalTicketWithoutRetry(t *testing.T) {
 	mode.Store("expired")
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		requests.Add(1)
+		// Isolate each injected transport fault from Go's automatic safe GET
+		// replay on a stale pooled connection. This test counts adapter-level
+		// requests and verifies that writes never retry or acquire a new key.
+		w.Header().Set("Connection", "close")
 		switch mode.Load().(string) {
 		case "expired":
 			w.WriteHeader(http.StatusGone)
@@ -260,6 +268,15 @@ func TestStdioReceiptErrorsKeepOriginalTicketWithoutRetry(t *testing.T) {
 		case "notfound":
 			w.WriteHeader(http.StatusNotFound)
 			fmt.Fprint(w, `{"error":{"code":"request_not_found","message":"not found at this instant"}}`)
+		case "oldroute":
+			w.WriteHeader(http.StatusNotFound)
+			fmt.Fprint(w, `{"error":{"code":"not_found","message":"no receipt route"}}`)
+		case "unsupported":
+			w.WriteHeader(http.StatusNotImplemented)
+			fmt.Fprint(w, `{"error":{"code":"idempotency_unsupported","message":"unsupported"}}`)
+		case "invaliderror":
+			w.WriteHeader(http.StatusBadRequest)
+			fmt.Fprint(w, `not-json`)
 		case "server":
 			w.WriteHeader(http.StatusInternalServerError)
 			fmt.Fprint(w, `{"error":{"code":"internal","message":"server failed"}}`)
@@ -278,7 +295,7 @@ func TestStdioReceiptErrorsKeepOriginalTicketWithoutRetry(t *testing.T) {
 	defer srv.Close()
 	session := connectStdio(t, srv.URL)
 	for _, tc := range []struct{ mode, name string }{
-		{"expired", "set_device_state"}, {"changed", "set_device_state"}, {"server", "set_device_state"}, {"malformed", "set_device_state"}, {"transport", "set_device_state"}, {"expired", "get_job"}, {"changed", "get_job"}, {"notfound", "get_job"},
+		{"expired", "set_device_state"}, {"changed", "set_device_state"}, {"server", "set_device_state"}, {"malformed", "set_device_state"}, {"transport", "set_device_state"}, {"expired", "get_job"}, {"changed", "get_job"}, {"notfound", "get_job"}, {"server", "get_job"}, {"malformed", "get_job"}, {"transport", "get_job"}, {"oldroute", "get_job"}, {"unsupported", "get_job"}, {"invaliderror", "get_job"},
 	} {
 		mode.Store(tc.mode)
 		before := requests.Load()

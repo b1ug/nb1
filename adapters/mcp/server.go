@@ -99,8 +99,7 @@ func submit(ctx context.Context, d *daemon, serial string, p program, policy str
 		}
 		return result(out)
 	}
-	out := d.request(ctx, http.MethodPost, "/v1/devices/"+url.PathEscape(serial)+"/jobs", "job", request)
-	return result(preserveTicket(out, ticket))
+	return result(d.requestJob(ctx, http.MethodPost, "/v1/devices/"+url.PathEscape(serial)+"/jobs", request, serial, ticket))
 }
 
 func result(out output) (*mcp.CallToolResult, output, error) {

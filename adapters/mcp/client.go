@@ -65,6 +65,12 @@ func newDaemon(endpoint string, timeout time.Duration) (*daemon, error) {
 func (d *daemon) close() { d.client.CloseIdleConnections() }
 
 func (d *daemon) request(ctx context.Context, method, path, kind string, input any) output {
+	return d.requestBound(ctx, method, path, kind, input, nil)
+}
+
+// A non-nil binding is used only by the explicit receipt extension. Ordinary
+// tool calls retain their original response/error semantics.
+func (d *daemon) requestBound(ctx context.Context, method, path, kind string, input any, binding *receiptBinding) output {
 	var body io.Reader
 	if input != nil {
 		encoded, err := json.Marshal(input)
@@ -139,6 +145,11 @@ func (d *daemon) request(ctx context.Context, method, path, kind string, input a
 		}
 		if id, ok := job["id"].(string); !ok || !validToken(id) {
 			return errorOutput("invalid_daemon_response", "missing or invalid job id", response.StatusCode, method == http.MethodPost)
+		}
+		if binding != nil {
+			if err := validateReceiptResponse(method, response.StatusCode, response.Header, job, *binding); err != nil {
+				return errorOutput("invalid_daemon_response", err.Error(), response.StatusCode, true)
+			}
 		}
 	}
 	return out

@@ -77,6 +77,8 @@ GOWORK=off go build -o ../../../bin/nb1-mcp .
 
 同一实例、设备、键和规范化 payload 在服务端有效回执期内映射至同一个逻辑 job；这不承诺 USB 指令恰好发送一次、任务必定成功或跨重启恢复。重放仍可能返回 HTTP202 和已经终结的原 job，应读取 `data.status`。二元组在提交结果和 HTTP/传输错误中以外层 `request_ticket` 原样保留。
 
+带键成功响应还必须确认绑定：提交须为 HTTP202，带唯一且匹配的 `X-NB1-Daemon-Instance-ID`、值为 `true` 或 `false` 的唯一 `X-NB1-Replayed`，以及与输入 serial 相同的 `data.device`。回执查询须为 HTTP200，并确认相同实例与设备；不要求 replay header。缺失、重复或不匹配均作为 `invalid_daemon_response`、`outcome_unknown:true` 处理，不能把普通 job JSON 视为已确认的回执，也不会自动补发。无键工具保留原响应要求。
+
 查找原提交时调用：
 
 ```json
@@ -88,6 +90,8 @@ GOWORK=off go build -o ../../../bin/nb1-mcp .
 ```
 
 以上是 `get_job` 的另一种完整输入，不能同时提供 `id`。`request_expired`（410）、`daemon_instance_changed`（409）及回执查询的 `request_not_found`（404）保留 `outcome_unknown:true`：404只表示查询当时没有回执，原 POST 可能仍在途中。不要把旧意图自动换成新键或绑定到新实例；已知键的调用方可以显式查询，或按服务端规则主动重发相同实例、键和 payload。
+
+回执查询的任何失败都不能确认旧意图的执行结果，因此保留 `outcome_unknown:true`，包括网络错误、5xx、损坏响应，以及替换/降级 daemon 没有该路由时的通用404或501。原 `{id}` 查询和其他无键工具的错误语义保持不变；带键提交收到明确的首次400、429或 payload 冲突仍与不确定提交区分。
 
 有二元组的 `dry_run` 仍然零 HTTP，只检查字段格式及程序边界，预览保留原二元组并明确返回 `instance_binding_verified:false`。它不能验证 daemon 实例是否匹配、回执是否存在、准入期限是否过期；期限是 daemon 单调运行时间，不能与客户端墙钟比较。
 
@@ -114,7 +118,7 @@ GOWORK=off go vet ./...
 
 测试用模拟 HTTP 服务，并用官方 SDK 客户端覆盖工具发现、原始参数歧义与 schema 拦截、程序预览、真实 stdio 子进程通信、队列错误、取消中状态、POST 超时歧义及重定向/响应上限。重复键、嵌套 null、大小写别名和输入限制用例确认在任何 HTTP 请求前被拒绝。不会打开真实 USB。硬件链路应由主工作区另行验收。
 
-回执测试同样使用官方 stdio 客户端，覆盖六工具旧输入、准备键的随机性、成对字段与查询互斥、原 payload/键保留、终态202、过期/实例变化/404未知结果、POST丢失响应不重试，以及带键 dry-run 零 HTTP。没有引入额外 Go 依赖或提高模块 Go1.25 下限。
+回执测试同样使用官方 stdio 客户端，覆盖六工具旧输入、准备键的随机性、成对字段与查询互斥、原 payload/键保留、终态202、响应header和设备绑定、查询失败的未知结果、POST丢失响应不重试，以及带键 dry-run 零 HTTP。没有引入额外 Go 依赖或提高模块 Go1.25 下限。
 
 另有默认跳过的真实链路验收：显式提供 endpoint 和 serial 时只查询；额外提供 `NB1_MCP_LIVE_COLOR` 才会发送设色任务。它通过官方 MCP 客户端启动实际适配器二进制，整个过程中仍由 daemon 持有 USB。
 

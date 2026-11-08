@@ -21,6 +21,42 @@ type requestTicket struct {
 	ExpectedDaemonInstanceID string `json:"expected_daemon_instance_id"`
 }
 
+type receiptBinding struct {
+	serial string
+	ticket requestTicket
+}
+
+func validateReceiptResponse(method string, status int, headers http.Header, job map[string]any, binding receiptBinding) error {
+	instances := headers.Values("X-NB1-Daemon-Instance-ID")
+	if len(instances) != 1 || instances[0] != binding.ticket.ExpectedDaemonInstanceID || job["device"] != binding.serial {
+		return errors.New("daemon did not confirm the original instance and device binding; original outcome unknown")
+	}
+	if method == http.MethodPost {
+		replayed := headers.Values("X-NB1-Replayed")
+		if status != http.StatusAccepted || len(replayed) != 1 || (replayed[0] != "true" && replayed[0] != "false") {
+			return errors.New("daemon did not confirm receipt submission/replay with HTTP202; original outcome unknown")
+		}
+	} else if status != http.StatusOK {
+		return errors.New("daemon did not confirm receipt lookup with HTTP200; original outcome unknown")
+	}
+	return nil
+}
+
+func (d *daemon) requestJob(ctx context.Context, method, path string, input any, serial string, ticket *requestTicket) output {
+	if ticket == nil {
+		return d.request(ctx, method, path, "job", input)
+	}
+	out := d.requestBound(ctx, method, path, "job", input, &receiptBinding{serial: serial, ticket: *ticket})
+	out = preserveTicket(out, ticket)
+	if method == http.MethodGet && out.Error != nil {
+		// Even a definite rejection of this lookup cannot establish whether
+		// the original intent ran. This also covers an older/replaced daemon
+		// with no receipt route (generic 404/501), without changing {id} reads.
+		out.Error.OutcomeUnknown = true
+	}
+	return out
+}
+
 type instanceInfo struct {
 	DaemonInstanceID string `json:"daemon_instance_id"`
 	Idempotency      struct {
@@ -146,20 +182,19 @@ func getJob(ctx context.Context, d *daemon, args getJobArgs) output {
 		return errorOutput("invalid_request", "receipt lookup requires a valid complete request ticket", 0, false)
 	}
 	query := url.Values{"expected_daemon_instance_id": []string{ticket.ExpectedDaemonInstanceID}}
-	out := d.request(ctx, http.MethodGet, "/v1/devices/"+url.PathEscape(args.Serial)+"/requests/"+url.PathEscape(ticket.RequestID)+"?"+query.Encode(), "job", nil)
-	out = preserveTicket(out, ticket)
-	if out.Error != nil && out.Error.Code == "request_not_found" {
-		// The original POST may still be in flight. This read only established
-		// that there was no receipt at the instant of the lookup.
-		out.Error.OutcomeUnknown = true
-	}
-	return out
+	return d.requestJob(ctx, http.MethodGet, "/v1/devices/"+url.PathEscape(args.Serial)+"/requests/"+url.PathEscape(ticket.RequestID)+"?"+query.Encode(), nil, args.Serial, ticket)
 }
 
 func preserveTicket(out output, ticket *requestTicket) output {
 	out.RequestTicket = ticket
-	if ticket != nil && out.Error != nil && (out.Error.HTTPStatus == http.StatusGone || out.Error.HTTPStatus == http.StatusConflict && out.Error.Code == "daemon_instance_changed") {
-		out.Error.OutcomeUnknown = true
+	if ticket != nil && out.Error != nil {
+		failure := out.Error
+		// A failed read cannot settle the original write's outcome. Definite
+		// structured rejections (such as idempotency_conflict) remain distinct
+		// from transport/server failures and missing/expired receipt evidence.
+		if failure.HTTPStatus >= 500 || failure.HTTPStatus == http.StatusGone || failure.Code == "daemon_unreachable" || failure.Code == "invalid_daemon_response" || failure.Code == "http_error" || failure.Code == "daemon_instance_changed" || failure.Code == "request_expired" || failure.Code == "request_not_found" {
+			failure.OutcomeUnknown = true
+		}
 	}
 	return out
 }

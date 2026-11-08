@@ -1,0 +1,4 @@
+.build/
+/mcp
+/nb1-mcp
+*.exe

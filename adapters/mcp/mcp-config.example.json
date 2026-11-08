@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "blink1-local": {
+      "command": "/absolute/path/to/bin/nb1-mcp",
+      "args": ["--endpoint", "http://127.0.0.1:8931"]
+    }
+  }
+}

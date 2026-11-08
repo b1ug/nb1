@@ -933,7 +933,13 @@
                   "local_only",
                   "method_not_allowed",
                   "json_required",
-                  "body_too_large"
+                  "body_too_large",
+                  "idempotency_conflict",
+                  "daemon_instance_changed",
+                  "request_expired",
+                  "idempotency_capacity",
+                  "request_not_found",
+                  "idempotency_unsupported"
                 ]
               },
               "message": {

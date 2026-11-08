@@ -75,6 +75,8 @@ GOWORK=off go build -o ../../../bin/nb1-mcp .
 
 示例中的键仅说明格式，真实调用必须使用准备所得的完整二元组。保存它后，再把两个字段同时加入 `set_device_state` 或 `run_program`；省略两字段仍走原提交路径。默认不准备 token、不重试写入、不更换实例或请求键，也不会在旧 daemon 不支持扩展时去掉字段降级。两种提交工具的 `IdempotentHint` 继续为 false，因为无键调用可以创建新任务。
 
+适配器不主动重试提交；Go HTTP 传输层可能重试可安全重放的 GET。回执 GET 始终只读，不创建任务。
+
 同一实例、设备、键和规范化 payload 在服务端有效回执期内映射至同一个逻辑 job；这不承诺 USB 指令恰好发送一次、任务必定成功或跨重启恢复。重放仍可能返回 HTTP202 和已经终结的原 job，应读取 `data.status`。二元组在提交结果和 HTTP/传输错误中以外层 `request_ticket` 原样保留。
 
 带键成功响应还必须确认绑定：提交须为 HTTP202，带唯一且匹配的 `X-NB1-Daemon-Instance-ID`、值为 `true` 或 `false` 的唯一 `X-NB1-Replayed`，以及与输入 serial 相同的 `data.device`。回执查询须为 HTTP200，并确认相同实例与设备；不要求 replay header。缺失、重复或不匹配均作为 `invalid_daemon_response`、`outcome_unknown:true` 处理，不能把普通 job JSON 视为已确认的回执，也不会自动补发。无键工具保留原响应要求。

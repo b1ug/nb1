@@ -81,7 +81,7 @@ func newServerCommand() *cobra.Command {
 	}
 	command.Flags().StringVar(&listen, "listen", "127.0.0.1:8931", "loopback host:port (port 0 chooses a free port)")
 	command.Flags().StringSliceVar(&serials, "devices", nil, "comma-separated device serial numbers")
-	command.Flags().StringVar(&lockDir, "lock-dir", os.Getenv("NB1_LOCK_DIR"), "shared ownership directory (NB1_LOCK_DIR or per-user cache)")
+	command.Flags().StringVar(&lockDir, "lock-dir", os.Getenv("NB1_LOCK_DIR"), "shared ownership directory (NB1_LOCK_DIR or persistent per-user config)")
 	command.Flags().DurationVar(&shutdownTimeout, "shutdown-timeout", 10*time.Second, "maximum time to await graceful cleanup; does not cancel blocked native I/O")
 	command.Flags().Uint32("port", 8931, "compatibility flag for a loopback port; cannot be combined with --listen")
 	command.Flags().String("base", "", "reserved legacy base URL; the v1 API uses the root endpoint")

@@ -29,7 +29,7 @@ func newControlCommand() *cobra.Command {
 	command := &cobra.Command{Use: "control", Aliases: []string{"ctl"}, Short: "Control devices through the shared executor", Long: "Use the local daemon by default. Direct mode embeds the same executor and cooperates with the same device ownership lock. Colors are exact raw #RRGGBB values without implicit gamma conversion. Jobs belong to the daemon or the lifetime of one direct command. Use --wait to await terminal set/run/cancel results; a client timeout does not cancel a daemon job."}
 	command.PersistentFlags().StringVar(&options.mode, "mode", "daemon", "daemon or direct; never silently falls back to USB")
 	command.PersistentFlags().StringVar(&options.endpoint, "endpoint", daemonclient.DefaultEndpoint, "loopback daemon HTTP origin")
-	command.PersistentFlags().StringVar(&options.lockDir, "lock-dir", os.Getenv("NB1_LOCK_DIR"), "shared ownership directory for direct mode (NB1_LOCK_DIR or per-user cache)")
+	command.PersistentFlags().StringVar(&options.lockDir, "lock-dir", os.Getenv("NB1_LOCK_DIR"), "shared ownership directory for direct mode (NB1_LOCK_DIR or persistent per-user config)")
 	command.PersistentFlags().StringVar(&options.policy, "policy", "replace", "replace, queue or reject when a device already has work")
 	command.PersistentFlags().DurationVar(&options.timeout, "timeout", 30*time.Second, "client request/direct execution deadline")
 	command.PersistentPreRunE = func(_ *cobra.Command, _ []string) error {

@@ -159,7 +159,9 @@ func (c *Client) Request(ctx context.Context, serial string, receipt control.Rec
 	headers, err := c.doResponse(ctx, http.MethodGet, "/v1/devices/"+url.PathEscape(serial)+"/requests/"+url.PathEscape(receipt.RequestID)+
 		"?expected_daemon_instance_id="+url.QueryEscape(receipt.ExpectedDaemonInstanceID), nil, &out)
 	if err != nil {
-		return out, receiptError(err, receipt)
+		// A lookup rejection describes this query, not whether the original
+		// intent ran. A replaced/older daemon may no longer expose this route.
+		return out, &ReceiptError{Err: err, Receipt: receipt, OutcomeUnknown: true}
 	}
 	if out.ID == "" || out.Device != serial || headers.Get("X-NB1-Daemon-Instance-ID") != receipt.ExpectedDaemonInstanceID {
 		return control.Job{}, &ReceiptError{Err: fmt.Errorf("daemon did not confirm the request binding"), Receipt: receipt, OutcomeUnknown: true}

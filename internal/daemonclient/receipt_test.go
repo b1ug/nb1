@@ -71,3 +71,39 @@ func TestReceiptClientPreservesUnknownAndNeverRetries(t *testing.T) {
 		server.Close()
 	}
 }
+
+func TestReceiptLookupFailureKeepsOriginalOutcomeUnknown(t *testing.T) {
+	for _, tc := range []struct {
+		status int
+		code   string
+	}{
+		{http.StatusNotFound, "not_found"}, // Replaced by an older daemon.
+		{http.StatusNotImplemented, "idempotency_unsupported"},
+		{http.StatusBadRequest, "invalid_request"},
+		{http.StatusTooManyRequests, "rate_limited"},
+	} {
+		t.Run(tc.code, func(t *testing.T) {
+			var calls int32
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				atomic.AddInt32(&calls, 1)
+				if r.Method != http.MethodGet {
+					t.Errorf("lookup unexpectedly sent %s", r.Method)
+				}
+				w.WriteHeader(tc.status)
+				_, _ = io.WriteString(w, `{"error":{"code":"`+tc.code+`","message":"lookup unavailable"}}`)
+			}))
+			defer server.Close()
+			client, err := New(server.URL)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer client.Close()
+			binding := control.ReceiptRequest{RequestID: "req_60000_0123456789abcdef0123456789abcdef", ExpectedDaemonInstanceID: "daemon_0123456789abcdef0123456789abcdef"}
+			_, err = client.Request(context.Background(), "20005601", binding)
+			var receiptErr *ReceiptError
+			if !errors.As(err, &receiptErr) || !receiptErr.OutcomeUnknown || receiptErr.Receipt != binding || atomic.LoadInt32(&calls) != 1 {
+				t.Fatalf("lookup lost original uncertainty or retried: %v calls=%d", err, calls)
+			}
+		})
+	}
+}

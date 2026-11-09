@@ -190,6 +190,8 @@ func validateSoftwareResponse(data []byte, kind string, input any) (any, error) 
 		return validatePatternPreview(data, input)
 	case "light_preview":
 		return validateLightPreview(data, input)
+	case "orbit_preview":
+		return validateOrbitPreview(data, input)
 	case "color_resolution":
 		return validateColorResponse(data, input)
 	case "capabilities":

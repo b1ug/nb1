@@ -254,6 +254,31 @@ await call("get_job", {serial: selectedSerial, ...ticket});
 
 ## 任务与错误语义
 
+### 实验 Orbit 与帧任务
+
+`preview_light` 和 `run_light` 在同一个工具名下接受两份明确的合同：
+
+- `nb1-light-action/v1`：现有八个动作及其原有行为。
+- `nb1-light-action/experimental-v2`：独立的高层 `kind:"orbit"`，由 daemon 编译成新的 FrameProgram。`segments:4` 是简单长渐变候选，`segments:8` 保留更多目标细节。默认周期 3000ms、1 轮、红/蓝、`leds:[1,2]`、完成后 off。
+
+```json
+{"contract":"nb1-light-action/experimental-v2","action":{"kind":"orbit","colors":["red","blue"],"segments":4,"period_ms":3000,"cycles":3},"serial":"20005601"}
+```
+
+上例供 `preview_light` 使用，不会获取票据或创建任务。真正播放时，将同一 action 交给 `run_light`，附上调用方事先保存的完整 `request_id`、`expected_daemon_instance_id`，以及 `policy:"reject"`。适配器先请求一次 `/v2/light/preview`，确认所选设备的缓存能力，再最多提交一次 `/v2/devices/{serial}/light`；不会把高层动作替换成低层帧提交，也不会重建颜色曲线。低层 `run_program` 工具及旧 Program 仍保留。
+
+返回仍是 `kind:"light_preview"` 或 `kind:"job"`。V2 Job 的 `program.contract` 为 `nb1-frame-program/experimental-v1`，进度字段为 `completed_frames` / `total_frames` 和 `completed_target_writes` / `planned_target_writes`。帧数满不等于清理完成，应等实际终态。
+
+`get_job` / `cancel_job` 自动按严格的 `framejob_` ID 走帧任务路由。只有原票据、没有 Job ID 时，必须为帧任务明确加上 `job_kind:"frame"`：
+
+```js
+await call("get_job", {serial: selectedSerial, job_kind: "frame", ...ticket});
+```
+
+省略 `job_kind` 或填写 `program` 仍查询旧 Program 回执；不会试探第二个路由。不能同时提供 `id` 和 `job_kind`。错误、丢失响应、过期或重启都不会触发自动换票或再次播放。
+
+适配器验证完整帧格式、整数预算、相位时间、LED 顺序、周期闭合、规范动作与原参数绑定，以及 Job / header / 原票据一致性。名称和 HSV 的解析、具体颜色曲线与实机质量仍由 daemon 和物理验收负责；这些检查不包含第二份效果编译器或光学测量。
+
 返回值同时包含 `structuredContent` 和 JSON 文本兼容内容。`kind` 区分设备列表、状态、job、预览和错误，`data` 保留 daemon 的原始结构。
 
 - `accepted=true` 仅表示看到了 HTTP202，并不表示执行完成。`data.status` 是实际任务状态；非终态结果提供 `poll_after_ms=200` 作为建议。
@@ -267,7 +292,7 @@ await call("get_job", {serial: selectedSerial, ...ticket});
 ## 验证
 
 ```bash
-GOWORK=off go test -race -count=1 -timeout=45s ./...
+GOWORK=off go test -race -count=1 -timeout=4m ./...
 GOWORK=off go vet ./...
 ```
 

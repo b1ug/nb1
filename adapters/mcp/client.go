@@ -125,7 +125,7 @@ func (d *daemon) requestMode(ctx context.Context, method, path, kind string, inp
 		}
 		return errorOutput("invalid_daemon_response", message, response.StatusCode, uncertainPost)
 	}
-	if kind == "light_job" || kind == "light_preview" || patternWire {
+	if kind == "light_job" || kind == "light_preview" || kind == "orbit_preview" || kind == "frame_job" || patternWire {
 		// Validate the raw representation before either the success or error
 		// branch can discard duplicate fields, nulls or malformed text. The
 		// existing eight tools deliberately retain their response contracts.
@@ -181,6 +181,9 @@ func (d *daemon) requestMode(ctx context.Context, method, path, kind string, inp
 			return errorOutput("invalid_daemon_response", err.Error(), response.StatusCode, false)
 		}
 		return output{Kind: kind, Data: value, Accepted: false}
+	}
+	if kind == "frame_job" {
+		return frameResponse(method, path, response.StatusCode, response.Header, data, binding)
 	}
 	if kind == "light_job" || patternJob {
 		kind = "job"

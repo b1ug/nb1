@@ -169,10 +169,19 @@ func listDevices(ctx context.Context, d *daemon, prepare bool) output {
 
 func getJob(ctx context.Context, d *daemon, args getJobArgs) output {
 	if args.ID != "" {
-		if !validToken(args.ID) || args.Serial != "" || args.RequestID != "" || args.ExpectedDaemonInstanceID != "" {
+		if !validToken(args.ID) || args.Serial != "" || args.RequestID != "" || args.ExpectedDaemonInstanceID != "" || args.JobKind != "" {
 			return errorOutput("invalid_request", "provide either id or serial plus the complete request ticket", 0, false)
 		}
+		if strings.HasPrefix(args.ID, "framejob_") {
+			if !validLowerHexID(args.ID, "framejob_") {
+				return errorOutput("invalid_request", "invalid frame job id", 0, false)
+			}
+			return d.request(ctx, http.MethodGet, "/v1/frame-jobs/"+url.PathEscape(args.ID), "frame_job", nil)
+		}
 		return d.request(ctx, http.MethodGet, "/v1/jobs/"+url.PathEscape(args.ID), "job", nil)
+	}
+	if args.JobKind != "" && args.JobKind != "program" && args.JobKind != "frame" {
+		return errorOutput("invalid_request", "receipt job_kind must be program or frame", 0, false)
 	}
 	if !validToken(args.Serial) {
 		return errorOutput("invalid_request", "receipt lookup requires serial and the complete request ticket", 0, false)
@@ -182,6 +191,17 @@ func getJob(ctx context.Context, d *daemon, args getJobArgs) output {
 		return errorOutput("invalid_request", "receipt lookup requires a valid complete request ticket", 0, false)
 	}
 	query := url.Values{"expected_daemon_instance_id": []string{ticket.ExpectedDaemonInstanceID}}
+	if args.JobKind == "frame" {
+		if !validFrameSerial(args.Serial) {
+			return errorOutput("invalid_request", "frame receipt requires an explicit hardware serial", 0, false)
+		}
+		out := d.requestBound(ctx, http.MethodGet, frameReceiptPath(receiptBinding{serial: args.Serial, ticket: *ticket}), "frame_job", nil, &receiptBinding{serial: args.Serial, ticket: *ticket})
+		out = preserveTicket(out, ticket)
+		if out.Error != nil {
+			out.Error.OutcomeUnknown = true
+		}
+		return out
+	}
 	return d.requestJob(ctx, http.MethodGet, "/v1/devices/"+url.PathEscape(args.Serial)+"/requests/"+url.PathEscape(ticket.RequestID)+"?"+query.Encode(), nil, args.Serial, ticket)
 }
 
@@ -217,8 +237,9 @@ func submissionSchema(properties map[string]any, required ...string) map[string]
 
 func getJobSchema() map[string]any {
 	id := map[string]any{"id": tokenSchema()}
-	receipt := map[string]any{"serial": tokenSchema(), "request_id": requestIDSchema(), "expected_daemon_instance_id": instanceIDSchema()}
-	schema := objectSchema(map[string]any{"id": tokenSchema(), "serial": tokenSchema(), "request_id": requestIDSchema(), "expected_daemon_instance_id": instanceIDSchema()})
+	kind := map[string]any{"type": "string", "enum": []string{"program", "frame"}, "description": "Receipt-only selector: omit for legacy Program, use frame for an experimental FrameJob. Do not combine with id."}
+	receipt := map[string]any{"serial": tokenSchema(), "request_id": requestIDSchema(), "expected_daemon_instance_id": instanceIDSchema(), "job_kind": kind}
+	schema := objectSchema(map[string]any{"id": tokenSchema(), "serial": tokenSchema(), "request_id": requestIDSchema(), "expected_daemon_instance_id": instanceIDSchema(), "job_kind": kind})
 	schema["oneOf"] = []any{objectSchema(id, "id"), objectSchema(receipt, "serial", "request_id", "expected_daemon_instance_id")}
 	return schema
 }

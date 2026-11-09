@@ -130,10 +130,10 @@ func lightActionSchema() map[string]any {
 }
 
 func lightPreviewSchema() map[string]any {
-	return objectSchema(map[string]any{"contract": map[string]any{"type": "string", "const": lightContract}, "action": lightActionSchema(), "serial": tokenSchema()}, "contract", "action")
+	return versionedLightSchema(map[string]any{"action": lightActionSchema(), "serial": tokenSchema()}, "contract", "action")
 }
 func lightRunSchema() map[string]any {
-	return objectSchema(map[string]any{"contract": map[string]any{"type": "string", "const": lightContract}, "action": lightActionSchema(), "serial": tokenSchema(), "policy": map[string]any{"type": "string", "enum": []string{"reject"}, "default": "reject"}, "request_id": requestIDSchema(), "expected_daemon_instance_id": instanceIDSchema()}, "contract", "action", "serial", "request_id", "expected_daemon_instance_id")
+	return versionedLightSchema(map[string]any{"action": lightActionSchema(), "serial": tokenSchema(), "policy": map[string]any{"type": "string", "enum": []string{"reject"}, "default": "reject"}, "request_id": requestIDSchema(), "expected_daemon_instance_id": instanceIDSchema()}, "contract", "action", "serial", "request_id", "expected_daemon_instance_id")
 }
 
 func lightPreviewOutputSchema() map[string]any {
@@ -175,7 +175,7 @@ func lightPreviewOutputSchema() map[string]any {
 	problem := objectSchema(map[string]any{"code": map[string]any{"type": "string"}, "message": map[string]any{"type": "string"}, "http_status": map[string]any{"type": "integer"}, "outcome_unknown": map[string]any{"const": false}}, "code", "message")
 	out := objectSchema(map[string]any{"kind": map[string]any{"enum": []string{"light_preview", "error"}}, "accepted": map[string]any{"const": false}, "data": objectSchema(map[string]any{"result": result, "preview": preview}, "result", "preview"), "error": problem}, "kind", "accepted")
 	out["oneOf"] = []any{map[string]any{"properties": map[string]any{"kind": map[string]any{"const": "light_preview"}}, "required": []string{"data"}, "not": map[string]any{"required": []string{"error"}}}, map[string]any{"properties": map[string]any{"kind": map[string]any{"const": "error"}}, "required": []string{"error"}, "not": map[string]any{"required": []string{"data"}}}}
-	return out
+	return extendLightPreviewOutput(out, result, preview)
 }
 
 func readLightArguments(raw json.RawMessage, out any) error {
@@ -256,6 +256,13 @@ func previewLight(ctx context.Context, d *daemon, original json.RawMessage) (*mc
 	if err := validateLightInput(args); err != nil {
 		return invalid(err.Error())
 	}
+	if args.Contract == orbitLightContract {
+		out := d.requestSoftware(ctx, http.MethodPost, "/v2/light/preview", "orbit_preview", args)
+		if out.Error == nil {
+			out.Kind = "light_preview"
+		}
+		return result(out)
+	}
 	return result(d.requestSoftware(ctx, http.MethodPost, "/v1/light/preview", "light_preview", args))
 }
 
@@ -274,6 +281,9 @@ func runLight(ctx context.Context, d *daemon, original json.RawMessage) (*mcp.Ca
 	previewArgs := lightPreviewArgs{Contract: args.Contract, Action: args.Action, Serial: &args.Serial}
 	if err := validateLightInput(previewArgs); err != nil {
 		return invalid(err.Error())
+	}
+	if args.Contract == orbitLightContract {
+		return runOrbit(ctx, d, args, ticket)
 	}
 	// One read-only preflight, then at most one write. Never prepare/rebind a
 	// ticket, compile effects locally, retry a write or fall back to another API.
@@ -297,6 +307,9 @@ func runLight(ctx context.Context, d *daemon, original json.RawMessage) (*mcp.Ca
 }
 
 func validateLightInput(args lightPreviewArgs) error {
+	if args.Contract == orbitLightContract {
+		return validateOrbitInput(args)
+	}
 	if args.Contract != lightContract || args.Serial != nil && !validToken(*args.Serial) {
 		return errors.New("unsupported light contract or invalid explicit serial")
 	}

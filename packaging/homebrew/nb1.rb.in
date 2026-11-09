@@ -1,0 +1,63 @@
+# Generated only from explicitly supplied release inputs. Review before use.
+# This source Formula draft has not been installed or audited by Homebrew.
+require "json"
+require "open3"
+
+class Nb1 < Formula
+  desc "Control blink(1) through a local CLI and daemon"
+  homepage "https://github.com/b1ug/nb1"
+  url @@SOURCE_URL@@
+  version @@VERSION@@
+  sha256 @@SOURCE_SHA256@@
+  license "MIT"
+
+  # First draft scope: native macOS arm64 and Intel. Linux packaging is separate.
+  depends_on :macos
+  depends_on macos: @@MIN_MACOS@@.to_sym
+  depends_on "go" => :build
+
+  deny_network_access!
+
+  def fetch
+    ENV["GOWORK"] = "off"
+    ENV["GOTOOLCHAIN"] = "local"
+    system "go", "mod", "download"
+    system "go", "mod", "verify"
+  end
+
+  def install
+    ENV["CGO_ENABLED"] = "1"
+    ENV["GOWORK"] = "off"
+    ENV["GOTOOLCHAIN"] = "local"
+    ldflags = ["-X", "github.com/b1ug/nb1/config.GitCommit=" + @@SOURCE_COMMIT@@,
+               "-X", "github.com/b1ug/nb1/config.GitSummary=v#{version}"]
+    system "go", "build", *std_go_args(output: bin/"nb1", ldflags: ldflags), "-mod=readonly", "."
+    pkgshare.install "LICENSE"
+    doc.install "README.md"
+  end
+
+  test do
+    (testpath/"setting.yaml").write "{}\n"
+    blocked = testpath/"not-a-lock-directory"
+    blocked.write "keep this regular file\n"
+    (testpath/"pulse.json").write JSON.generate({
+      contract: "nb1-light-action/v1",
+      action: { kind: "pulse", color: "lime", attack_ms: 60, decay_ms: 240,
+                rest_ms: 700, cycles: 3, on_finish: "off" },
+    })
+    args = [bin/"nb1", "--config", testpath/"setting.yaml", "control", "--mode", "direct",
+            "--endpoint", "not-an-origin", "--lock-dir", blocked, "light", "preview", testpath/"pulse.json"]
+    output, error, status = Open3.capture3(*args.map(&:to_s))
+    assert status.success?, error
+    value = JSON.parse(output)
+    assert_equal "nb1-light-action/v1", value.fetch("result").fetch("contract")
+    assert_equal "#00ff00", value.fetch("result").fetch("action").fetch("color")
+    assert_equal value.fetch("result").fetch("program"), value.fetch("preview").fetch("program")
+    assert_equal 3090, value.fetch("preview").fetch("nominal_duration_ms")
+    assert_equal 9, value.fetch("preview").fetch("total_steps")
+    assert_equal "off", value.fetch("preview").fetch("program").fetch("on_finish")
+    assert_equal({ "program" => "valid", "device" => "not_requested" }, value.fetch("preview").fetch("validation"))
+    refute value.key?("job")
+    assert_equal "keep this regular file\n", blocked.read
+  end
+end

@@ -70,12 +70,19 @@ function New-Nb1FakeOps {
             param($State, $Report)
             [void]$State.Events.Add('OrdinaryCase')
             if ($State.Case -eq 'ordinary-failure') { throw 'fake ordinary token did not qualify' }
+            if ($State.Case.StartsWith('query-', [StringComparison]::Ordinal)) {
+                if ($State.Case -eq 'query-stale-completion') { $State.QueryCompleted = $true }
+                Start-Nb1QueryAttempt $State
+                if ($State.Case -eq 'query-complete') { $State.QueryCompleted = $true }
+                else { throw 'fake query missing/bad report or Go timeout does not prove PowerShell descendant exit' }
+            }
         }
         ReapChildren = {
             param($State, $Report)
             [void]$State.Events.Add('ReapChildren')
             if ($State.Case -eq 'unknown-child') { throw 'fake child exit is unknown' }
             if ($State.Case -eq 'child-unproven') { return }
+            Assert-Nb1QueryExitProof $State
             $State.ChildrenExited = $true
         }
         CleanupResources = {
@@ -141,9 +148,9 @@ function Invoke-Nb1FakeCase {
     $cleanupCalls = Get-Nb1FakeEventCount $state 'CleanupResources'
     $claimCalls = Get-Nb1FakeEventCount $state 'ClaimUser'
     $expectedRemoval = $Name -in @('normal', 'partial-create', 'remove-failure',
-        'remove-partial-failure', 'groups-failure', 'stage-failure', 'ordinary-failure')
+        'remove-partial-failure', 'groups-failure', 'stage-failure', 'ordinary-failure', 'query-complete')
 
-    if ($Name -eq 'normal') {
+    if ($Name -in @('normal','query-complete')) {
         Assert-Nb1Fake ($actual.status -eq 'PASS') 'normal fake lifecycle must pass'
     } else {
         Assert-Nb1Fake ($actual.status -ne 'PASS') 'any forward or cleanup failure must stay red'
@@ -163,6 +170,10 @@ function Invoke-Nb1FakeCase {
     }
     if ($Name -eq 'resource-changed') {
         Assert-Nb1Fake ($actual.profile_observation.root_owner -eq 'different-fake-owner' -and $actual.profile_observation.mapping_matches) 'failed owner/mapping evidence must survive without authorizing removal'
+    }
+    if ($Name.StartsWith('query-', [StringComparison]::Ordinal) -and $Name -ne 'query-complete') {
+        Assert-Nb1Fake ($actual.status -eq 'FAIL_CLEANUP' -and -not $state.ChildrenExited -and $state.FakeUserExists -and $cleanupCalls -eq 0 -and $removeCalls -eq 0) 'direct Go exit is not query descendant exit proof; preserve all resources'
+        Assert-Nb1Fake (-not $actual.query_bridge_exit_proven) 'incomplete query cannot acquire cleanup proof'
     }
     if ($Name -in @('unknown-child', 'child-unproven', 'foreign-marker', 'claim-exception', 'claim-true-unproven')) {
         Assert-Nb1Fake ($cleanupCalls -eq 0) 'unknown child/account must not reach resource cleanup'
@@ -198,7 +209,8 @@ function Invoke-Nb1FakeCase {
 $cases = @('normal', 'partial-create', 'foreign-marker', 'unknown-child', 'child-unproven',
     'resource-changed', 'cleanup-failure', 'remove-failure', 'remove-partial-failure',
     'claim-changed-before-remove', 'claim-exception', 'claim-second-exception', 'claim-true-unproven',
-    'groups-failure', 'stage-failure', 'ordinary-failure', 'preflight-failure', 'administrator-failure')
+    'groups-failure', 'stage-failure', 'ordinary-failure', 'preflight-failure', 'administrator-failure',
+    'query-complete', 'query-missing-report', 'query-bad-report', 'query-timeout-go-exited', 'query-stale-completion')
 $results = @()
 foreach ($name in $cases) {
     try {
@@ -420,6 +432,37 @@ foreach ($claimCase in $claimEvidenceCases) {
     } catch { $results += @{ case = ('claim-evidence-' + $claimCase); status = 'FAIL'; error = $_.Exception.Message } }
 }
 
+$caseSpecCases = @('token-admin','token-ordinary','query-ordinary','QUERY-ORDINARY','TOKEN-ADMIN','arbitrary-script')
+foreach ($caseKind in $caseSpecCases) {
+    try {
+        $state = @{ SID = 'fresh-sid'; HostSID = 'host-sid'; WindowsDirectory = 'C:\Windows'; SystemDirectory = 'C:\Windows\System32'; TempDir = 'C:\private\tmp'; Password = 'fake-credential'; Binary = 'C:\source\token.exe'; SourceSnapshot = @{ sha256 = 'token-hash' }; StagedBinary = 'C:\private\bin\token.exe'; StagedSnapshot = @{ sha256 = 'token-hash' }; QueryBinary = 'C:\source\query.exe'; StagedQueryBinary = 'C:\private\bin\query.exe'; StagedQuerySnapshot = @{ sha256 = 'query-hash' } }
+        $rejected = $false
+        try { $spec = Get-Nb1NativeCaseSpec $state $caseKind } catch { $rejected = $true }
+        $valid = $caseKind -cin @('token-admin','token-ordinary','query-ordinary')
+        Assert-Nb1Fake ($rejected -eq (-not $valid)) 'case protocol must reject arbitrary/case-mutated kinds'
+        if ($valid) {
+            Assert-Nb1Fake ($spec.environment.Count -eq $(if ($caseKind -ceq 'query-ordinary') { 7 } else { 8 })) 'case must retain exact environment allowlist size'
+            Assert-Nb1Fake (-not $spec.environment.Contains('GITHUB_TOKEN') -and -not $spec.environment.Contains('SUDO_USER')) 'case cannot inherit runner credentials'
+            if ($caseKind -ceq 'query-ordinary') {
+                Assert-Nb1Fake ($spec.executable -ceq $state.StagedQueryBinary -and $spec.snapshot.sha256 -ceq 'query-hash' -and $spec.sid -ceq 'fresh-sid' -and $spec.credential -ceq $state.Password -and $spec.prefix -ceq 'NB1_TASKQUERY_NATIVE_RESULT ' -and $spec.arguments -ceq '-test.run=^TestNativeQueryOptIn$ -test.v -test.count=1' -and -not $spec.environment.Contains('NB1_TASKUSER_NATIVE')) 'query protocol must use only its own binary/identity/argv/env/prefix'
+            } else {
+                Assert-Nb1Fake ($spec.prefix -ceq 'NB1_TASKUSER_NATIVE_RESULT ' -and $spec.arguments -ceq '-test.run=^TestNativeCurrentOptIn$ -test.v -test.count=1' -and -not $spec.environment.Contains('NB1_TASKQUERY_NATIVE')) 'token protocol must stay distinct and unchanged'
+                if ($caseKind -ceq 'token-admin') { Assert-Nb1Fake ($null -eq $spec.credential -and $spec.sid -ceq 'host-sid' -and $spec.executable -ceq $state.Binary -and $spec.working_directory -ceq $state.SystemDirectory) 'admin protocol must use host without fresh-user credentials' }
+            }
+        }
+        $results += @{ case = ('closed-case-' + $caseKind); status = 'PASS'; rejected = $rejected; scope = 'Injected case state only' }
+    } catch { $results += @{ case = ('closed-case-' + $caseKind); status = 'FAIL'; error = $_.Exception.Message } }
+}
+$stagedFileCases = @('token-only','token-and-query')
+foreach ($stagedCase in $stagedFileCases) {
+    $state = @{ StagedBinary = 'token.exe'; StagedSnapshot = @{ sha256 = 'token-hash' }; QueryBinary = $null }
+    if ($stagedCase -eq 'token-and-query') { $state.QueryBinary = 'source-query.exe'; $state.StagedQueryBinary = 'query.exe'; $state.StagedQuerySnapshot = @{ sha256 = 'query-hash' } }
+    $files = @(Get-Nb1StagedFiles $state)
+    $valid = $files.Count -eq $(if ($stagedCase -eq 'token-only') { 1 } else { 2 }) -and $files[0].snapshot.sha256 -ceq 'token-hash'
+    if ($stagedCase -eq 'token-and-query') { $valid = $valid -and $files[1].snapshot.sha256 -ceq 'query-hash' }
+    $results += @{ case = ('staged-file-' + $stagedCase); status = $(if ($valid) { 'PASS' } else { 'FAIL' }); scope = 'Injected known-file state only' }
+}
+
 $failed = @($results | Where-Object { $_.status -ne 'PASS' })
 $summary = [ordered]@{
     schema_version = 1
@@ -436,6 +479,8 @@ $summary = [ordered]@{
     raw_dacl_case_count = $daclCases.Count
     snapshot_case_count = $snapshotCases.Count
     claim_evidence_case_count = $claimEvidenceCases.Count
+    case_spec_case_count = $caseSpecCases.Count
+    staged_file_case_count = $stagedFileCases.Count
     passed = $results.Count - $failed.Count
     failed = $failed.Count
     results = $results

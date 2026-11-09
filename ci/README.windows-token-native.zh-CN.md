@@ -1,6 +1,6 @@
 # Windows 当前进程 token 原生 fixture
 
-当前状态：**run42565611347两ABI原生token/profile/清理主步骤PASS，但最终证据门禁FAIL；本次报告保留修复原生重跑NOT_RUN**。本工具只为隔离 GitHub Windows VM 提供两个 token 身份用例，不管理Task Scheduler、服务、USB、设备或机器安全策略。不得在开发机器执行 `-Execute`。
+当前状态：**token-only d83b10e/run42566121545 两ABI、最终门禁、清理及ARM编译全绿；新增QueryBinary只读观察尚未Windows原生执行**。本工具只为隔离 GitHub Windows VM 提供两个 token 身份用例及可选只读缺失合同观察，不管理Task Scheduler、服务、USB、设备或机器安全策略。不得在开发机器执行 `-Execute`。
 
 需先整合 `taskuser.Current` 与 `TestNativeCurrentOptIn`（token守卫提交3f5d63d，显式opt-in fixture提交6ea176b，以及原生DWORD查询修复6331d4a），再由独立分支 `validation/windows-token-native` 触发 `.github/workflows/windows-token-native.yml`。该workflow不修改既有runtime-native矩阵，不代表当前Mac常驻版本已升级或Windows任务管理已完成。
 
@@ -38,3 +38,15 @@ workflow token仅contents:read、checkout不持久化凭据，不声明secrets�
 profile DACL原始证据由OPEN_REPARSE_POINT句柄上的GetSecurityInfo读取，仅申请READ_CONTROL/READ_ATTRIBUTES及owner/group/DACL，不申请SACL或写ACL/owner权限。返回buffer限制64KiB，LocalFree和SafeHandle统一释放。RawSecurityDescriptor/RawAcl逐ACE检查，拒绝missing/NULL/空DACL、object/callback/opaque/audit/未知ACE和未建模flags/rights，不通过GetAccessRules投影来忽略未知语义。精选结果仅保存原始描述符SHA256和访问判定摘要，不上传完整ACL。
 
 run42565611347两ABI实际满足原始DACL/owner归属条件且profile/account/fixture清理均PASS；整体仍红，因为清理时重复Claim重建fixture_user对象，擦掉先前已核的local_group_sids，最后证据门禁拒绝。现在重复Claim只接受相同name/SID/marker并保留原组证据；缺失group元数据仍明确报错。ARM64步骤当时被红门禁跳过，不声称已完成全job验收。
+
+## 可选的第二个只读 Query binary
+
+脚本新增可选 `-QueryBinary C:\explicit\taskquery.test.exe`。不提供时仍只运行原来的管理员/普通用户两个token用例，结果里不新增query_case。workflow明确构建并传入两个独立binary；它们各自记录source/SHA256/文件快照、严格test名、env和prefix，不接受任意argv、脚本、SID或任务路径参数。编译来源是现已审的taskquery 14d8d0e+4c567cd与opt-in测试7897235，taskuser与已绿d83组件一致；不是把整包main28b的新SDK/GID自动算作本次原生证据。
+
+普通token完整PASS且profile首次FileID/SDDL/原始descriptor hash已绑定后，才在相同fresh SID/凭据/私有工作目录运行第二个binary。固定测试是 `^TestNativeQueryOptIn$`，env除系统路径和TEMP/TMP外仅有 `NB1_TASKQUERY_NATIVE=1`、`NB1_TASKQUERY_EXPECT_SID`，不带token测试opt-in或runner凭据。共同runner只支持token-admin/token-ordinary/query-ordinary三个精确闭集，使用相同进程句柄、双流等待和退出屏障。
+
+query_case使用独立 `NB1_TASKQUERY_NATIVE_RESULT ` 协议；PASS只接受六字段top DTO、六字段selected_status和三字段failure，精确schema整数/类型/SID/固定路径、missing_contract_observed、unknown/not_checked、not_found_unverified/get_task/0x80070002，无task/error_kind/未知字段。逐层原始JSON reader拒绝重复（含转义key）和case碰撞；UTC Go RFC3339Nano的0..9位小数原串保留。构造/身份/trust/PS/COM/取消/超时/其他HRESULT或已有任务都红，FAIL仅保留有限枚举摘要，不保留任意异常或桥输出。该观察不会把生产Unknown改成Absent，不证明任务归属或管理支持。
+
+Query会创建PowerShell孙进程。仅直接Go退出不够：调用开始先重置QueryCompleted，只有完整、精确且exit0的Query PASS（生产cmd.Run/Wait已完成）才形成其终结证明。无/坏报告、Go被强杀、超时、未知start或FAIL都不能授权profile/account删除，清理保守FAIL_CLEANUP并保留资源；不按名称找/杀PowerShell，也不把COM服务当fixture子进程。profile清理授权仍来自原token/provenance，Query成功不替代它。
+
+bin目录只接受预期的一个token文件或两个token/query文件；两份快照均在profile删除前核对，只删除精确已知文件与空目录，partial/未知文件照旧拒绝。新query DTO/闭集/env/双文件/退出屏障均有纯fake，Mac软件验证及跨编译不能充当PowerShell/COM原生结果。ARM仍仅编译两个包；本次不会创建、运行、停止、启用、删除任务或改变UAC、账号策略、系统权限、USB/设备。

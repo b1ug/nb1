@@ -1,11 +1,12 @@
 param(
     [switch]$Execute,
     [string]$Binary,
+    [string]$QueryBinary,
     [string]$OutputDirectory,
     [switch]$LibraryOnly
 )
 
-# Disposable CI-account fixture only. No tasks, devices, services or policy changes.
+# Disposable CI-account fixture only. No task/service/device/policy mutations.
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
@@ -83,6 +84,7 @@ function Invoke-Nb1TokenLifecycle([hashtable]$State, $Report, [hashtable]$Ops) {
         elseif ($mainPassed) { $Report.status = 'PASS' }
         $Report.creation = [ordered]@{ attempted = [bool]$State.CreationAttempted; returned = [bool]$State.CreationReturned; verified = [bool]$State.CreationVerified }
         $Report.children_exit_proven = [bool]$State.ChildrenExited
+        if ($State.ContainsKey('QueryAttempted') -and $State.QueryAttempted) { $Report.query_bridge_exit_proven = [bool]($State.QueryCompleted -and $State.ChildrenExited) }
         if ($State.ContainsKey('ProfileObservation')) { $Report.profile_observation = $State.ProfileObservation }
     }
     return $Report
@@ -353,30 +355,135 @@ function Assert-Nb1NativeReport($Value, [string]$Expected, [string]$SID) {
     } elseif ($Value.current.valid -or $Value.current.sid -cne '' -or $Value.current.task_path -cne '' -or $Value.current.session_id -ne 0 -or $Value.current.integrity_rid -ne 0 -or $Value.current.elevation_type -ne 0 -or $Value.current.admin_membership -cne '' -or (-not $Value.facts.domain_rid_500 -and $Value.facts.token_is_elevated -eq 0)) { throw 'administrator rejection lacks actual elevated/RID500 evidence and zero Context' }
 }
 
-function Invoke-Nb1NativeCase($State, $Report, [string]$Expected, [string]$SID, [string]$Executable, [string]$WorkingDirectory, $Credential) {
+function Read-Nb1QueryJson([string]$Json) {
+    Add-Type -AssemblyName System.Runtime.Serialization
+    $bytes = [Text.Encoding]::UTF8.GetBytes($Json)
+    if ($bytes.Length -gt 2048) { throw 'query report exceeds its fixed JSON budget' }
+    $reader = [Runtime.Serialization.Json.JsonReaderWriterFactory]::CreateJsonReader($bytes, [Xml.XmlDictionaryReaderQuotas]::Max)
+    $stack = New-Object Collections.ArrayList
+    $scan = @{ types = @{}; text = @{} }
+    try {
+        while ($reader.Read()) {
+            if ($reader.NodeType -eq [Xml.XmlNodeType]::Element) {
+                $key = [Xml.XmlConvert]::DecodeName($reader.LocalName)
+                if ($reader.NamespaceURI -ceq 'item') { $key = $reader.GetAttribute('item') }
+                $path = ''
+                if ($stack.Count -gt 0) {
+                    $parent = $stack[$stack.Count - 1]
+                    if ($parent.type -ceq 'object' -and -not $parent.keys.Add($key)) { throw 'duplicate or case-colliding query JSON key' }
+                    $path = $key
+                    if ($parent.path -cne '') { $path = $parent.path + '.' + $key }
+                }
+                $type = $reader.GetAttribute('type')
+                $scan.types[$path] = $type
+                $scan.text[$path] = ''
+                if (-not $reader.IsEmptyElement) { [void]$stack.Add(@{ path = $path; type = $type; keys = (New-Object 'Collections.Generic.HashSet[string]' ([StringComparer]::OrdinalIgnoreCase)) }) }
+            } elseif ($reader.NodeType -eq [Xml.XmlNodeType]::Text -and $stack.Count -gt 0) {
+                $path = $stack[$stack.Count - 1].path
+                $scan.text[$path] += $reader.Value
+            } elseif ($reader.NodeType -eq [Xml.XmlNodeType]::EndElement) { $stack.RemoveAt($stack.Count - 1) }
+        }
+    } finally { $reader.Dispose() }
+    return $scan
+}
+
+function Assert-Nb1QueryKeys($Value, [string[]]$Keys) {
+    if ($Value -isnot [Management.Automation.PSCustomObject]) { throw 'query DTO object type is invalid' }
+    $actual = @($Value.PSObject.Properties.Name)
+    if ($actual.Count -ne $Keys.Count) { throw 'query DTO has missing or unknown keys' }
+    foreach ($key in $actual) { if ($Keys -cnotcontains $key) { throw 'query DTO key case or name is invalid' } }
+}
+
+function Assert-Nb1QueryReport([string]$Json, [string]$SID) {
+    $scan = Read-Nb1QueryJson $Json
+    $value = $Json | ConvertFrom-Json
+    Assert-Nb1QueryKeys $value @('schema_version','status','phase','current_sid','task_path','selected_status')
+    Assert-Nb1QueryKeys $value.selected_status @('schema_version','checked_at','task_path','presence','ownership','failure')
+    Assert-Nb1QueryKeys $value.selected_status.failure @('kind','stage','hresult')
+    foreach ($path in @('status','phase','current_sid','task_path','selected_status.checked_at','selected_status.task_path','selected_status.presence','selected_status.ownership','selected_status.failure.kind','selected_status.failure.stage','selected_status.failure.hresult')) { if ($scan.types[$path] -cne 'string') { throw 'query DTO string type is invalid' } }
+    foreach ($number in @($value.schema_version, $value.selected_status.schema_version)) { if (($number -isnot [int] -and $number -isnot [long]) -or $number -ne 1) { throw 'query DTO schema type/version is invalid' } }
+    $selected = $value.selected_status
+    $taskPath = '\B1UG-nb1-' + $SID
+    if ($value.status -cne 'PASS' -or $value.phase -cne 'missing_contract_observed' -or $value.current_sid -cne $SID -or $value.task_path -cne $taskPath -or $selected.task_path -cne $taskPath -or $selected.presence -cne 'unknown' -or $selected.ownership -cne 'not_checked' -or $selected.failure.kind -cne 'not_found_unverified' -or $selected.failure.stage -cne 'get_task' -or $selected.failure.hresult -cne '0x80070002') { throw 'query did not observe the exact unverified-missing contract' }
+    $timestamp = $scan.text['selected_status.checked_at']
+    if ($timestamp -cnotmatch '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,9})?Z$' -or $timestamp -cmatch '^0001-01-01T00:00:00(\.0{1,9})?Z$') { throw 'query checked_at is not a nonzero UTC RFC3339Nano timestamp' }
+    $probe = $timestamp -replace '(\.\d{7})\d{1,2}Z$', '${1}Z'
+    $date = [DateTimeOffset]::MinValue
+    if (-not [DateTimeOffset]::TryParseExact($probe, [string[]]@("yyyy-MM-dd'T'HH:mm:ss'Z'", "yyyy-MM-dd'T'HH:mm:ss.FFFFFFF'Z'"), [Globalization.CultureInfo]::InvariantCulture, [Globalization.DateTimeStyles]::AssumeUniversal, [ref]$date)) { throw 'query checked_at calendar value is invalid' }
+    # PS7 may project ISO strings to DateTime; keep the original Go string/nanos.
+    $selected.checked_at = $timestamp
+    return $value
+}
+
+function Assert-Nb1QueryExitProof($State) {
+    if ($State.ContainsKey('QueryAttempted') -and $State.QueryAttempted -and -not $State.QueryCompleted) { throw 'query bridge descendant exit is unproven; preserve profile/account/fixture' }
+}
+
+function Start-Nb1QueryAttempt($State) {
+    $State.QueryCompleted = $false
+    $State.QueryAttempted = $true
+}
+
+function Get-Nb1StagedFiles($State) {
+    Write-Output @{ path = $State.StagedBinary; snapshot = $State.StagedSnapshot }
+    if ($State.ContainsKey('QueryBinary') -and -not [string]::IsNullOrEmpty($State.QueryBinary)) { Write-Output @{ path = $State.StagedQueryBinary; snapshot = $State.StagedQuerySnapshot } }
+}
+
+function Get-Nb1NativeCaseSpec($State, [ValidateSet('token-admin','token-ordinary','query-ordinary')][string]$CaseKind) {
+    if ($CaseKind -cnotin @('token-admin','token-ordinary','query-ordinary')) { throw 'native case kind must match the fixed protocol exactly' }
+    $environment = [ordered]@{ SystemRoot = $State.WindowsDirectory; WINDIR = $State.WindowsDirectory; PATH = $State.SystemDirectory; TEMP = $State.TempDir; TMP = $State.TempDir }
+    $spec = @{ kind = $CaseKind; sid = $State.SID; executable = $State.StagedBinary; snapshot = $State['StagedSnapshot']; working_directory = $State.TempDir; credential = $State.Password; expected = 'ordinary'; arguments = '-test.run=^TestNativeCurrentOptIn$ -test.v -test.count=1'; prefix = 'NB1_TASKUSER_NATIVE_RESULT '; diagnostics = '^\s*context_native_windows_test\.go:\d+: |^(--- (PASS|FAIL|SKIP): TestNativeCurrentOptIn |(PASS|FAIL)$)'; environment = $environment }
+    if ($CaseKind -ceq 'query-ordinary') {
+        if (-not $State.ContainsKey('QueryBinary') -or [string]::IsNullOrEmpty($State.QueryBinary)) { throw 'query binary was not explicitly configured' }
+        $spec.executable = $State.StagedQueryBinary; $spec.snapshot = $State.StagedQuerySnapshot
+        $spec.arguments = '-test.run=^TestNativeQueryOptIn$ -test.v -test.count=1'
+        $spec.prefix = 'NB1_TASKQUERY_NATIVE_RESULT '; $spec.expected = 'missing-contract-observation'
+        $spec.diagnostics = '^\s*query_native_windows_test\.go:\d+: |^(--- (PASS|FAIL|SKIP): TestNativeQueryOptIn |(PASS|FAIL)$)'
+        $environment['NB1_TASKQUERY_NATIVE'] = '1'; $environment['NB1_TASKQUERY_EXPECT_SID'] = $State.SID
+    } else {
+        if ($CaseKind -ceq 'token-admin') {
+            $spec.sid = $State.HostSID; $spec.executable = $State.Binary; $spec.snapshot = $State.SourceSnapshot
+            $spec.working_directory = $State.SystemDirectory; $spec.credential = $null; $spec.expected = 'administrator-rejected'
+            $environment.TEMP = $State.SystemDirectory; $environment.TMP = $State.SystemDirectory
+        }
+        $environment['NB1_TASKUSER_NATIVE'] = '1'; $environment['NB1_TASKUSER_EXPECT'] = $spec.expected; $environment['NB1_TASKUSER_EXPECT_SID'] = $spec.sid
+    }
+    return $spec
+}
+
+function Get-Nb1QueryFailureSummary([string]$Json) {
+    try {
+        $scan = Read-Nb1QueryJson $Json
+        $value = $Json | ConvertFrom-Json
+        $phases = @('configuration','identity','constructor','query','missing_contract','report')
+        $kinds = @('expected_sid_required','current_identity_rejected','expected_identity_mismatch','constructor_nil','constructor_identity_mismatch','unexpected_query_success','missing_contract_mismatch','encode_report','report_size','deadline','cancelled','identity','trust','unsupported','transport','protocol','native','absence_unverified','unclassified')
+        if ($value.status -ceq 'FAIL' -and $scan.types['phase'] -ceq 'string' -and $phases -ccontains $value.phase -and $scan.types['error_kind'] -ceq 'string' -and $kinds -ccontains $value.error_kind) { return [ordered]@{ status = 'FAIL'; phase = $value.phase; error_kind = $value.error_kind } }
+    } catch { }
+    return [ordered]@{ status = 'FAIL'; phase = 'report'; error_kind = 'invalid_selected_report' }
+}
+
+function Invoke-Nb1NativeCase($State, $Report, [ValidateSet('token-admin','token-ordinary','query-ordinary')][string]$CaseKind) {
+    $spec = Get-Nb1NativeCaseSpec $State $CaseKind
+    Assert-Nb1Same $spec.snapshot (Get-Nb1Snapshot $spec.executable)
     $start = New-Object Diagnostics.ProcessStartInfo
-    $start.FileName = $Executable
-    $start.Arguments = '-test.run=^TestNativeCurrentOptIn$ -test.v -test.count=1'
-    $start.WorkingDirectory = $WorkingDirectory
+    $start.FileName = $spec.executable
+    $start.Arguments = $spec.arguments
+    $start.WorkingDirectory = $spec.working_directory
     $start.UseShellExecute = $false
     $start.RedirectStandardOutput = $true; $start.RedirectStandardError = $true
     $start.CreateNoWindow = $true
     $start.EnvironmentVariables.Clear()
-    $environment = [ordered]@{
-        SystemRoot = $State.WindowsDirectory; WINDIR = $State.WindowsDirectory
-        PATH = $State.SystemDirectory
-        TEMP = $WorkingDirectory; TMP = $WorkingDirectory
-        NB1_TASKUSER_NATIVE = '1'; NB1_TASKUSER_EXPECT = $Expected; NB1_TASKUSER_EXPECT_SID = $SID
-    }
+    $environment = $spec.environment
     foreach ($key in $environment.Keys) { $start.EnvironmentVariables[$key] = $environment[$key] }
-    if ($null -ne $Credential) {
+    if ($null -ne $spec.credential) {
         $start.UserName = $State.Name; $start.Domain = [Environment]::MachineName
-        $start.Password = $Credential; $start.LoadUserProfile = $true
+        $start.Password = $spec.credential; $start.LoadUserProfile = $true
     }
     $process = New-Object Diagnostics.Process
     $process.StartInfo = $start
-    $child = @{ Process = $process; Started = $false; Unknown = $true; Exited = $false; Expected = $Expected }
+    $child = @{ Process = $process; Started = $false; Unknown = $true; Exited = $false; Expected = $spec.expected }
     [void]$State.Children.Add($child)
+    if ($CaseKind -ceq 'query-ordinary') { Start-Nb1QueryAttempt $State }
     if (-not $process.Start()) { throw 'private test process did not start' }
     $child.Started = $true; $child.Unknown = $false
     [void]$process.Handle # retain the exact private process handle; never find/kill by text
@@ -390,15 +497,30 @@ function Invoke-Nb1NativeCase($State, $Report, [string]$Expected, [string]$SID, 
     $process.WaitForExit(); $child.Exited = $true
     $text = $stdout.GetAwaiter().GetResult(); $errorText = $stderr.GetAwaiter().GetResult()
     if ($text.Length -gt 131072 -or $errorText.Length -gt 131072) { throw 'private output exceeded evidence budget' }
-    $lines = @($text -split '\r?\n' | Where-Object { $_.StartsWith('NB1_TASKUSER_NATIVE_RESULT ', [StringComparison]::Ordinal) })
-    $diagnostics = @($text -split '\r?\n' | Where-Object { $_ -match '^\s*context_native_windows_test\.go:\d+: ' -or $_ -match '^(--- (PASS|FAIL|SKIP): TestNativeCurrentOptIn |(PASS|FAIL)$)' })
+    $lines = @($text -split '\r?\n' | Where-Object { $_.StartsWith($spec.prefix, [StringComparison]::Ordinal) })
+    $diagnostics = @($text -split '\r?\n' | Where-Object { $_ -match $spec.diagnostics })
     $value = $null
-    if ($lines.Count -eq 1) { $value = $lines[0].Substring('NB1_TASKUSER_NATIVE_RESULT '.Length) | ConvertFrom-Json }
+    $json = $null
+    if ($lines.Count -eq 1) { $json = $lines[0].Substring($spec.prefix.Length) }
     $hash = [Security.Cryptography.SHA256]::Create()
     try { $stderrHash = ([BitConverter]::ToString($hash.ComputeHash([Text.Encoding]::UTF8.GetBytes($errorText)))).Replace('-', '').ToLowerInvariant() } finally { $hash.Dispose() }
-    $Report.cases += @([ordered]@{ expected = $Expected; exit_code = $process.ExitCode; environment_keys = @($environment.Keys); report_lines = $lines.Count; stderr_chars = $errorText.Length; stderr_sha256 = $stderrHash; native_diagnostics = $diagnostics; native = $value })
-    if ($process.ExitCode -ne 0 -or $lines.Count -ne 1) { throw 'native child failed or did not emit exactly one result' }
-    Assert-Nb1NativeReport $value $Expected $SID
+    $record = [ordered]@{ expected = $spec.expected; exit_code = $process.ExitCode; environment_keys = @($environment.Keys); report_lines = $lines.Count; stderr_chars = $errorText.Length; stderr_sha256 = $stderrHash; native_diagnostics = $diagnostics; native = $null }
+    if ($CaseKind -ceq 'query-ordinary') {
+        $record['binary_sha256'] = $spec.snapshot.sha256
+        $Report.query_case = $record
+        if ($process.ExitCode -ne 0 -or $lines.Count -ne 1) {
+            $record['failure_summary'] = Get-Nb1QueryFailureSummary $json
+            throw 'query child failed or did not emit exactly one selected report'
+        }
+        try { $record.native = Assert-Nb1QueryReport $json $spec.sid }
+        catch { $record['failure_summary'] = Get-Nb1QueryFailureSummary $json; throw }
+        $State.QueryCompleted = $true # exact PASS follows Query's cmd.Run/Wait; otherwise descendants remain unproven
+    } else {
+        if ($lines.Count -eq 1) { $record.native = $json | ConvertFrom-Json }
+        $Report.cases += @($record)
+        if ($process.ExitCode -ne 0 -or $lines.Count -ne 1) { throw 'native child failed or did not emit exactly one result' }
+        Assert-Nb1NativeReport $record.native $spec.expected $spec.sid
+    }
 }
 
 function New-Nb1NativeOps {
@@ -418,6 +540,12 @@ function New-Nb1NativeOps {
             if ($s.HostSID -notmatch '^S-1-5-21-\d+-\d+-\d+-\d+$') { throw 'ENVIRONMENT_UNAVAILABLE: hosted local administrator identity not established' }
             $s.SourceSnapshot = Get-Nb1Snapshot $s.Binary
             $s.BinaryHash = $s.SourceSnapshot.sha256
+            if (-not [string]::IsNullOrEmpty($s.QueryBinary)) {
+                if ($s.QueryBinary -ieq $s.Binary) { throw 'query binary must be independently built and fingerprinted' }
+                $s.QuerySourceSnapshot = Get-Nb1Snapshot $s.QueryBinary
+                $s.QueryBinaryHash = $s.QuerySourceSnapshot.sha256
+                $r.query_binary_sha256 = $s.QueryBinaryHash
+            }
             $s.ProfilesRoot = [IO.Path]::GetFullPath([Nb1TokenFixture.Native]::ProfilesRoot())
             $s.ProfilesRootSnapshot = Get-Nb1Snapshot $s.ProfilesRoot -Directory
             $s.ExpectedProfile = Join-Path $s.ProfilesRoot $s.Name
@@ -430,7 +558,7 @@ function New-Nb1NativeOps {
         AdministratorCase = {
             param($s,$r)
             Assert-Nb1Same $s.SourceSnapshot (Get-Nb1Snapshot $s.Binary)
-            Invoke-Nb1NativeCase $s $r 'administrator-rejected' $s.HostSID $s.Binary $s.SystemDirectory $null
+            Invoke-Nb1NativeCase $s $r 'token-admin'
         }
         CreateUser = { param($s,$r) [void](New-LocalUser -Name $s.Name -Password $s.Password -Description $s.Marker -ErrorAction Stop) }
         ClaimUser = {
@@ -461,6 +589,7 @@ function New-Nb1NativeOps {
         StageFixture = {
             param($s,$r)
             Assert-Nb1Same $s.SourceSnapshot (Get-Nb1Snapshot $s.Binary)
+            if (-not [string]::IsNullOrEmpty($s.QueryBinary)) { Assert-Nb1Same $s.QuerySourceSnapshot (Get-Nb1Snapshot $s.QueryBinary) }
             Assert-Nb1Same $s.ProfilesRootSnapshot (Get-Nb1Snapshot $s.ProfilesRoot -Directory) -IdentityOnly
             Assert-Nb1Same $s.StageParentSnapshot (Get-Nb1Snapshot ([IO.Path]::GetDirectoryName($s.StageRoot)) -Directory) -IdentityOnly
             if ([Nb1TokenFixture.Native]::ExistsNoFollow($s.StageRoot)) { throw 'fixture path appeared before exclusive staging' }
@@ -471,6 +600,11 @@ function New-Nb1NativeOps {
             [IO.File]::Copy($s.Binary, $s.StagedBinary, $false)
             $s.StagedSnapshot = Get-Nb1Snapshot $s.StagedBinary
             if ($s.StagedSnapshot.sha256 -cne $s.BinaryHash) { throw 'staged test binary hash mismatch' }
+            if (-not [string]::IsNullOrEmpty($s.QueryBinary)) {
+                [IO.File]::Copy($s.QueryBinary, $s.StagedQueryBinary, $false)
+                $s.StagedQuerySnapshot = Get-Nb1Snapshot $s.StagedQueryBinary
+                if ($s.StagedQuerySnapshot.sha256 -cne $s.QueryBinaryHash) { throw 'staged query binary hash mismatch' }
+            }
             $s.StageSnapshots = @{}
             foreach ($path in @($s.StageRoot, $s.BinDir, $s.TempDir)) { $s.StageSnapshots[$path] = Get-Nb1Snapshot $path -Directory }
             $s.StageVerified = $true
@@ -481,12 +615,13 @@ function New-Nb1NativeOps {
             if ($null -ne (Get-Nb1Profile $s)) { throw 'new user already has a profile before fixture logon' }
             if ([Nb1TokenFixture.Native]::ExistsNoFollow($s.ExpectedProfile)) { throw 'unmapped profile path exists before fixture logon' }
             $s.ProfileAbsentBeforeLogon = $true
-            Invoke-Nb1NativeCase $s $r 'ordinary' $s.SID $s.StagedBinary $s.TempDir $s.Password
+            Invoke-Nb1NativeCase $s $r 'token-ordinary'
             $s.OrdinaryNativePassed = $true
             $profile = Get-Nb1Profile $s
             if ($null -eq $profile) { throw 'new user profile mapping was not established' }
             $s.ProfileSnapshot = $profile.snapshot
             $r.profile_observation = [ordered]@{ sid = $s.SID; path = $profile.path; root_id = $profile.snapshot.id; loaded = $profile.loaded }
+            if (-not [string]::IsNullOrEmpty($s.QueryBinary)) { Invoke-Nb1NativeCase $s $r 'query-ordinary' }
         }
         ReapChildren = {
             param($s,$r)
@@ -499,6 +634,7 @@ function New-Nb1NativeOps {
                 $child.Exited = $true
                 $child.Process.Dispose()
             }
+            Assert-Nb1QueryExitProof $s
             $s.ChildrenExited = $true
         }
         CleanupResources = {
@@ -508,8 +644,11 @@ function New-Nb1NativeOps {
                 if (-not $s.StageVerified) { throw 'partially created fixture directory is unverified; preserve it' }
                 foreach ($path in @($s.StageRoot, $s.BinDir, $s.TempDir)) { Assert-Nb1Same $s.StageSnapshots[$path] (Get-Nb1Snapshot $path -Directory) -IdentityOnly }
                 $rootNames = @((Get-ChildItem -LiteralPath $s.StageRoot -Force).Name | Sort-Object)
-                if (($rootNames -join ',') -cne 'bin,tmp' -or @(Get-ChildItem -LiteralPath $s.BinDir -Force).Count -ne 1 -or @(Get-ChildItem -LiteralPath $s.TempDir -Force).Count -ne 0) { throw 'unknown fixture files; preserve directory and account' }
-                Assert-Nb1Same $s.StagedSnapshot (Get-Nb1Snapshot $s.StagedBinary)
+                $files = @(Get-Nb1StagedFiles $s)
+                $binNames = @((Get-ChildItem -LiteralPath $s.BinDir -Force).Name | Sort-Object)
+                $expectedNames = @($files | ForEach-Object { [IO.Path]::GetFileName($_.path) } | Sort-Object)
+                if (($rootNames -join ',') -cne 'bin,tmp' -or ($binNames -join ',') -cne ($expectedNames -join ',') -or @(Get-ChildItem -LiteralPath $s.TempDir -Force).Count -ne 0) { throw 'unknown fixture files; preserve directory and account' }
+                foreach ($file in $files) { Assert-Nb1Same $file.snapshot (Get-Nb1Snapshot $file.path) }
             }
             Assert-Nb1Same $s.ProfilesRootSnapshot (Get-Nb1Snapshot $s.ProfilesRoot -Directory) -IdentityOnly
             $profile = Get-Nb1Profile $s
@@ -523,8 +662,7 @@ function New-Nb1NativeOps {
                 if ($null -ne (Get-Nb1Profile $s) -or ([Nb1TokenFixture.Native]::ExistsNoFollow($s.ExpectedProfile))) { throw 'exact fixture profile remains after OS deletion' }
             } elseif ([Nb1TokenFixture.Native]::ExistsNoFollow($s.ExpectedProfile)) { throw 'unmapped or replaced profile path; preserve it' }
             if ($s.StageVerified) {
-                Assert-Nb1Same $s.StagedSnapshot (Get-Nb1Snapshot $s.StagedBinary)
-                [IO.File]::Delete($s.StagedBinary)
+                foreach ($file in @(Get-Nb1StagedFiles $s)) { Assert-Nb1Same $file.snapshot (Get-Nb1Snapshot $file.path); [IO.File]::Delete($file.path) }
                 foreach ($path in @($s.BinDir, $s.TempDir, $s.StageRoot)) {
                     Assert-Nb1Same $s.StageSnapshots[$path] (Get-Nb1Snapshot $path -Directory) -IdentityOnly
                     if (@(Get-ChildItem -LiteralPath $path -Force).Count -ne 0) { throw 'fixture directory is not empty; no recursive delete' }
@@ -548,7 +686,9 @@ function New-Nb1NativeOps {
 if ($LibraryOnly) { return }
 $report = [ordered]@{ schema_version = 1; status = 'PREPARED_NOT_RUN'; hardware_access = $false; task_mutations = $false; policy_changes = $false; cases = @(); checks = @(); cleanup = @(); scope = 'Native own-process token classification and bounded handle observation only; no Task Scheduler or USB acceptance.' }
 if (-not $Execute) { $report | ConvertTo-Json -Depth 12; return }
+if (-not [string]::IsNullOrEmpty($QueryBinary)) { $report.scope = 'Own-process token fixture plus read-only current-user missing-contract observation; production remains Unknown/not_checked. No task CRUD or USB acceptance.' }
 Assert-Nb1LocalAbsolutePath $Binary
+if (-not [string]::IsNullOrEmpty($QueryBinary)) { Assert-Nb1LocalAbsolutePath $QueryBinary }
 Assert-Nb1LocalAbsolutePath $OutputDirectory
 if ($env:GITHUB_ACTIONS -cne 'true' -or [Environment]::OSVersion.Platform -ne 'Win32NT') { throw 'ENVIRONMENT_UNAVAILABLE: execute is restricted to a disposable hosted Windows VM' }
 if (Test-Path -LiteralPath $OutputDirectory) { throw 'evidence directory already exists' }
@@ -560,7 +700,8 @@ $markerBytes = [Text.Encoding]::UTF8.GetBytes($marker)
 $sha = [Security.Cryptography.SHA256]::Create()
 try { $markerHash = ([BitConverter]::ToString($sha.ComputeHash($markerBytes))).Replace('-', '').ToLowerInvariant() } finally { $sha.Dispose() }
 $stageRoot = Join-Path ([Environment]::GetFolderPath('CommonApplicationData')) ('nb1-token-ci-' + $name)
-$state = @{ Name = $name; Marker = $marker; MarkerHash = $markerHash; SID = $null; HostSID = $null; Binary = [IO.Path]::GetFullPath($Binary); StageRoot = $stageRoot; BinDir = (Join-Path $stageRoot 'bin'); TempDir = (Join-Path $stageRoot 'tmp'); StagedBinary = (Join-Path $stageRoot 'bin\taskuser-native.test.exe'); Password = $null; Children = (New-Object Collections.ArrayList); CreationAttempted = $false; CreationVerified = $false; CreationReturned = $false; ChildrenExited = $false; StageVerified = $false; ProfileSnapshot = $null; ProfileAbsentBeforeLogon = $false; OrdinaryNativePassed = $false }
+$state = @{ Name = $name; Marker = $marker; MarkerHash = $markerHash; SID = $null; HostSID = $null; Binary = [IO.Path]::GetFullPath($Binary); QueryBinary = $null; QueryAttempted = $false; QueryCompleted = $false; StageRoot = $stageRoot; BinDir = (Join-Path $stageRoot 'bin'); TempDir = (Join-Path $stageRoot 'tmp'); StagedBinary = (Join-Path $stageRoot 'bin\taskuser-native.test.exe'); StagedQueryBinary = (Join-Path $stageRoot 'bin\taskquery-native.test.exe'); Password = $null; Children = (New-Object Collections.ArrayList); CreationAttempted = $false; CreationVerified = $false; CreationReturned = $false; ChildrenExited = $false; StageVerified = $false; ProfileSnapshot = $null; ProfileAbsentBeforeLogon = $false; OrdinaryNativePassed = $false }
+if (-not [string]::IsNullOrEmpty($QueryBinary)) { $state.QueryBinary = [IO.Path]::GetFullPath($QueryBinary) }
 try { $report = Invoke-Nb1TokenLifecycle $state $report (New-Nb1NativeOps) }
 finally { if ($null -ne $state.Password) { $state.Password.Dispose() } }
 $encoded = $report | ConvertTo-Json -Depth 16

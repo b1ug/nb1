@@ -1,4 +1,4 @@
-name: Windows token native fixture
+name: Windows token and read-only query native fixture
 
 on:
   push:
@@ -57,11 +57,39 @@ jobs:
             scope = 'Own-process token native fixture; no Task Scheduler or USB acceptance.'
           }
           $metadata | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $env:RUNNER_TEMP 'windows-token-build.json') -Encoding UTF8
+      - name: Software-only strict query DTO regressions
+        shell: powershell
+        run: |
+          & .\ci\test-windows-query-native.ps1 | Tee-Object -FilePath (Join-Path $env:RUNNER_TEMP 'windows-query-fakes.json')
+          if ($LASTEXITCODE -ne 0) { throw 'query DTO fake regressions failed' }
+          $fakes = Get-Content -LiteralPath (Join-Path $env:RUNNER_TEMP 'windows-query-fakes.json') -Raw | ConvertFrom-Json
+          if ($fakes.status -cne 'PASS' -or $fakes.failed -ne 0 -or $fakes.case_count -lt 138) { throw 'query DTO fake evidence is incomplete' }
+      - name: Build separate opt-in query binary
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $binary = Join-Path $env:RUNNER_TEMP ('taskquery-native-' + $env:GOARCH + '.test.exe')
+          & go test -c -o $binary ./internal/service/taskquery
+          if ($LASTEXITCODE -ne 0) { throw 'query test binary build failed' }
+          $names = @(& $binary '-test.list=^TestNativeQueryOptIn$')
+          if ($LASTEXITCODE -ne 0 -or $names -cnotcontains 'TestNativeQueryOptIn') { throw 'explicit query fixture is not integrated; refusing empty acceptance' }
+          $metadata = [ordered]@{
+            source = (& git rev-parse HEAD)
+            arch = $env:GOARCH
+            cgo_enabled = $env:CGO_ENABLED
+            gowork = $env:GOWORK
+            go_version = (& go version)
+            binary_sha256 = (Get-FileHash -LiteralPath $binary -Algorithm SHA256).Hash.ToLowerInvariant()
+            native_test_present = $true
+            scope = 'Read-only fixed-user missing-contract observation; production remains Unknown/not_checked. No task CRUD or USB.'
+          }
+          $metadata | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $env:RUNNER_TEMP 'windows-query-build.json') -Encoding UTF8
       - name: Observe administrator rejection and fresh ordinary user acceptance
         shell: powershell
         run: |
           $binary = Join-Path $env:RUNNER_TEMP ('taskuser-native-' + $env:GOARCH + '.test.exe')
-          & .\ci\windows-token-native.ps1 -Execute -Binary $binary -OutputDirectory (Join-Path $env:RUNNER_TEMP 'windows-token-native-evidence')
+          $query = Join-Path $env:RUNNER_TEMP ('taskquery-native-' + $env:GOARCH + '.test.exe')
+          & .\ci\windows-token-native.ps1 -Execute -Binary $binary -QueryBinary $query -OutputDirectory (Join-Path $env:RUNNER_TEMP 'windows-token-native-evidence')
       - name: Require both native reports and exact cleanup
         if: ${{ always() }}
         shell: powershell
@@ -79,6 +107,11 @@ jobs:
           if (@($report.cases).Count -ne 2 -or @($report.cases | Where-Object { $_.exit_code -ne 0 -or $_.native.status -cne 'PASS' }).Count -ne 0) { throw 'both native identity cases must PASS' }
           if (@($report.cases | Where-Object { $_.expected -ceq 'ordinary' }).Count -ne 1 -or @($report.cases | Where-Object { $_.expected -ceq 'administrator-rejected' }).Count -ne 1) { throw 'ordinary/admin cases are incomplete' }
           if (@($report.cleanup).Count -eq 0 -or @($report.cleanup | Where-Object { $_.status -cne 'PASS' }).Count -ne 0) { throw 'explicit child/profile/account/fixture cleanup must PASS' }
+          $queryBuild = Get-Content -LiteralPath (Join-Path $env:RUNNER_TEMP 'windows-query-build.json') -Raw | ConvertFrom-Json
+          if ($queryBuild.source -cne $build.source -or $queryBuild.arch -cne $build.arch -or $queryBuild.native_test_present -ne $true -or $report.query_binary_sha256 -cne $queryBuild.binary_sha256 -or $report.query_case.binary_sha256 -cne $queryBuild.binary_sha256) { throw 'query source/binary evidence is incomplete' }
+          if ($report.query_bridge_exit_proven -ne $true -or $report.query_case.exit_code -ne 0 -or $report.query_case.report_lines -ne 1) { throw 'query terminal report/descendant exit proof is incomplete' }
+          . .\ci\windows-token-native.ps1 -LibraryOnly
+          [void](Assert-Nb1QueryReport ($report.query_case.native | ConvertTo-Json -Depth 10 -Compress) $report.fixture_user.sid)
       - name: Compile Windows ARM64 only
         if: ${{ matrix.arch == 'amd64' }}
         shell: powershell
@@ -86,6 +119,8 @@ jobs:
           $env:GOARCH = 'arm64'
           & go test -c -o (Join-Path $env:RUNNER_TEMP 'taskuser-native-arm64-compile-only.test.exe') ./internal/service/taskuser
           if ($LASTEXITCODE -ne 0) { throw 'ARM64 compile failed' }
+          & go test -c -o (Join-Path $env:RUNNER_TEMP 'taskquery-native-arm64-compile-only.test.exe') ./internal/service/taskquery
+          if ($LASTEXITCODE -ne 0) { throw 'ARM64 query compile failed' }
       - name: Upload selected native fixture evidence
         if: ${{ always() }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
@@ -94,6 +129,8 @@ jobs:
           path: |
             ${{ runner.temp }}/windows-token-fakes.json
             ${{ runner.temp }}/windows-token-build.json
+            ${{ runner.temp }}/windows-query-fakes.json
+            ${{ runner.temp }}/windows-query-build.json
             ${{ runner.temp }}/windows-token-native-evidence/results.json
           if-no-files-found: error
           include-hidden-files: false

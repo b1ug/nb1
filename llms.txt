@@ -1,32 +1,34 @@
-# nb1 blink(1) 本地控制
+# nb1：blink(1) 本地控制
 
-> MCP、HTTP与默认daemon模式CLI共用核心编译器、Job和设备执行器。MCP通过官方SDK实现真实stdio协议，直接请求HTTP，不调用CLI。本文不授予额外设备或系统权限。
+nb1 提供高级灯光动作、CLI、MCP 和本机 HTTP。MCP 通过官方 SDK 实现真实 stdio 协议，直接请求 HTTP；高级动作由 nb1 核心编译。先确认实际 tools/list、schema、CLI 帮助和 daemon 能力，源码文档不代表当前安装版本。
 
-先读实际tools/list、schema与CLI帮助，再选择入口。本树是十二工具候选：新增get_pattern，现有preview_program/run_program支持固定pattern_ref。当前工作区已安装仍是f879的十一工具，临时daemon/Web为6acc；本候选尚未安装，不能把源码能力当成宿主已连接的能力。
+## 优先使用高级动作
 
-light使用contract=nb1-light-action/v1与action，支持set/off/fade/blink/breathe/pulse/alternate/rainbow。alternate可选cut/linear/sine/orbit；MCP只有实际schema声明transition后才发送它。新pulse为快起/衰减/停顿，旧Effect pulse仍是period_ms对称呼吸。所有颜色为raw RGB，不暗加Gamma。
+- `nb1-light-action/v1`：set、off、fade、blink、breathe、pulse、alternate、rainbow，保留原 Program 语义。
+- `nb1-light-action/experimental-v2`：独立的高级 orbit，4 段简单候选或 8 段细节选项，返回实验 FrameProgram。CLI 和同名 MCP preview_light/run_light 支持明确合同分派；调用者无需手写帧。
+- v2 Orbit 不等于旧 v1 alternate.transition=orbit，不自动迁移旧动作或图案。新 pulse 为 attack/decay/rest，旧 Effect pulse 仍是 period_ms 对称渐变。颜色是 raw RGB，不隐式加 Gamma。
 
-Pattern CLI提供import/list/get/export/preview/run。候选MCP用list_patterns读摘要、get_pattern({id})读取完整冻结记录；从真实记录取id和revision，再交给preview_program/run_program的pattern_ref。它与原program/effect三选一，原分支语义不变。固定引用预览返回pattern_preview、data:{pattern_ref,preview}；运行必须显式reject和完整原票据，不接受dry_run字段（包括false）、不自动prepare/retry/fallback。MCP不增加import；保存仍走Web/CLI/HTTP，新Action保存result.program，不支持source.action。
+## 原请求与恢复
 
-## 使用入口
+MCP 播放前用 list_devices({prepare_request:true}) 取得并保存原票据，run_light 传 serial、contract/action、原 request_id / expected_daemon_instance_id 和 reject。内部一次目标预览、至多一次执行 POST，不自动重试或换票。202 / accepted 不是完成。
 
-- [Agent使用指南](docs/agent-guide.zh-CN.md)：发现版本、选择语义、原票据与未知结果。
-- [Pattern完整流程](docs/pattern-workflow.zh-CN.md)：Web/CLI保存与候选MCP固定引用预览、执行；保存与运行严格分开。
-- [项目Skill](skills/blink1-control/SKILL.md)：项目内指南；未全局安装、不自动注册MCP。
-- [light动作契约](internal/lightaction/README.zh-CN.md)：颜色、曲线、66步过渡、时间预算与兼容规则。
-- [Pattern CLI合同](docs/patterns-cli.md)：现有命令和结果字段。
-- [MCP合同](adapters/mcp/README.md)：真实stdio、工具schema和错误；仍以运行时发现为准。
-- [颜色输入](docs/color-input.zh-CN.md)：名字/Hex3/Hex6/RGB8/HSV；旧Program/Effect执行字段仍是Hex6。
-- [HTTP OpenAPI](docs/openapi.json)：机器可读合同，不表示相应客户端已经安装。
+已知 Job ID 时用 get_job({id})；仅有 v2 票据时明确 get_job({serial,job_kind:"frame",...ticket})。省略 job_kind 是旧 Program 回执；不能与 id 混传。超时、坏响应、过期和重启后保留原票据，不改键重播。
 
-## 有限示例
+CLI 默认 daemon：control light preview FILE / run SERIAL FILE；direct 预览纯本地，direct run 复用同一 Engine 和设备锁。v2 daemon 恢复使用 control light request SERIAL FILE --request-id ID --expected-daemon-instance-id INSTANCE，可加 --job-id 和 --wait；只查询，不创建或重播任务。
 
-- [呼吸](examples/runtime/light-breathe.action.json)、[短脉冲](examples/runtime/light-pulse.action.json)、[直接红蓝交替](examples/runtime/light-alternate.action.json)、[彩虹](examples/runtime/light-rainbow.action.json)。
-- [环绕相位](examples/runtime/flow-orbit.action.json)：3000ms×2周期、132步、完成熄灭；不是可证明方向的真实旋转。
-- [短脉冲Pattern作者包](examples/runtime/pattern-short-pulse.authoring.json)：保存三步Program并有限重复，不含设备、假票据或source.action。
+## 读取资料
 
-## 操作边界
+- [Agent 使用指南](docs/agent-guide.zh-CN.md)：高级动作、MCP/CLI 工作流、恢复及验证边界。
+- [项目 Skill](skills/blink1-control/SKILL.md)：项目内指导，不全局安装或注册工具。
+- [v1 动作契约](internal/lightaction/README.zh-CN.md)：八动作、旧过渡与兼容语义。
+- [实验 Orbit 契约](internal/lightactionv2/README.zh-CN.md)：颜色、4/8 段、周期和实验限制。
+- [MCP 合同](adapters/mcp/README.md)：真实工具 schema、返回值、job_kind 和回执路径。
+- [Pattern CLI 合同](docs/patterns-cli.md)：import/list/get/export/preview/run 与固定 revision。
+- [颜色输入](docs/color-input.zh-CN.md)：名字、Hex3/Hex6、RGB8、HSV。
+- [HTTP OpenAPI](docs/openapi.json)：既有 v1 机器合同；实验 v2 另查高级动作与 MCP 文档，并核对 daemon 实际支持。
 
-新light及Pattern执行均使用reject和原票据；202是接受而非完成。票据从list_devices({prepare_request:true})真实返回中保存，执行结果未知时用get_job查询原serial和原票据，不能换键重发。导入的publication_unknown是文件发布不确定，与执行的outcome_unknown分开；导入不亮灯。所有Pattern库命令拒绝direct，不猜测另一份本地库。
+## 图案与边界
 
-[最小权限](docs/security-boundaries.zh-CN.md)仍适用。sequence/spin/frame/compose、自动重放和硬件Flash不是已实现能力；mk3未实机验收。llms.txt提供可读索引，不保证Agent自动读取或理解。
+现有 Pattern 库保存 v1 Program/Effect。MCP 用 list_patterns/get_pattern 读取，preview_program/run_program 传固定 pattern_ref；不提供 MCP 导入。v1 Action 可保存其冻结 result.program，不能保存 source.action。v2 FrameProgram 尚不能导入现有库，可独立保存原 Action JSON 文件；不要降成手写 steps。
+
+区分软件预览、Job 终态、带 sampled_at 的设备读回和相机观测。MK3 未实机验收；没有自动重放或硬件 Flash 承诺。轻量 debug Web、Starlark/StarCLI 和 Codex 通知在后续 backlog，不作为本指南已支持的接口。本文不保证 Agent 自动读取，也不授予额外权限。

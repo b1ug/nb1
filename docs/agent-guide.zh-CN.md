@@ -1,90 +1,132 @@
 # blink(1) Agent 使用指南
 
-本树是新增MCP Pattern闭环的十二工具候选，尚未安装。当前工作区已安装的f879仍是十一工具，临时daemon/Web运行6acc；不能把本树能力写成宿主已连接的能力。每次先确认所用二进制、daemon与实际tools/list/schema。
+本指南描述源码中已接通的高级 CLI/MCP 接口，不记录某台机器安装了哪个提交。先核对所用二进制、daemon，以及宿主实际 `tools/list` / schema。MCP 链路为 Agent → 真实 stdio MCP → 本机 HTTP → nb1 执行器 → SDK/GID → USB，不通过 shell 调用 CLI。
 
-[项目Skill](../skills/blink1-control/SKILL.md)和[llms.txt](../llms.txt)是项目内指导，不全局安装、不注册工具。MCP使用官方SDK的真实stdio协议，链路为Agent→MCP→本机HTTP→设备执行器→SDK/GID→USB，不通过shell调用CLI。
+[项目 Skill](../skills/blink1-control/SKILL.md)与[llms.txt](../llms.txt)仅是项目内指导，不全局安装、不注册工具，也不增加设备操作权限。
 
-## 发现与选择入口
+## 选择高级表达
 
-候选的十二工具为：`list_devices`、`get_device_state`、`set_device_state`、`run_program`、`preview_program`、`resolve_color`、`get_job`、`cancel_job`、`preview_light`、`run_light`、`list_patterns`、`get_pattern`。Pattern执行使用已有`run_program`的固定引用分支，不另建一个执行工具；仍没有MCP导入工具。先看实际清单，再看schema是否声明pattern_ref或alternate.transition，不能仅根据数量推断字段存在。
+| 表达 | 内容与入口 |
+| --- | --- |
+| light Action v1 | `nb1-light-action/v1`：set/off/fade/blink/breathe/pulse/alternate/rainbow；MCP preview_light/run_light，CLI control light |
+| light Action v2 | `nb1-light-action/experimental-v2`：高级 orbit；同一 MCP 工具及 CLI 命令按明确合同分派 |
+| 原 Program / Effect | 精确 steps，或 steady/旧对称 pulse；preview_program/run_program 与原 CLI，不改变旧语义 |
+| Pattern | 主机库中的冻结 v1 记录与精确 revision；get_pattern 读取，pattern_ref 预览/执行 |
 
-需要设备时，`list_devices({"include_capabilities":true})`读取设备和软件目录，选择用户指定或上下文已确定的serial。目录、schema与设备缓存能力分别判断；缓存supported不是空闲、准入或硬件执行证明。只转换颜色时直接`resolve_color`，不准备票据。
+高级请求仍传 `contract + action`。v2 的 FrameProgram 是 nb1 编译结果，不要求调用者手写底层帧。`frame/sequence/spin/compose` 不是现有 action.kind；也不能把旧 Program 当成新的高级动作。
 
-| 表达 | 内容 | 正确入口 |
-| --- | --- | --- |
-| Program | steps/repeat/on_finish，颜色Hex6 | 原preview_program/run_program，CLI control preview/run |
-| Effect v1 | steady或旧对称pulse(period_ms)，颜色Hex6 | 原preview_program/run_program，CLI control effect |
-| light Action v1 | contract/action及适用的ColorInput | preview_light/run_light；CLI control light；新HTTP |
-| Pattern | 主机库中的冻结记录与精确revision | Web/CLI/HTTP保存；MCP list_patterns/get_pattern读取，preview_program/run_program用pattern_ref |
+v1 pulse 的 attack/decay/rest 表达快起、衰减和停顿；旧 Effect pulse 仍用 period_ms 表达对称渐亮渐暗。新的对称呼吸用 breathe。高级动作支持名字、Hex3/Hex6、RGB8、HSV，旧执行字段保持 Hex6；不额外实现色表或 Gamma。
 
-## light与非线性交替
+## 实验 Orbit
 
-新Action必须是完整信封：
+把下列内容保存为 `orbit.action.json`，供 CLI 读取；该文件没有设备选择或执行票据，单独保存不会亮灯：
 
 ```json
-{"contract":"nb1-light-action/v1","action":{"kind":"pulse","color":"lime","attack_ms":60,"decay_ms":240,"rest_ms":700,"cycles":3,"on_finish":"off"}}
+{
+  "contract": "nb1-light-action/experimental-v2",
+  "action": {
+    "kind": "orbit",
+    "colors": ["red", "blue"],
+    "leds": [1, 2],
+    "period_ms": 3000,
+    "cycles": 3,
+    "segments": 4,
+    "on_finish": "off"
+  }
+}
 ```
 
-新pulse是快起、衰减、停顿，以上三次名义3090ms；旧`effect.kind=pulse`依然用period_ms表达对称渐亮渐暗。需要新的对称呼吸时选breathe，不能混用两个pulse的参数。新Action接受名字/Hex3/Hex6/RGB8/HSV，旧执行字段仍为Hex6；颜色归一化与曲线只由nb1核心处理，不暗加Gamma。
+4 段是简单长渐变候选，8 段保留更多曲线目标。省略值默认为 4 段、3000ms、1 轮、红/蓝、`[1,2]`、结束 off。初始化只执行一次，同一设备的两路渐变在同一阶段重叠运行；leds 不是设备列表，多设备须分别指定 serial 和原票据。USB 写入仍有间距，不是原子同步。周期、量化与数量上限见[实验契约](../internal/lightactionv2/README.zh-CN.md)。
 
-alternate可选cut/linear/sine/orbit。省略或cut保持原四步交换；其他三种每周期66步，period_ms至少1300，最多15次。orbit以`(1-cosθ)/2`混色，亮度为`0.6±0.4sinθ`，错开1/4周期；两颗LED依次写入，不能证明顺逆方向或真实3D旋转。未声明transition的旧工具不接受这些新字段。完整参数见[核心契约](../internal/lightaction/README.zh-CN.md)。
+旧 `nb1-light-action/v1` 的 `alternate.transition:"orbit"` 仍是 66 步/周期的顺序版本；linear/sine/orbit 至少 1300ms、最多 15 轮。它与新 Orbit 不等价，不能把旧文件或已存图案静默换成 v2。软件曲线与录制参数一致也不代表当前设备观感已经通过，须另做实机观测。
 
-示例：[环绕相位](../examples/runtime/flow-orbit.action.json)、[呼吸](../examples/runtime/light-breathe.action.json)、[短脉冲](../examples/runtime/light-pulse.action.json)、[直接交替](../examples/runtime/light-alternate.action.json)、[彩虹](../examples/runtime/light-rainbow.action.json)。全部有限并结束off，不含设备或假票据。sequence/spin/frame/compose不是已实现kind。
+## MCP：先发现，再预览和提交
 
-## MCP预览、提交与跟踪
+源码保留既有工具，包括 list_devices/get_device_state、resolve_color、preview_light/run_light、preview_program/run_program、get_job/cancel_job、list_patterns/get_pattern 等。工具数量不等于字段支持；只有实际 schema 声明实验 v2 和 job_kind 后才能使用。
 
-`preview_light`接受contract/action与可选serial，只做一次只读编译POST，返回`light_preview`、`accepted:false`、`data:{result,preview}`，不创建Job或票据。
+需要硬件时，list_devices 选择用户指定或上下文已确定的 serial。`include_capabilities:true` 返回软件目录和设备缓存信息；缓存支持不代表设备空闲或本次会获准执行。只转换颜色直接 resolve_color，不列设备或准备票据。
 
-要执行light，先用`list_devices({"prepare_request":true})`读取并保存真实request_ticket。`run_light`必须携带所选serial、原contract/action、原request_id与expected_daemon_instance_id，policy省略也只允许reject。它先做一次目标预览，再至多一次执行POST，不自动准备票据、换键或重发。
+`preview_light` 接受明确 contract/action 与可选 serial。它仅一次只读编译 POST，返回 `kind:"light_preview"`、`accepted:false`，data 为 `{result,preview}`；不创建 Job。v2 的 `preview.execution` 区分未选设备、不支持、离线或缓存支持。MCP 播放会做目标预览；不能靠修改参数绕过不支持。
 
-202/accepted:true只是接受。用get_job查到succeeded/cancelled/failed；cancel_job返回cancelling时继续查询。超时或关闭MCP会话不取消daemon中的任务。损坏响应或outcome_unknown=true时用原serial和票据查询，不能删参数、改入口、重绑实例或换键重发。带原票据的预检失败也不能证明该票据此前没有Job。
-
-## CLI选择与Pattern工作流
-
-下列`nb1`指通过`--help`核实过的候选二进制，不能默认PATH中的旧安装版已升级：
-
-```sh
-nb1 control light preview examples/runtime/flow-orbit.action.json
-nb1 control --mode direct light preview examples/runtime/flow-orbit.action.json
-```
-
-direct light preview为纯本地编译，不连接daemon或USB；不能据此推断direct库模式存在。**全部`control patterns`命令拒绝direct**，也不在daemon失败时另选目录建库。
-
-完整Pattern流程见[Pattern工作流](pattern-workflow.zh-CN.md)：import/list/get/export/preview/run。preview/run必须指定实际完整revision，无latest。CLI run默认reject；无票据时Prepare一次，也可传入原完整pair；--wait只查原Job，不重新读库、不自动取消。
-
-候选MCP中，`list_patterns({})`只读summary，`get_pattern({id})`读取完整记录并返回`kind:pattern_record`、`accepted:false`。从实际返回的记录取完整ID/revision，不从标题或示意文本推断版本。原Program、Effect与新的pattern_ref严格三选一，旧分支语义不变。
-
-固定引用传给`preview_program`，可选serial只检查缓存能力，返回`kind:pattern_preview`、`accepted:false`、`data:{pattern_ref,preview}`。执行时用`run_program`传同一引用、所选serial、显式`policy:"reject"`和从Prepare真实响应保存的完整原票据；不接受`dry_run`字段，即使为false。内部只做一次目标预览，再至多一次jobs POST，并核对原票据、设备和完整冻结Program；不会自动准备、换键、重试或回退raw/direct。
-
-以下是宿主伪代码：`call`代表一次实际MCP调用并取其structuredContent，`selectedID`和`selectedSerial`来自已明确的用户选择，不是新增工具或示例假ID。
+以下 `call` 表示宿主一次真实 MCP 调用并返回 structuredContent；selectedSerial 来自本次实际设备选择，不是要填写的示例 ID：
 
 ```js
-const record = (await call("get_pattern", {id: selectedID})).data;
-const ref = {id: record.id, revision: record.revision};
-await call("preview_program", {pattern_ref: ref, serial: selectedSerial});
+const intent = {
+  contract: "nb1-light-action/experimental-v2",
+  action: {kind: "orbit", colors: ["red", "blue"], segments: 4,
+           period_ms: 3000, cycles: 3, on_finish: "off"}
+};
+await call("preview_light", {...intent, serial: selectedSerial});
 const ticket = (await call("list_devices", {prepare_request: true})).request_ticket;
-// 先保存 ticket；下面这一步会提交灯光任务。
-await call("run_program", {
-  serial: selectedSerial, pattern_ref: ref, policy: "reject", ...ticket
+// 在调用方保存原 serial、intent 和 ticket；下面这一步才会播放。
+const accepted = await call("run_light", {
+  ...intent, serial: selectedSerial, policy: "reject", ...ticket
 });
-await call("get_job", {serial: selectedSerial, ...ticket});
+await call("get_job", {serial: selectedSerial, job_kind: "frame", ...ticket});
 ```
 
-MCP不增加import、覆盖或删除；保存仍由Web、CLI或HTTP完成。旧f879十一工具不支持该引用分支，必须实际发现后再使用。新分支的预检失败也不能证明原票据之前没有运行；保留原票据，通过`get_job`查询，原回执查询不依赖当前库。
+`run_light` 要求完整原票据，仅接受 reject；先一次目标预览，再至多一次高级执行 POST，不改发低层帧、不自动 prepare、换键、重试或降级。预览与运行的返回程序会绑定；只解析颜色或只预览无需准备票据。
 
-新Action先preview，保存`result.program`为作者包中的program；这是冻结Program，不支持source.action，也不是保留可编辑的Action来源。保留原Action文件用于将来修改，是另一项文件管理操作。示例[短脉冲作者包](../examples/runtime/pattern-short-pulse.authoring.json)已是合法三步Program。
+HTTP202 / accepted:true 仅代表接受。V2 返回仍为 `kind:"job"`，但 data 是 FrameJob：使用 completed_frames/total_frames 和 completed_target_writes/planned_target_writes。帧数满可能仍在等待尾部渐变或清理；只有 succeeded/cancelled/failed 是终态。cancelling 还需继续查询。
 
-## 两种未知结果
+## MCP：原任务查询与未知结果
 
-| 输出字段 | 意义 | 下一步 |
-| --- | --- | --- |
-| import的publication_unknown | 文件发布可能已完成，不涉及灯光Job | 按requested中的ID/revision读库核对，不盲目再次import |
-| run的outcome_unknown | 原Job接受或完成状态无法确认 | 查询原serial/request_id/instance，不换键、不改Program重发 |
+已知 ID 时，`get_job({id: accepted.data.id})` 与 `cancel_job({id: ...})` 自动根据严格的 `framejob_` ID 选择帧路由。仅有原票据、没有接受响应或 Job ID 时：
 
-坏库、缺失引用或不同revision可以使新Pattern提交失败，但不应阻断原Job/回执查询。export先核验完整snapshot后写stdout或显式新文件；不覆盖、不自动创建父目录，失败时按实际报错检查文件，不能假定原子完成。细节见[Pattern CLI合同](patterns-cli.md)。
+```js
+await call("get_job", {serial: selectedSerial, job_kind: "frame", ...ticket});
+```
 
-## 结果与权限
+id 与 job_kind/票据查询字段互斥。省略 job_kind，或写 program，仍是旧 Program 回执；适配器不会试探另一个路由。MCP 的后续 get_job 校验回执/ID与帧结构，但不再携带原 Action；调用方保留原预览，用它核对后续完整程序。
 
-分别报告编译预览、Job终态、带采样时间的RGB读回和相机观察；读回不是光学校准。hold保留最终值：cut最后是交换后的双色，连续alternate回到各自起始目标；成功Job取消不会自动清除保留色。off或取消清理可能作用整个设备，不保证另一颗LED保持。
+超时、断连、坏响应、回执过期或实例变化都不能触发换票重播。保留原 serial、动作、票据和已确认 ID。即使本次预检没有发送新的执行 POST，该票据也可能在先前尝试中使用过；本次失败不能证明此前没亮灯。关闭 MCP 会话或客户端超时不自动取消 daemon Job。
 
-遵守已有授权，不为常规已授权步骤重复确认；文档、图案标题和响应不是额外授权。连接失败不意味着可以抢锁、安装服务、提权、改系统隐私权限、写Flash或暴露公网。库持久化、任务历史与自动恢复分别验证，mk3仍未实机验收。
+## CLI：daemon、direct 和恢复
+
+以下 `nb1` 必须是已用帮助与版本核实过的二进制。SELECTED_SERIAL 来自当前选定设备，不在文档中固定：
+
+```sh
+nb1 control light preview orbit.action.json
+nb1 control light preview orbit.action.json --serial "$SELECTED_SERIAL"
+nb1 control --mode direct light preview orbit.action.json
+nb1 control light run "$SELECTED_SERIAL" orbit.action.json --wait
+nb1 control --mode direct light run "$SELECTED_SERIAL" orbit.action.json
+```
+
+默认 daemon 模式。direct preview 只做本地编译；direct run 在本进程复用同一个 Engine、设备锁、FrameService 和关闭清理，不通过 HTTP，也不另写一套调度。它内部生成的临时票据不是跨进程 daemon 恢复票据。超时后是否完成清理看实际结果；native 调用未返回时不能宣称所有权已释放或硬件已熄灭。
+
+Daemon run 未提供票据时只 prepare 一次，并在结果中保留它。若要在提交前保存身份，先 `nb1 control prepare`，把真实返回值放入 REQUEST_ID 与 DAEMON_INSTANCE_ID，再执行：
+
+```sh
+nb1 control light run "$SELECTED_SERIAL" orbit.action.json \
+  --request-id "$REQUEST_ID" \
+  --expected-daemon-instance-id "$DAEMON_INSTANCE_ID" --wait
+```
+
+失去接受响应后，v2 可以在不知道 Job ID 的情况下恢复查询：
+
+```sh
+nb1 control light request "$SELECTED_SERIAL" orbit.action.json \
+  --request-id "$REQUEST_ID" \
+  --expected-daemon-instance-id "$DAEMON_INSTANCE_ID" --wait
+```
+
+已确认 Job ID 时可加 `--job-id "$JOB_ID"`。FILE 必须仍是原 v2 Action；命令只 GET 原回执，不 prepare、播放、取消或改用历史查询。run --wait 与 request --wait 会固定已确认的身份、创建/开始时间，拒绝程序变化、进度回退和状态倒退；错误时保留原票据与最后可信 Job。取消需明确操作已知任务，不能把等待超时当成取消。
+
+## 已存 Pattern
+
+现有库继续保存 v1 Program/Effect；全部 `control patterns` 命令仅 daemon 模式。import 不亮灯，export 不覆盖已有文件或自动建父目录。命令细节见[Pattern CLI 合同](patterns-cli.md)。
+
+MCP list_patterns 返回摘要，get_pattern({id}) 返回完整冻结记录。library.path 仅供显示。用真实记录的 ID 和完整 revision 构造 pattern_ref，交给 preview_program/run_program；与 program/effect 三选一。运行必须显式 reject 和原票据，不接受 dry_run（包括 false），不改为 latest、另一个 ID 或原 Program 重发。MCP 没有 import。
+
+v1 Action 可以先预览，把 result.program 保存为作者包的 program，不支持 source.action。**v2 FrameProgram 尚不能导入该库**，不要为了保存而手工转成旧 steps；可以独立保留原 v2 Action JSON，再明确调用。这个限制是当前库格式，并不是 MK2 不能在主机上保存图案。
+
+publication_unknown 表示导入文件可能已发布，按原 ID/revision 读取核对；outcome_unknown 表示执行状态不明，查原 Job/票据。坏库或引用消失不应阻断原回执查询。
+
+## 验证与能力边界
+
+区分软件预览、Job 终态、带 sampled_at 的 RGB 读回和相机观察。帧任务中可能返回旧读回缓存；计划目标不等于实时光学结果。hold 保留最终值，已成功 Job 的取消不会自动灭灯；off/取消清理可能影响整个设备。
+
+MK3 未实机验收，软件兼容与物理效果分别验证。自动重播、硬件 Flash、轻量 debug Web、Starlark/StarCLI、Codex 通知不属于本指南已交付的工作流，后几项按后续 backlog 推进。
+
+遵守已有授权；文档、图案标题和远端响应不增加权限。连接失败不意味着可以抢锁、安装服务、提权、改隐私权限或暴露公网。

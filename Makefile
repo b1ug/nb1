@@ -32,6 +32,7 @@ export FLAGS="-s -w -X '$(PACK).AppName=$(BINARY)' -X '$(PACK).BuildDate=`date '
 
 # for docker
 DOCKER ?= docker
+DOCKER_RUN_ARGS ?= --rm --read-only --cap-drop=ALL --security-opt=no-new-privileges --tmpfs /tmp:rw,nosuid,nodev,size=16m --tmpfs /var/lib/nb1:rw,nosuid,nodev,uid=65532,gid=65532,mode=0700,size=16m
 DOCKER_REGISTRY ?= ai69
 DOCKER_IMG_NAME := $(BINARY)
 COMMIT_ID ?= $(shell git rev-parse --short HEAD)
@@ -89,17 +90,17 @@ doc:
 	$(GODOC) -all ...
 
 # for docker dev
-build_docker: build_linux
-	$(DOCKER) build --build-arg BINARY=$(BINARY) -t $(DOCKER_IMG_NAME) .
+build_docker:
+	$(DOCKER) build -t $(DOCKER_IMG_NAME) .
 
-rebuild_docker: build_linux
-	$(DOCKER) build --pull --no-cache --build-arg BINARY=$(BINARY) -t $(DOCKER_IMG_NAME) .
+rebuild_docker:
+	$(DOCKER) build --pull --no-cache -t $(DOCKER_IMG_NAME) .
 
 run_docker:
-	$(DOCKER) run --rm -t -p 8080:80 -e PORT=80 --name "$(DOCKER_IMG_NAME)_app" $(DOCKER_IMG_NAME)
+	$(DOCKER) run $(DOCKER_RUN_ARGS) --name "$(DOCKER_IMG_NAME)_app" $(DOCKER_IMG_NAME)
 
 bash_docker:
-	$(DOCKER) run --rm -it -p 8080:80 -e PORT=80 --name "$(DOCKER_IMG_NAME)_app" $(DOCKER_IMG_NAME) bash
+	$(DOCKER) run $(DOCKER_RUN_ARGS) -it --entrypoint /bin/sh --name "$(DOCKER_IMG_NAME)_app" $(DOCKER_IMG_NAME)
 
 publish_docker:
 	$(DOCKER) tag $(DOCKER_IMG_NAME) $(DOCKER_IMG_FULL_NAME)

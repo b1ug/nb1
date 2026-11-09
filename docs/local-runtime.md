@@ -47,13 +47,21 @@ HTTP响应、`api_version: v1`、设备 `online` 和 `observed` 新鲜度分别�
 
 `service render` 继续只生成配置。新增的 `service install/start/stop/status/uninstall` 只针对当前普通用户的固定LaunchAgent：install先只读核对launchd归属，再写托管plist；**即使不加 `--start`，下次图形登录也可能自动加载**。安装加 `--start` 或对已安装配置执行 `service start` 才会立即bootstrap；相同配置已注册时不重启。`service stop` 只注销已核对归属的注册项并保留plist，**不等于禁用下次图形登录加载**；注册消失不表示进程退出或USB清理已完成。卸载已注册项须显式 `--stop`。`service status --config-only` 完全不调用launchctl；普通status区分磁盘安装与launchd注册，不把注册当作进程、HTTP或设备就绪。
 
-macOS部分除fake launchctl回归外，已在当前Mac/选定mk2完成临时安装、独立start/stop、保留配置、幂等不重启、真实退出后的direct读黑及恢复原daemon的19项检查，临时配置已清理；没有验证注销/登录/重启生命周期。未知plist、归属不明、查询失败、停止不确定或配置被修改时均保留文件；原地升级替换尚未实现。完整用法和边界见[用户级启动配置与管理](../internal/service/README.zh-CN.md)。Linux候选现已接入相同CLI，使用独立systemd用户管理器；仅有模拟与构建证据，真实Linux user-manager CI与原生USB待验收。Windows等其他平台仍只提供render及人工部署说明。
+macOS部分除fake launchctl回归外，已在当前Mac/选定mk2完成临时安装、独立start/stop、保留配置、幂等不重启、真实退出后的direct读黑及恢复原daemon的19项检查，临时配置已清理；没有验证注销/登录/重启生命周期。未知plist、归属不明、查询失败、停止不确定或配置被修改时均保留文件；原地升级替换尚未实现。完整用法和边界见[用户级启动配置与管理](../internal/service/README.zh-CN.md)。Linux候选现已接入相同CLI，使用独立systemd用户管理器；仅有模拟与构建证据，真实Linux user-manager CI与原生USB待验收。Windows候选另有仅查询固定当前用户任务的只读service status，自动管理未实现；其他平台仍仅render。
 
 ### Linux用户级持久启动候选
 
 Linux上的 `service install/start/stop/status/uninstall` 仅管理当前普通用户的固定 `nb1.service`，不接收任意UID或跨平台管理目标、不自动提权。install默认创建受控unit和 `default.target.wants` 持久启用链接，并刷新用户manager；不加 `--start` 就不立即启动，但下次登录或用户manager启动可能加载。start只立即启动，stop保留unit和登录启用；active unit卸载须加 `--stop`，loaded但inactive可直接卸载。
 
 `status --config-only` 不调用systemctl。Linux JSON原样报告独立状态结构，分别列出磁盘配置、启用链接、loaded、active、manager看到的unit_file_state及归属；这些都不证明HTTP可用或USB在线。未知来源、drop-in/覆盖、配置变化、查询或控制结果不明时保守拒绝，不改用sudo或系统服务。实现和CLI只完成模拟/构建验证，真实Linux用户manager CI及Linux原生USB仍需分别验收。用法与人工部署替代方式见[用户级服务说明](../internal/service/README.zh-CN.md)。
+
+### Windows候选：只读任务状态，不管理任务
+
+Windows目前保留跨平台 `service render`，新增候选 `service status` / `service status --json` 仅查询经过token核验的当前普通用户固定任务 `\B1UG-nb1-<SID>`，不接收其他SID、任务名或远程机器。查询器使用系统API定位的受保护PowerShell，固定代码与stdin JSON分开；子进程读取SID也只申请Token Query权限。普通用户原生查询和缺失HRESULT合同尚待独立验收，软件或跨编译结果不代替Windows支持。
+
+`presence=present`只是同名注册存在，`ownership=not_checked`不证明托管归属。有限字段只有启用状态、Scheduler数值/名称和上次任务结果；Scheduler ready/running不等于daemon PID、HTTP或USB就绪。查询失败先输出原Windows状态再返回非零；当前GetTask的0x80070002也保留unknown/not_found_unverified，不能当作任务不存在。身份/PowerShell信任构造拒绝时不编造状态、提权或换身份。
+
+Windows的 `install/start/stop/uninstall` 与 `status --config-only` 都在构造查询器前明确unsupported；没有写入manager、注册/运行/停止任务或可靠退出协议。Mac/Linux管理行为保持原合同。详见[用户级服务说明](../internal/service/README.zh-CN.md)与[查询层边界](../internal/service/taskquery/README.zh-CN.md)。
 
 ## 2. 查看设备与设色
 

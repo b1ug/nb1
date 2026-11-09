@@ -97,7 +97,7 @@ nb1 service uninstall --stop --json
 
 托管标记直接嵌在plist中，只含版本、固定label、当前UID与明确指定的配置，不采集任意环境变量。读取时必须与完整重渲染内容一致；旧版render文件、人工编辑后的配置和未知来源plist一律拒绝覆盖/删除。临时文件写全并同步后才以不覆盖目标的方式发布，最终文件为0600；目录与文件必须属于当前用户，拒绝符号链接或其他用户可写路径。独立管理锁在 `~/Library/Application Support/nb1/service-management`，不使用设备锁目录，也不删除持久锁文件。启动前、停止前与删除前均重新比较查询之前文件的完整内容和inode，已观察到替换或同inode改写就拒绝操作。管理锁只协调本工具的进程；这些检查与最后的Remove并非原子事务，不承诺防住同UID不合作进程故意卡在检查与操作之间的竞态。
 
-当前不做原地升级替换：相同配置幂等，二进制路径、设备或监听等配置变化时先审阅并正常卸载再安装。旧的人工安装项需要先人工核对来源并正常卸载，候选不会擅自接管。这里没有系统级LaunchDaemon、SMAppService、登录前常驻保证或自动日志轮转；默认plist仍不指定stdout/stderr文件。Linux候选管理见下节；Windows等其他平台自动管理明确返回unsupported，不启动管理器或自动提权，仍保留跨平台render和人工部署说明。
+当前不做原地升级替换：相同配置幂等，二进制路径、设备或监听等配置变化时先审阅并正常卸载再安装。旧的人工安装项需要先人工核对来源并正常卸载，候选不会擅自接管。这里没有系统级LaunchDaemon、SMAppService、登录前常驻保证或自动日志轮转；默认plist仍不指定stdout/stderr文件。Linux候选管理见下节；Windows自动管理明确返回unsupported，但候选另有只读status；其他平台仍仅render，不启动管理器或自动提权。
 
 ## Linux：候选用户管理与人工部署
 
@@ -147,13 +147,28 @@ systemctl --user daemon-reload
 
 单元在用户manager中运行，不需要把它放到 `/etc/systemd/system`。`ExecStart`不经过shell；每个参数独立转义，`%%`保留字面百分号，`:`前缀关闭环境变量替换以保留字面 `$`。不会自动配置USB访问规则或补齐目标机器的CGO运行环境。
 
-## Windows：人工注册、状态与移除
+## Windows候选：仅只读status与render
+
+当前CLI仅提供候选只读查询，尚未实现Windows任务管理和可靠stop协议：
+
+```powershell
+& $nb1 service status
+& $nb1 service status --json
+```
+
+构造器用当前token核验普通用户/SID/session，再固定查询 `\B1UG-nb1-<SID>`；不能传任意任务名、账号或远程机器，不读取完整XML、action、命令或环境。每次查询复核身份；PowerShell来自系统API及owner/DACL/reparse检查，固定脚本读自己的SID也显式使用TokenAccessLevels.Query。不会提权或回退其他身份。
+
+JSON原样保留Windows查询schema：`presence`、`ownership: not_checked`、有限task属性与failure。查询出错先输出部分状态，再非零退出；构造阶段身份/信任拒绝不编造报告。`present`只说明同名存在，不代表managed；Scheduler ready/running/LastTaskResult也不是daemon PID、HTTP、USB在线或熄灯证明。GetTask的缺失HRESULT尚未有普通用户原生合同，0x80070002暂为unknown/not_found_unverified，不报absent。
+
+Windows `install/start/stop/uninstall` 和 `status --config-only` 在任何查询器构造前拒绝，不修改任务或配置。默认软件测试只注入fake reader；普通用户原生PowerShell/COM查询仍待独立Windows验收，跨编译和管理员host观察不替代。底层边界见[taskquery说明](taskquery/README.zh-CN.md)。
+
+## Windows：人工注册、状态与移除（独立人工流程）
 
 检查生成的 `nb1-task.ps1` 后，手动运行它才会注册任务：
 
 ```powershell
 .\nb1-task.ps1
-$taskName = 'B1UG-nb1-' + [System.Security.Principal.WindowsIdentity]::GetCurrent().User.Value
+$taskName = 'B1UG-nb1-' + [System.Security.Principal.WindowsIdentity]::GetCurrent([System.Security.Principal.TokenAccessLevels]::Query).User.Value
 Get-ScheduledTask -TaskName $taskName
 Get-ScheduledTaskInfo -TaskName $taskName
 Start-ScheduledTask -TaskName $taskName

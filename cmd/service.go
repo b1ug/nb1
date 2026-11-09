@@ -10,13 +10,15 @@ import (
 
 	"github.com/b1ug/nb1/internal/service"
 	"github.com/b1ug/nb1/internal/service/systemduser"
+	"github.com/b1ug/nb1/internal/service/taskquery"
 	"github.com/spf13/cobra"
 )
 
 func newServiceCommand() *cobra.Command {
 	return newServiceCommandForRuntime(userServiceRuntime{goos: runtime.GOOS, factories: userServiceFactories{
-		darwin: func() (userServiceBackend[service.UserStatus], error) { return service.NewUserManager() },
-		linux:  func() (userServiceBackend[systemduser.Status], error) { return systemduser.New() },
+		darwin:  func() (userServiceBackend[service.UserStatus], error) { return service.NewUserManager() },
+		linux:   func() (userServiceBackend[systemduser.Status], error) { return systemduser.New() },
+		windows: func() (windowsServiceReader, error) { return taskquery.New() },
 	}})
 }
 
@@ -25,7 +27,7 @@ func newServiceCommand() *cobra.Command {
 func newServiceCommandForRuntime(management userServiceRuntime) *cobra.Command {
 	command := &cobra.Command{
 		Use: "service", Short: "Render startup configurations or manage the current user's service",
-		Long: "service render generates reviewable launchd, systemd-user or Windows logon-task configuration without installation. Management uses only the host platform: the current ordinary user's fixed macOS LaunchAgent or Linux systemd user unit. Install arranges possible next-login loading; --start or service start explicitly requests immediate startup. Stop retains the configuration and login enablement. Loaded/active states do not establish HTTP or USB readiness. Other platforms support render only. No sudo, automatic elevation or system-wide service management.",
+		Long: "service render generates reviewable launchd, systemd-user or Windows logon-task configuration without installation. Management uses only the host platform: the current ordinary user's fixed macOS LaunchAgent or Linux systemd user unit. Install arranges possible next-login loading; --start or service start explicitly requests immediate startup. Stop retains the configuration and login enablement. Windows additionally has candidate read-only service status for the verified current user's fixed task; ownership is not checked, and install/start/stop/uninstall or status --config-only are unsupported. Native ordinary-user Windows query validation remains pending. Other platforms support render only. Scheduler/loaded/active states do not establish daemon PID, HTTP or USB readiness. No sudo, automatic elevation or system-wide service management.",
 	}
 	var config service.Config
 	var output string
@@ -118,13 +120,14 @@ func newServiceStopCommand(management userServiceRuntime) *cobra.Command {
 func newServiceStatusCommand(management userServiceRuntime) *cobra.Command {
 	var configOnly, asJSON bool
 	command := &cobra.Command{
-		Use: "status", Short: "macOS/Linux：分别检查磁盘配置、加载/活动与登录启用，不表示USB在线",
+		Use: "status", Short: "macOS/Linux用户服务状态；Windows候选仅只读查询固定当前用户任务",
+		Long: "macOS/Linux区分磁盘配置与manager状态。Windows候选只允许经token核验的当前普通用户查询固定任务的有限字段；同名存在不等于托管，Scheduler状态不等于daemon PID、HTTP或USB就绪。未知/拒绝/缺失HRESULT未有原生合同均保持unknown，不提权或切换身份。Windows不支持--config-only，普通用户原生查询仍待独立验收。",
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			return management.run(cmd, asJSON, userServiceAction{kind: serviceStatus, configOnly: configOnly})
 		},
 	}
-	command.Flags().BoolVar(&configOnly, "config-only", false, "只读磁盘配置，完全不调用launchctl或systemctl")
+	command.Flags().BoolVar(&configOnly, "config-only", false, "仅macOS/Linux：只读磁盘配置，完全不调用launchctl或systemctl；Windows不支持")
 	command.Flags().BoolVar(&asJSON, "json", false, "输出当前平台的原始schema_version=1状态")
 	return command
 }
@@ -155,8 +158,15 @@ type userServiceBackend[S any] interface {
 }
 
 type userServiceFactories struct {
-	darwin func() (userServiceBackend[service.UserStatus], error)
-	linux  func() (userServiceBackend[systemduser.Status], error)
+	darwin  func() (userServiceBackend[service.UserStatus], error)
+	linux   func() (userServiceBackend[systemduser.Status], error)
+	windows func() (windowsServiceReader, error)
+}
+
+// A query reader has no management methods. Do not adapt Windows to a fake
+// five-action backend before ownership and stop contracts are implemented.
+type windowsServiceReader interface {
+	Query(context.Context) (taskquery.Status, error)
 }
 
 type userServiceRuntime struct {
@@ -182,7 +192,8 @@ type userServiceAction struct {
 	configOnly bool
 }
 
-var errUserServiceUnsupported = errors.New("用户服务自动管理只支持macOS和Linux普通用户；当前平台可使用service render，不会运行服务管理器或自动提权")
+var errUserServiceUnsupported = errors.New("该用户服务操作不受当前平台支持；自动管理仅macOS/Linux普通用户，Windows候选仅service status只读查询与render；不自动提权")
+var errWindowsServiceUnsupported = fmt.Errorf("%w；Windows的install/start/stop/uninstall和status --config-only尚未实现，不构造查询器或修改任务", errUserServiceUnsupported)
 
 func (management userServiceRuntime) run(cmd *cobra.Command, asJSON bool, action userServiceAction) error {
 	switch management.goos {
@@ -190,9 +201,55 @@ func (management userServiceRuntime) run(cmd *cobra.Command, asJSON bool, action
 		return runUserServiceBackend(cmd, asJSON, action, management.factories.darwin, service.WriteUserStatus)
 	case "linux":
 		return runUserServiceBackend(cmd, asJSON, action, management.factories.linux, writeSystemdUserStatus)
+	case "windows":
+		if action.kind != serviceStatus || action.configOnly {
+			return errWindowsServiceUnsupported
+		}
+		return runWindowsServiceQuery(cmd, asJSON, management.factories.windows)
 	default:
 		return errUserServiceUnsupported
 	}
+}
+
+func runWindowsServiceQuery(cmd *cobra.Command, asJSON bool, factory func() (windowsServiceReader, error)) error {
+	reader, err := factory()
+	if err != nil {
+		return err
+	}
+	status, queryErr := reader.Query(cmd.Context())
+	if asJSON {
+		err = printControlJSON(cmd.OutOrStdout(), status)
+	} else {
+		err = writeWindowsServiceStatus(cmd.OutOrStdout(), status)
+	}
+	if err != nil {
+		return err
+	}
+	return queryErr
+}
+
+func writeWindowsServiceStatus(output io.Writer, status taskquery.Status) error {
+	var text strings.Builder
+	fmt.Fprintf(&text, "nb1 Windows任务只读查询（候选）\n目标：%s\n注册存在性：%s\n归属：%s（未验证托管归属）\n", status.TaskPath, status.Presence, status.Ownership)
+	if !status.CheckedAt.IsZero() {
+		fmt.Fprintf(&text, "查询采样：%s\n", status.CheckedAt.Format("2006-01-02T15:04:05Z07:00"))
+	}
+	if status.Task != nil {
+		fmt.Fprintf(&text, "enabled：%t\nScheduler状态：%s（%d）\n上次任务结果：%d\n", status.Task.Enabled, status.Task.SchedulerStateName, status.Task.SchedulerState, status.Task.LastTaskResult)
+	} else {
+		fmt.Fprintln(&text, "Scheduler字段：不可确认；不能据此判断任务不存在。")
+	}
+	if status.Failure != nil {
+		fmt.Fprintf(&text, "查询失败：%s · 阶段=%s", status.Failure.Kind, status.Failure.Stage)
+		if status.Failure.HRESULT != "" {
+			fmt.Fprintf(&text, " · HRESULT=%s", status.Failure.HRESULT)
+		}
+		fmt.Fprintln(&text)
+	}
+	fmt.Fprintln(&text, "同名任务不等于本工具托管；Scheduler状态不代表daemon PID、HTTP可用或USB在线。")
+	fmt.Fprintln(&text, "Windows目前仅候选只读status与render；管理与可靠stop协议未实现，普通用户原生查询待独立验收，不提权、不注册/运行/停止任务。")
+	_, err := io.WriteString(output, text.String())
+	return err
 }
 
 func runUserServiceBackend[S any](cmd *cobra.Command, asJSON bool, action userServiceAction, factory func() (userServiceBackend[S], error), writeStatus func(io.Writer, S) error) error {

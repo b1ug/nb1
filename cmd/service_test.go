@@ -14,6 +14,7 @@ import (
 
 	"github.com/b1ug/nb1/internal/service"
 	"github.com/b1ug/nb1/internal/service/systemduser"
+	"github.com/b1ug/nb1/internal/service/taskquery"
 )
 
 type fakeUserService[S any] struct {
@@ -50,6 +51,7 @@ type serviceCLIFixture struct {
 	management userServiceRuntime
 	mac        *fakeUserService[service.UserStatus]
 	linux      *fakeUserService[systemduser.Status]
+	windows    *fakeWindowsServiceReader
 	created    map[string]int
 }
 
@@ -58,6 +60,7 @@ func serviceCLITestFixture(t *testing.T, goos string) *serviceCLIFixture {
 	// Even Cobra's existing global config initialization sees a private home.
 	home := t.TempDir()
 	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home)
 	t.Setenv("XDG_CONFIG_HOME", filepath.Join(home, "config"))
 	fixture := &serviceCLIFixture{
 		mac: &fakeUserService[service.UserStatus]{status: service.UserStatus{
@@ -71,6 +74,11 @@ func serviceCLITestFixture(t *testing.T, goos string) *serviceCLIFixture {
 			Properties: &systemduser.Properties{LoadState: "loaded", ActiveState: "inactive", SubState: "dead", UnitFileState: "enabled", NoNewPrivileges: serviceCLIBool(true)},
 			Actions:    []string{}, Notes: []string{"linux fixture"},
 		}},
+		windows: &fakeWindowsServiceReader{status: taskquery.Status{
+			SchemaVersion: 1, CheckedAt: time.Date(2026, 11, 9, 1, 2, 3, 0, time.UTC),
+			TaskPath: `\B1UG-nb1-S-1-12-1-11-22-33-44`, Presence: taskquery.Present, Ownership: "not_checked",
+			Task: &taskquery.Properties{Enabled: true, SchedulerState: 3, SchedulerStateName: "ready", LastTaskResult: 0},
+		}},
 		created: map[string]int{},
 	}
 	fixture.management = userServiceRuntime{goos: goos, factories: userServiceFactories{
@@ -82,8 +90,23 @@ func serviceCLITestFixture(t *testing.T, goos string) *serviceCLIFixture {
 			fixture.created["linux"]++
 			return fixture.linux, nil
 		},
+		windows: func() (windowsServiceReader, error) {
+			fixture.created["windows"]++
+			return fixture.windows, nil
+		},
 	}}
 	return fixture
+}
+
+type fakeWindowsServiceReader struct {
+	status   taskquery.Status
+	err      error
+	contexts []context.Context
+}
+
+func (f *fakeWindowsServiceReader) Query(ctx context.Context) (taskquery.Status, error) {
+	f.contexts = append(f.contexts, ctx)
+	return f.status, f.err
 }
 
 func serviceCLIBool(value bool) *bool { return &value }
@@ -154,8 +177,154 @@ func TestServiceCLISelectsOnePlatformAndPassesEveryAction(t *testing.T) {
 				if !reflect.DeepEqual(calls, []userServiceAction{test.want}) || len(contexts) != 1 || contexts[0] != ctx {
 					t.Fatalf("action or caller context changed: %+v", calls)
 				}
+				if len(fixture.windows.contexts) != 0 {
+					t.Fatal("native manager reached Windows query")
+				}
 			})
 		}
+	}
+}
+
+func TestWindowsServiceStatusUsesOnlyReadOnlyFactory(t *testing.T) {
+	for _, asJSON := range []bool{false, true} {
+		t.Run(fmtServiceJSON(asJSON), func(t *testing.T) {
+			fixture := serviceCLITestFixture(t, "windows")
+			ctx := context.WithValue(context.Background(), serviceCLIContextKey{}, "windows caller")
+			args := []string{"status"}
+			if asJSON {
+				args = append(args, "--json")
+			}
+			var output bytes.Buffer
+			if err := executeServiceCLI(fixture.management, ctx, &output, args...); err != nil {
+				t.Fatal(err)
+			}
+			if !reflect.DeepEqual(fixture.created, map[string]int{"windows": 1}) || len(fixture.windows.contexts) != 1 || fixture.windows.contexts[0] != ctx || len(fixture.mac.calls)+len(fixture.linux.calls) != 0 {
+				t.Fatal("wrong platform, ctx, or retry", fixture.created)
+			}
+			if asJSON {
+				assertServiceCLIJSON(t, output.Bytes(), fixture.windows.status)
+			} else {
+				for _, part := range []string{"Windows任务只读查询（候选）", "注册存在性：present", "归属：not_checked", "未验证托管归属", "Scheduler状态：ready（3）", "上次任务结果：0", "不代表daemon PID、HTTP可用或USB在线", "管理与可靠stop协议未实现", "原生查询待独立验收"} {
+					if !strings.Contains(output.String(), part) {
+						t.Fatal("missing Windows boundary", part, output.String())
+					}
+				}
+			}
+		})
+	}
+}
+
+func fmtServiceJSON(value bool) string {
+	if value {
+		return "json"
+	}
+	return "text"
+}
+
+func TestWindowsUnsupportedOperationsNeverConstructQuery(t *testing.T) {
+	for _, args := range [][]string{
+		{"install", "--binary", `C:\fixture\nb1.exe`, "--devices", "20005601"},
+		{"install", "--binary", `C:\fixture\nb1.exe`, "--devices", "20005601", "--start", "--json"},
+		{"start"}, {"start", "--json"}, {"stop"}, {"stop", "--json"},
+		{"uninstall"}, {"uninstall", "--stop", "--json"},
+		{"status", "--config-only"}, {"status", "--config-only", "--json"},
+	} {
+		t.Run(strings.Join(args, " "), func(t *testing.T) {
+			fixture := serviceCLITestFixture(t, "windows")
+			var output bytes.Buffer
+			err := executeServiceCLI(fixture.management, context.Background(), &output, args...)
+			if !errors.Is(err, errWindowsServiceUnsupported) || len(fixture.created) != 0 || len(fixture.windows.contexts) != 0 ||
+				len(fixture.mac.calls)+len(fixture.linux.calls) != 0 || output.Len() != 0 {
+				t.Fatalf("unsupported Windows action reached a backend: %v %v", fixture.created, err)
+			}
+		})
+	}
+}
+
+func TestWindowsStatusCannotChooseForeignTaskIdentityOrHost(t *testing.T) {
+	for _, args := range [][]string{
+		{"status", "other-task"}, {"status", "--user", "other-user"},
+		{"status", "--sid", "S-1-5-18"}, {"status", "--task", `\foreign-task`},
+		{"status", "--server", "remote-host"}, {"status", "--platform", "linux"},
+	} {
+		t.Run(strings.Join(args, " "), func(t *testing.T) {
+			fixture := serviceCLITestFixture(t, "windows")
+			var output bytes.Buffer
+			err := executeServiceCLI(fixture.management, context.Background(), &output, args...)
+			if err == nil || len(fixture.created) != 0 || len(fixture.windows.contexts) != 0 ||
+				len(fixture.mac.calls)+len(fixture.linux.calls) != 0 {
+				t.Fatal("unscoped task query reached a backend", err)
+			}
+		})
+	}
+}
+
+func TestWindowsQueryRefusalsNeverFallbackAndPreserveUnknown(t *testing.T) {
+	for _, refusal := range []error{taskquery.ErrIdentity, taskquery.ErrTrust} {
+		t.Run(refusal.Error(), func(t *testing.T) {
+			fixture := serviceCLITestFixture(t, "windows")
+			fixture.management.factories.windows = func() (windowsServiceReader, error) { fixture.created["windows"]++; return nil, refusal }
+			var output bytes.Buffer
+			err := executeServiceCLI(fixture.management, context.Background(), &output, "status", "--json")
+			if !errors.Is(err, refusal) || output.Len() != 0 || !reflect.DeepEqual(fixture.created, map[string]int{"windows": 1}) || len(fixture.windows.contexts) != 0 || len(fixture.mac.calls)+len(fixture.linux.calls) != 0 {
+				t.Fatal("constructor refusal fell back or invented status", err)
+			}
+		})
+	}
+	for _, asJSON := range []bool{false, true} {
+		t.Run(fmtServiceJSON(asJSON), func(t *testing.T) {
+			fixture := serviceCLITestFixture(t, "windows")
+			fixture.windows.status.Presence = taskquery.Unknown
+			fixture.windows.status.Task = nil
+			fixture.windows.status.Failure = &taskquery.Failure{Kind: "not_found_unverified", Stage: "get_task", HRESULT: "0x80070002"}
+			fixture.windows.err = taskquery.ErrAbsenceUnverified
+			ctx, cancel := context.WithCancel(context.Background())
+			cancel()
+			args := []string{"status"}
+			if asJSON {
+				args = append(args, "--json")
+			}
+			var output bytes.Buffer
+			err := executeServiceCLI(fixture.management, ctx, &output, args...)
+			if !errors.Is(err, taskquery.ErrAbsenceUnverified) || len(fixture.windows.contexts) != 1 || fixture.windows.contexts[0] != ctx || fixture.windows.contexts[0].Err() != context.Canceled {
+				t.Fatal("query error/caller context lost", err)
+			}
+			if asJSON {
+				assertServiceCLIJSON(t, output.Bytes(), fixture.windows.status)
+			} else {
+				for _, part := range []string{"注册存在性：unknown", "不能据此判断任务不存在", "not_found_unverified", "HRESULT=0x80070002"} {
+					if !strings.Contains(output.String(), part) {
+						t.Fatal("unknown became absence", output.String())
+					}
+				}
+			}
+			if !reflect.DeepEqual(fixture.created, map[string]int{"windows": 1}) || len(fixture.mac.calls)+len(fixture.linux.calls) != 0 {
+				t.Fatal("query error retried or fell back")
+			}
+		})
+	}
+}
+
+func TestWindowsQueryOutputFailureAndHelpDoNotAddActions(t *testing.T) {
+	for _, asJSON := range []bool{false, true} {
+		fixture := serviceCLITestFixture(t, "windows")
+		failure := errors.New("fake Windows output failure")
+		args := []string{"status"}
+		if asJSON {
+			args = append(args, "--json")
+		}
+		err := executeServiceCLI(fixture.management, context.Background(), failingServiceCLIWriter{failure}, args...)
+		if !errors.Is(err, failure) || len(fixture.windows.contexts) != 1 || !reflect.DeepEqual(fixture.created, map[string]int{"windows": 1}) {
+			t.Fatal("output failure retried/swallowed", err)
+		}
+	}
+	fixture := serviceCLITestFixture(t, "windows")
+	var output bytes.Buffer
+	if err := executeServiceCLI(fixture.management, context.Background(), &output, "status", "--help"); err != nil {
+		t.Fatal(err)
+	}
+	if len(fixture.created) != 0 || !strings.Contains(output.String(), "Windows不支持--config-only") || !strings.Contains(output.String(), "原生查询仍待独立验收") {
+		t.Fatal("help lost Windows limits or constructed reader", output.String())
 	}
 }
 

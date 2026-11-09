@@ -3,6 +3,8 @@ package control
 import (
 	"context"
 	"errors"
+
+	"github.com/b1ug/nb1/internal/transporttrace"
 )
 
 // The wrapper runs only on the owning worker. State publication is short and
@@ -25,13 +27,21 @@ func (s workerFrameSetter) cancelPending() {
 }
 
 func (s workerFrameSetter) Set(step Step) error {
+	return s.SetFrameTarget(transporttrace.NoPosition(), step)
+}
+
+func (s workerFrameSetter) SetFrameTarget(position transporttrace.Position, step Step) error {
 	// Check channels directly too: native completion need not wait for the
 	// context bridge goroutine to be scheduled before recognizing cancellation.
 	s.cancelPending()
 	if err := s.ctx.Err(); err != nil {
 		return err
 	}
-	err := s.worker.backend.Set(step)
+	phase := transporttrace.FrameTarget
+	if position.Initial >= 0 {
+		phase = transporttrace.FrameInitial
+	}
+	err := s.worker.scopedSet(s.record, phase, position, step)
 	if err == nil {
 		e := s.worker.engine
 		e.mu.Lock()
@@ -65,7 +75,7 @@ func (w *worker) executeFrames(r *record) {
 	}()
 	setter := workerFrameSetter{worker: w, record: r, ctx: ctx, cancel: cancel}
 	setter.cancelPending()
-	runErr := w.backend.Stop("hold")
+	runErr := w.scopedStop(r, transporttrace.PreflightHold, "hold")
 	cancelled := false
 	if runErr == nil {
 		_, runErr = runFrameSchedule(ctx, setter, wallFrameClock{}, *r.frames, func(value frameScheduleProgress) {

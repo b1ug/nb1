@@ -19,6 +19,7 @@ import (
 	"github.com/b1ug/nb1/internal/devicebackend"
 	"github.com/b1ug/nb1/internal/httpapi"
 	"github.com/b1ug/nb1/internal/ownership"
+	"github.com/b1ug/nb1/internal/transporttrace"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -29,6 +30,7 @@ func newServerCommand() *cobra.Command {
 	var listen, lockDir, patternDir, patternV2Dir string
 	var serials []string
 	var shutdownTimeout time.Duration
+	var transportTrace bool
 	command := &cobra.Command{
 		Use: "server", Aliases: aliasesServer, Short: "Run the local blink(1) device daemon",
 		Long:    "Keep explicitly selected devices open and serve the v1 HTTP API on loopback. API, CLI and agents share each device worker. Stop with Ctrl-C or SIGTERM; shutdown cancels jobs and turns devices off. No system service is installed.",
@@ -68,14 +70,24 @@ func newServerCommand() *cobra.Command {
 				listener.Close()
 				return fmt.Errorf("daemon listener must bind a loopback address")
 			}
-			engine, err := control.New(devicebackend.New(lockDir), control.Options{Serials: serials, ShutdownMode: "off"})
+			var recorder *transporttrace.Recorder
+			driver := devicebackend.New(lockDir)
+			if transportTrace {
+				recorder = transporttrace.New()
+				driver = devicebackend.NewWithTrace(lockDir, recorder)
+			}
+			engine, err := control.New(driver, control.Options{Serials: serials, ShutdownMode: "off"})
 			if err != nil {
 				listener.Close()
 				return err
 			}
 			ctx, stop := signal.NotifyContext(cmd.Context(), os.Interrupt, syscall.SIGTERM)
 			defer stop()
-			return serveRuntime(ctx, listener, engine, cmd.OutOrStdout(), shutdownTimeout,
+			if recorder != nil {
+				recorder.SetInstance(engine.Instance().DaemonInstanceID)
+				transportTraceBuildStamp(recorder)
+			}
+			return serveRuntimeWithTrace(ctx, listener, engine, cmd.OutOrStdout(), shutdownTimeout, recorder,
 				httpapi.WithPatternDirectory(patternDir), httpapi.WithPatternDirectoryV2(patternV2Dir))
 		},
 	}
@@ -85,6 +97,7 @@ func newServerCommand() *cobra.Command {
 	command.Flags().StringVar(&patternDir, "pattern-dir", os.Getenv("NB1_PATTERN_DIR"), "Pattern library directory (NB1_PATTERN_DIR or current user's config/nb1/patterns; created only by import)")
 	command.Flags().StringVar(&patternV2Dir, "pattern-v2-dir", os.Getenv("NB1_PATTERN_V2_DIR"), "experimental v2 Pattern library directory (NB1_PATTERN_V2_DIR or current user's config/nb1/patterns-v2; independent of --pattern-dir, created only by save/import)")
 	command.Flags().DurationVar(&shutdownTimeout, "shutdown-timeout", 10*time.Second, "maximum time to await graceful cleanup; does not cancel blocked native I/O")
+	command.Flags().BoolVar(&transportTrace, "transport-trace", false, "opt-in bounded private native-attempt diagnostics in this daemon's log; no extra USB calls")
 	command.Flags().Uint32("port", 8931, "compatibility flag for a loopback port; cannot be combined with --listen")
 	command.Flags().String("base", "", "reserved legacy base URL; the v1 API uses the root endpoint")
 	_ = viper.BindPFlag("port", command.Flags().Lookup("port"))
@@ -137,17 +150,27 @@ func validateLocalAddress(address string) error {
 }
 
 func serveRuntime(parent context.Context, listener net.Listener, engine *control.Engine, output io.Writer, shutdownTimeout time.Duration, options ...httpapi.Option) error {
+	return serveRuntimeWithTrace(parent, listener, engine, output, shutdownTimeout, nil, options...)
+}
+
+func serveRuntimeWithTrace(parent context.Context, listener net.Listener, engine *control.Engine, output io.Writer, shutdownTimeout time.Duration, recorder *transporttrace.Recorder, options ...httpapi.Option) error {
 	ctx, cancel := context.WithCancel(parent)
 	defer cancel()
 	if err := engine.Start(ctx); err != nil {
+		if recorder != nil {
+			recorder.Close()
+		}
 		listener.Close()
 		return err
+	}
+	if recorder != nil {
+		go func() { <-engine.Done(); recorder.Close() }()
 	}
 	server := &http.Server{Handler: httpapi.New(engine, options...), ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 10 * time.Second, WriteTimeout: 10 * time.Second, IdleTimeout: 30 * time.Second, MaxHeaderBytes: 16 << 10}
 	served := make(chan error, 1)
 	go func() { served <- server.Serve(listener) }()
 	var cause error
-	logging := startRuntimeLogging(engine, output, map[string]interface{}{"event": "daemon_listening", "url": "http://" + listener.Addr().String(), "api_version": "v1", "devices": engine.Devices()})
+	logging := startRuntimeLogging(engine, output, map[string]interface{}{"event": "daemon_listening", "url": "http://" + listener.Addr().String(), "api_version": "v1", "devices": engine.Devices()}, recorder)
 	select {
 	case err := <-logging.startupErrors:
 		cause = err

@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"time"
+
+	"github.com/b1ug/nb1/internal/transporttrace"
 )
 
 var errFrameDeadlineExceeded = errors.New("frame deadline exceeded")
@@ -14,6 +16,19 @@ var errFrameDeadlineExceeded = errors.New("frame deadline exceeded")
 // for cleanup, observation and retaining its lease until native I/O returns.
 type frameSetter interface {
 	Set(Step) error
+}
+
+// Optional private diagnostics retain exact position without changing the
+// scheduler's timings or the existing minimal frameSetter contract.
+type positionedFrameSetter interface {
+	SetFrameTarget(transporttrace.Position, Step) error
+}
+
+func setFrameTarget(setter frameSetter, pos transporttrace.Position, step Step) error {
+	if positioned, ok := setter.(positionedFrameSetter); ok {
+		return positioned.SetFrameTarget(pos, step)
+	}
+	return setter.Set(step)
 }
 
 type frameTimer interface {
@@ -67,7 +82,10 @@ func runFrameSchedule(ctx context.Context, setter frameSetter, clock frameClock,
 		if err := ctx.Err(); err != nil {
 			return result, err
 		}
-		err := setter.Set(Step{LED: target.LED, Color: target.Color})
+		position := transporttrace.NoPosition()
+		position.Initial = int32(i)
+		position.Target = int32(i)
+		err := setFrameTarget(setter, position, Step{LED: target.LED, Color: target.Color})
 		if err != nil {
 			return result, fmt.Errorf("frame initial target %d: %w", i, err)
 		}
@@ -83,7 +101,7 @@ func runFrameSchedule(ctx context.Context, setter frameSetter, clock frameClock,
 
 	var settleAt time.Time
 	for repeat := 0; repeat < p.Repeat; repeat++ {
-		for _, frame := range p.Frames {
+		for index, frame := range p.Frames {
 			if err := ctx.Err(); err != nil {
 				return result, err
 			}
@@ -104,7 +122,12 @@ func runFrameSchedule(ctx context.Context, setter frameSetter, clock frameClock,
 				if err := frameWriteAllowed(ctx, clock, deadline); err != nil {
 					return result, fmt.Errorf("frame %d target %d before Set: %w", result.CompletedFrames, i, err)
 				}
-				err := setter.Set(Step{LED: target.LED, Color: target.Color, FadeMS: frame.FadeMS})
+				position := transporttrace.NoPosition()
+				position.Repeat = int32(repeat)
+				position.Frame = int32(index)
+				position.ExecutedFrame = int32(result.CompletedFrames)
+				position.Target = int32(i)
+				err := setFrameTarget(setter, position, Step{LED: target.LED, Color: target.Color, FadeMS: frame.FadeMS})
 				lastReturnedAt = clock.Now()
 				postErr := frameWriteAllowed(ctx, clock, deadline)
 				if err != nil {

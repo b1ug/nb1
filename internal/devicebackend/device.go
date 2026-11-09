@@ -14,14 +14,21 @@ import (
 	"github.com/b1ug/gid"
 	"github.com/b1ug/nb1/internal/control"
 	"github.com/b1ug/nb1/internal/ownership"
+	"github.com/b1ug/nb1/internal/transporttrace"
 )
 
 type driver struct {
 	lockDir string
 	metrics retryRegistry
+	trace   *transporttrace.Recorder
 }
 
 func New(lockDir string) control.Driver { return &driver{lockDir: lockDir} }
+
+// NewWithTrace is daemon-only opt-in diagnostics; nil preserves New behavior.
+func NewWithTrace(lockDir string, trace *transporttrace.Recorder) control.Driver {
+	return &driver{lockDir: lockDir, trace: trace}
+}
 
 // Discover reads enumeration metadata; it does not open selected devices or
 // query firmware, and it does not imply support for every enumerated model.
@@ -72,11 +79,15 @@ func (d *driver) Open(serial string) (control.Backend, error) {
 	}
 	tracker := d.metrics.device(serial)
 	var version int
-	err = retryMK2(tracker, nil, "query_firmware", "open: query firmware v", func() error {
+	var firmwareTrace *transporttrace.OperationTrace
+	if d.trace != nil {
+		firmwareTrace = d.trace.Operation(serial, transporttrace.EmptyScope(transporttrace.OpenFirmware), transporttrace.QueryFirmware, transporttrace.Target{})
+	}
+	err = retryMK2Traced(tracker, nil, "query_firmware", "open: query firmware v", func() error {
 		var queryErr error
 		version, queryErr = device.GetVersion()
 		return queryErr
-	})
+	}, firmwareTrace)
 	if err != nil || version < 200 || version >= 300 {
 		device.Close()
 		lease.Close()
@@ -87,7 +98,12 @@ func (d *driver) Open(serial string) (control.Backend, error) {
 	}
 	info.Firmware = version
 	info.Capabilities = []string{"set", "program", "cancel", "hold", "observe", "raw-rgb", "mk2-basic"}
-	return &backend{dev: device, lease: lease, info: info, metrics: tracker}, nil
+	b := &backend{dev: device, lease: lease, info: info, metrics: tracker}
+	if d.trace != nil {
+		b.trace = &backendTrace{recorder: d.trace, scope: transporttrace.EmptyScope(transporttrace.PhaseNone)}
+		return &tracedBackend{b}, nil
+	}
+	return b, nil
 }
 
 type lamp interface {
@@ -106,7 +122,19 @@ type backend struct {
 	once    sync.Once
 	metrics *retryTracker
 	pause   func(time.Duration) // Tests replace backoff only; native I/O stays synchronous.
+	trace   *backendTrace
 }
+
+type backendTrace struct {
+	recorder *transporttrace.Recorder
+	scope    transporttrace.Scope
+}
+
+// Only the enabled wrapper implements ScopeBinder. The owning worker alone
+// writes this scope, and operation entry copies it before native I/O.
+type tracedBackend struct{ *backend }
+
+func (b *tracedBackend) SetTransportScope(scope transporttrace.Scope) { b.trace.scope = scope }
 
 func (b *backend) Info() control.DeviceInfo {
 	i := b.info
@@ -125,7 +153,7 @@ func (b *backend) Set(step control.Step) error {
 	rgb, _ := hex.DecodeString(step.Color[1:])
 	return b.operation("set_color", fmt.Sprintf("set: c led=%d color=%s fade_ms=%d", step.LED, step.Color, step.FadeMS), func() error {
 		return b.dev.FadeToRGB(rgb[0], rgb[1], rgb[2], uint(step.FadeMS), b1.LEDIndex(step.LED))
-	})
+	}, transporttrace.Target{LED: uint8(step.LED), RGB: [3]byte{rgb[0], rgb[1], rgb[2]}, FadeMS: uint32(step.FadeMS), HasColor: true})
 }
 
 func (b *backend) Read() (control.Observation, error) {
@@ -140,7 +168,7 @@ func (b *backend) read(stage string) (control.Observation, error) {
 			var queryErr error
 			r, g, blue, queryErr = b.dev.ReadRGB(b1.LEDIndex(index + 1))
 			return queryErr
-		})
+		}, transporttrace.Target{LED: uint8(index + 1)})
 		if err != nil {
 			return control.Observation{}, err
 		}
@@ -176,7 +204,7 @@ func (b *backend) Stop(mode string) error {
 			rgb, _ := hex.DecodeString(color[1:])
 			if err = b.operation("freeze_rgb", fmt.Sprintf("stop(hold): freeze c led=%d color=%s", index+1, color), func() error {
 				return b.dev.FadeToRGB(rgb[0], rgb[1], rgb[2], 0, b1.LEDIndex(index+1))
-			}); err != nil {
+			}, transporttrace.Target{LED: uint8(index + 1), RGB: [3]byte{rgb[0], rgb[1], rgb[2]}, HasColor: true}); err != nil {
 				return err
 			}
 		}
@@ -184,7 +212,7 @@ func (b *backend) Stop(mode string) error {
 		expected = control.Observation{LED1: "#000000", LED2: "#000000"}
 		if err := b.operation("off_rgb", "stop(off): c all black", func() error {
 			return b.dev.FadeToRGB(0, 0, 0, 0, b1.LEDAll)
-		}); err != nil {
+		}, transporttrace.Target{RGB: [3]byte{}, HasColor: true}); err != nil {
 			return err
 		}
 	}

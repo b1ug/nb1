@@ -9,6 +9,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/b1ug/nb1/internal/transporttrace"
 )
 
 type record struct {
@@ -448,7 +450,7 @@ func (w *worker) connect() bool {
 		return false
 	}
 	w.backend = b
-	obs, err := b.Read()
+	obs, err := w.scopedRead(nil, transporttrace.ConnectRead, transporttrace.NoPosition())
 	if err != nil {
 		w.offline(err)
 		return false
@@ -483,7 +485,7 @@ func (w *worker) loop() {
 				// interrupted jobs have already cleaned up with off. Direct hold
 				// release therefore only closes the handle, avoiding duplicate I/O.
 				if !e.options.ReadOnly && e.options.ShutdownMode != "hold" {
-					err = w.backend.Stop(e.options.ShutdownMode)
+					err = w.scopedStop(nil, transporttrace.Shutdown, e.options.ShutdownMode)
 				}
 				w.backend.Close()
 				w.backend = nil
@@ -529,7 +531,7 @@ func (w *worker) loop() {
 		case <-w.wake:
 		case <-e.stop:
 		case <-time.After(e.options.PollInterval):
-			obs, err := w.backend.Read()
+			obs, err := w.scopedRead(nil, transporttrace.IdleObserve, transporttrace.NoPosition())
 			if err != nil {
 				w.offline(err)
 			} else {
@@ -550,10 +552,10 @@ func (w *worker) execute(r *record) {
 	e := w.engine
 	// Device discovery and monitoring do not change output. First quiesce any
 	// autonomous activity only when an actual control job takes ownership.
-	runErr := w.backend.Stop("hold")
+	runErr := w.scopedStop(r, transporttrace.PreflightHold, "hold")
 	cancelled := false
 	for repeat := 0; repeat < r.program.Repeat && runErr == nil && !cancelled; repeat++ {
-		for _, step := range r.program.Steps {
+		for index, step := range r.program.Steps {
 			select {
 			case <-r.cancel:
 				cancelled = true
@@ -562,7 +564,9 @@ func (w *worker) execute(r *record) {
 			if cancelled {
 				break
 			}
-			if runErr = w.backend.Set(step); runErr != nil {
+			position := transporttrace.NoPosition()
+			position.Repeat, position.Step = int32(repeat), int32(index)
+			if runErr = w.scopedSet(r, transporttrace.ProgramStep, position, step); runErr != nil {
 				break
 			}
 			e.mu.Lock()
@@ -573,7 +577,7 @@ func (w *worker) execute(r *record) {
 			// Allow that update before freezing a completed output.
 			wait := time.Duration(step.FadeMS+step.HoldMS)*time.Millisecond + time.Duration(StepOverheadMS)*time.Millisecond
 			if wait > 0 {
-				cancelled, runErr = w.wait(r, wait)
+				cancelled, runErr = w.wait(r, wait, position)
 			}
 			if cancelled || runErr != nil {
 				break
@@ -603,10 +607,10 @@ func (w *worker) finishExecution(r *record, runErr error, cancelled bool) {
 		if cancelled || runErr != nil {
 			mode = "off"
 		}
-		cleanupErr := w.backend.Stop(mode)
+		cleanupErr := w.scopedStop(r, transporttrace.Cleanup, mode)
 		var obs Observation
 		if cleanupErr == nil {
-			obs, cleanupErr = w.backend.Read()
+			obs, cleanupErr = w.scopedRead(r, transporttrace.CleanupVerify, transporttrace.NoPosition())
 			if cleanupErr == nil {
 				w.nextObservation = time.Now().Add(e.options.PollInterval)
 			}
@@ -651,7 +655,7 @@ func (w *worker) finishExecution(r *record, runErr error, cancelled bool) {
 
 // Keep one observation deadline across short steps as well as long holds.
 // Reads stay on this worker and may extend wall time beyond the nominal budget.
-func (w *worker) wait(r *record, duration time.Duration) (bool, error) {
+func (w *worker) wait(r *record, duration time.Duration, position ...transporttrace.Position) (bool, error) {
 	timer := time.NewTimer(duration)
 	defer timer.Stop()
 	for {
@@ -665,7 +669,11 @@ func (w *worker) wait(r *record, duration time.Duration) (bool, error) {
 		default:
 		}
 		if !time.Now().Before(w.nextObservation) {
-			obs, err := w.backend.Read()
+			pos := transporttrace.NoPosition()
+			if len(position) > 0 {
+				pos = position[0]
+			}
+			obs, err := w.scopedRead(r, transporttrace.ProgramObserve, pos)
 			if err != nil {
 				return false, err
 			}

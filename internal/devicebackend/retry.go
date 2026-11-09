@@ -10,6 +10,7 @@ import (
 
 	"github.com/b1ug/nb1/internal/control"
 	"github.com/b1ug/nb1/internal/ownership"
+	"github.com/b1ug/nb1/internal/transporttrace"
 )
 
 const mk2MaxAttempts = 3
@@ -172,6 +173,10 @@ func transientMK2Transport(err error) bool {
 // retry raw commands, pattern writes, flash programming or legacy CLI actions.
 // Backoff bounds additional waiting, not the duration of synchronous native I/O.
 func retryMK2(tracker *retryTracker, pause func(time.Duration), kind, operation string, call func() error) error {
+	return retryMK2Traced(tracker, pause, kind, operation, call, nil)
+}
+
+func retryMK2Traced(tracker *retryTracker, pause func(time.Duration), kind, operation string, call func() error, trace *transporttrace.OperationTrace) error {
 	if pause == nil {
 		pause = time.Sleep
 	}
@@ -198,8 +203,11 @@ func retryMK2(tracker *retryTracker, pause func(time.Duration), kind, operation 
 			}
 			tracker.mu.Unlock()
 		}
+		attemptTrace := trace.Begin(attempt)
 		err := call()
+		attemptTrace.Returned()
 		if err == nil {
+			attemptTrace.End(nil, false, false, 0)
 			if attempt > 1 && tracker != nil {
 				tracker.mu.Lock()
 				tracker.data.RecoveredOperations++
@@ -213,6 +221,15 @@ func retryMK2(tracker *retryTracker, pause func(time.Duration), kind, operation 
 			tracker.mu.Unlock()
 		}
 		eligible := transientMK2Transport(err)
+		backoffMS := 5
+		if attempt == 2 {
+			backoffMS = 15
+		}
+		willRetry := eligible && attempt < mk2MaxAttempts
+		if !willRetry {
+			backoffMS = 0
+		}
+		attemptTrace.End(err, eligible, willRetry, backoffMS)
 		if !eligible || attempt == mk2MaxAttempts {
 			failure := &OperationError{Operation: operation, Attempts: attempt, Err: err}
 			if tracker != nil {
@@ -243,6 +260,14 @@ func retryMK2(tracker *retryTracker, pause func(time.Duration), kind, operation 
 	}
 }
 
-func (b *backend) operation(kind, stage string, call func() error) error {
-	return retryMK2(b.metrics, b.pause, kind, stage, call)
+func (b *backend) operation(kind, stage string, call func() error, target ...transporttrace.Target) error {
+	if b.trace == nil {
+		return retryMK2(b.metrics, b.pause, kind, stage, call)
+	}
+	var value transporttrace.Target
+	if len(target) > 0 {
+		value = target[0]
+	}
+	op := b.trace.recorder.Operation(b.info.Serial, b.trace.scope, transporttrace.OperationFor(kind), value)
+	return retryMK2Traced(b.metrics, b.pause, kind, stage, call, op)
 }

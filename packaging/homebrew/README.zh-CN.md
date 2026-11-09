@@ -1,6 +1,6 @@
 # Homebrew 接入草案：真实发布输入尚缺，当前不可安装
 
-这是一份本地审查材料，**没有可安装的 Formula、tap 或新 Release**。`nb1.rb.in` 不是 `.rb` 配方；`release-input.required.json` 的版本、URL、SHA、源码提交、最低macOS和组件范围均未填写。生成器遇到这些缺项就拒绝输出，不填虚构下载地址或校验和；测试中的 synthetic 输入仅驻留测试内存，CLI 禁止将它写成 Formula。
+这是一份本地审查材料，**没有可安装的 Formula、tap 或新 Release**。`nb1.rb.in` 不是 `.rb` 配方；`release-input.required.json` 的版本、URL、SHA、源码提交、最低macOS和组件范围均未填写。生成器遇到这些缺项就拒绝输出，不填虚构下载地址或校验和；测试中的合成 Formula 文本仅在内存渲染，CLI 负例使用会自动清理的临时fixture JSON，禁止将合成输入写成 `.rb` 配方。
 
 本片从 `85a3abd615a6bed6500fc255369d0dbd5dc46d85` 准备，只涉及打包设计及离线材料，没有运行brew、创建全局tap、安装、发布、调用USB或启动服务。tap仓库与Formula名称尚未最终批准，模板暂用 `Nb1`，不得把它当成已存在的安装命令。
 

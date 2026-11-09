@@ -27,7 +27,7 @@ func rawArgumentsGuard(next mcp.MethodHandler) mcp.MethodHandler {
 			return next(ctx, method, request)
 		}
 		switch params.Name {
-		case "list_devices", "get_device_state", "set_device_state", "run_program", "get_job", "cancel_job":
+		case "list_devices", "get_device_state", "set_device_state", "run_program", "preview_program", "get_job", "cancel_job":
 		default:
 			return next(ctx, method, request)
 		}

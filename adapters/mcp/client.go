@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"mime"
 	"net"
 	"net/http"
 	"net/url"
@@ -71,6 +72,17 @@ func (d *daemon) request(ctx context.Context, method, path, kind string, input a
 // A non-nil binding is used only by the explicit receipt extension. Ordinary
 // tool calls retain their original response/error semantics.
 func (d *daemon) requestBound(ctx context.Context, method, path, kind string, input any, binding *receiptBinding) output {
+	return d.requestMode(ctx, method, path, kind, input, binding, false)
+}
+
+// Software preview uses POST only for structured input. It cannot admit a job;
+// transport errors must not inherit the job submission's unknown-outcome warning.
+func (d *daemon) requestSoftware(ctx context.Context, method, path, kind string, input any) output {
+	return d.requestMode(ctx, method, path, kind, input, nil, true)
+}
+
+func (d *daemon) requestMode(ctx context.Context, method, path, kind string, input any, binding *receiptBinding, software bool) output {
+	uncertainPost := method == http.MethodPost && !software
 	var body io.Reader
 	if input != nil {
 		encoded, err := json.Marshal(input)
@@ -89,20 +101,23 @@ func (d *daemon) requestBound(ctx context.Context, method, path, kind string, in
 	response, err := d.client.Do(req)
 	if err != nil {
 		message := fmt.Sprintf("contact daemon: %v", err)
-		if method == http.MethodPost {
+		if uncertainPost {
 			message += "; outcome unknown: inspect the daemon before retrying"
 		}
-		return errorOutput("daemon_unreachable", message, 0, method == http.MethodPost)
+		return errorOutput("daemon_unreachable", message, 0, uncertainPost)
 	}
 	defer response.Body.Close()
 	data, err := io.ReadAll(io.LimitReader(response.Body, maxResponseBytes+1))
 	if err != nil {
-		return errorOutput("invalid_daemon_response", err.Error(), response.StatusCode, method == http.MethodPost)
+		return errorOutput("invalid_daemon_response", err.Error(), response.StatusCode, uncertainPost)
 	}
 	if len(data) > maxResponseBytes {
-		return errorOutput("invalid_daemon_response", "daemon response exceeds 2 MiB", response.StatusCode, method == http.MethodPost)
+		return errorOutput("invalid_daemon_response", "daemon response exceeds 2 MiB", response.StatusCode, uncertainPost)
 	}
 	if response.StatusCode < 200 || response.StatusCode >= 300 {
+		if software && (response.StatusCode == http.StatusNotFound || response.StatusCode == http.StatusNotImplemented) {
+			return errorOutput("unsupported", "daemon does not support the requested software preview or capability route; no job was submitted", response.StatusCode, false)
+		}
 		var problem struct {
 			Error struct {
 				Code    string `json:"code"`
@@ -113,7 +128,21 @@ func (d *daemon) requestBound(ctx context.Context, method, path, kind string, in
 		if json.Unmarshal(data, &problem) == nil && problem.Error.Code != "" {
 			code, message = problem.Error.Code, problem.Error.Message
 		}
-		return errorOutput(code, message, response.StatusCode, method == http.MethodPost && response.StatusCode >= 500)
+		return errorOutput(code, message, response.StatusCode, uncertainPost && response.StatusCode >= 500)
+	}
+	if software {
+		if response.StatusCode != http.StatusOK {
+			return errorOutput("invalid_daemon_response", "software preview and capabilities require HTTP200", response.StatusCode, false)
+		}
+		media, _, err := mime.ParseMediaType(response.Header.Get("Content-Type"))
+		if err != nil || media != "application/json" {
+			return errorOutput("invalid_daemon_response", "software preview and capabilities require application/json", response.StatusCode, false)
+		}
+		value, err := validateSoftwareResponse(data, kind, input)
+		if err != nil {
+			return errorOutput("invalid_daemon_response", err.Error(), response.StatusCode, false)
+		}
+		return output{Kind: kind, Data: value, Accepted: false}
 	}
 	var value any
 	decoder := json.NewDecoder(bytes.NewReader(data))

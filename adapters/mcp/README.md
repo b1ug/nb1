@@ -25,10 +25,11 @@ GOWORK=off go build -o ../../../bin/nb1-mcp .
 
 | 工具 | 输入与结果 |
 | --- | --- |
-| `list_devices` | 原 `{}` 返回设备数组。可选 `prepare_request:true` 额外读取实例信息，在输出外层加入 `request_ticket`；`data` 仍是设备数组。准备不会创建任务或预留回执。 |
+| `list_devices` | 原 `{}` 返回设备数组。可选 `prepare_request:true` 额外读取实例信息，在输出外层加入 `request_ticket`；仅准备时 `data` 仍是设备数组。可选 `include_capabilities:true` 才查询软件能力目录，此时 `data` 为 `{devices,capabilities}`；两选项相互独立。准备不会创建任务或预留回执。 |
 | `get_device_state` | `serial`。返回逻辑目标和带时间戳的原始 RGB 观测快照，保留其采样时间。 |
 | `set_device_state` | `serial`、`color`，可选 `led`、`fade_ms`、`hold_ms`、`policy`、`dry_run` 及齐全的请求二元组。编译成完成后保留颜色的单步程序，返回 job。 |
 | `run_program` | `serial` 和互斥的 `program` / `effect`，可选 `policy`、`dry_run` 及齐全的请求二元组。原始程序或高层效果均由同一 daemon 设备执行器管理。 |
+| `preview_program` | 互斥的 `program` / `effect`，可选 `serial`。由 daemon 权威编译并返回 `kind:"program_preview"`、`accepted:false`；不创建 Job/回执、不打开 USB。可选设备检查只使用缓存快照，不保证随后能执行。 |
 | `get_job` | 原 `{id}`，或互斥的 `{serial,request_id,expected_daemon_instance_id}`。后者只查询原回执，不提交任务；任务历史与回执均有界且不跨 daemon 重启保存。 |
 | `cancel_job` | `id`。请求取消；可能返回 `cancelling`，此时还不能认为硬件已停止。 |
 
@@ -36,7 +37,7 @@ GOWORK=off go build -o ../../../bin/nb1-mcp .
 
 ## 高层效果
 
-`run_program` 必须且只能提供 `program` 或 `effect` 之一；工具名称和其它五个工具保持不变。效果仍提交到同一个 HTTP jobs 路由，MCP只发送意图，不自行展开 USB 指令或程序时序：
+`run_program` 必须且只能提供 `program` 或 `effect` 之一；原六工具的名称与调用方式保持兼容，新增权威预览见下文。效果仍提交到同一个 HTTP jobs 路由，MCP只发送意图，不自行展开 USB 指令或程序时序：
 
 ```json
 {
@@ -79,6 +80,27 @@ MCP仅校验字段、枚举和基本范围，并将RGB规范为小写；省略�
 ```
 
 原始 `program` 的 `dry_run` 保持原形状：只做本地验证并返回规范化程序，完全不访问 HTTP 或 USB；效果预览的限制见上文。
+
+## 权威软件预览与能力目录
+
+新增只读、幂等提示的 `preview_program` 与原六工具共计七个固定工具；原有 `dry_run` 语义不变。需要让 daemon 检查完整编译、总时长和结束行为时使用新工具：
+
+```json
+{
+  "effect": {"kind": "pulse", "color": "#00a000", "cycles": 2, "period_ms": 800},
+  "serial": "20005601"
+}
+```
+
+它只发送一次 `POST /v1/programs/preview`，不调用 jobs、instance 或回执路由，不自动重试，不回退直控；不接受 `policy`、票据、`dry_run` 或尚未实现的 `pattern_ref`。`serial` 可省略，此时完全不检查设备。相同的原始 Program、Effect 均由 daemon 的同一编译器处理，适配器不自行展开 Effect。800ms、两周期 pulse 的已知契约示例是 380/390ms 淡入、名义时长 1600ms、总步骤 6；这不是实时耗时保证。
+
+响应必须 HTTP200 与 `application/json`（可带 charset），包含已知 `nb1-program-effect/v1`、规范 Program、正确的总步骤/名义时长、必需能力与一致的目标快照。目标状态为 `not_requested` / `supported` / `unsupported` / `unknown`；离线、未配置和缓存能力不可用不会被改判为支持。严格响应检查拒绝缺字段（包括零/false）、未知字段/大小写别名、重复键、显式 null、错误算术与不匹配 serial。原始 Program 的预览还必须保持已发送的规范 Program；Effect 的展开仍以 daemon 为权威，不增加第二编译器。
+
+`list_devices` 使用 `{"include_capabilities":true}` 才额外 `GET /v1/capabilities`；默认与仅 `prepare_request:true` 的 `data` 数组形状保持不变。目录描述软件输入、效果、策略和上限，设备实际启用能力仍在各设备快照中。未来目录名称/存储标志可作为元数据呈现，不会自动启用新工具、硬件上传或 Pattern 库。
+
+旧 daemon 的 404/501 明确返回 `unsupported`，不伪造目录或编译成功。预览的 HTTP POST 是只读计算：超时、损坏响应、5xx 等错误的 `outcome_unknown` 为 false（未输出时同为 false），不会追加“任务结果未知”警告；原来的 Job POST 和原票据查询继续保留其未知结果语义。MCP 工具注释是操作说明，不是权限边界。
+
+本增量用官方 SDK 的内存/stdio 软件路径和本地 HTTP fixture 验证；不需要真实 daemon 或 USB。本轮没有进行新硬件、服务或权限操作，也没有改变常驻部署；能力目录、预览及已有六工具是否在实际部署可用须与对应 daemon 版本分别核对。
 
 ## 可选的请求回执
 

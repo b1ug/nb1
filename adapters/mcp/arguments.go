@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"unicode/utf8"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
@@ -27,11 +28,24 @@ func rawArgumentsGuard(next mcp.MethodHandler) mcp.MethodHandler {
 			return next(ctx, method, request)
 		}
 		switch params.Name {
-		case "list_devices", "get_device_state", "set_device_state", "run_program", "preview_program", "resolve_color", "preview_light", "run_light", "get_job", "cancel_job", "list_patterns":
+		case "list_devices", "get_device_state", "set_device_state", "run_program", "preview_program", "resolve_color", "preview_light", "run_light", "get_job", "cancel_job", "list_patterns", "get_pattern":
 		default:
 			return next(ctx, method, request)
 		}
 		err := validateRawArguments(params.Arguments)
+		if err == nil && (params.Name == "run_program" || params.Name == "preview_program") {
+			var fields map[string]json.RawMessage
+			if decodeErr := json.Unmarshal(params.Arguments, &fields); decodeErr == nil && fields["pattern_ref"] != nil {
+				if !utf8.Valid(params.Arguments) {
+					err = fmt.Errorf("pattern arguments must be UTF-8")
+				} else {
+					err = validateLightUnicodeEscapes(params.Arguments)
+				}
+				if params.Name == "run_program" && fields["dry_run"] != nil {
+					err = fmt.Errorf("pattern_ref does not accept dry_run; use preview_program")
+				}
+			}
+		}
 		if params.Name == "resolve_color" && len(params.Arguments) > maxColorRequestBytes {
 			err = fmt.Errorf("color arguments exceed 4096 bytes")
 		}

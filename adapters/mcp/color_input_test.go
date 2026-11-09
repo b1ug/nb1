@@ -91,8 +91,8 @@ func TestOfficialSDKColorMemoryAndStdioPreserveOriginalNumbers(t *testing.T) {
 				session = connect(t, srv.URL)
 			}
 			listed, err := session.ListTools(context.Background(), nil)
-			if err != nil || len(listed.Tools) != 11 {
-				t.Fatalf("ten tools required: %+v %v", listed, err)
+			if err != nil || len(listed.Tools) != 12 {
+				t.Fatalf("twelve tools required: %+v %v", listed, err)
 			}
 			found := false
 			for _, tool := range listed.Tools {

@@ -16,9 +16,10 @@ const compileContract = "nb1-program-effect/v1"
 // Independent wire types: the adapter imports neither the core nor USB stack.
 // It verifies a daemon's result; it does not compile effects a second time.
 type previewArgs struct {
-	Program *program `json:"program,omitempty"`
-	Effect  *effect  `json:"effect,omitempty"`
-	Serial  *string  `json:"serial,omitempty"`
+	Program    *program    `json:"program,omitempty"`
+	Effect     *effect     `json:"effect,omitempty"`
+	PatternRef *patternRef `json:"pattern_ref,omitempty"`
+	Serial     *string     `json:"serial,omitempty"`
 }
 
 type previewProgram struct {
@@ -96,20 +97,23 @@ func expectedCatalog() capabilityCatalog {
 }
 
 func previewSchema() map[string]any {
-	schema := objectSchema(map[string]any{"program": programSchema(), "effect": effectSchema(), "serial": tokenSchema()})
-	schema["oneOf"] = []any{
-		map[string]any{"required": []string{"program"}, "not": map[string]any{"required": []string{"effect"}}},
-		map[string]any{"required": []string{"effect"}, "not": map[string]any{"required": []string{"program"}}},
-	}
+	schema := objectSchema(map[string]any{"program": programSchema(), "effect": effectSchema(), "pattern_ref": patternRefSchema(), "serial": tokenSchema()})
+	schema["oneOf"] = programInputVariants(false)
 	return schema
 }
 
 func preview(ctx context.Context, d *daemon, args previewArgs) (*mcp.CallToolResult, output, error) {
-	if (args.Program == nil) == (args.Effect == nil) {
-		return invalid("provide exactly one of program or effect")
+	if !oneProgramInput(args.Program != nil, args.Effect != nil, args.PatternRef != nil) {
+		return invalid("provide exactly one of program, effect or pattern_ref")
 	}
 	if args.Serial != nil && !validToken(*args.Serial) {
 		return invalid("invalid serial")
+	}
+	if args.PatternRef != nil {
+		if !validPatternRef(*args.PatternRef) {
+			return invalid("pattern_ref requires an ID and complete sha256 revision")
+		}
+		return result(d.requestSoftware(ctx, http.MethodPost, "/v1/programs/preview", "pattern_preview", args))
 	}
 	if args.Program != nil {
 		p, err := normalizeProgram(*args.Program)
@@ -182,6 +186,8 @@ func decodeSoftwareWire(data []byte, target any) error {
 
 func validateSoftwareResponse(data []byte, kind string, input any) (any, error) {
 	switch kind {
+	case "pattern_preview":
+		return validatePatternPreview(data, input)
 	case "light_preview":
 		return validateLightPreview(data, input)
 	case "color_resolution":

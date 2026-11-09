@@ -57,6 +57,7 @@ func registerPatternTools(s *mcp.Server, d *daemon) {
 	mcp.AddTool(s, t, func(ctx context.Context, request *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, output, error) {
 		return listPatterns(ctx, d, request.Params.Arguments)
 	})
+	registerGetPatternTool(s, d)
 }
 
 func listPatterns(ctx context.Context, d *daemon, raw json.RawMessage) (*mcp.CallToolResult, output, error) {

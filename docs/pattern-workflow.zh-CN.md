@@ -1,6 +1,6 @@
 # Pattern：从预览到保存、复用
 
-本页使用整合候选的`control patterns`命令，不表示当前机器的旧安装版已经升级。先确认`nb1 control patterns --help`、实际daemon版本和所选设备。交接时安装267为八工具，临时驻留526是Web演示；新的十一工具候选与Pattern库需分别验收、安装。
+本页使用`control patterns`命令和新MCP候选的固定引用能力。先确认`nb1 control patterns --help`、实际daemon版本和所选设备。当前工作区安装f879为十一MCP工具，临时daemon/Web为6acc；本候选十二工具尚未安装，不能把下文的新MCP字段直接发送给旧客户端。
 
 所有Pattern库命令只走daemon，拒绝`--mode direct`。库位置由daemon的`--pattern-dir`/`NB1_PATTERN_DIR`决定；客户端只显示返回路径，不据此打开文件或改用另一份库。读取不存在的库为空，不创建目录；导入才允许创建。
 
@@ -81,9 +81,15 @@ nb1 control --mode direct light preview examples/runtime/flow-orbit.action.json
 
 这保存的是该次编译得到的冻结Program。将来若要编辑Action，需要另行保留原Action文件、重新预览并明确处理新版本；库不会替你重新编译或偷偷更新旧revision。可参考短脉冲作者包的合法结构。
 
-## MCP边界与两种未知
+## MCP固定版本流程与两种未知
 
-十一工具候选仅新增`list_patterns({})`用于目录发现，返回`kind:pattern_list`和`accepted:false`。没有Pattern import/get/preview/run MCP工具；也不能给现有run_program塞pattern_ref。需要完整流程时选择已核实的CLI/HTTP入口。
+十二工具候选支持`list_patterns({})`和`get_pattern({id})`只读发现，分别返回`pattern_list`与`pattern_record`，均为`accepted:false`。`get_pattern`验证完整Record摘要并保留冻结Program；旧Effect展开由daemon的Store负责。
+
+先读取实际工具schema。支持后，可给`preview_program`传入`pattern_ref:{id,revision}`与可选serial。返回`pattern_preview`，data保持HTTP的`{pattern_ref,preview}`，不创建Job或准备票据。完整revision取自读取的记录，没有latest别名。
+
+播放时先获取并保存原票据，再给`run_program`传serial、原pattern_ref、显式`policy:"reject"`、request_id与expected_daemon_instance_id。内部一次目标预览后至多一次执行提交，并核对返回Job的完整Program；`dry_run`字段不能与pattern_ref同时出现，即使为false。原Program/Effect分支的dry_run零HTTP语义保留。
+
+引用预检失败不证明该票据以前没有执行。未知结果时通过`get_job`查原serial与原票据，不重新读库、不换票据重发。MCP不提供导入/覆盖/删除；保存仍由Web、CLI或HTTP完成。候选能力不代表已安装，旧十一工具客户端不能假装支持引用。
 
 导入错误的`publication_unknown`表示文件可能已经保存，应按requested中的ID/revision读取核对；它不是灯光执行的未知结果，导入不会创建Job。运行错误的`outcome_unknown`才用于原Job状态不明，应查原票据。两种情况都不自动重复写入。
 

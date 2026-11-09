@@ -84,6 +84,8 @@ func (d *daemon) requestSoftware(ctx context.Context, method, path, kind string,
 
 func (d *daemon) requestMode(ctx context.Context, method, path, kind string, input any, binding *receiptBinding, software bool) output {
 	uncertainPost := method == http.MethodPost && !software
+	patternWire := kind == "pattern_preview" || kind == "pattern_job"
+	patternJob := kind == "pattern_job"
 	var body io.Reader
 	if input != nil {
 		encoded, err := json.Marshal(input)
@@ -108,14 +110,22 @@ func (d *daemon) requestMode(ctx context.Context, method, path, kind string, inp
 		return errorOutput("daemon_unreachable", message, 0, uncertainPost)
 	}
 	defer response.Body.Close()
-	data, err := io.ReadAll(io.LimitReader(response.Body, maxResponseBytes+1))
+	limit := maxResponseBytes
+	if patternWire {
+		limit = maxPatternResponseBytes
+	}
+	data, err := io.ReadAll(io.LimitReader(response.Body, int64(limit)+1))
 	if err != nil {
 		return errorOutput("invalid_daemon_response", err.Error(), response.StatusCode, uncertainPost)
 	}
-	if len(data) > maxResponseBytes {
-		return errorOutput("invalid_daemon_response", "daemon response exceeds 2 MiB", response.StatusCode, uncertainPost)
+	if len(data) > limit {
+		message := "daemon response exceeds 2 MiB"
+		if patternWire {
+			message = "Pattern response exceeds 1 MiB"
+		}
+		return errorOutput("invalid_daemon_response", message, response.StatusCode, uncertainPost)
 	}
-	if kind == "light_job" || kind == "light_preview" {
+	if kind == "light_job" || kind == "light_preview" || patternWire {
 		// Validate the raw representation before either the success or error
 		// branch can discard duplicate fields, nulls or malformed text. The
 		// existing eight tools deliberately retain their response contracts.
@@ -140,7 +150,7 @@ func (d *daemon) requestMode(ctx context.Context, method, path, kind string, inp
 		}
 	}
 	if response.StatusCode < 200 || response.StatusCode >= 300 {
-		if software && (response.StatusCode == http.StatusNotFound || response.StatusCode == http.StatusNotImplemented) {
+		if software && !patternWire && (response.StatusCode == http.StatusNotFound || response.StatusCode == http.StatusNotImplemented) {
 			return errorOutput("unsupported", "daemon does not support the requested read-only software route; no job was submitted", response.StatusCode, false)
 		}
 		var problem struct {
@@ -163,13 +173,16 @@ func (d *daemon) requestMode(ctx context.Context, method, path, kind string, inp
 		if err != nil || media != "application/json" {
 			return errorOutput("invalid_daemon_response", "read-only software responses require application/json", response.StatusCode, false)
 		}
+		if patternWire && (len(response.Header.Values("Location")) != 0 || len(response.Header.Values("X-NB1-Replayed")) != 0 || len(response.Header.Values("X-NB1-Daemon-Instance-ID")) != 0) {
+			return errorOutput("invalid_daemon_response", "pattern preview unexpectedly contained submission metadata", response.StatusCode, false)
+		}
 		value, err := validateSoftwareResponse(data, kind, input)
 		if err != nil {
 			return errorOutput("invalid_daemon_response", err.Error(), response.StatusCode, false)
 		}
 		return output{Kind: kind, Data: value, Accepted: false}
 	}
-	if kind == "light_job" {
+	if kind == "light_job" || patternJob {
 		kind = "job"
 	}
 	var value any
@@ -206,6 +219,13 @@ func (d *daemon) requestMode(ctx context.Context, method, path, kind string, inp
 		if binding != nil {
 			if err := validateReceiptResponse(method, response.StatusCode, response.Header, job, *binding); err != nil {
 				return errorOutput("invalid_daemon_response", err.Error(), response.StatusCode, true)
+			}
+			if patternJob {
+				locations := response.Header.Values("Location")
+				want := "/v1/devices/" + url.PathEscape(binding.serial) + "/requests/" + url.PathEscape(binding.ticket.RequestID) + "?expected_daemon_instance_id=" + url.QueryEscape(binding.ticket.ExpectedDaemonInstanceID)
+				if len(locations) != 1 || locations[0] != want {
+					return errorOutput("invalid_daemon_response", "Pattern Job Location does not bind the original receipt", response.StatusCode, true)
+				}
 			}
 		}
 	}

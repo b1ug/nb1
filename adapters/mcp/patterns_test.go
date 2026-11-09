@@ -58,7 +58,7 @@ func TestPatternListOfficialSDKMemoryAndStdio(t *testing.T) {
 				}
 			}
 			sort.Strings(names)
-			if strings.Join(names, ",") != "cancel_job,get_device_state,get_job,list_devices,list_patterns,preview_light,preview_program,resolve_color,run_light,run_program,set_device_state" {
+			if strings.Join(names, ",") != "cancel_job,get_device_state,get_job,get_pattern,list_devices,list_patterns,preview_light,preview_program,resolve_color,run_light,run_program,set_device_state" {
 				t.Fatal(names)
 			}
 			result, out := call(t, session, "list_patterns", map[string]any{})

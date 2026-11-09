@@ -2,16 +2,16 @@
 
 > MCP、HTTP与默认daemon模式CLI共用核心编译器、Job和设备执行器。MCP通过官方SDK实现真实stdio协议，直接请求HTTP，不调用CLI。本文不授予额外设备或系统权限。
 
-先读实际tools/list、schema与CLI帮助，再选择入口。本树是整合候选：十一MCP工具包含只读list_patterns；安装与部署另行验收。交接时已安装267仍为八工具，临时驻留526提供Web/HTTP；这些记录不能代替运行时发现。
+先读实际tools/list、schema与CLI帮助，再选择入口。本树是十二工具候选：新增get_pattern，现有preview_program/run_program支持固定pattern_ref。当前工作区已安装仍是f879的十一工具，临时daemon/Web为6acc；本候选尚未安装，不能把源码能力当成宿主已连接的能力。
 
 light使用contract=nb1-light-action/v1与action，支持set/off/fade/blink/breathe/pulse/alternate/rainbow。alternate可选cut/linear/sine/orbit；MCP只有实际schema声明transition后才发送它。新pulse为快起/衰减/停顿，旧Effect pulse仍是period_ms对称呼吸。所有颜色为raw RGB，不暗加Gamma。
 
-Pattern CLI提供import/list/get/export/preview/run；精确revision不可省略。MCP的list_patterns只读summary，没有Pattern导入、预览或执行工具。新Action先预览，再把result.program作为Program放入作者包；不支持source.action，也不保存可编辑的Action来源。
+Pattern CLI提供import/list/get/export/preview/run。候选MCP用list_patterns读摘要、get_pattern({id})读取完整冻结记录；从真实记录取id和revision，再交给preview_program/run_program的pattern_ref。它与原program/effect三选一，原分支语义不变。固定引用预览返回pattern_preview、data:{pattern_ref,preview}；运行必须显式reject和完整原票据，不接受dry_run字段（包括false）、不自动prepare/retry/fallback。MCP不增加import；保存仍走Web/CLI/HTTP，新Action保存result.program，不支持source.action。
 
 ## 使用入口
 
 - [Agent使用指南](docs/agent-guide.zh-CN.md)：发现版本、选择语义、原票据与未知结果。
-- [Pattern完整流程](docs/pattern-workflow.zh-CN.md)：CLI导入、导出、精确引用预览/执行，以及MCP只读边界。
+- [Pattern完整流程](docs/pattern-workflow.zh-CN.md)：Web/CLI保存与候选MCP固定引用预览、执行；保存与运行严格分开。
 - [项目Skill](skills/blink1-control/SKILL.md)：项目内指南；未全局安装、不自动注册MCP。
 - [light动作契约](internal/lightaction/README.zh-CN.md)：颜色、曲线、66步过渡、时间预算与兼容规则。
 - [Pattern CLI合同](docs/patterns-cli.md)：现有命令和结果字段。
@@ -27,6 +27,6 @@ Pattern CLI提供import/list/get/export/preview/run；精确revision不可省略
 
 ## 操作边界
 
-新light及Pattern执行均使用reject和原票据；202是接受而非完成。执行结果未知时查原票据，不能换键重发。导入的publication_unknown是文件发布不确定，与执行的outcome_unknown分开；导入不亮灯。所有Pattern库命令拒绝direct，不猜测另一份本地库。
+新light及Pattern执行均使用reject和原票据；202是接受而非完成。票据从list_devices({prepare_request:true})真实返回中保存，执行结果未知时用get_job查询原serial和原票据，不能换键重发。导入的publication_unknown是文件发布不确定，与执行的outcome_unknown分开；导入不亮灯。所有Pattern库命令拒绝direct，不猜测另一份本地库。
 
 [最小权限](docs/security-boundaries.zh-CN.md)仍适用。sequence/spin/frame/compose、自动重放和硬件Flash不是已实现能力；mk3未实机验收。llms.txt提供可读索引，不保证Agent自动读取或理解。

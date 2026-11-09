@@ -73,8 +73,11 @@ func normalizeEffectStructure(e effect) (effect, error) {
 }
 
 func run(ctx context.Context, d *daemon, args runArgs) (*mcp.CallToolResult, output, error) {
-	if (args.Program == nil) == (args.Effect == nil) {
-		return invalid("provide exactly one of program or effect")
+	if !oneProgramInput(args.Program != nil, args.Effect != nil, args.PatternRef != nil) {
+		return invalid("provide exactly one of program, effect or pattern_ref")
+	}
+	if args.PatternRef != nil {
+		return runPattern(ctx, d, args)
 	}
 	if args.Program != nil {
 		return submit(ctx, d, args.Serial, *args.Program, args.Policy, args.DryRun, args.RequestID, args.ExpectedDaemonInstanceID)
@@ -121,10 +124,7 @@ func effectSchema() map[string]any {
 }
 
 func runSchema() map[string]any {
-	schema := submissionSchema(map[string]any{"serial": tokenSchema(), "program": programSchema(), "effect": effectSchema(), "policy": policySchema(), "dry_run": map[string]any{"type": "boolean"}}, "serial")
-	schema["oneOf"] = []any{
-		map[string]any{"required": []string{"program"}, "not": map[string]any{"required": []string{"effect"}}},
-		map[string]any{"required": []string{"effect"}, "not": map[string]any{"required": []string{"program"}}},
-	}
+	schema := submissionSchema(map[string]any{"serial": tokenSchema(), "program": programSchema(), "effect": effectSchema(), "pattern_ref": patternRefSchema(), "policy": policySchema(), "dry_run": map[string]any{"type": "boolean"}}, "serial")
+	schema["oneOf"] = programInputVariants(true)
 	return schema
 }

@@ -1,12 +1,12 @@
 # blink(1) Agent 使用指南
 
-本树整合了light动作与Pattern客户端，是待独立验收、安装的候选。交接时实际安装仍是267版八工具，临时驻留526提供Web/HTTP；不能把此处写成十一工具已安装。每次先确认所用二进制、daemon与实际tools/list/schema。
+本树是新增MCP Pattern闭环的十二工具候选，尚未安装。当前工作区已安装的f879仍是十一工具，临时daemon/Web运行6acc；不能把本树能力写成宿主已连接的能力。每次先确认所用二进制、daemon与实际tools/list/schema。
 
 [项目Skill](../skills/blink1-control/SKILL.md)和[llms.txt](../llms.txt)是项目内指导，不全局安装、不注册工具。MCP使用官方SDK的真实stdio协议，链路为Agent→MCP→本机HTTP→设备执行器→SDK/GID→USB，不通过shell调用CLI。
 
 ## 发现与选择入口
 
-整合候选的十一工具为：`list_devices`、`get_device_state`、`set_device_state`、`run_program`、`preview_program`、`resolve_color`、`get_job`、`cancel_job`、`preview_light`、`run_light`、`list_patterns`。没有Pattern导入或执行MCP工具。先看实际清单；再看alternate是否在schema声明transition，不能仅根据工具数量推断字段存在。
+候选的十二工具为：`list_devices`、`get_device_state`、`set_device_state`、`run_program`、`preview_program`、`resolve_color`、`get_job`、`cancel_job`、`preview_light`、`run_light`、`list_patterns`、`get_pattern`。Pattern执行使用已有`run_program`的固定引用分支，不另建一个执行工具；仍没有MCP导入工具。先看实际清单，再看schema是否声明pattern_ref或alternate.transition，不能仅根据数量推断字段存在。
 
 需要设备时，`list_devices({"include_capabilities":true})`读取设备和软件目录，选择用户指定或上下文已确定的serial。目录、schema与设备缓存能力分别判断；缓存supported不是空闲、准入或硬件执行证明。只转换颜色时直接`resolve_color`，不准备票据。
 
@@ -15,7 +15,7 @@
 | Program | steps/repeat/on_finish，颜色Hex6 | 原preview_program/run_program，CLI control preview/run |
 | Effect v1 | steady或旧对称pulse(period_ms)，颜色Hex6 | 原preview_program/run_program，CLI control effect |
 | light Action v1 | contract/action及适用的ColorInput | preview_light/run_light；CLI control light；新HTTP |
-| Pattern | 主机库中的冻结记录与精确revision | CLI control patterns完整流程；MCP只有list_patterns |
+| Pattern | 主机库中的冻结记录与精确revision | Web/CLI/HTTP保存；MCP list_patterns/get_pattern读取，preview_program/run_program用pattern_ref |
 
 ## light与非线性交替
 
@@ -52,7 +52,25 @@ direct light preview为纯本地编译，不连接daemon或USB；不能据此推
 
 完整Pattern流程见[Pattern工作流](pattern-workflow.zh-CN.md)：import/list/get/export/preview/run。preview/run必须指定实际完整revision，无latest。CLI run默认reject；无票据时Prepare一次，也可传入原完整pair；--wait只查原Job，不重新读库、不自动取消。
 
-MCP `list_patterns({})`只读summary，不能导入、预览或执行引用。不存在pattern_run等工具，也不能把pattern_ref放进当前MCP run_program。需要执行时显式选择已核实的CLI/HTTP入口，不冒充MCP调用成功。
+候选MCP中，`list_patterns({})`只读summary，`get_pattern({id})`读取完整记录并返回`kind:pattern_record`、`accepted:false`。从实际返回的记录取完整ID/revision，不从标题或示意文本推断版本。原Program、Effect与新的pattern_ref严格三选一，旧分支语义不变。
+
+固定引用传给`preview_program`，可选serial只检查缓存能力，返回`kind:pattern_preview`、`accepted:false`、`data:{pattern_ref,preview}`。执行时用`run_program`传同一引用、所选serial、显式`policy:"reject"`和从Prepare真实响应保存的完整原票据；不接受`dry_run`字段，即使为false。内部只做一次目标预览，再至多一次jobs POST，并核对原票据、设备和完整冻结Program；不会自动准备、换键、重试或回退raw/direct。
+
+以下是宿主伪代码：`call`代表一次实际MCP调用并取其structuredContent，`selectedID`和`selectedSerial`来自已明确的用户选择，不是新增工具或示例假ID。
+
+```js
+const record = (await call("get_pattern", {id: selectedID})).data;
+const ref = {id: record.id, revision: record.revision};
+await call("preview_program", {pattern_ref: ref, serial: selectedSerial});
+const ticket = (await call("list_devices", {prepare_request: true})).request_ticket;
+// 先保存 ticket；下面这一步会提交灯光任务。
+await call("run_program", {
+  serial: selectedSerial, pattern_ref: ref, policy: "reject", ...ticket
+});
+await call("get_job", {serial: selectedSerial, ...ticket});
+```
+
+MCP不增加import、覆盖或删除；保存仍由Web、CLI或HTTP完成。旧f879十一工具不支持该引用分支，必须实际发现后再使用。新分支的预检失败也不能证明原票据之前没有运行；保留原票据，通过`get_job`查询，原回执查询不依赖当前库。
 
 新Action先preview，保存`result.program`为作者包中的program；这是冻结Program，不支持source.action，也不是保留可编辑的Action来源。保留原Action文件用于将来修改，是另一项文件管理操作。示例[短脉冲作者包](../examples/runtime/pattern-short-pulse.authoring.json)已是合法三步Program。
 

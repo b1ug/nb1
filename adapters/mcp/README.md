@@ -2,6 +2,8 @@
 
 这是独立的 stdio 服务：Agent → MCP → 本机 HTTP daemon → 每设备执行器 → SDK/GID → USB。MCP 进程不打开 USB，不会抢占设备，也不会在 HTTP 失败时改为直控；多个 Agent 可以连接同一个 daemon。
 
+本树是十二工具候选，新增 `get_pattern` 并扩展现有 `preview_program` / `run_program` 的固定引用分支，尚未安装。当前工作区已安装的仍是 f879 十一工具，临时 daemon/Web 为 6acc。先用实际 `tools/list` 和 schema 发现能力，不能把此处的候选合同当成宿主已连接的功能。
+
 采用官方 [Go MCP SDK v1.8.0](https://github.com/modelcontextprotocol/go-sdk/releases/tag/v1.8.0)，协议协商、stdio framing、输入/输出 schema 验证均由 SDK 处理。该版本的 [go.mod](https://github.com/modelcontextprotocol/go-sdk/blob/v1.8.0/go.mod)要求 Go1.25；因此适配器单独建模块，不改变 GID/设备 SDK 的 Go 下限。支持的协议版本由 SDK 协商，当前最新为 [2026-07-28](https://github.com/modelcontextprotocol/go-sdk#version-compatibility)。
 
 ## 启动
@@ -28,14 +30,15 @@ GOWORK=off go build -o ../../../bin/nb1-mcp .
 | `list_devices` | 原 `{}` 返回设备数组。可选 `prepare_request:true` 额外读取实例信息，在输出外层加入 `request_ticket`；仅准备时 `data` 仍是设备数组。可选 `include_capabilities:true` 才查询软件能力目录，此时 `data` 为 `{devices,capabilities}`；两选项相互独立。准备不会创建任务或预留回执。 |
 | `get_device_state` | `serial`。返回逻辑目标和带时间戳的原始 RGB 观测快照，保留其采样时间。 |
 | `set_device_state` | `serial`、`color`，可选 `led`、`fade_ms`、`hold_ms`、`policy`、`dry_run` 及齐全的请求二元组。编译成完成后保留颜色的单步程序，返回 job。 |
-| `run_program` | `serial` 和互斥的 `program` / `effect`，可选 `policy`、`dry_run` 及齐全的请求二元组。原始程序或高层效果均由同一 daemon 设备执行器管理。 |
-| `preview_program` | 互斥的 `program` / `effect`，可选 `serial`。由 daemon 权威编译并返回 `kind:"program_preview"`、`accepted:false`；不创建 Job/回执、不打开 USB。可选设备检查只使用缓存快照，不保证随后能执行。 |
+| `run_program` | `serial` 和三选一的 `program` / `effect` / `pattern_ref`。原 Program/Effect 的 policy、dry_run、可选票据语义不变。引用分支必须显式 reject 和完整原票据，拒绝 dry_run 字段（包括 false），先目标预览再至多一次 jobs POST。 |
+| `preview_program` | 三选一的 `program` / `effect` / `pattern_ref`，可选 `serial`。原分支返回 `program_preview`；引用分支返回 `pattern_preview`，data 为 `{pattern_ref,preview}`；均 `accepted:false`。不创建 Job/回执，设备检查只用缓存。 |
 | `resolve_color` | 新候选只读工具，必填 color：名字/hex3/hex6字符串、rgb8或hsv对象；HTTP归一化为 canonical_color 和 raw RGB，不发现设备或创建Job。 |
 | `preview_light` | `contract:nb1-light-action/v1`、一个严格的 `action`，可选 `serial`。仅一次只读编译 POST；返回 `light_preview`、`accepted:false`。 |
 | `run_light` | 必填 serial、contract、action 及完整原票据。policy 可省略但只允许 reject。先一次只读目标预览，再至多一次执行 POST。 |
 | `get_job` | 原 `{id}`，或互斥的 `{serial,request_id,expected_daemon_instance_id}`。后者只查询原回执，不提交任务；任务历史与回执均有界且不跨 daemon 重启保存。 |
 | `cancel_job` | `id`。请求取消；可能返回 `cancelling`，此时还不能认为硬件已停止。 |
 | `list_patterns` | 仅空对象 `{}`；一次 `GET /v1/patterns`，返回 `pattern_list`、`accepted:false` 和库信息/有界摘要；不读本机路径、不准备票据、不播放。 |
+| `get_pattern` | 仅 `{id}`；一次 `GET /v1/patterns/{id}`，校验完整冻结 Record 与内容 revision，返回 `pattern_record`、`accepted:false`。不准备票据、不执行、不打开响应中的本机路径。 |
 
 输入仅接受声明的字段。`color` 为原始 `#RRGGBB`，不隐式应用 Gamma；`led` 为0（全部）、1或2。原始 `program` 的 `fade_ms` 在0–600000之间且必须是10的倍数；`hold_ms` 在0–3600000之间。程序有1–1024步，repeat为0或省略时运行一次，最大10000次；每步的淡入、保持及10ms固件更新余量计入24小时名义上限，原生 I/O 仍有额外开销。`on_finish` 默认为 `off`，也可指定 `hold`。能力与实际支持型号以 daemon 结果为准，不据协议模拟声称 mk3 已经实测。
 
@@ -91,9 +94,9 @@ orbit的亮度/混色曲线与中间RGB由daemon权威编译，适配器不复�
 原票据、至多一次执行POST、未知结果查询和严格JSON规则均保持不变。
 本候选通过软件测试不等于已安装；先读取实际工具schema，旧客户端不能接收此字段。
 
-## Pattern 只读目录候选
+## Pattern 固定版本候选
 
-本轮仅增加 `list_patterns`，由原十工具变为十一工具；不是安装或推广声明。首先通过宿主的 `tools/list` 发现实际工具。`preview_program` / `run_program` 的原 Program/Effect 输入保持不变，本轮未把 `pattern_ref` 扩展到 MCP 执行入口。
+本轮在原十一工具上新增 `get_pattern`，候选共十二工具；同时给既有 `preview_program` / `run_program` 增加与 Program/Effect 互斥的 `pattern_ref`。原 Program/Effect 分支的语义保持不变。这不是安装声明，首先通过宿主 `tools/list` 和 schema 确认；没有新增 MCP 导入、覆盖或删除工具。
 
 `list_patterns({})` 只接受空对象，省略 arguments 按 MCP 规则视为空对象。`id`、`path`、`limit`、`serial`、请求票据或任何其他字段都会在 HTTP 前拒绝。它只向已配置的 loopback daemon 发送一次 `GET /v1/patterns`，没有请求体、查询参数或后备路径；不访问设备、创建 Job、导入图案、改写文件、申请权限或自动重试。
 
@@ -103,9 +106,34 @@ Pattern 沿用旧 Program 的限制：最多1024个定义步骤、repeat最多10
 
 成功及失败响应都要求唯一 JSON Content-Type、有效UTF-8和无损Unicode转义，拒绝重复/未知字段、null、缺失字段、非整数或越界数据。服务不存在、未启用、损坏、busy或503保持明确错误，不伪装为空列表，不生成未知Job。服务合法返回 ready 和 `patterns:[]` 才代表空库（底层尚未创建目录也可以是合法空库）。
 
+`get_pattern({id})` 取得完整冻结记录。成功返回 `kind:"pattern_record"`、`accepted:false`，data 为 Record 本身，包含 `id`、`title`、`source`、`compiled_program`、`compile_contract` 和完整 `revision`。适配器核对请求 ID、规范 Program、来源结构与 canonical revision；Program 来源须与冻结 Program 一致。旧 Effect 展开仍信任权威 Store，不在 MCP 复制旧效果编译器。内容哈希校验不等于服务端身份认证。
+
+从实际 Record 取 ID/revision，再调用 `preview_program({pattern_ref:{id,revision},serial?})`。返回 `kind:"pattern_preview"`、`accepted:false`、`data:{pattern_ref,preview}`，仅一次只读 `POST /v1/programs/preview`。不准备票据；设备 supported 只说明缓存能力匹配，不保留设备或保证随后能提交。没有 `latest` 或自动升级引用。
+
+执行引用时，`run_program` 必须带已选择的 serial、同一 `pattern_ref`、显式 `policy:"reject"` 和完整原 request_id / expected_daemon_instance_id。`dry_run` 字段不能出现，即使值为 false。先一次目标预览，检查原引用和支持状态；通过后至多一次 `POST /v1/devices/{serial}/jobs`。执行响应保留原 `kind:"job"`，并核对实例/重放响应头、设备、完整 Job.Program 与权威预览一致、总步数和进度边界。不会自动准备/刷新票据、重发执行或回退 raw Program、Effect、direct。
+
+宿主伪代码如下，`call` 代表一次实际工具调用并取 structuredContent；选择值来自真实列表，不是新增工具：
+
+```js
+const listing = await call("list_patterns", {});
+const selectedID = choosePatternID(listing.data.patterns);
+const record = (await call("get_pattern", {id: selectedID})).data;
+const ref = {id: record.id, revision: record.revision};
+await call("preview_program", {pattern_ref: ref, serial: selectedSerial});
+const ticket = (await call("list_devices", {prepare_request: true})).request_ticket;
+// 保存完整 ticket 后，明确提交一次：
+const result = await call("run_program", {
+  serial: selectedSerial, pattern_ref: ref, policy: "reject", ...ticket
+});
+// 接纳并不等于完成；未知结果也用这对原值查询。
+await call("get_job", {serial: selectedSerial, ...ticket});
+```
+
+引用预览/解析失败只表示本次未发执行 POST，不证明原票据之前没有 Job。引用运行错误保留原票据；`error.outcome_unknown` 为 true 时，查询原 `get_job`，不改 revision、实例或请求 ID 再试。库损坏或引用消失不阻断原 Job/回执查询。单独 `get_pattern`、`list_patterns` 和 `preview_program` 都是只读，不凭它们的失败生成一个新未知 Job。
+
 ## 可读颜色输入候选
 
-颜色增量保留原七工具形状，构成此前八工具集合；此前候选再添加 `preview_light` / `run_light`，成为十工具；本轮另增加只读 `list_patterns`，共十一工具。实际安装版本必须先用 tools/list 确认，不据此宣称已推广。运行时先 tools/list；新daemon路由 `POST /v1/colors/resolve`，请求仅 `{"color":...}`，无serial/policy/ticket。
+颜色增量保留原七工具形状，构成此前八工具集合；随后 `preview_light` / `run_light` 使其成为十工具，`list_patterns` 成为十一工具。本轮的 `get_pattern` 才是第十二个；这些历史计数不代替实际发现。运行时先 tools/list；颜色路由 `POST /v1/colors/resolve` 的请求仍仅 `{"color":...}`，无serial/policy/ticket。
 
 ```json
 {"color":"lime"}
@@ -121,7 +149,7 @@ Pattern 沿用旧 Program 的限制：最多1024个定义步骤、repeat最多10
 
 ## 高层效果
 
-`run_program` 必须且只能提供 `program` 或 `effect` 之一；原六工具的名称与调用方式保持兼容，新增权威预览见下文。效果仍提交到同一个 HTTP jobs 路由，MCP只发送意图，不自行展开 USB 指令或程序时序：
+本节描述 `run_program` 原 Program/Effect 分支，两者互斥；新增固定引用是第三个互斥分支，见前文。原六工具的名称与调用方式保持兼容。效果仍提交到同一个 HTTP jobs 路由，MCP只发送意图，不自行展开 USB 指令或程序时序：
 
 ```json
 {
@@ -167,7 +195,7 @@ MCP仅校验字段、枚举和基本范围，并将RGB规范为小写；省略�
 
 ## 权威软件预览与能力目录
 
-`preview_program` 与原六工具构成原七工具；新增颜色归一化工具时为八工具，本增量增加两项版本化 light 工具后为十工具。预览仍是只读、幂等提示工具；原有 `dry_run` 语义不变。需要让 daemon 检查完整编译、总时长和结束行为时使用新工具：
+`preview_program` 仍是只读、幂等提示工具；本节原 Program/Effect 的预览与原有 `dry_run` 语义不变。需要让 daemon 检查完整编译、总时长和结束行为时使用它：
 
 ```json
 {
@@ -176,7 +204,7 @@ MCP仅校验字段、枚举和基本范围，并将RGB规范为小写；省略�
 }
 ```
 
-它只发送一次 `POST /v1/programs/preview`，不调用 jobs、instance 或回执路由，不自动重试，不回退直控；不接受 `policy`、票据、`dry_run` 或尚未实现的 `pattern_ref`。`serial` 可省略，此时完全不检查设备。相同的原始 Program、Effect 均由 daemon 的同一编译器处理，适配器不自行展开 Effect。800ms、两周期 pulse 的已知契约示例是 380/390ms 淡入、名义时长 1600ms、总步骤 6；这不是实时耗时保证。
+它只发送一次 `POST /v1/programs/preview`，不调用 jobs、instance 或回执路由，不自动重试，不回退直控；不接受 `policy`、票据或 `dry_run`。Program、Effect、pattern_ref 每次三选一，后者的不同返回封装见前文。`serial` 可省略，此时完全不检查设备。相同的原始 Program、Effect 均由 daemon 的同一编译器处理，适配器不自行展开 Effect。800ms、两周期 pulse 的已知契约示例是 380/390ms 淡入、名义时长 1600ms、总步骤 6；这不是实时耗时保证。
 
 响应必须 HTTP200 与 `application/json`（可带 charset），包含已知 `nb1-program-effect/v1`、规范 Program、正确的总步骤/名义时长、必需能力与一致的目标快照。目标状态为 `not_requested` / `supported` / `unsupported` / `unknown`；离线、未配置和缓存能力不可用不会被改判为支持。严格响应检查拒绝缺字段（包括零/false）、未知字段/大小写别名、重复键、显式 null、错误算术与不匹配 serial。原始 Program 的预览还必须保持已发送的规范 Program；Effect 的展开仍以 daemon 为权威，不增加第二编译器。
 
@@ -194,18 +222,15 @@ MCP仅校验字段、枚举和基本范围，并将RGB规范为小写；省略�
 {"prepare_request": true}
 ```
 
-它先读取设备，再通过 `GET /v1/instance` 取得实例和准入前缀；适配器只追加由 `crypto/rand` 生成的16字节 nonce。输出保持 `kind:"devices"` 和 `data` 数组，额外包含：
+它先读取设备，再通过 `GET /v1/instance` 取得实例和准入前缀；适配器只追加由 `crypto/rand` 生成的16字节 nonce。输出保持 `kind:"devices"` 和 `data` 数组，额外包含完整 `request_ticket`。从真实结果取值，不手工填写示意长 ID：
 
-```json
-{
-  "request_ticket": {
-    "request_id": "req_60000_0123456789abcdef0123456789abcdef",
-    "expected_daemon_instance_id": "daemon_0123456789abcdef0123456789abcdef"
-  }
-}
+```js
+const prepared = await call("list_devices", {prepare_request: true});
+const ticket = prepared.request_ticket;
+// ticket.request_id 和 ticket.expected_daemon_instance_id 原样保存。
 ```
 
-示例中的键仅说明格式，真实调用必须使用准备所得的完整二元组。保存它后，再把两个字段同时加入 `set_device_state` 或 `run_program`；省略两字段仍走原提交路径。默认不准备 token、不重试写入、不更换实例或请求键，也不会在旧 daemon 不支持扩展时去掉字段降级。两种提交工具的 `IdempotentHint` 继续为 false，因为无键调用可以创建新任务。
+保存它后，再把两个字段同时加入 `set_device_state` 或 `run_program`。原 Program/Effect 分支省略两字段仍走原提交路径；新的 pattern_ref 分支必须显式提供完整 pair。默认不准备 token、不重试写入、不更换实例或请求键，也不会在旧 daemon 不支持扩展时去掉字段降级。两种提交工具的 `IdempotentHint` 继续为 false，因为原分支的无键调用可以创建新任务。
 
 适配器不主动重试提交；Go HTTP 传输层可能重试可安全重放的 GET。回执 GET 始终只读，不创建任务。
 
@@ -215,19 +240,15 @@ MCP仅校验字段、枚举和基本范围，并将RGB规范为小写；省略�
 
 查找原提交时调用：
 
-```json
-{
-  "serial": "20005601",
-  "request_id": "req_60000_0123456789abcdef0123456789abcdef",
-  "expected_daemon_instance_id": "daemon_0123456789abcdef0123456789abcdef"
-}
+```js
+await call("get_job", {serial: selectedSerial, ...ticket});
 ```
 
 以上是 `get_job` 的另一种完整输入，不能同时提供 `id`。`request_expired`（410）、`daemon_instance_changed`（409）及回执查询的 `request_not_found`（404）保留 `outcome_unknown:true`：404只表示查询当时没有回执，原 POST 可能仍在途中。不要把旧意图自动换成新键或绑定到新实例；已知键的调用方可以显式查询，或按服务端规则主动重发相同实例、键和 payload。
 
 回执查询的任何失败都不能确认旧意图的执行结果，因此保留 `outcome_unknown:true`，包括网络错误、5xx、损坏响应，以及替换/降级 daemon 没有该路由时的通用404或501。原 `{id}` 查询和其他无键工具的错误语义保持不变；带键提交收到明确的首次400、429或 payload 冲突仍与不确定提交区分。
 
-有二元组的 `dry_run` 仍然零 HTTP，只检查字段格式及原始程序边界，效果仅检查结构；预览保留原二元组并明确返回 `instance_binding_verified:false`。它不能验证 daemon 实例是否匹配、回执是否存在、准入期限是否过期；期限是 daemon 单调运行时间，不能与客户端墙钟比较。
+原 Program/Effect 分支有二元组的 `dry_run` 仍然零 HTTP，只检查字段格式及原始程序边界，效果仅检查结构；预览保留原二元组并明确返回 `instance_binding_verified:false`。它不能验证 daemon 实例是否匹配、回执是否存在、准入期限是否过期；期限是 daemon 单调运行时间，不能与客户端墙钟比较。pattern_ref 分支不接受 dry_run 字段，应使用只读 preview_program。
 
 该可选扩展已实现并覆盖模拟 HTTP 与官方 SDK stdio 软件测试；此分支未执行新的硬件回执验收，实物结果由主工作区集成后单独记录。
 
@@ -253,6 +274,8 @@ GOWORK=off go vet ./...
 测试用模拟 HTTP 服务，并用官方 SDK 客户端覆盖工具发现、原始参数歧义与 schema 拦截、程序预览、真实 stdio 子进程通信、队列错误、取消中状态、POST 超时歧义及重定向/响应上限。重复键、嵌套 null、大小写别名和输入限制用例确认在任何 HTTP 请求前被拒绝。不会打开真实 USB。硬件链路应由主工作区另行验收。
 
 回执测试同样使用官方 stdio 客户端，覆盖六工具旧输入、准备键的随机性、成对字段与查询互斥、原 payload/键保留、终态202、响应header和设备绑定、查询失败的未知结果、POST丢失响应不重试，以及带键 dry-run 零 HTTP。没有引入额外 Go 依赖或提高模块 Go1.25 下限。
+
+本轮独立跨入口脚本准备通过官方 SDK stdio、真实临时 Store 与内存设备验证十二工具发现、完整 Record、固定引用、原票据跨 MCP/CLI 重放和坏库回执查询。当前等待本候选冻结后运行，不将旧十一工具的通过记录冒作十二工具验收，也不进行新的硬件操作。
 
 效果测试覆盖官方 stdio 下的原始程序兼容、program/effect二选一、重复键/null/大小写/结构范围拦截、纯意图转发、回执与响应绑定保留，以及效果结构预览零 HTTP。MCP未引入核心编译器或设备依赖；此轮没有执行效果硬件验收。
 

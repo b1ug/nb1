@@ -29,15 +29,27 @@ var (
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   config.AppName,
-	Short: "new blink(1) command-line tool for geeks",
+	Short: "控制 blink(1) 指示灯，提供本机共享 API",
 	Long: colorLogo + ystring.NewLine + hdoc(`
-		// DRAFT:
-		device: args > env > config > default
+		nb1 用于控制 blink(1) 指示灯，也可运行本机 daemon，
+		通过 HTTP v1 API 供 CLI 和其他客户端共享设备。
 
-		// TODO:
-		This is a standard Go CLI application template.
-		It is based on Cobra and Viper. Easy to use, easy to extend.
+		先用 server --devices 明确指定设备启动 daemon，再用 control 操作。
+		control 默认连接本机 daemon；临时直控可显式使用 control --mode direct。
+		doctor 只读检查构建版本、daemon 和已配置设备快照，不扫描或打开 USB。
+
+		on、off、blink、fade、play、read、write 等旧命令仍直接访问设备，
+		不经过 daemon。各入口的参数可用 nb1 <命令> --help 查看。
+
+		日常以普通用户运行，设备访问按系统权限配置；
+		server 仅监听本机回环地址。
 `),
+	Example: `  nb1 server --devices 20005601
+  nb1 control devices
+  nb1 control set 20005601 '#3366ff' --wait
+  nb1 doctor
+  nb1 control --mode direct state 20005601
+  nb1 --device 20005601 on`,
 	SilenceUsage:  true,
 	SilenceErrors: true,
 }

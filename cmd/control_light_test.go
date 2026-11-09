@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -171,32 +172,127 @@ func TestControlLightDaemonPreviewAndOnePreparedSubmission(t *testing.T) {
 	}
 }
 
-func TestControlLightWaitUsesExactReceiptAndDoesNotCancelOnTimeout(t *testing.T) {
+func TestControlLightWaitUsesExactReceiptAndDoesNotCancelWhenCallerStops(t *testing.T) {
 	previous := waitComplete
 	waitComplete = true
 	defer func() { waitComplete = previous }()
 	for _, running := range []bool{false, true} {
-		t.Run(map[bool]string{false: "completed", true: "timeout"}[running], func(t *testing.T) {
+		t.Run(map[bool]string{false: "completed", true: "caller_canceled"}[running], func(t *testing.T) {
 			service := &lightCommandService{running: running}
-			server := httptest.NewServer(httpapi.New(service))
-			defer server.Close()
+			ctx, cancel := context.WithCancel(context.Background())
+			var commandFinished chan struct{}
+			lookupStarted, releaseLookup := make(chan struct{}), make(chan struct{})
+			var lookupOnce sync.Once
+			var traceMu sync.Mutex
+			var trace [][3]string
+			handler := httpapi.New(service)
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				traceMu.Lock()
+				trace = append(trace, [3]string{r.Method, r.URL.Path, r.URL.RawQuery})
+				traceMu.Unlock()
+				if running && r.Method == http.MethodGet && strings.HasPrefix(r.URL.Path, "/v1/devices/demo/requests/") {
+					// Run the real handler first, so the exact original receipt has
+					// reached service.Request after the POST was accepted. Buffer the
+					// response to cancel during this read, before sending any headers.
+					probe := httptest.NewRecorder()
+					handler.ServeHTTP(probe, r)
+					if probe.Code != http.StatusOK {
+						w.WriteHeader(probe.Code)
+						return
+					}
+					lookupOnce.Do(func() { close(lookupStarted) })
+					select {
+					case <-r.Context().Done():
+					case <-releaseLookup: // Cleanup also releases the gate on failure.
+					}
+					return
+				}
+				handler.ServeHTTP(w, r)
+			}))
+			defer func() {
+				cancel()
+				close(releaseLookup)
+				if commandFinished != nil {
+					select {
+					case <-commandFinished:
+					case <-time.After(5 * time.Second):
+						t.Error("CLI goroutine did not stop after cleanup cancellation")
+					}
+				}
+				server.Close()
+			}()
 			path := previewFile(t, cliLightInput)
 			args := []string{"--endpoint", server.URL, "light", "run", "demo", path}
-			if running {
-				args = append(args, "--timeout", "25ms")
+			type commandResult struct {
+				text string
+				err  error
 			}
-			text, err := executePreviewCommand(context.Background(), args...)
-			var result lightRunOutput
-			if json.Unmarshal([]byte(text), &result) != nil || result.RequestTicket == nil || !result.Accepted || atomic.LoadInt32(&service.keyed) != 1 || atomic.LoadInt32(&service.prepares) != 1 || atomic.LoadInt32(&service.lookups) == 0 || atomic.LoadInt32(&service.history) != 0 || atomic.LoadInt32(&service.cancels) != 0 {
-				t.Fatal(text, err, service)
-			}
+			done := make(chan commandResult, 1)
+			commandFinished = make(chan struct{})
+			go func() {
+				defer close(commandFinished)
+				text, err := executePreviewCommand(ctx, args...)
+				done <- commandResult{text, err}
+			}()
+			// This is a liveness guard only. The behavioral trigger is the
+			// receipt handshake, not a wall-clock budget for prepare+POST+wait.
+			watchdog := time.NewTimer(5 * time.Second)
+			defer watchdog.Stop()
 			if running {
-				if err == nil || !result.OutcomeUnknown {
-					t.Fatal(text, err)
+				select {
+				case <-lookupStarted:
+					cancel()
+				case early := <-done:
+					t.Fatalf("command stopped before receipt wait: %s %v", early.text, early.err)
+				case <-watchdog.C:
+					t.Fatal("command did not reach the original receipt wait")
 				}
-			} else if err != nil || result.OutcomeUnknown || result.Job.Status != "succeeded" {
-				t.Fatal(text, err)
 			}
+			var got commandResult
+			select {
+			case got = <-done:
+			case <-watchdog.C:
+				t.Fatal("command did not finish after receipt/caller synchronization")
+			}
+			var result lightRunOutput
+			if json.Unmarshal([]byte(got.text), &result) != nil || result.RequestTicket == nil || !result.Accepted || result.Job == nil || atomic.LoadInt32(&service.keyed) != 1 || atomic.LoadInt32(&service.prepares) != 1 || atomic.LoadInt32(&service.lookups) == 0 || atomic.LoadInt32(&service.history) != 0 || atomic.LoadInt32(&service.cancels) != 0 || atomic.LoadInt32(&service.submitted) != 0 {
+				t.Fatal(got.text, got.err)
+			}
+			service.mu.Lock()
+			originalTicket, accepted := service.last, service.current
+			service.mu.Unlock()
+			if *result.RequestTicket != originalTicket || result.DaemonInstance != originalTicket.ExpectedDaemonInstanceID || result.Job.ID != accepted.ID || result.Job.Device != accepted.Device || !reflect.DeepEqual(result.Job.Program, accepted.Program) || !result.Job.CreatedAt.Equal(accepted.CreatedAt) {
+				t.Fatal("wait lost the original acceptance/ticket", got.text)
+			}
+			traceMu.Lock()
+			requests := append([][3]string(nil), trace...)
+			traceMu.Unlock()
+			var prepares, posts, lookups int
+			for _, request := range requests {
+				switch {
+				case request == [3]string{http.MethodGet, "/v1/instance", ""}:
+					prepares++
+				case request == [3]string{http.MethodPost, "/v1/devices/demo/light", ""}:
+					posts++
+				case request == [3]string{http.MethodGet, "/v1/devices/demo/requests/" + originalTicket.RequestID, "expected_daemon_instance_id=" + originalTicket.ExpectedDaemonInstanceID}:
+					lookups++
+				default:
+					t.Fatal("wait retried, changed the receipt or used history/cancel", request)
+				}
+			}
+			if prepares != 1 || posts != 1 || lookups < 1 {
+				t.Fatal("wait repeated prepare/submission or did not read its receipt", requests)
+			}
+			if running {
+				if !errors.Is(got.err, context.Canceled) || ctx.Err() != context.Canceled || !result.OutcomeUnknown {
+					t.Fatal(got.text, got.err)
+				}
+			} else if got.err != nil || result.OutcomeUnknown || result.Job.Status != "succeeded" {
+				t.Fatal(got.text, got.err)
+			}
+			// Actual DeadlineExceeded behavior remains covered separately by
+			// TestWaitingTimeoutDoesNotCancelDaemonJob, without requiring that a
+			// short whole-command deadline first completes admission over HTTP.
 		})
 	}
 }

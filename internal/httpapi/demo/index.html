@@ -32,10 +32,12 @@
           <button type="button" data-action="pulse" class="action" aria-pressed="false"><span>⌁</span>脉冲<small>pulse</small></button>
           <button type="button" data-action="alternate" class="action" aria-pressed="false"><span>⇄</span>红蓝交替<small>alternate</small></button>
           <button type="button" data-action="rainbow" class="action" aria-pressed="false"><span>◒</span>彩虹<small>rainbow</small></button>
+          <button type="button" id="pattern-action" data-action="pattern" class="action" aria-pressed="false" disabled><span>▣</span>已存图案<small>pattern</small></button>
           <button type="button" data-action="program" class="action" aria-pressed="false"><span>≡</span>精确序列<small>run</small></button>
         </div>
 
         <p id="action-description" class="description">保持指定颜色，直到你再次操作或明确熄灭。</p>
+        <div id="pattern-row" class="pattern-current" hidden><strong id="pattern-loaded">尚未载入图案。</strong><p>固定版本只读。播放使用此版本的冻结 Program，不重新编译旧来源。</p><button id="pattern-edit-copy" type="button" class="secondary" disabled>编辑副本为精确序列</button></div>
         <form id="parameters" novalidate>
           <div id="single-color-row" class="field-row color-field">
             <label for="color">颜色 <small>色板 / 取色器 / 名称或 hex</small></label>
@@ -102,13 +104,34 @@
 
     <div id="notice" class="notice" role="status" aria-live="polite">正在连接本地 nb1 服务…</div>
 
+    <section class="panel library" aria-labelledby="library-heading">
+      <div class="section-title"><h2 id="library-heading">04 / 保存与复用图案</h2><button id="library-refresh" type="button" class="text-button">刷新图案库</button></div>
+      <p class="description">保存只写本地图案库，不播放、不占用设备。相同 ID 不覆盖；原始动作先由 nb1 编译，再保存冻结 Program。</p>
+      <div class="library-grid">
+        <div class="library-save">
+          <label for="pattern-id">图案 ID <small>字母或数字开头，可用 - 与 _，最多 64 字符</small></label><input id="pattern-id" maxlength="64" autocomplete="off" spellcheck="false" placeholder="my-light-pattern">
+          <label for="pattern-title">显示名称 <small>最多 256 个字符</small></label><input id="pattern-title" maxlength="512" autocomplete="off" placeholder="我的灯光图案">
+          <div class="library-buttons"><button id="pattern-save" type="button" class="secondary">保存当前效果</button><button id="pattern-check-save" type="button" class="secondary" hidden>核对保存结果</button></div>
+          <p id="pattern-save-status" class="library-status" role="status" aria-live="polite">保存前会编译当前输入；不会创建灯光任务。</p>
+        </div>
+        <div class="library-browse">
+          <label for="library-select">已保存的固定版本 <small>最多 128 条</small></label><select id="library-select" size="6" aria-describedby="library-status"><option value="">正在读取图案库…</option></select>
+          <button id="library-load" type="button" class="secondary" disabled>载入固定版本</button>
+          <p id="library-status" class="library-status" role="status" aria-live="polite">尚未读取图案库。</p>
+        </div>
+      </div>
+    </section>
+
     <section class="panel inspector" aria-labelledby="inspect-heading">
-      <div class="section-title"><h2 id="inspect-heading">04 / 看懂这次调用</h2><span id="compile-summary" class="muted">尚未编译</span></div>
+      <div class="section-title"><h2 id="inspect-heading">05 / 看懂这次调用</h2><span id="compile-summary" class="muted">尚未编译</span></div>
       <p><code id="surface-call">light.set({ color: "#00a060", led: 0 })</code></p>
+      <p class="footnote">请求与服务实例标识由客户端自动管理，用于识别本次请求并防止重复接纳；无需手工填写。</p>
+      <details id="debug-details"><summary>展开完整 HTTP、Program 与回执详情</summary>
       <div class="trace-grid"><div><h3>实际 HTTP 请求</h3><pre id="request-json">点击「仅编译预览」查看请求。</pre></div><div><h3>nb1 核心编译结果</h3><pre id="compiled-json">动作会在 Go 核心中展开为规范 Program。</pre></div></div>
       <details><summary>查看本次 Job / 回执状态</summary><pre id="job-json">尚未提交。</pre></details>
+      <details><summary>查看图案库原始响应</summary><pre id="library-json">尚未读取。</pre></details>
       <p class="footnote">breathe 是对称呼吸；这里的 pulse 是快速亮起、缓慢衰减、再停顿的新动作。旧 Effect v1 pulse 语义保留。两颗 LED 的 alternate 是交替；它不能区分顺时针和逆时针。</p>
-    </section>
+    </details></section>
     <footer>本页静态资源随 nb1 打包。无云端、外部脚本或浏览器存储。<span id="contract">nb1-light-action/v1</span></footer>
   </main>
 </body>

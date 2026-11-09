@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
 	"sync"
 	"testing"
 	"time"
@@ -15,7 +16,7 @@ import (
 func TestParse(t *testing.T) {
 	for _, args := range [][]string{
 		{"server", "--devices", "00000000", "--listen", "127.0.0.1:8931"},
-		{"server", "--devices", "0123ABcd,20005601", "--listen", "[::1]:8931", "--lock-dir", "/tmp/fixture-locks"},
+		{"server", "--devices", "0123ABcd,20005601", "--listen", "[::1]:8931", "--lock-dir", filepath.Join(t.TempDir(), "fixture-locks")},
 	} {
 		if _, err := parse(args); err != nil {
 			t.Fatalf("valid argv: %v", err)

@@ -1,0 +1,116 @@
+{
+  "record_contract": "nb1-pattern-record/experimental-v2",
+  "id": "orbit-red-blue",
+  "title": "红蓝环绕",
+  "source": {
+    "kind": "light_action",
+    "contract": "nb1-light-action/experimental-v2",
+    "action": {
+      "kind": "orbit",
+      "colors": [
+        "red",
+        "blue"
+      ],
+      "period_ms": 3000,
+      "cycles": 3,
+      "segments": 4,
+      "on_finish": "off"
+    }
+  },
+  "compiled": {
+    "normalized_action": {
+      "kind": "orbit",
+      "colors": [
+        "#ff0000",
+        "#0000ff"
+      ],
+      "leds": [
+        1,
+        2
+      ],
+      "period_ms": 3000,
+      "cycles": 3,
+      "segments": 4,
+      "on_finish": "off"
+    },
+    "execution": {
+      "kind": "frame_program",
+      "contract": "nb1-frame-program/experimental-v1",
+      "program": {
+        "contract": "nb1-frame-program/experimental-v1",
+        "initial": [
+          {
+            "led": 1,
+            "color": "#990000"
+          },
+          {
+            "led": 2,
+            "color": "#000099"
+          }
+        ],
+        "frames": [
+          {
+            "targets": [
+              {
+                "led": 1,
+                "color": "#800080"
+              },
+              {
+                "led": 2,
+                "color": "#1a001a"
+              }
+            ],
+            "fade_ms": 750,
+            "interval_ms": 750
+          },
+          {
+            "targets": [
+              {
+                "led": 1,
+                "color": "#000099"
+              },
+              {
+                "led": 2,
+                "color": "#990000"
+              }
+            ],
+            "fade_ms": 750,
+            "interval_ms": 750
+          },
+          {
+            "targets": [
+              {
+                "led": 1,
+                "color": "#1a001a"
+              },
+              {
+                "led": 2,
+                "color": "#800080"
+              }
+            ],
+            "fade_ms": 750,
+            "interval_ms": 750
+          },
+          {
+            "targets": [
+              {
+                "led": 1,
+                "color": "#990000"
+              },
+              {
+                "led": 2,
+                "color": "#000099"
+              }
+            ],
+            "fade_ms": 750,
+            "interval_ms": 750
+          }
+        ],
+        "repeat": 3,
+        "on_finish": "off"
+      }
+    },
+    "recipe_id": "orbit-paired-linear-4/experimental-v1"
+  },
+  "revision": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+}

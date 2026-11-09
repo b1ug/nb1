@@ -1,0 +1,181 @@
+{
+  "schema_version": 2,
+  "kind": "nb1-pattern-snapshot/experimental-v2",
+  "records": [
+    {
+      "record_contract": "nb1-pattern-record/experimental-v2",
+      "id": "orbit-red-blue",
+      "title": "红蓝环绕",
+      "source": {
+        "kind": "light_action",
+        "contract": "nb1-light-action/experimental-v2",
+        "action": {
+          "kind": "orbit",
+          "colors": [
+            "red",
+            "blue"
+          ],
+          "period_ms": 3000,
+          "cycles": 3,
+          "segments": 4,
+          "on_finish": "off"
+        }
+      },
+      "compiled": {
+        "normalized_action": {
+          "kind": "orbit",
+          "colors": [
+            "#ff0000",
+            "#0000ff"
+          ],
+          "leds": [
+            1,
+            2
+          ],
+          "period_ms": 3000,
+          "cycles": 3,
+          "segments": 4,
+          "on_finish": "off"
+        },
+        "execution": {
+          "kind": "frame_program",
+          "contract": "nb1-frame-program/experimental-v1",
+          "program": {
+            "contract": "nb1-frame-program/experimental-v1",
+            "initial": [
+              {
+                "led": 1,
+                "color": "#990000"
+              },
+              {
+                "led": 2,
+                "color": "#000099"
+              }
+            ],
+            "frames": [
+              {
+                "targets": [
+                  {
+                    "led": 1,
+                    "color": "#800080"
+                  },
+                  {
+                    "led": 2,
+                    "color": "#1a001a"
+                  }
+                ],
+                "fade_ms": 750,
+                "interval_ms": 750
+              },
+              {
+                "targets": [
+                  {
+                    "led": 1,
+                    "color": "#000099"
+                  },
+                  {
+                    "led": 2,
+                    "color": "#990000"
+                  }
+                ],
+                "fade_ms": 750,
+                "interval_ms": 750
+              },
+              {
+                "targets": [
+                  {
+                    "led": 1,
+                    "color": "#1a001a"
+                  },
+                  {
+                    "led": 2,
+                    "color": "#800080"
+                  }
+                ],
+                "fade_ms": 750,
+                "interval_ms": 750
+              },
+              {
+                "targets": [
+                  {
+                    "led": 1,
+                    "color": "#990000"
+                  },
+                  {
+                    "led": 2,
+                    "color": "#000099"
+                  }
+                ],
+                "fade_ms": 750,
+                "interval_ms": 750
+              }
+            ],
+            "repeat": 3,
+            "on_finish": "off"
+          }
+        },
+        "recipe_id": "orbit-paired-linear-4/experimental-v1"
+      },
+      "revision": "sha256:95c165aeacf05ef6ec8fb815afb7f04b727162e6bb28744f20ad1fa57efb0f87"
+    },
+    {
+      "record_contract": "nb1-pattern-record/experimental-v2",
+      "id": "pulse-lime",
+      "title": "绿色脉冲",
+      "source": {
+        "kind": "light_action",
+        "contract": "nb1-light-action/v1",
+        "action": {
+          "kind": "pulse",
+          "color": "lime",
+          "attack_ms": 60,
+          "decay_ms": 240,
+          "rest_ms": 700,
+          "cycles": 2,
+          "on_finish": "off"
+        }
+      },
+      "compiled": {
+        "normalized_action": {
+          "kind": "pulse",
+          "led": 0,
+          "color": "#00ff00",
+          "attack_ms": 60,
+          "decay_ms": 240,
+          "rest_ms": 700,
+          "cycles": 2,
+          "on_finish": "off"
+        },
+        "execution": {
+          "kind": "program",
+          "contract": "nb1-program-effect/v1",
+          "program": {
+            "steps": [
+              {
+                "led": 0,
+                "color": "#000000",
+                "fade_ms": 0,
+                "hold_ms": 0
+              },
+              {
+                "led": 0,
+                "color": "#00ff00",
+                "fade_ms": 60,
+                "hold_ms": 0
+              },
+              {
+                "led": 0,
+                "color": "#000000",
+                "fade_ms": 240,
+                "hold_ms": 700
+              }
+            ],
+            "repeat": 2,
+            "on_finish": "off"
+          }
+        }
+      },
+      "revision": "sha256:f2ab7093566ea4cd5e975cdc70482c85dc6f56f9347916a78d5d08658c2ca2fe"
+    }
+  ]
+}

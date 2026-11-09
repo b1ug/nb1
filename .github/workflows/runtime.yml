@@ -292,3 +292,130 @@ jobs:
           go build -mod=readonly ./...
           go test -mod=readonly -count=1 -timeout=3m ./...
           go vet -mod=readonly ./...
+
+  systemd-user-lifecycle:
+    # A fresh hosted VM runs a stdlib fixture as a dedicated ordinary user.
+    # This exercises the real user manager, never the USB backend or nb1 server.
+    name: Linux systemd user lifecycle / USB-free fixture
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    env:
+      GOWORK: "off"
+      CGO_ENABLED: "0"
+      GOTOOLCHAIN: local
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          path: cli
+          persist-credentials: false
+      - uses: actions/setup-go@v7
+        with:
+          go-version: "1.27.x"
+          cache: false
+      - name: Build pinned standalone CLI and USB-free fixture
+        working-directory: cli
+        run: |
+          set -euo pipefail
+          mkdir -m 700 "$RUNNER_TEMP/nb1-systemd-user-evidence"
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          import subprocess
+
+          expected = {
+              "github.com/b1ug/blink1-go": "v0.0.2-0.20261109021311-c87c7c4888a0",
+              "github.com/b1ug/gid": "v0.0.3-0.20261109020519-8915ba6f4beb",
+          }
+          modules = {}
+          for module, version in expected.items():
+              entry = json.loads(subprocess.check_output(
+                  ["go", "list", "-mod=readonly", "-m", "-json", module], text=True,
+              ))
+              if entry.get("Path") != module or entry.get("Version") != version or "Replace" in entry or entry.get("Main", False):
+                  raise SystemExit("standalone dependency pin mismatch: " + module)
+              modules[module] = version
+          toolchain = json.loads(subprocess.check_output(
+              ["go", "env", "-json", "GOVERSION", "GOOS", "GOARCH", "CGO_ENABLED", "GOWORK", "GOTOOLCHAIN"], text=True,
+          ))
+          if toolchain["GOOS"] != "linux" or toolchain["CGO_ENABLED"] != "0" or toolchain["GOWORK"] != "off":
+              raise SystemExit("USB-free standalone Linux build environment was not established")
+          metadata = {"source_revision": os.environ["GITHUB_SHA"], "modules": modules, "toolchain": toolchain,
+                      "scope": "Real Linux user-manager lifecycle with a USB-free stdlib fixture; no real USB acceptance."}
+          destination = Path(os.environ["RUNNER_TEMP"]) / "nb1-systemd-user-evidence" / "build-metadata.json"
+          destination.write_text(json.dumps(metadata, indent=2, sort_keys=True) + "\n")
+          print(json.dumps(metadata, sort_keys=True))
+          PY
+          go build -mod=readonly -o "$RUNNER_TEMP/nb1-systemd-cli" . 2>&1 | tee "$RUNNER_TEMP/nb1-systemd-user-evidence/build.log"
+          go build -mod=readonly -o "$RUNNER_TEMP/nb1-systemd-fixture" ./ci/systemd-user-fixture 2>&1 | tee -a "$RUNNER_TEMP/nb1-systemd-user-evidence/build.log"
+      - name: Exercise native user lifecycle and every refusal case
+        working-directory: cli
+        run: |
+          set -euo pipefail
+          # The harness confines sudo to this VM's fresh test account setup and
+          # cleanup. Product/user-manager commands run as its ordinary UID/env -i.
+          python3 ci/systemd-user-smoke.py --execute \
+            --binary "$RUNNER_TEMP/nb1-systemd-cli" \
+            --fixture "$RUNNER_TEMP/nb1-systemd-fixture" \
+            --negative-case external-enable \
+            --negative-case dropin \
+            --negative-case mask \
+            --negative-case transient \
+            --negative-case need-reload \
+            --negative-case bus-loss \
+            --output "$RUNNER_TEMP/nb1-systemd-user-evidence/smoke" \
+            2> "$RUNNER_TEMP/nb1-systemd-user-evidence/smoke.stderr.log" \
+            | tee "$RUNNER_TEMP/nb1-systemd-user-evidence/smoke.stdout.json"
+      - name: Require actual PASS, all refusal cases and explicit cleanup
+        if: ${{ always() }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          evidence = Path(os.environ["RUNNER_TEMP"]) / "nb1-systemd-user-evidence"
+          evidence.mkdir(mode=0o700, exist_ok=True)
+          failures = []
+          try:
+              report = json.loads((evidence / "smoke" / "results.json").read_text())
+              if report.get("status") != "PASS":
+                  failures.append("native report is not PASS (environment-unavailable/prepared/failed never pass)")
+              if report.get("hardware_access") is not False:
+                  failures.append("report does not establish the USB-free fixture scope")
+              guard = report.get("guard", {})
+              if not all(guard.get(key) is True for key in ("github_actions_true", "linux", "systemd_pid1")):
+                  failures.append("required hosted Linux/systemd environment was not established")
+              negatives = report.get("negative_cases", {})
+              expected = {"external-enable", "dropin", "mask", "transient", "need-reload", "bus-loss"}
+              if not expected.issubset(negatives) or any(case.get("status") != "PASS" for case in negatives.values()):
+                  failures.append("at least one available native refusal case did not PASS")
+              cleanup = report.get("cleanup", [])
+              if report.get("cleanup_failed") or not cleanup or any(step.get("status") != "PASS" for step in cleanup):
+                  failures.append("explicit fresh-user/manager/process/file cleanup did not PASS")
+          except (OSError, ValueError, TypeError, AttributeError) as error:
+              failures.append("native evidence missing or invalid: " + str(error))
+          verdict = {"status": "FAIL" if failures else "PASS", "failures": failures,
+                     "scope": "USB-free fixture service acceptance; not Linux USB, login or reboot acceptance."}
+          (evidence / "verdict.json").write_text(json.dumps(verdict, indent=2, sort_keys=True) + "\n")
+          print(json.dumps(verdict, sort_keys=True))
+          raise SystemExit(1 if failures else 0)
+          PY
+      - name: Upload selected lifecycle evidence, including failures
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: systemd-user-usb-free-ubuntu-24.04-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/nb1-systemd-user-evidence/build-metadata.json
+            ${{ runner.temp }}/nb1-systemd-user-evidence/build.log
+            ${{ runner.temp }}/nb1-systemd-user-evidence/smoke/results.json
+            ${{ runner.temp }}/nb1-systemd-user-evidence/smoke.stdout.json
+            ${{ runner.temp }}/nb1-systemd-user-evidence/smoke.stderr.log
+            ${{ runner.temp }}/nb1-systemd-user-evidence/verdict.json
+          if-no-files-found: error
+          include-hidden-files: false
+          retention-days: 14

@@ -11,7 +11,7 @@
   },
   "pattern_execution": {
     "available": false,
-    "reason": "pattern_identity_admission_not_integrated"
+    "reason": "pattern_service_unsupported"
   },
   "patterns": [
     {

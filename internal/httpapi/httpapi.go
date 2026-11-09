@@ -68,7 +68,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if h.serveFrames(w, r) || h.serveLightV2(w, r) || h.serveLight(w, r) {
 		return
 	}
-	if h.servePatternsV2(w, r) || h.servePatterns(w, r) {
+	if h.servePatternExecutionV2(w, r) || h.servePatternsV2(w, r) || h.servePatterns(w, r) {
 		return
 	}
 	parts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")

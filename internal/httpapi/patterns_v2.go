@@ -15,8 +15,9 @@ import (
 
 const PatternLibraryV2Contract = "nb1-pattern-library/experimental-v2"
 
-// PatternStoreV2 is explicitly independent of the v1 library. These handlers
-// never call Resolve or any service method; persistence is not admission.
+// PatternStoreV2 is explicitly independent of the v1 library. P3 authoring and
+// inspection never call Resolve or any service method; the separate execution
+// adapter uses exact Resolve only after a new receipt miss.
 type PatternStoreV2 interface {
 	Path() string
 	List() ([]patternsv2.Inspection, error)
@@ -85,10 +86,6 @@ type patternExecutionV2 struct {
 	Reason    string `json:"reason"`
 }
 
-func patternExecutionUnavailableV2() patternExecutionV2 {
-	return patternExecutionV2{Available: false, Reason: "pattern_identity_admission_not_integrated"}
-}
-
 type patternRecordResponseV2 struct {
 	SchemaVersion   int                `json:"schema_version"`
 	Contract        string             `json:"contract"`
@@ -137,8 +134,8 @@ type patternWriteResponseV2 struct {
 	patternstore.ImportResultV2
 }
 
-// Only preview and import have special POST meanings under this namespace.
-// GET preview/import still select ordinary IDs. No execution route is added.
+// P3 authoring and inspection remain separate from source-bound execution.
+// GET preview/import/preview-ref still select ordinary IDs.
 func (h *handler) servePatternsV2(w http.ResponseWriter, r *http.Request) bool {
 	const root = "/v2/patterns"
 	if r.URL.Path != root && !strings.HasPrefix(r.URL.Path, root+"/") {
@@ -263,7 +260,7 @@ func (h *handler) previewPatternV2(w http.ResponseWriter, r *http.Request) {
 	}
 	writeJSON(w, http.StatusOK, patternPreviewResponseV2{
 		patternRecordResponseV2: patternRecordResponseV2{patternsv2.SchemaVersion, PatternLibraryV2Contract, c.Record(), c.Support(), c.ExecutionDigest()},
-		Preview:                 c.Preview(), PatternExecution: patternExecutionUnavailableV2(),
+		Preview:                 c.Preview(), PatternExecution: h.patternExecutionStatusV2(),
 	})
 }
 
@@ -318,7 +315,7 @@ func (h *handler) listPatternsV2(w http.ResponseWriter) {
 		SchemaVersion: patternsv2.SchemaVersion, Contract: PatternLibraryV2Contract,
 		Library: patternLibraryInfoV2{Path: h.patternsV2.Path(), State: "ready", CreateOnly: true, MaxRecords: patternsv2.MaxRecords,
 			MaxPackageBytes: patternsv2.MaxBytes, RecordContract: patternsv2.RecordContract, SnapshotKind: patternsv2.SnapshotKind},
-		PatternExecution: patternExecutionUnavailableV2(), Patterns: make([]patternSummaryV2, 0, len(values)),
+		PatternExecution: h.patternExecutionStatusV2(), Patterns: make([]patternSummaryV2, 0, len(values)),
 	}
 	for _, value := range values {
 		r, support := value.Record(), value.Support()

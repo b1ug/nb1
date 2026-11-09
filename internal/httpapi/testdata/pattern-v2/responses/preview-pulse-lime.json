@@ -3,7 +3,7 @@
   "execution_digest": "sha256:fb318dc79419343f121a0c56806ee40ee9b4cc0c2a0086d12132d0bebbabcae3",
   "pattern_execution": {
     "available": false,
-    "reason": "pattern_identity_admission_not_integrated"
+    "reason": "pattern_service_unsupported"
   },
   "preview": {
     "contract": "nb1-program-effect/v1",

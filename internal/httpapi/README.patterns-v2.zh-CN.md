@@ -1,6 +1,6 @@
 # Pattern v2 HTTP：预览与独立图案库（实验）
 
-本片开放高级 Action 的作者预览、条件保存、读取和冻结快照导入导出。**没有 Pattern v2 运行、任务查询或取消入口**，不生成 Job/FrameJob、执行票据或 daemon ID。
+本文说明高级 Action 的作者预览、条件保存、读取和冻结快照导入导出；这些操作不生成 Job/FrameJob 或执行票据。固定引用的执行、查询和取消见 [Pattern 执行篇](README.pattern-execution-v2.zh-CN.md)。
 
 ## 启用方式与目录隔离
 
@@ -49,7 +49,7 @@ expected_revision 确认的是完整候选，不是库版本、覆盖权限或 d
 
 ## 纯事实与未知只读数据
 
-preview/list 显式返回 `pattern_execution:{available:false,reason:"pattern_identity_admission_not_integrated"}`。verification 只表示来源与冻结内容通过验证，不表示设备、worker、Pattern admission 或实机观感合格。
+preview/list 的 `pattern_execution` 仅报告 PatternService 与 resolver 的接线：true 对应 `pattern_service_configured`；false 对应 `pattern_service_unsupported`、`pattern_library_unconfigured` 或 `pattern_library_configuration_error`。检查这个状态不会调用 Store；true 也不证明记录存在、库健康、设备就绪或本次可接受。verification 只表示来源与冻结内容通过验证，不表示设备或实机观感合格。已接受的精确回执仍可在配置失效后重放、查询和取消。
 
 preview 统计来自既有纯预览：数量、名义时长、要求的能力，不重复程序或观测设备。`host-nominal-excludes-native-io` 不包含 native I/O、Read 和额外 off 清理。hold 也等待末帧 fade；默认 3000ms Orbit 的4段名义3040ms、8段3045ms，差异来自375ms interval 的 fade 量化到380ms。
 

@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "product": "nb1-web",
+  "asset_base": "./",
+  "source": {
+    "repository": "local:nb1-web",
+    "commit": "fe32507cd80de36f3e9050036fbe1a469170d342",
+    "dirty": false,
+    "tree_sha256": "497f98196d001221065707a237559d06bbadde426d31942c0ad44480b14ef764"
+  },
+  "build": {
+    "tool": "copy-static/v1",
+    "node": "v26.12.1",
+    "lockfile_sha256": "46f6158fc7f8c20a1e7bd5a801c7652ab659f82944e081759e1c7cc0437a53fd"
+  },
+  "api_contracts": [
+    "nb1-light-action/v1",
+    "nb1-light-action/experimental-v2"
+  ],
+  "files": [
+    {
+      "path": "LICENSE.txt",
+      "bytes": 1076,
+      "sha256": "a428d1101807989e11ae625f4316d360a27b2a922f4f6cb6ce5981e8cfeafe93"
+    },
+    {
+      "path": "demo.css",
+      "bytes": 20699,
+      "sha256": "6800ec5f7a8a74af7e746a8079c058074f07334977dae0ec3baed95a3327d8c8"
+    },
+    {
+      "path": "demo.js",
+      "bytes": 49014,
+      "sha256": "ac474f686f261657ccf43636db30e19a515ed7260bf6800e87961745487e681f"
+    },
+    {
+      "path": "index.html",
+      "bytes": 16165,
+      "sha256": "0e329f75535b73b952a1bd4eb36bda199b91696e1f5de0b58947bc3d0f16f0c5"
+    },
+    {
+      "path": "orbit.css",
+      "bytes": 8345,
+      "sha256": "9142184c00d4c6963dc5c257d4c374908990aa69fe87f0229ad7578a185aeda4"
+    },
+    {
+      "path": "orbit.html",
+      "bytes": 7709,
+      "sha256": "b721b7586aff28955d075981181d22e82be27d3f5969325863ea676535714335"
+    },
+    {
+      "path": "orbit.js",
+      "bytes": 29749,
+      "sha256": "8e25408d0b5d1f5649179efc090ff1555ca12f802f8920284527bf093b0cb23e"
+    }
+  ]
+}

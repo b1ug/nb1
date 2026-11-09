@@ -2,6 +2,27 @@
 
 此页面由 nb1 的 HTTP 服务直接提供：`/demo/`。HTML、CSS 和 JavaScript 嵌入二进制，所有 API 请求使用同一个 origin；不依赖 Node、CDN、外部脚本或云端存储。
 
+Web 作者文件由独立的本地 `nb1-web` 仓库维护。nb1 只跟踪 `internal/webui/dist` 中的固定构建产物及其 `manifest.lock.json`，不在 Go 构建或启动时查找 Web 源码、运行 Node 或下载资源。原有六个 `/demo/` 地址与 HTTP 安全策略保持一致。
+
+## 导入固定 Web 产物
+
+先在 Web 仓库产生干净提交对应的 dist，保存其完整 source commit 与 `manifest.json` 的 SHA-256，再在 nb1 仓库运行：
+
+```sh
+python3 tools/import-web-dist.py /absolute/path/to/dist \
+  --source-commit FULL_SOURCE_COMMIT --manifest-sha256 MANIFEST_SHA256 --check
+python3 tools/import-web-dist.py /absolute/path/to/dist \
+  --source-commit FULL_SOURCE_COMMIT --manifest-sha256 MANIFEST_SHA256 --dry-run
+python3 tools/import-web-dist.py /absolute/path/to/dist \
+  --source-commit FULL_SOURCE_COMMIT --manifest-sha256 MANIFEST_SHA256
+```
+
+前两条只读。导入只接受 `index.html`、`demo.css`、`demo.js`、`orbit.html`、`orbit.css`、`orbit.js`、`LICENSE.txt` 及 manifest；整个 dist 含 manifest 至多 256 KiB。它检查来源、原 manifest 字节、逐文件大小和摘要，并按 ASCII 路径排序后将 `path + NUL + sha256 + LF` 拼接为 UTF-8，重算七个资源的 `source.tree_sha256`。dirty 来源、未知文件、重复字段、null、符号链接、重解析点与硬链接均拒绝。独立 Web 仓库的源码提交和锁文件仍需由构建方审查；导入器验证的是明确指定的产物，不替代来源可信度判断。
+
+导入在临时目录复制校验后更换生成目录和锁；普通错误会恢复旧版。它不承诺两个路径在崩溃时原子切换，不支持与 Go 构建并发执行。中断残留或不一致的生成目录会拒绝继续；Go 在读取任何页面前还会校验完整的嵌入文件集与锁，失败时不提供页面。`cleanup_warnings` 非空表示新产物可能已安装，但残留需检查，不能只凭命令退出码推断旧产物仍在。
+
+导入后运行 `go test ./internal/webui ./internal/httpapi`。浏览器验证与硬件验收分别记录；一次构建的来源由 Web commit、manifest SHA、nb1 commit 和最终二进制 SHA 共同描述。本地导入不上传、不创建 Release，也不修改系统服务。
+
 先选择服务已配置的设备并连接，再选择动作。「仅编译预览」不创建 Job、不发送设备指令；「播放到设备」才提交带回执的有限任务。页面上的两颗灯显示服务返回的 USB RGB 读回，不是摄像头画面或光学校准结果。
 
 页面内部使用同一个 `light` 对象：`set`、`off`、`fade`、`blink`、`breathe`、`pulse`、`alternate`、`rainbow` 和 `run`。它是本页的交互桥接层，不是已经发布的独立 JavaScript SDK。艺术动作在 `internal/lightaction` 的 Go 核心中编译，浏览器不自行生成它们的 Program。

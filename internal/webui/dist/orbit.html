@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#fbf6e7">
+  <meta name="color-scheme" content="light">
+  <title>Orbit 连续渐变实验 · nb1</title>
+  <link rel="stylesheet" href="./demo.css">
+  <link rel="stylesheet" href="./orbit.css">
+  <script src="./orbit.js" defer></script>
+</head>
+<body class="orbit-page">
+  <a class="skip-link" href="#main-content">跳到环绕实验</a>
+  <nav class="shell workbench-topbar" aria-label="工作台导航">
+    <a class="brand" href="./" aria-label="nb1 本地灯光工作台"><svg class="brand-mark" viewBox="0 0 28 28" aria-hidden="true"><rect x="3" y="8" width="22" height="14" rx="7" fill="#fff8df"/><circle cx="10" cy="15" r="3.5" fill="#a2c979"/><circle cx="19" cy="15" r="3.5" fill="#eeb28b"/><path d="M10 8V4h8v4" fill="none" stroke="#fff8df" stroke-width="3" stroke-linejoin="round"/></svg>nb1 <small>灯光小工作台</small></a>
+    <div class="top-nav"><a href="./">工作台</a><a href="./orbit.html" aria-current="page">Orbit 实验</a></div>
+  </nav>
+  <main class="shell" id="main-content">
+    <section class="hero">
+      <div class="hero-copy"><p class="eyebrow"><span class="dot"></span> ORBIT / 连续渐变实验</p><h1>让两颗灯，<br><em>一起把颜色交过去。</em></h1><p class="lead">每个阶段向两颗灯发送长渐变，再共用一次等待。4 段更简单，8 段保留更多曲线细节。把参数交给 nb1，再看看实物的表现。</p><p class="boundary">实验帧契约 · 页面不会自动亮灯。旧 Program 和已存图案仍按原语义播放；这里的预览不等于实机观感验收。</p></div>
+      <div class="orbit-art" aria-hidden="true"><svg viewBox="0 0 170 110"><rect x="7" y="46" width="29" height="28" rx="5" fill="#b9bfa6"/><rect x="28" y="26" width="130" height="68" rx="34" fill="#fff8e1" stroke="#b0be98" stroke-width="3"/><circle cx="70" cy="60" r="23" fill="#a5ca93"/><circle cx="121" cy="60" r="23" fill="#eab394"/><circle cx="63" cy="53" r="6" fill="#d8ecc2"/><circle cx="114" cy="53" r="6" fill="#ffe3c2"/></svg></div>
+    </section>
+
+    <section class="workspace" aria-labelledby="setup-title">
+      <div class="panel controls">
+        <div class="section-title"><div><p class="eyebrow">01 / 选择设备和配色</p><h2 id="setup-title">调一段环绕的节奏</h2></div><span class="badge">实验版</span></div>
+        <fieldset id="configuration">
+          <legend class="sr-only">环绕参数</legend>
+          <label class="field">设备<select id="device"><option value="">正在读取本地设备…</option></select></label>
+          <p id="device-state" class="hint">只读取 daemon 的缓存状态，不直接访问 USB。</p>
+          <div class="colors">
+            <div class="color-card"><label for="color-one">起始颜色 A</label><div class="color-value"><input id="color-one-picker" type="color" value="#ff0000" aria-label="选择颜色 A"><input id="color-one" type="text" value="#ff0000" spellcheck="false" maxlength="7" aria-label="颜色 A 的十六进制值"></div><div id="palette-one" class="palette" aria-label="颜色 A 常用调色板"></div></div>
+            <div class="color-card"><label for="color-two">起始颜色 B</label><div class="color-value"><input id="color-two-picker" type="color" value="#0000ff" aria-label="选择颜色 B"><input id="color-two" type="text" value="#0000ff" spellcheck="false" maxlength="7" aria-label="颜色 B 的十六进制值"></div><div id="palette-two" class="palette" aria-label="颜色 B 常用调色板"></div></div>
+          </div>
+          <div class="field-grid">
+            <label class="field">渐变段数<select id="segments"><option value="4">4 段 · 简单长渐变</option><option value="8">8 段 · 更多曲线细节</option></select></label>
+            <label class="field">LED 顺序<select id="order"><option value="1,2">A 从 LED 1 开始</option><option value="2,1">A 从 LED 2 开始</option></select></label>
+            <label class="field">每轮时长 / ms<input id="period" type="number" min="200" max="2400000" step="1" value="3000"></label>
+            <label class="field">播放轮数<input id="cycles" type="number" min="1" max="256" step="1" value="3"></label>
+            <label class="field">结束后<select id="finish"><option value="off">熄灭</option><option value="hold">保持最后颜色</option></select></label>
+          </div>
+        </fieldset>
+        <div class="actions"><button id="preview" type="button">只预览</button><button id="play" type="button" class="primary" disabled>预览并播放</button><button id="cancel" type="button" class="stop" disabled>停止当前任务</button></div>
+        <button id="refresh" type="button" class="quiet">刷新设备状态</button>
+        <div id="notice" class="notice" role="status" aria-live="polite">正在确认本地服务是否支持实验帧…</div>
+        <button id="recover" type="button" class="recovery" hidden>核对原请求</button>
+      </div>
+
+      <div class="right-column">
+        <section class="panel outcome" aria-labelledby="outcome-title"><p class="eyebrow">02 / 看懂这次调用</p><h2 id="outcome-title">先看懂，再点亮</h2><code id="call">light.orbit({…})</code><div class="facts"><div><span id="frames">—</span><small>计划执行帧数</small></div><div><span id="writes">—</span><small>计划颜色写入</small></div><div><span id="duration">—</span><small>名义总时长</small></div></div><p id="availability" class="hint">先预览，再检查所选设备是否支持。</p><p class="hint">时长包含一次初始化与末段等待；USB 和系统调度会增加实际时间。两条 USB 指令并非原子同步。</p></section>
+        <section class="panel playback" aria-labelledby="playback-title"><div class="section-title"><h2 id="playback-title">实际任务</h2><span id="job-status" class="badge">尚未播放</span></div><progress id="job-progress" value="0" max="1" aria-label="任务完成帧数"></progress><p id="job-detail" class="hint">点击“预览并播放”才会发送控制请求。</p><p class="hint">达到全部帧数后仍可能在等待渐变收尾。只有任务终态才确认清理结果。</p></section>
+        <section class="panel memory"><h2>关于图案与版本</h2><p>新帧格式的图案保存尚未接入，这与 MK2 能否保存到硬件无关。可先复制冻结 JSON 留档；旧图案仍从原有面板选择。</p></section>
+      </div>
+    </section>
+
+    <section class="panel frozen" aria-labelledby="frozen-title">
+      <details class="program-fold"><summary><div><p class="eyebrow">03 / 冻结执行程序</p><h2 id="frozen-title">展开看看：nb1 实际会怎样执行</h2></div></summary>
+        <div class="frozen-toolbar"><p class="hint">高级动作由 nb1 编译成帧程序。这里保留精确结果，普通使用不必自己编排。</p><button id="copy" type="button" disabled>复制帧程序</button></div>
+        <textarea id="program" readonly spellcheck="false" aria-label="冻结的 FrameProgram" placeholder="点击只预览后，在这里查看帧程序。"></textarea>
+      </details>
+    </section>
+    <details class="panel transport"><summary>请求、回执和技术细节</summary><p class="hint">请求 ID 绑定一次提交，daemon ID 防止把旧票据误发给重启后的服务。不确定的写入结果只核对原请求，不自动重新播放。</p><pre id="wire">尚无请求。</pre></details>
+  </main>
+  <footer class="shell">nb1 · 本机控制 / 先观察实物，再决定效果</footer>
+</body>
+</html>

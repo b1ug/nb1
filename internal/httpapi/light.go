@@ -2,7 +2,6 @@ package httpapi
 
 import (
 	"bytes"
-	"embed"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -15,10 +14,8 @@ import (
 
 	"github.com/b1ug/nb1/internal/control"
 	"github.com/b1ug/nb1/internal/lightaction"
+	"github.com/b1ug/nb1/internal/webui"
 )
-
-//go:embed demo/index.html demo/demo.js demo/demo.css demo/orbit.html demo/orbit.js demo/orbit.css
-var lightDemoFiles embed.FS
 
 type lightPreviewRequest struct {
 	Contract string          `json:"contract"`
@@ -247,22 +244,22 @@ func (h *handler) serveLightDemo(w http.ResponseWriter, r *http.Request) {
 	var file, contentType string
 	switch r.URL.Path {
 	case "/demo/":
-		file, contentType = "demo/index.html", "text/html; charset=utf-8"
+		file, contentType = "index.html", "text/html; charset=utf-8"
 	case "/demo/demo.js":
-		file, contentType = "demo/demo.js", "text/javascript; charset=utf-8"
+		file, contentType = "demo.js", "text/javascript; charset=utf-8"
 	case "/demo/demo.css":
-		file, contentType = "demo/demo.css", "text/css; charset=utf-8"
+		file, contentType = "demo.css", "text/css; charset=utf-8"
 	case "/demo/orbit.html":
-		file, contentType = "demo/orbit.html", "text/html; charset=utf-8"
+		file, contentType = "orbit.html", "text/html; charset=utf-8"
 	case "/demo/orbit.js":
-		file, contentType = "demo/orbit.js", "text/javascript; charset=utf-8"
+		file, contentType = "orbit.js", "text/javascript; charset=utf-8"
 	case "/demo/orbit.css":
-		file, contentType = "demo/orbit.css", "text/css; charset=utf-8"
+		file, contentType = "orbit.css", "text/css; charset=utf-8"
 	default:
 		writeError(w, http.StatusNotFound, "not_found", "unknown demo resource")
 		return
 	}
-	data, err := lightDemoFiles.ReadFile(file)
+	data, err := webui.ReadFile(file)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "internal_error", "embedded demo resource unavailable")
 		return

@@ -3,27 +3,34 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="color-scheme" content="dark">
+  <meta name="color-scheme" content="light">
+  <meta name="theme-color" content="#fbf6e7">
   <title>nb1 · 本地实灯工作台</title>
-  <link rel="stylesheet" href="/demo/demo.css">
-  <script defer src="/demo/demo.js"></script>
+  <link rel="stylesheet" href="./demo.css">
+  <script defer src="./demo.js"></script>
 </head>
-<body>
-  <main>
+<body class="workbench-page">
+  <a class="skip-link" href="#main-content">跳到灯光工作台</a>
+  <main class="workbench">
+    <nav class="workbench-topbar" aria-label="工作台导航">
+      <a class="brand" href="./" aria-label="nb1 本地灯光工作台"><svg class="brand-mark" viewBox="0 0 28 28" aria-hidden="true"><rect x="3" y="8" width="22" height="14" rx="7" fill="#fff8df"/><circle cx="10" cy="15" r="3.5" fill="#a2c979"/><circle cx="19" cy="15" r="3.5" fill="#eeb28b"/><path d="M10 8V4h8v4" fill="none" stroke="#fff8df" stroke-width="3" stroke-linejoin="round"/></svg>nb1 <small>灯光小工作台</small></a>
+      <div class="top-nav"><a href="./" aria-current="page">工作台</a><a href="./orbit.html">Orbit 实验 ↗</a></div>
+    </nav>
     <header class="masthead">
-      <div><p class="eyebrow">NB1 / LOCAL LIGHT LAB</p><h1>把想法，变成灯光。</h1><p class="intro">基础控制与艺术动作，共用一个 <code>light</code> 入口。编译、调度和设备控制都在本机 nb1 内完成。</p></div>
-      <span class="local-badge">● 仅本机 · 同源连接</span>
+      <div><p class="eyebrow">A LITTLE LIGHT, LOCALLY.</p><h1>给这一刻，<br><span>一点颜色。</span></h1><p class="intro">挑一个动作，配上喜欢的颜色。先看懂这次调用，再让桌上的 blink(1) 亮起来。</p><p class="footnote"><span class="local-badge">仅本机 · 同源连接</span></p></div>
+      <div class="hero-art" aria-hidden="true"><svg viewBox="0 0 230 125"><ellipse cx="121" cy="109" rx="72" ry="8" fill="#b6c8a3" opacity=".45"/><rect x="29" y="39" width="35" height="38" rx="6" fill="#c6c6ad" stroke="#9eab91" stroke-width="3"/><path d="M40 43v8m11-8v8" stroke="#eef1df" stroke-width="4" stroke-linecap="round"/><rect x="55" y="23" width="148" height="71" rx="35" fill="#fff9e5" stroke="#b5bfa0" stroke-width="3"/><path d="M79 33h95" stroke="#fffef8" stroke-width="5" stroke-linecap="round"/><circle cx="104" cy="59" r="22" fill="#a6ce97"/><circle cx="158" cy="59" r="22" fill="#edbd95"/><circle cx="98" cy="52" r="6" fill="#e4f0cf"/><circle cx="152" cy="52" r="6" fill="#fff0d3"/><path d="M207 23l8-8m-6 30h12M73 8l-4-7" stroke="#90ae76" stroke-width="4" stroke-linecap="round"/></svg><small>SMALL DEVICE, MANY MOODS</small></div>
     </header>
-    <p class="footnote"><a href="/demo/orbit.html">打开新版连续环绕实验 →</a> · 4 / 8 段长渐变，由同一 daemon 执行。下方原版环绕及已存图案保留旧语义。</p>
 
-    <section class="device-bar" aria-labelledby="device-heading">
-      <div><h2 id="device-heading">01 / 选择设备</h2><p id="device-help">读取本地服务已配置的设备，不会自动播放。</p></div>
+    <section class="device-bar" id="main-content" tabindex="-1" aria-labelledby="device-heading">
+      <div><h2 id="device-heading"><span class="step-number">01</span>先找到桌上的灯</h2><p id="device-help">选择本地服务已配置的设备，连接后不会自动亮灯。</p></div>
       <div class="device-controls"><label class="sr-only" for="device-select">设备序列号</label><select id="device-select"><option value="">正在读取设备…</option></select><button id="connect" class="secondary" disabled>连接所选设备</button><button id="refresh" class="text-button">刷新</button></div>
     </section>
 
+    <div id="notice" class="notice" role="status" aria-live="polite">正在连接本地 nb1 服务…</div>
+
     <div class="workspace">
       <section class="panel composer" aria-labelledby="compose-heading">
-        <div class="section-title"><h2 id="compose-heading">02 / 选择动作</h2><span id="kind-label" class="tag">基础 · set</span></div>
+        <div class="section-title"><h2 id="compose-heading"><span class="step-number">02</span>调一份喜欢的灯光</h2><span id="kind-label" class="tag">基础 · set</span></div>
         <div class="action-grid" role="group" aria-label="灯光动作">
           <button type="button" data-action="set" class="action selected" aria-pressed="true"><span>●</span>常亮<small>set</small></button>
           <button type="button" data-action="fade" class="action" aria-pressed="false"><span>◐</span>渐变<small>fade</small></button>
@@ -32,7 +39,7 @@
           <button type="button" data-action="breathe" class="action" aria-pressed="false"><span>∿</span>呼吸<small>breathe</small></button>
           <button type="button" data-action="pulse" class="action" aria-pressed="false"><span>⌁</span>脉冲<small>pulse</small></button>
           <button type="button" data-action="alternate" class="action" aria-pressed="false" title="两种颜色直接交换"><span>⇄</span>两色交替<small>alternate</small></button>
-          <button type="button" data-action="orbit" class="action" aria-pressed="false" title="颜色与亮度错相，形成环绕相位感"><span>◌</span>环绕<small>orbit</small></button>
+          <button type="button" data-action="orbit" class="action" aria-pressed="false" title="旧版顺序过渡；连续渐变请使用 Orbit 实验页"><span>◌</span>环绕<small>orbit · 旧版</small></button>
           <button type="button" data-action="rainbow" class="action" aria-pressed="false"><span>◒</span>彩虹<small>rainbow</small></button>
           <button type="button" id="pattern-action" data-action="pattern" class="action" aria-pressed="false" aria-controls="library-select" aria-describedby="pattern-entry-help" title="从电脑上的图案库选择并载入，不会自动播放"><span>▣</span>已存图案<small>pattern</small></button>
           <button type="button" data-action="program" class="action" aria-pressed="false"><span>≡</span>精确序列<small>run</small></button>
@@ -92,12 +99,13 @@
       </section>
 
       <aside class="panel monitor" aria-labelledby="monitor-heading">
-        <div class="section-title"><h2 id="monitor-heading">03 / 真实设备状态</h2><span id="connection" class="tag">未连接</span></div>
+        <div class="section-title"><h2 id="monitor-heading">灯的这边</h2><span id="connection" class="tag">未连接</span></div>
+        <p class="readback-label">设备读回 · 与输入颜色分开显示</p>
         <div class="light-body" aria-label="设备 RGB 读回示意"><div class="led" id="led-one"><span>LED 1</span></div><div class="led" id="led-two"><span>LED 2</span></div></div>
         <div class="rgb-values"><code id="rgb-one">—</code><code id="rgb-two">—</code></div>
         <p id="sample-time" class="muted centered">等待设备数据</p>
         <p class="footnote centered">这里显示 USB RGB 读回；不是摄像头画面或光学校准。</p>
-        <dl class="device-facts"><div><dt>设备</dt><dd id="serial">—</dd></div><div><dt>产品 / 固件</dt><dd id="product">—</dd></div><div><dt>当前任务</dt><dd id="job-status">尚未提交</dd></div><div><dt>步骤进度</dt><dd id="job-progress">—</dd></div><div><dt>任务编号</dt><dd><code id="job-id">—</code></dd></div></dl>
+        <dl class="device-facts"><div><dt>设备</dt><dd id="serial">—</dd></div><div><dt>产品 / 固件</dt><dd id="product">—</dd></div><div><dt>当前任务</dt><dd id="job-status" role="status" aria-live="polite">尚未提交</dd></div><div><dt>步骤进度</dt><dd id="job-progress">—</dd></div><div><dt>任务编号</dt><dd><code id="job-id">—</code></dd></div></dl>
         <div class="progress-track" aria-label="任务进度"><div id="job-progress-bar"></div></div>
         <button id="stop" class="danger" disabled>停止本次任务，并熄灭</button>
         <button id="recover" class="text-button" hidden>查询原请求回执</button>
@@ -105,11 +113,10 @@
       </aside>
     </div>
 
-    <div id="notice" class="notice" role="status" aria-live="polite">正在连接本地 nb1 服务…</div>
 
     <section class="panel library" aria-labelledby="library-heading">
-      <div class="section-title"><h2 id="library-heading">04 / 保存与复用图案</h2><button id="library-refresh" type="button" class="text-button">刷新图案库</button></div>
-      <p class="description">图案保存在这台电脑的本地图案库。保存不播放、不占用设备；相同 ID 不覆盖，原始动作先由 nb1 编译，再保存冻结 Program。</p>
+      <div class="section-title"><h2 id="library-heading"><span class="step-number">03</span>把喜欢的效果留起来</h2><button id="library-refresh" type="button" class="text-button">刷新图案库</button></div>
+      <p class="description">此页使用本地图案库：保存当前效果的冻结 Program，不播放、不占用设备，也不覆盖同名 ID。新的 Orbit 帧图案仍是独立实验能力。</p>
       <div class="library-grid">
         <div class="library-save">
           <label for="pattern-id">图案 ID <small>字母或数字开头，可用 - 与 _，最多 64 字符</small></label><input id="pattern-id" maxlength="64" autocomplete="off" spellcheck="false" placeholder="my-light-pattern">
@@ -126,16 +133,16 @@
     </section>
 
     <section class="panel inspector" aria-labelledby="inspect-heading">
-      <div class="section-title"><h2 id="inspect-heading">05 / 看懂这次调用</h2><span id="compile-summary" class="muted">尚未编译</span></div>
+      <div class="section-title"><h2 id="inspect-heading">这次会怎样执行？</h2><span id="compile-summary" class="muted">尚未编译</span></div>
       <p><code id="surface-call">light.set({ color: "#00a060", led: 0 })</code></p>
       <p class="footnote">请求与服务实例标识由客户端自动管理，用于识别本次请求并防止重复接纳；无需手工填写。</p>
-      <details id="debug-details"><summary>展开完整 HTTP、Program 与回执详情</summary>
+      <details id="debug-details"><summary>展开请求、冻结程序与回执详情</summary>
       <div class="trace-grid"><div><h3>实际 HTTP 请求</h3><pre id="request-json">点击「仅编译预览」查看请求。</pre></div><div><h3>nb1 核心编译结果</h3><pre id="compiled-json">动作会在 Go 核心中展开为规范 Program。</pre></div></div>
       <details><summary>查看本次 Job / 回执状态</summary><pre id="job-json">尚未提交。</pre></details>
       <details><summary>查看图案库原始响应</summary><pre id="library-json">尚未读取。</pre></details>
       <p class="footnote">breathe 是对称呼吸；这里的 pulse 是快速亮起、缓慢衰减、再停顿的新动作。旧 Effect v1 pulse 语义保留。两颗 LED 的 alternate 是交替；它不能区分顺时针和逆时针。</p>
     </details></section>
-    <footer>本页静态资源随 nb1 打包。无云端、外部脚本或浏览器存储。<span id="contract">nb1-light-action/v1</span></footer>
+    <footer>nb1 · 本地灯光工作台。预览不亮灯，播放才向设备发送指令。<span id="contract">nb1-light-action/v1</span></footer>
   </main>
 </body>
 </html>

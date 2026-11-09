@@ -1,6 +1,7 @@
 package httpapi_test
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"net/http"
@@ -12,7 +13,30 @@ import (
 	"github.com/b1ug/nb1/internal/control"
 	"github.com/b1ug/nb1/internal/httpapi"
 	"github.com/b1ug/nb1/internal/lightaction"
+	"github.com/b1ug/nb1/internal/webui"
 )
+
+func TestVerifiedWebBundleKeepsExistingRoutesAndPolicy(t *testing.T) {
+	h := httpapi.New(noPreviewIO{})
+	for path, file := range map[string]string{
+		"/demo/": "index.html", "/demo/demo.js": "demo.js", "/demo/demo.css": "demo.css",
+		"/demo/orbit.html": "orbit.html", "/demo/orbit.js": "orbit.js", "/demo/orbit.css": "orbit.css",
+	} {
+		response := previewRequest(h, http.MethodGet, path, "")
+		want, err := webui.ReadFile(file)
+		if err != nil || response.Code != http.StatusOK || !bytes.Equal(response.Body.Bytes(), want) {
+			t.Fatalf("%s does not serve the exact verified asset: %d %v", path, response.Code, err)
+		}
+		if response.Header().Get("Content-Security-Policy") != "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'" || response.Header().Get("Cache-Control") != "no-store" || response.Header().Get("X-Content-Type-Options") != "nosniff" || response.Header().Get("Referrer-Policy") != "no-referrer" {
+			t.Fatalf("%s changed the static resource policy: %v", path, response.Header())
+		}
+	}
+	for _, path := range []string{"/demo/manifest.json", "/demo/manifest.lock.json", "/demo/LICENSE.txt", "/demo/../manifest.lock.json", "/demox/index.html"} {
+		if response := previewRequest(h, http.MethodGet, path, ""); response.Code != http.StatusNotFound {
+			t.Fatalf("unexpected resource %s was exposed: %d", path, response.Code)
+		}
+	}
+}
 
 type lightHTTPSpy struct {
 	noPreviewIO

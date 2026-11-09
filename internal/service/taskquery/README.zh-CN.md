@@ -73,6 +73,47 @@ ownership、有限 Scheduler 属性或 failure；没有原始 PowerShell 输出�
 属于外部验收工具的职责，测试不会扩展该工具或替它背书。Mac 软件检查及 Windows
 跨编译不是原生 PowerShell/COM 证据。本次新增协议尚未在 Windows 执行。
 
+## 独立首次/第二次桥接计时
+
+`TestNativeQueryTiming` 是另一个默认跳过的 Windows-only 诊断。它仅在
+`NB1_TASKQUERY_TIMING=1` 和精确的 `NB1_TASKQUERY_EXPECT_SID` 下运行；独立
+普通用户 fixture 应先完成 token 验收并绑定新 profile，随后**首次运行本诊断，
+不先跑三秒产品 Query，也不在预热后声称取得了首次产品验收**。
+
+```powershell
+$env:NB1_TASKQUERY_TIMING = '1'
+$env:NB1_TASKQUERY_EXPECT_SID = '<外部验收环境独立确认的当前普通用户SID>'
+go test -run '^TestNativeQueryTiming$' -count=1 -v ./internal/service/taskquery
+```
+
+Current 与 New 使用生产实现；每个样本再核同一 SID、路径和 session。诊断复制
+生产 nativeRunner，只包裹原 checkTrust 来计时，保持同一固定 request、原始
+PowerShell 脚本、argv、环境与权限不变。first/second 各只调用一次原桥，单次
+context 为 25 秒，不修改产品 queryBudget，不重试来取得 PASS。外部私有测试
+进程应使用独立 90 秒预算，不能挤入普通 Query 的 40 秒外层等待。
+
+唯一输出前缀为 `NB1_TASKQUERY_TIMING_RESULT `，JSON 限 8 KiB。它记录
+Current/New 与每次 identity、trust、bridge 总量、parse 的毫秒数，trust 调用数、
+run_returned、private_ps_exit_proven、有限选定 Status/错误枚举，以及架构和
+Go 版本。VCS revision 若未嵌入 test binary 则明确为 not_embedded，外部 CI 的
+source 与二进制 SHA256 负责绑定来源；不从可改输入猜测真实源码。
+
+正常完成仅报告 mode/status=DIAGNOSTIC_ONLY、phase=complete，且两次均保持
+Unknown/not_checked/get_task/0x80070002。其他结果为 DIAGNOSTIC_FAILED，
+保留有限失败与耗时，不能当作 Absent 或生产 Query 通过。任何时候
+production_query_invoked 和 production_acceptance 都为 false。
+
+run_returned 只在原桥返回后设置；该实现要么尚未启动子进程，要么 execute 的
+Run/Wait 已完成，因此可限定证明这次固定桥没有未收集的私有 PowerShell。
+没有提供不可观测的 process_started 或 PowerShell PID。缺失、无效或超时报告
+不能由直接 Go 进程退出推导孙进程已退出。外部工具使用独立诊断退出证明，
+不能把它写入普通 QueryCompleted，也不能按名称批量终止 PowerShell。
+
+first/second 只是本次顺序，不是已证明的 OS 缓存冷/热状态。bridge_ms 包含
+trust 与 PowerShell 启动、固定脚本、COM 和 Wait；trust_check_ms 可单独观察，
+但剩余部分没有拆分启动与 COM，不能单凭第二次更快断言根因。这项诊断仍需
+Windows 原生执行；软件检查和跨编译不提供实际耗时结论。
+
 ## 官方依据
 
 - [GetTask：精确路径与HRESULT](https://learn.microsoft.com/en-us/windows/win32/api/taskschd/nf-taskschd-itaskfolder-gettask)

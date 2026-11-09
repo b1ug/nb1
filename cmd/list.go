@@ -58,7 +58,7 @@ func init() {
 	// and all subcommands, e.g.:
 	// listCmd.PersistentFlags().String("foo", "", "A help for foo")
 	listCmd.Flags().BoolVarP(&showFirmwareVersion, "firmware", "f", false, "show firmware version")
-	listCmd.Flags().BoolVar(&showAllHIDDevices, "all", false, "show all HID devices as well")
+	listCmd.Flags().BoolVar(&showAllHIDDevices, "all", false, "enumerate all HID metadata; default discovery is limited to blink(1)")
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:

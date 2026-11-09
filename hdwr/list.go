@@ -46,16 +46,20 @@ func readDeviceFirmware(info *hid.DeviceInfo) (int, error) {
 }
 
 func listAllDeviceInfo(showAll bool) []*hid.DeviceInfo {
-	// use different filter function for blink(1) devices or all HID devices
-	cond := b1.IsBlink1Device
-	if showAll {
-		cond = func(di *hid.DeviceInfo) bool {
-			return true
-		}
-	}
+	return listDeviceInfoFrom(showAll, b1.ListDeviceInfo, func() []*hid.DeviceInfo {
+		return hid.ListAllDevices(nil)
+	})
+}
 
-	// list all devices
-	infos := hid.ListAllDevices(cond)
+func listDeviceInfoFrom(showAll bool, blinkDevices, allDevices func() []*hid.DeviceInfo) []*hid.DeviceInfo {
+	var infos []*hid.DeviceInfo
+	if showAll {
+		infos = allDevices()
+	} else {
+		// The SDK requests the exact blink(1) VID/PID at the discovery entry.
+		// Do not enumerate unrelated HID collections before filtering them.
+		infos = blinkDevices()
+	}
 	sort.SliceStable(infos, func(i, j int) bool {
 		return infos[i].SerialNumber < infos[j].SerialNumber
 	})

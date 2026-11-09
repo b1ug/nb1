@@ -18,7 +18,7 @@ function Get-Nb1Failure([string]$Phase, $Record) {
     for ($i = 0; $i -lt 8 -and $null -ne $errorObject.InnerException; $i++) { $errorObject = $errorObject.InnerException }
     $nativeCode = $null
     if ($errorObject -is [ComponentModel.Win32Exception]) { $nativeCode = $errorObject.NativeErrorCode }
-    return [ordered]@{ phase = $Phase; exception_type = $errorObject.GetType().FullName; hresult = $errorObject.HResult; native_error_code = $nativeCode }
+    return [ordered]@{ phase = $Phase; exception_type = $errorObject.GetType().FullName; hresult = $errorObject.HResult; native_error_code = $nativeCode; powershell_error_id = $Record.FullyQualifiedErrorId }
 }
 
 function Invoke-Nb1TokenLifecycle([hashtable]$State, $Report, [hashtable]$Ops) {
@@ -83,6 +83,7 @@ function Invoke-Nb1TokenLifecycle([hashtable]$State, $Report, [hashtable]$Ops) {
         elseif ($mainPassed) { $Report.status = 'PASS' }
         $Report.creation = [ordered]@{ attempted = [bool]$State.CreationAttempted; returned = [bool]$State.CreationReturned; verified = [bool]$State.CreationVerified }
         $Report.children_exit_proven = [bool]$State.ChildrenExited
+        if ($State.ContainsKey('ProfileObservation')) { $Report.profile_observation = $State.ProfileObservation }
     }
     return $Report
 }
@@ -203,6 +204,17 @@ function Assert-Nb1LocalAbsolutePath([string]$Path) {
     if ($Path -notmatch '^[A-Za-z]:\\' -or $Path.Substring(2).Contains(':') -or $Path -match '[\x00-\x1f]') { throw 'explicit local drive absolute path required; no UNC or drive-relative path' }
 }
 
+function Assert-Nb1FixtureIdentity([string]$Name, [string]$Marker) {
+    # New-LocalUser Name allows 20 characters; Description allows only 48.
+    if ($Name.Length -gt 20 -or $Name -cnotmatch '^nb1tok-[0-9a-f]{12}$' -or $Marker.Length -gt 48 -or $Marker -cnotmatch '^nb1-token-[0-9a-f]{32}$') { throw 'fixture account name or description marker is invalid' }
+}
+
+function New-Nb1FixtureIdentity {
+    $value = [ordered]@{ Name = ('nb1tok-' + [Guid]::NewGuid().ToString('N').Substring(0, 12)); Marker = ('nb1-token-' + [Guid]::NewGuid().ToString('N')) }
+    Assert-Nb1FixtureIdentity $value.Name $value.Marker
+    return $value
+}
+
 function Set-Nb1PrivateDirectory([string]$Path, [string]$HostSID, [string]$UserSID, [Security.AccessControl.FileSystemRights]$UserRights) {
     $security = New-Object Security.AccessControl.DirectorySecurity
     $security.SetAccessRuleProtection($true, $false)
@@ -230,8 +242,12 @@ function Get-Nb1Profile($State) {
         $raw = [string]$key.GetValue('ProfileImagePath', $null, [Microsoft.Win32.RegistryValueOptions]::DoNotExpandEnvironmentNames)
         if ($profile.Count -ne 1 -or $profile[0].SID -cne $State.SID -or $profile[0].Special) { throw 'exact fresh SID profile is not established' }
         $path = [IO.Path]::GetFullPath([Environment]::ExpandEnvironmentVariables($raw))
-        if ($path -ine $State.ExpectedProfile -or [IO.Path]::GetFullPath([string]$profile[0].LocalPath) -ine $path) { throw 'profile path is not the exact fresh SID mapping' }
+        $cimPath = [IO.Path]::GetFullPath([string]$profile[0].LocalPath)
+        $State.ProfileObservation = [ordered]@{ sid = $State.SID; path = $path; cim_path = $cimPath; expected_path = $State.ExpectedProfile; mapping_matches = ($path -ieq $State.ExpectedProfile -and $cimPath -ieq $path); loaded = [bool]$profile[0].Loaded; root_owner = $null; root_id = $null }
+        if (-not $State.ProfileObservation.mapping_matches) { throw 'profile path is not the exact fresh SID mapping' }
         $snapshot = Get-Nb1Snapshot $path -Directory
+        $State.ProfileObservation.root_owner = $snapshot.owner
+        $State.ProfileObservation.root_id = $snapshot.id
         if ($snapshot.owner -cne $State.SID) { throw 'fresh profile root owner differs from the created SID' }
         return [ordered]@{ path = $path; loaded = [bool]$profile[0].Loaded; snapshot = $snapshot }
     } finally {
@@ -305,6 +321,8 @@ function New-Nb1NativeOps {
         Preflight = {
             param($s,$r)
             if ($env:GITHUB_ACTIONS -cne 'true' -or [Environment]::OSVersion.Platform -ne 'Win32NT' -or -not [Environment]::Is64BitProcess -or $PSVersionTable.PSVersion.Major -lt 5) { throw 'ENVIRONMENT_UNAVAILABLE: dedicated 64-bit hosted Windows PowerShell required' }
+            Assert-Nb1FixtureIdentity $s.Name $s.Marker
+            $r.fixture_identity_lengths = [ordered]@{ name = $s.Name.Length; description = $s.Marker.Length }
             Initialize-Nb1NativeTypes
             Import-Module Microsoft.PowerShell.LocalAccounts -ErrorAction Stop
             $s.SystemDirectory = [Environment]::GetFolderPath('System')
@@ -446,8 +464,9 @@ Assert-Nb1LocalAbsolutePath $OutputDirectory
 if ($env:GITHUB_ACTIONS -cne 'true' -or [Environment]::OSVersion.Platform -ne 'Win32NT') { throw 'ENVIRONMENT_UNAVAILABLE: execute is restricted to a disposable hosted Windows VM' }
 if (Test-Path -LiteralPath $OutputDirectory) { throw 'evidence directory already exists' }
 [void][IO.Directory]::CreateDirectory($OutputDirectory)
-$name = 'nb1tok-' + [Guid]::NewGuid().ToString('N').Substring(0, 12)
-$marker = 'nb1-token-native-' + [Guid]::NewGuid().ToString('N')
+$fixtureIdentity = New-Nb1FixtureIdentity
+$name = $fixtureIdentity.Name
+$marker = $fixtureIdentity.Marker
 $markerBytes = [Text.Encoding]::UTF8.GetBytes($marker)
 $sha = [Security.Cryptography.SHA256]::Create()
 try { $markerHash = ([BitConverter]::ToString($sha.ComputeHash($markerBytes))).Replace('-', '').ToLowerInvariant() } finally { $sha.Dispose() }

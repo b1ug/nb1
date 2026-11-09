@@ -84,7 +84,10 @@ function New-Nb1FakeOps {
             Assert-Nb1Fake ($State.ChildrenExited -eq $true) 'resources require actual child exit proof'
             Assert-Nb1Fake ($State.CreationVerified -eq $true) 'resources require attribution proof'
             Assert-Nb1Fake ($State.Marker -eq 'this-fake-run') 'unknown resources must remain'
-            if ($State.Case -eq 'resource-changed') { throw 'fake reparse or changed profile resource' }
+            if ($State.Case -eq 'resource-changed') {
+                $State.ProfileObservation = @{ sid = 'fresh-fake-sid'; mapping_matches = $true; root_owner = 'different-fake-owner'; root_id = 'same-fake-file-id' }
+                throw 'fake reparse or changed profile resource'
+            }
             if ($State.Case -eq 'cleanup-failure') { throw 'fake resource cleanup failed' }
             $State.ResourcesGone = $true
         }
@@ -157,6 +160,9 @@ function Invoke-Nb1FakeCase {
         Assert-Nb1Fake ($state.CreationAttempted -and -not $state.CreationReturned) 'partial create flags must preserve uncertainty'
         Assert-Nb1Fake ($actual.status -eq 'FAIL_CLEANUP') 'partial creation remains FAIL_CLEANUP after proven cleanup'
         Assert-Nb1Fake (-not $state.FakeUserExists) 'proven partial-create fixture may be cleaned'
+    }
+    if ($Name -eq 'resource-changed') {
+        Assert-Nb1Fake ($actual.profile_observation.root_owner -eq 'different-fake-owner' -and $actual.profile_observation.mapping_matches) 'failed owner/mapping evidence must survive without authorizing removal'
     }
     if ($Name -in @('unknown-child', 'child-unproven', 'foreign-marker', 'claim-exception', 'claim-true-unproven')) {
         Assert-Nb1Fake ($cleanupCalls -eq 0) 'unknown child/account must not reach resource cleanup'
@@ -272,6 +278,28 @@ foreach ($case in $pathCases) {
     $results += @{ case = ('local-path-' + $case.path); status = $(if ($rejected -eq $case.reject) { 'PASS' } else { 'FAIL' }); rejected = $rejected; scope = 'Path syntax only' }
 }
 
+$identityCases = @(
+    @{ name = 'fresh-identity'; account = 'nb1tok-0123456789ab'; marker = ('nb1-token-' + ('a' * 32)); reject = $false },
+    @{ name = 'legacy-description-49'; account = 'nb1tok-0123456789ab'; marker = ('nb1-token-native-' + ('a' * 32)); reject = $true },
+    @{ name = 'foreign-marker-format'; account = 'nb1tok-0123456789ab'; marker = ('foreign-' + ('a' * 32)); reject = $true },
+    @{ name = 'overlong-account'; account = ('nb1tok-' + ('a' * 14)); marker = ('nb1-token-' + ('a' * 32)); reject = $true }
+)
+foreach ($case in $identityCases) {
+    $rejected = $false
+    try { Assert-Nb1FixtureIdentity $case.account $case.marker } catch { $rejected = $true }
+    $results += @{ case = $case.name; status = $(if ($rejected -eq $case.reject) { 'PASS' } else { 'FAIL' }); rejected = $rejected; scope = 'New-LocalUser parameter limits only' }
+}
+try {
+    $names = @{}; $markers = @{}
+    for ($i = 0; $i -lt 100; $i++) {
+        $identity = New-Nb1FixtureIdentity
+        Assert-Nb1Fake ($identity.Name.Length -eq 19 -and $identity.Marker.Length -eq 42) 'generated fixture identity must fit cmdlet limits'
+        Assert-Nb1Fake (-not $names.ContainsKey($identity.Name) -and -not $markers.ContainsKey($identity.Marker)) 'generated fixture identity must be fresh'
+        $names[$identity.Name] = $true; $markers[$identity.Marker] = $true
+    }
+    $results += @{ case = 'generated-identity-limits'; status = 'PASS'; samples = 100; scope = 'RNG identity strings only' }
+} catch { $results += @{ case = 'generated-identity-limits'; status = 'FAIL'; error = $_.Exception.Message } }
+
 $failed = @($results | Where-Object { $_.status -ne 'PASS' })
 $summary = [ordered]@{
     schema_version = 1
@@ -281,10 +309,11 @@ $summary = [ordered]@{
     lifecycle_case_count = $cases.Count
     protocol_case_count = $protocolCases.Count
     path_case_count = $pathCases.Count
+    identity_case_count = $identityCases.Count + 1
     passed = $results.Count - $failed.Count
     failed = $failed.Count
     results = $results
 }
-[Console]::Out.WriteLine(($summary | ConvertTo-Json -Depth 12 -Compress))
+Write-Output ($summary | ConvertTo-Json -Depth 12 -Compress)
 if ($failed.Count -ne 0) { exit 1 }
 exit 0

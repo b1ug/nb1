@@ -35,6 +35,8 @@ jobs:
         run: |
           & .\ci\test-windows-token-native.ps1 | Tee-Object -FilePath (Join-Path $env:RUNNER_TEMP 'windows-token-fakes.json')
           if ($LASTEXITCODE -ne 0) { throw 'software fake regressions failed' }
+          $fakes = Get-Content -LiteralPath (Join-Path $env:RUNNER_TEMP 'windows-token-fakes.json') -Raw | ConvertFrom-Json
+          if ($fakes.status -cne 'PASS' -or $fakes.failed -ne 0 -or $fakes.passed -ne $fakes.case_count -or $fakes.case_count -lt 50) { throw 'software fake evidence is incomplete' }
       - name: Build exact own-token test binary without running native token tests
         shell: powershell
         run: |

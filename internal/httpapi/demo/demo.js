@@ -16,6 +16,60 @@
   let kind = "set", serial = null, device = null, job = null, ticket = null, busy = false, lastPreview = null;
   let pollTimer = null, pollStarted = false, connectionRevision = 0, recoveryAttempts = 0;
 
+  // A small editing palette, not another CSS color parser. Other names stay
+  // untouched and are resolved by the authoritative nb1 compiler on request.
+  const palette = [
+    {name:"red",label:"红",hex:"#ff0000"}, {name:"orange",label:"橙",hex:"#ffa500"},
+    {name:"gold",label:"金",hex:"#ffd700"}, {name:"lime",label:"亮绿",hex:"#00ff00"},
+    {name:"green",label:"绿",hex:"#008000"}, {name:"cyan",label:"青",hex:"#00ffff"},
+    {name:"blue",label:"蓝",hex:"#0000ff"}, {name:"purple",label:"紫",hex:"#800080"},
+    {name:"magenta",label:"品红",hex:"#ff00ff"}, {name:"white",label:"白",hex:"#ffffff"},
+    {name:"gray",label:"灰",hex:"#808080"}, {name:"black",label:"黑",hex:"#000000"}
+  ];
+  const paletteNames = Object.fromEntries(palette.map(color => [color.name,color.hex]));
+  Object.assign(paletteNames,{aqua:paletteNames.cyan,fuchsia:paletteNames.magenta,grey:paletteNames.gray});
+  function paletteHex(text) {
+    const value = text.trim().toLowerCase();
+    if (/^#[0-9a-f]{6}$/.test(value)) return value;
+    if (/^#[0-9a-f]{3}$/.test(value)) return "#"+Array.from(value.slice(1),digit => digit+digit).join("");
+    return Object.prototype.hasOwnProperty.call(paletteNames,value) ? paletteNames[value] : null;
+  }
+  function setupColorControls() {
+    for (const id of ["color","color-one","color-two"]) {
+      const input = $(id), picker = $(id+"-picker"), hint = $(id+"-hint");
+      const group = document.querySelector(`[data-color-for="${id}"]`);
+      function sync() {
+        const hex = paletteHex(input.value);
+        if (hex) picker.value = hex;
+        for (const button of group.children) {
+          const selected = button.dataset.hex === hex;
+          button.classList.toggle("selected",selected);
+          button.setAttribute("aria-pressed",String(selected));
+        }
+        hint.textContent = hex ? `${hex} · 仅编辑颜色，尚未发送。` : "保留原文字，由 nb1 解析；取色器显示上次可识别的颜色。";
+      }
+      function choose(hex) {
+        input.value = hex;
+        sync();
+        showIntent();
+      }
+      for (const color of palette) {
+        const button = document.createElement("button");
+        button.type = "button"; button.className = "color-swatch"; button.dataset.hex = color.hex;
+        button.setAttribute("aria-label",`${color.label}色 ${color.name} ${color.hex}`);
+        button.title = `${color.name} · ${color.hex}`;
+        const dot = document.createElement("span"); dot.className = "swatch-dot"; dot.style.backgroundColor = color.hex;
+        const name = document.createElement("span"); name.className = "swatch-name"; name.textContent = color.label;
+        button.append(dot,name); button.addEventListener("click",() => choose(color.hex)); group.append(button);
+      }
+      input.addEventListener("input",sync);
+      input.addEventListener("change",sync);
+      picker.addEventListener("input",() => choose(picker.value.toLowerCase()));
+      picker.addEventListener("change",() => choose(picker.value.toLowerCase()));
+      sync();
+    }
+  }
+
   function note(message, error = false) {
     $("notice").textContent = String(message).slice(0, 700);
     $("notice").classList.toggle("error", error);
@@ -42,6 +96,25 @@
     if (!/^\d+$/.test(value) || !field.checkValidity()) throw new Error("请填写范围内的整数时间和次数。");
     return Number(value);
   }
+  const transitionDescriptions = {
+    cut:"直接交换两种颜色，保留原有交替方式。",
+    linear:"颜色按线性比例往返混合，形成连续交替。",
+    sine:"颜色按正弦曲线平滑往返，变化在两端放缓。",
+    orbit:"颜色混合与亮度相差 1/4 周期，形成环绕相位感；不是实际三维旋转。"
+  };
+  function syncTransitionControls() {
+    const mode = $("transition").value;
+    const flowing = kind === "alternate" && mode !== "cut";
+    $("period").min = flowing ? "1300" : "400";
+    $("cycles").max = flowing ? "15" : "10";
+    const invalidPeriod = kind === "alternate" && !$("period").checkValidity();
+    const invalidCycles = kind === "alternate" && !$("cycles").checkValidity();
+    $("period").setAttribute("aria-invalid",String(invalidPeriod));
+    $("cycles").setAttribute("aria-invalid",String(invalidCycles));
+    const limits = flowing ? "每周期 66 步；本页周期 1300–10000ms，最多 15 次。两颗 LED 依次写入，不是原子同步。" : "本页周期 400–10000ms，最多 10 次。";
+    $("transition-help").textContent = `${transitionDescriptions[mode] || "请选择有效的交替方式。"} ${limits}${invalidPeriod || invalidCycles ? " 当前数值超出范围，请修改后再预览或播放；不会自动替换你的输入。" : ""}`;
+    $("transition-help").classList.toggle("invalid",invalidPeriod || invalidCycles);
+  }
   function intent(forcedKind) {
     const selected = forcedKind || kind;
     if (selected === "program") {
@@ -56,7 +129,12 @@
     if (["breathe","alternate","rainbow"].includes(selected)) action.period_ms = integer("period");
     if (selected === "blink") { action.on_ms = integer("on-ms"); action.off_ms = integer("off-ms"); }
     if (selected === "pulse") { action.attack_ms = integer("attack"); action.decay_ms = integer("decay"); action.rest_ms = integer("rest"); }
-    if (selected === "alternate") { action.colors = [$("color-one").value,$("color-two").value]; action.leds = [1,2]; }
+    if (selected === "alternate") {
+      action.colors = [$("color-one").value,$("color-two").value]; action.leds = [1,2];
+      const transition = $("transition").value;
+      if (!Object.prototype.hasOwnProperty.call(transitionDescriptions,transition)) throw new Error("请选择有效的交替方式。");
+      if (transition !== "cut") action.transition = transition;
+    }
     if (!["set","fade","off"].includes(selected)) { action.cycles = integer("cycles"); action.on_finish = $("finish").value; }
     else action.on_finish = "hold";
     return {kind:selected, action};
@@ -73,8 +151,9 @@
     document.querySelectorAll("[data-action]").forEach(b => { const active = b.dataset.action === kind; b.classList.toggle("selected",active); b.setAttribute("aria-pressed",String(active)); });
     $("kind-label").textContent = `${["set","fade","off","program"].includes(kind) ? "基础" : "艺术"} · ${kind === "program" ? "run" : kind}`;
     $("action-description").textContent = descriptions[kind];
-    const rows = {"single-color-row":!["off","alternate","rainbow","program"].includes(kind),"alternate-row":kind==="alternate","led-row":!["alternate","program"].includes(kind),"duration-row":kind==="fade","period-row":["breathe","alternate","rainbow"].includes(kind),"blink-row":kind==="blink","pulse-row":kind==="pulse","cycles-row":["blink","breathe","pulse","alternate","rainbow"].includes(kind),"finish-row":["blink","breathe","pulse","alternate","rainbow"].includes(kind),"program-row":kind==="program"};
+    const rows = {"single-color-row":!["off","alternate","rainbow","program"].includes(kind),"alternate-row":kind==="alternate","led-row":!["alternate","program"].includes(kind),"duration-row":kind==="fade","period-row":["breathe","alternate","rainbow"].includes(kind),"transition-row":kind==="alternate","blink-row":kind==="blink","pulse-row":kind==="pulse","cycles-row":["blink","breathe","pulse","alternate","rainbow"].includes(kind),"finish-row":["blink","breathe","pulse","alternate","rainbow"].includes(kind),"program-row":kind==="program"};
     for (const [id, visible] of Object.entries(rows)) $(id).hidden = !visible;
+    syncTransitionControls();
     showIntent();
   }
 
@@ -277,7 +356,8 @@
 
   document.querySelectorAll("[data-action]").forEach(button => button.addEventListener("click",() => selectAction(button.dataset.action)));
   $("parameters").addEventListener("submit",event => event.preventDefault());
-  $("parameters").addEventListener("input",showIntent);
+  $("parameters").addEventListener("input",() => { syncTransitionControls(); showIntent(); });
+  $("transition").addEventListener("change",() => { syncTransitionControls(); showIntent(); });
   $("device-select").addEventListener("change",updateButtons);
   $("refresh").addEventListener("click",() => operate(loadDevices));
   $("connect").addEventListener("click",() => operate(async () => {
@@ -296,6 +376,7 @@
   }));
   $("stop").addEventListener("click",() => operate(stopAndOff));
   $("recover").addEventListener("click",() => operate(() => recover()));
+  setupColorControls();
   selectAction("set");
   loadDevices();
 })();

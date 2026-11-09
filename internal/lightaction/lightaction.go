@@ -35,6 +35,7 @@ type NormalizedAction struct {
 	DecayMS    *int     `json:"decay_ms,omitempty"`
 	RestMS     *int     `json:"rest_ms,omitempty"`
 	Cycles     *int     `json:"cycles,omitempty"`
+	Transition string   `json:"transition,omitempty"`
 	OnFinish   string   `json:"on_finish"`
 }
 
@@ -121,6 +122,10 @@ func build(a NormalizedAction) control.Program {
 	case "pulse":
 		p.Steps = []control.Step{{LED: led, Color: "#000000"}, {LED: led, Color: a.Color, FadeMS: *a.AttackMS}, {LED: led, Color: "#000000", FadeMS: *a.DecayMS, HoldMS: *a.RestMS}}
 	case "alternate":
+		if a.Transition != "" && a.Transition != "cut" {
+			p.Steps = buildAlternateFlow(a)
+			break
+		}
 		first := *a.PeriodMS / 2
 		second := *a.PeriodMS - first
 		p.Steps = []control.Step{

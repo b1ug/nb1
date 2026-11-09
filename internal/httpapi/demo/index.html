@@ -37,11 +37,37 @@
 
         <p id="action-description" class="description">保持指定颜色，直到你再次操作或明确熄灭。</p>
         <form id="parameters" novalidate>
-          <div id="single-color-row" class="field-row"><label for="color">颜色 <small>CSS 名称 / #RGB / #RRGGBB</small></label><input id="color" value="#00a060" maxlength="64" autocomplete="off" spellcheck="false"></div>
-          <div id="alternate-row" class="field-row" hidden><label for="color-one">两个颜色</label><div class="two-fields"><input id="color-one" value="red" maxlength="64" aria-label="第一种颜色"><input id="color-two" value="blue" maxlength="64" aria-label="第二种颜色"></div></div>
+          <div id="single-color-row" class="field-row color-field">
+            <label for="color">颜色 <small>色板 / 取色器 / 名称或 hex</small></label>
+            <div class="color-entry"><input id="color-picker" type="color" value="#00a060" aria-label="选择单色"><input id="color" value="#00a060" maxlength="64" autocomplete="off" spellcheck="false" aria-describedby="color-hint"></div>
+            <div class="color-palette" data-color-for="color" role="group" aria-label="单色常用色板"></div>
+            <p id="color-hint" class="color-hint"></p>
+          </div>
+          <div id="alternate-row" class="field-row color-pair-row" hidden>
+            <label for="color-one">两个颜色 <small>分别选择，再交替播放</small></label>
+            <div class="color-pair">
+              <div class="color-field">
+                <label for="color-one">第一种颜色</label>
+                <div class="color-entry"><input id="color-one-picker" type="color" value="#ff0000" aria-label="选择第一种颜色"><input id="color-one" value="red" maxlength="64" autocomplete="off" spellcheck="false" aria-label="第一种颜色" aria-describedby="color-one-hint"></div>
+                <div class="color-palette" data-color-for="color-one" role="group" aria-label="第一种颜色常用色板"></div>
+                <p id="color-one-hint" class="color-hint"></p>
+              </div>
+              <div class="color-field">
+                <label for="color-two">第二种颜色</label>
+                <div class="color-entry"><input id="color-two-picker" type="color" value="#0000ff" aria-label="选择第二种颜色"><input id="color-two" value="blue" maxlength="64" autocomplete="off" spellcheck="false" aria-label="第二种颜色" aria-describedby="color-two-hint"></div>
+                <div class="color-palette" data-color-for="color-two" role="group" aria-label="第二种颜色常用色板"></div>
+                <p id="color-two-hint" class="color-hint"></p>
+              </div>
+            </div>
+          </div>
           <div id="led-row" class="field-row"><label for="led">输出位置</label><select id="led"><option value="0">两颗 LED</option><option value="1">LED 1</option><option value="2">LED 2</option></select></div>
           <div id="duration-row" class="field-row" hidden><label for="duration">渐变时间 <small>ms</small></label><input id="duration" type="number" min="10" max="10000" step="10" value="800"></div>
           <div id="period-row" class="field-row" hidden><label for="period">一个周期 <small>ms</small></label><input id="period" type="number" min="400" max="10000" step="10" value="2000"></div>
+          <div id="transition-row" class="field-row transition-field" hidden>
+            <label for="transition">交替方式 <small>由 nb1 核心编译</small></label>
+            <select id="transition" aria-describedby="transition-help"><option value="cut">直接交替 · cut</option><option value="linear">线性渐变 · linear</option><option value="sine">正弦渐变 · sine</option><option value="orbit">环绕相位 · orbit</option></select>
+            <p id="transition-help" class="transition-help" aria-live="polite"></p>
+          </div>
           <div id="blink-row" class="field-row" hidden><label for="on-ms">亮 / 灭时间 <small>ms</small></label><div class="two-fields"><input id="on-ms" type="number" min="200" max="5000" step="10" value="350" aria-label="亮灯毫秒"><input id="off-ms" type="number" min="200" max="5000" step="10" value="350" aria-label="熄灭毫秒"></div></div>
           <div id="pulse-row" class="field-row" hidden><label for="attack">起 / 落 / 停顿 <small>ms</small></label><div class="three-fields"><input id="attack" type="number" min="10" max="5000" step="10" value="60" aria-label="快速亮起毫秒"><input id="decay" type="number" min="10" max="5000" step="10" value="240" aria-label="衰减毫秒"><input id="rest" type="number" min="0" max="5000" step="10" value="700" aria-label="静默毫秒"></div></div>
           <div id="cycles-row" class="field-row" hidden><label for="cycles">循环次数 <small>有限播放</small></label><input id="cycles" type="number" min="1" max="10" step="1" value="3"></div>

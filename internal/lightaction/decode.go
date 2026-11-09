@@ -150,7 +150,7 @@ func decodeAction(data []byte) (NormalizedAction, error) {
 	case "pulse":
 		names = append(names, "led", "color", "attack_ms", "decay_ms", "rest_ms", "cycles")
 	case "alternate":
-		names = append(names, "colors", "leds", "period_ms", "cycles")
+		names = append(names, "colors", "leds", "period_ms", "cycles", "transition")
 	case "rainbow":
 		names = append(names, "led", "period_ms", "cycles")
 	default:
@@ -220,7 +220,21 @@ func decodeAction(data []byte) (NormalizedAction, error) {
 			a.RestMS, err = read("rest_ms", 700, 0, control.MaxHoldMS)
 		}
 	case "alternate":
-		a.PeriodMS, err = read("period_ms", 2000, 40, control.MaxPulsePeriodMS)
+		minimum := 40
+		if raw, exists := fields["transition"]; exists {
+			a.Transition, err = stringValue(raw)
+			if err != nil {
+				return a, err
+			}
+			switch a.Transition {
+			case "cut":
+			case "linear", "sine", "orbit":
+				minimum = flowMinimumPeriodMS
+			default:
+				return a, invalid("transition must be cut, linear, sine or orbit")
+			}
+		}
+		a.PeriodMS, err = read("period_ms", 2000, minimum, control.MaxPulsePeriodMS)
 		if err == nil {
 			a.Colors, err = pairColors(fields["colors"])
 		}

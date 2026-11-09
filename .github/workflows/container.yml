@@ -2,7 +2,7 @@ name: Nonroot container validation
 
 on:
   push:
-    branches: [validation/nonroot-container]
+    branches: [validation/nonroot-container, validation/runtime-native]
   workflow_dispatch:
 
 permissions:

@@ -11,7 +11,15 @@ permissions:
 jobs:
   read-only-host:
     runs-on: windows-2022
-    timeout-minutes: 5
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [amd64, "386"]
+    env:
+      GOWORK: "off"
+      CGO_ENABLED: "0"
+      GOARCH: ${{ matrix.arch }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -20,11 +28,55 @@ jobs:
         shell: powershell
         run: |
           & .\ci\windows-host-probe.ps1 -OutputPath (Join-Path $env:RUNNER_TEMP 'windows-host-probe.json')
+      - uses: actions/setup-go@v7
+        with:
+          go-version: "1.27.x"
+          cache: false
+      - name: Compile the opt-in token test executable
+        shell: powershell
+        run: |
+          go build -mod=readonly ./internal/service/taskuser
+          if ($LASTEXITCODE -ne 0) { throw 'Token package build failed' }
+          go test -mod=readonly -c -o (Join-Path $env:RUNNER_TEMP 'token-native.test.exe') ./internal/service/taskuser
+          if ($LASTEXITCODE -ne 0) { throw 'Token fixture compile failed' }
+      - name: Verify real elevated token rejection and bounded handle observation
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $hostFacts = [IO.File]::ReadAllText((Join-Path $env:RUNNER_TEMP 'windows-host-probe.json')) | ConvertFrom-Json
+          if ($hostFacts.status -ne 'OBSERVED' -or -not $hostFacts.host.token_elevated -or $hostFacts.host.sid -notmatch '^S-1-5-21-\d+-\d+-\d+-500$') {
+            throw 'This rejection-only diagnostic requires an independently observed elevated RID500 host'
+          }
+          $env:NB1_TASKUSER_NATIVE = '1'
+          $env:NB1_TASKUSER_EXPECT = 'administrator-rejected'
+          $env:NB1_TASKUSER_EXPECT_SID = $hostFacts.host.sid
+          $lines = @(& (Join-Path $env:RUNNER_TEMP 'token-native.test.exe') '-test.run=^TestNativeCurrentOptIn$' '-test.v' '-test.timeout=30s' 2>&1)
+          $exitCode = $LASTEXITCODE
+          [IO.File]::WriteAllLines((Join-Path $env:RUNNER_TEMP 'token-native.stdout.log'), [string[]]$lines, [Text.UTF8Encoding]::new($false))
+          $records = @($lines | Where-Object { ([string]$_).StartsWith('NB1_TASKUSER_NATIVE_RESULT ') })
+          if ($records.Count -ne 1) { throw 'Exactly one selected native token record is required' }
+          $encoded = ([string]$records[0]).Substring('NB1_TASKUSER_NATIVE_RESULT '.Length)
+          [IO.File]::WriteAllText((Join-Path $env:RUNNER_TEMP 'token-native-result.json'), $encoded, [Text.UTF8Encoding]::new($false))
+          $record = $encoded | ConvertFrom-Json
+          if ($exitCode -ne 0 -or $record.schema_version -ne 1 -or $record.status -ne 'PASS' -or $record.expected -ne 'administrator-rejected' -or
+              $record.expected_sid -cne $hostFacts.host.sid -or $record.collection_fields -ne 6 -or
+              $record.facts.sid -cne $hostFacts.host.sid -or $record.current.valid -or
+              -not $record.collection_complete -or -not $record.collector_closed -or
+              $record.handle_observation.persistent_growth -or $record.handle_observation.completed -ne 32 -or
+              $record.handle_observation.iterations -ne 32 -or $record.handle_observation.warmup_calls -ne 8 -or
+              $record.handle_observation.allowed_growth -ne 2 -or
+              $record.handle_observation.final -gt ($record.handle_observation.baseline + 2)) {
+            throw 'Native own-token collection/rejection/handle observation did not pass'
+          }
+          Write-Output 'Elevated host rejection verified. Ordinary-user acceptance and Task Scheduler management remain separate.'
       - name: Upload selected facts
         if: ${{ always() }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
-          name: windows-host-read-only-${{ github.run_id }}
-          path: ${{ runner.temp }}/windows-host-probe.json
+          name: windows-host-read-only-${{ github.run_id }}-${{ matrix.arch }}
+          path: |
+            ${{ runner.temp }}/windows-host-probe.json
+            ${{ runner.temp }}/token-native-result.json
+            ${{ runner.temp }}/token-native.stdout.log
           if-no-files-found: error
           retention-days: 14

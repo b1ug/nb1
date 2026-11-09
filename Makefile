@@ -67,7 +67,7 @@ run:
 	$(GORUN) . v
 preview:
 	./$(BINARY) v
-	./$(BINARY) ls -a
+	python3 ci/check-build-artifact.py preview --binary ./$(BINARY)
 clean:
 	rm -f $(BINARY)*
 

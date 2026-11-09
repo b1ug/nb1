@@ -1,104 +1,76 @@
-name: Build
+name: 编译候选（仅验证）
 
 on:
   push:
-    branches: [ "master" ]
+    branches: [master]
   pull_request:
-    branches: [ "master" ]
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-candidate-${{ github.ref }}
+  cancel-in-progress: true
 
 defaults:
   run:
     shell: bash
 
 env:
-  GO_VERSION: 1.18.10
-  OSEXT_MAP: '{"Linux": "linux", "macOS": "macos", "Windows": "exe"}'
-  CACHE_PREFIX: upload-${{ github.run_id }}-${{ github.run_attempt }}
-  SAVE_ARTIFACT: ${{ github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/') }}
+  CGO_ENABLED: "1"
+  GOWORK: "off"
+  GOTOOLCHAIN: local
+  PYTHONDONTWRITEBYTECODE: "1"
 
 jobs:
-  # Job1: build and test
   build:
-    # For various OS
-    name: Build on ${{ matrix.vm-os }}
-    runs-on: ${{ matrix.vm-os }}
+    name: Native candidate / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
     strategy:
-      max-parallel: 10
       fail-fast: false
       matrix:
-        vm-os: [ubuntu-20.04, macos-12, windows-2019]
-    outputs:
-      save_artifact: ${{ env.SAVE_ARTIFACT }}
+        include:
+          - {os: ubuntu-24.04, goos: linux, goarch: amd64, extension: ""}
+          - {os: ubuntu-24.04-arm, goos: linux, goarch: arm64, extension: ""}
+          - {os: macos-15, goos: darwin, goarch: arm64, extension: ""}
+          - {os: macos-15-intel, goos: darwin, goarch: amd64, extension: ""}
+          - {os: windows-2022, goos: windows, goarch: amd64, extension: .exe}
     steps:
-      - uses: actions/checkout@v3
-      - name: Set up Go
-        uses: actions/setup-go@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          go-version: ${{ env.GO_VERSION }}
-      - name: Go Build
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+        with:
+          go-version: "1.27.3"
+          cache: true
+      - name: Check artifact validation helpers
+        run: python3 -B -m unittest discover -s ci -p test_build_artifact.py -v
+      - name: Build native CLI from public module versions
         env:
-          OSEXT: ${{ fromJSON(env.OSEXT_MAP)[runner.os] }}
+          NB1_CANDIDATE_BINARY: ${{ runner.temp }}/nb1-candidate-build/nb1${{ matrix.extension }}
         run: |
-          export
-          git status
-          go version
-          make build
-          make artifact
-      - name: Go Run
+          mkdir -p "$(dirname "$NB1_CANDIDATE_BINARY")"
+          go build -mod=readonly -trimpath -o "$NB1_CANDIDATE_BINARY" .
+      - name: Stage and verify source-bound candidate without USB
+        env:
+          NB1_CANDIDATE_BINARY: ${{ runner.temp }}/nb1-candidate-build/nb1${{ matrix.extension }}
+          NB1_CANDIDATE_OUTPUT: ${{ runner.temp }}/nb1-candidate
+          NB1_CANDIDATE_SOURCE: ${{ github.sha }}
+          NB1_CANDIDATE_OS: ${{ matrix.goos }}
+          NB1_CANDIDATE_ARCH: ${{ matrix.goarch }}
         run: |
-          make preview
-      - name: Cache Artifact
-        uses: actions/cache/save@v3
-        if: ${{ fromJSON(env.SAVE_ARTIFACT) }}
+          python3 ci/check-build-artifact.py stage \
+            --binary "$NB1_CANDIDATE_BINARY" --out "$NB1_CANDIDATE_OUTPUT" \
+            --expected-source "$NB1_CANDIDATE_SOURCE" \
+            --expected-os "$NB1_CANDIDATE_OS" --expected-arch "$NB1_CANDIDATE_ARCH"
+          python3 ci/check-build-artifact.py verify --out "$NB1_CANDIDATE_OUTPUT"
+      - name: Preserve verified candidate (not a Release)
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
-          path: _upload
-          key: ${{ env.CACHE_PREFIX }}-${{ runner.os }}
-          enableCrossOsArchive: true
-      - name: Analyze
-        if: ${{ runner.os == 'Linux' }}
-        run: |
-          # tokei -- count
-          wget -cqL https://github.com/XAMPPRocky/tokei/releases/download/v12.1.2/tokei-i686-unknown-linux-musl.tar.gz -O tokei.tgz
-          tar zxf tokei.tgz tokei && chmod +x tokei && $SUDO mv tokei /usr/local/bin && rm tokei.tgz
-          echo "=== Tokei Result ==="
-          tokei
-          # revive -- lint
-          wget -cqL https://github.com/mgechev/revive/releases/download/v1.3.3/revive_linux_amd64.tar.gz -O revive.tgz
-          tar zxf revive.tgz revive && chmod +x revive && $SUDO mv revive /usr/local/bin && rm revive.tgz
-          wget -cqL https://bitbucket.org/ai69/common/raw/master/revive.toml -O revive.toml
-          echo "=== Revive Result ==="
-          revive -config revive.toml -formatter friendly ./...
-
-  # Job2: collect artifacts
-  collect:
-    name: Upload Artifact
-    runs-on: ubuntu-latest
-    needs: build
-    if: ${{ fromJSON(needs.build.outputs.save_artifact) }}
-    steps:
-      - name: Restore Cache Linux
-        uses: actions/cache/restore@v3
-        with:
-          path: _upload
-          key: ${{ env.CACHE_PREFIX }}-Linux
-          enableCrossOsArchive: true
-          fail-on-cache-miss: true
-      - name: Restore Cache macOS
-        uses: actions/cache/restore@v3
-        with:
-          path: _upload
-          key: ${{ env.CACHE_PREFIX }}-macOS
-          enableCrossOsArchive: true
-          fail-on-cache-miss: true
-      - name: Restore Cache Windows
-        uses: actions/cache/restore@v3
-        with:
-          path: _upload
-          key: ${{ env.CACHE_PREFIX }}-Windows
-          enableCrossOsArchive: true
-          fail-on-cache-miss: true
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v2
-        with:
-          name: dist-gh${{ github.run_number }}
-          path: _upload
+          name: nb1-candidate-${{ github.sha }}-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: ${{ runner.temp }}/nb1-candidate
+          if-no-files-found: error
+          retention-days: 14

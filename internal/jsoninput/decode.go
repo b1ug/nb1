@@ -13,6 +13,9 @@ import (
 // DecodeObject rejects null, duplicate keys, noncanonical field names, excessive
 // nesting, unknown fields and trailing data. Limits on total bytes belong to the
 // transport. Reflection follows the actual Go request type's JSON field tags.
+// An explicit json.RawMessage field is opaque to this type checker, but still
+// rejects duplicate keys, null and excessive nesting. Its owner must validate
+// the versioned schema before treating that data as a trusted domain value.
 func DecodeObject(data []byte, out interface{}) error {
 	data = bytes.TrimSpace(data)
 	if len(data) == 0 || data[0] != '{' {
@@ -42,6 +45,7 @@ func value(dec *json.Decoder, t reflect.Type, depth int) error {
 	for t.Kind() == reflect.Ptr {
 		t = t.Elem()
 	}
+	raw := t == reflect.TypeOf(json.RawMessage{})
 	token, err := dec.Token()
 	if err != nil {
 		return err
@@ -71,7 +75,7 @@ func value(dec *json.Decoder, t reflect.Type, depth int) error {
 				}
 				fields[tag] = field.Type
 			}
-		} else if t.Kind() != reflect.Map {
+		} else if t.Kind() != reflect.Map && !raw {
 			return fmt.Errorf("unexpected JSON object")
 		}
 		seen := make(map[string]bool)
@@ -93,6 +97,9 @@ func value(dec *json.Decoder, t reflect.Type, depth int) error {
 				field = t.Elem()
 				known = true
 			}
+			if raw {
+				field, known = t, true
+			}
 			if !known {
 				return fmt.Errorf("unknown or noncanonical JSON field %q", key)
 			}
@@ -107,7 +114,11 @@ func value(dec *json.Decoder, t reflect.Type, depth int) error {
 			return fmt.Errorf("unexpected JSON array")
 		}
 		for dec.More() {
-			if err := value(dec, t.Elem(), depth+1); err != nil {
+			element := t.Elem()
+			if raw {
+				element = t
+			}
+			if err := value(dec, element, depth+1); err != nil {
 				return err
 			}
 		}

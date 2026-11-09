@@ -1,6 +1,8 @@
 package jsoninput_test
 
 import (
+	"encoding/json"
+	"strings"
 	"testing"
 
 	"github.com/b1ug/nb1/internal/control"
@@ -19,6 +21,42 @@ func TestRejectAmbiguousControlInput(t *testing.T) {
 		if err := jsoninput.DecodeObject([]byte(input), &program); err == nil {
 			t.Errorf("accepted ambiguous/invalid input %s", input)
 		}
+	}
+}
+
+func TestExplicitRawJSONRetainsVersionedPayloadButRejectsAmbiguity(t *testing.T) {
+	type envelope struct {
+		Record json.RawMessage `json:"record"`
+	}
+	for _, raw := range []string{
+		`{"future_field":[{"value":1.0,"nested":{"color":"red"}},false,"text"]}`,
+		`[{"future_field":[]}]`, `42`, `"text"`,
+	} {
+		var value envelope
+		if err := jsoninput.DecodeObject([]byte(`{"record":`+raw+`}`), &value); err != nil || string(value.Record) != raw {
+			t.Fatal("explicit RawMessage changed or rejected", raw, string(value.Record), err)
+		}
+	}
+	for _, raw := range []string{
+		`{"record":{"x":1,"x":2}}`,
+		`{"record":{"x":1,"\u0078":2}}`,
+		`{"record":{"a":[{"x":null}]}}`,
+		`{"record":null}`, `{"Record":{}}`, `{"record":{},"extra":1}`,
+		`{"record":{},"record":{}}`, `{"record":{}} {}`,
+		`{"record":` + strings.Repeat("[", 66) + `1` + strings.Repeat("]", 66) + `}`,
+	} {
+		var value envelope
+		if err := jsoninput.DecodeObject([]byte(raw), &value); err == nil {
+			t.Fatal("opaque payload bypassed common guard", raw)
+		}
+	}
+	// []byte is not a schema escape hatch; only the explicit RawMessage type
+	// enables opaque JSON. Ordinary typed control fields retain strict checking.
+	var ordinary struct {
+		Record []byte `json:"record"`
+	}
+	if err := jsoninput.DecodeObject([]byte(`{"record":{"x":1}}`), &ordinary); err == nil {
+		t.Fatal("ordinary byte field accepted an object")
 	}
 }
 

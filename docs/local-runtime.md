@@ -23,6 +23,22 @@ daemon 会先绑定端口，再尝试打开硬件；启动和只读监控不会�
 
 另开终端使用下列命令；POSIX shell 示例可直接用于当前 Mac。Windows 需本机原生工具链与 USB 验证，命令行 HTTP 示例应使用 `curl.exe`。
 
+### 只读诊断
+
+```sh
+../bin/nb1-runtime doctor
+../bin/nb1-runtime doctor --serial 20005601 --json
+../bin/nb1-runtime doctor --endpoint http://127.0.0.1:8932
+```
+
+`doctor` 在3秒总预算内读取当前可执行文件的Go、OS、架构、CGO、原生HID后端与SDK/GID构建版本，再依次GET `/healthz` 和 `/v1/devices`。它不扫描或打开USB、不提交控制任务、不安装服务；daemon不可达时也不回退直控。省略 `--serial` 时显示daemon配置的全部目标；诊断目标不从旧的设备配置中自动选择。
+
+HTTP响应、`api_version: v1`、设备 `online` 和 `observed` 新鲜度分别报告。`observed` 是daemon已有的带时间戳快照，doctor不会触发新采样；超过5秒标为 `stale`，缺失和明显未来时间另行提示。5秒是本命令针对默认约1秒采样周期的诊断阈值，不是实时保证。已有活动任务与排队深度会显示，正常工作中的任务不会被视为故障。`busy` 提示通过现有持有者控制或正常停止占用进程，不能通过删除锁文件抢占。
+
+构建版本取自本机CLI的 `debug.ReadBuildInfo`，不读取当前目录的 `go.mod`，也不代表另一个daemon进程的二进制版本；此命令检查API版本，不核对daemon实例身份。若工作区或 `replace` 使用未编号的本地源码，会显示 `local_unversioned`，不会把请求的模块版本冒充实际构建版本；不输出本地替换路径、任意构建参数或环境变量。`native_hid_supported` 只表示二进制包含原生后端，不能替代当前系统版本和具体硬件的实物验收。CGO=0的CLI仍可通过HTTP诊断独立运行的daemon。
+
+`--json` 的结构版本是 `schema_version: 1`。所有检查通过时 `status: ok`、退出码0；服务不可达、API不匹配、设备离线或快照异常时，先在stdout输出完整 `status: attention` 报告，再以退出码1返回，错误摘要在stderr。脚本应分别处理stdout与stderr，并检查 `issues[].code` 与建议；参数错误或写输出失败也会返回非零。doctor自身的构建与HTTP模拟测试不能替代USB实物验收，也不改变已有硬件兼容性结论。
+
 ## 2. 查看设备与设色
 
 ```sh

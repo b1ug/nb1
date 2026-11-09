@@ -35,6 +35,17 @@ type Error struct {
 
 func (e *Error) Error() string { return fmt.Sprintf("daemon %s (%d): %s", e.Code, e.Status, e.Message) }
 
+// DecodeError means an HTTP response arrived but its body could not be decoded.
+// It is distinct from an API rejection: callers cannot infer a submission's
+// outcome from malformed response data.
+type DecodeError struct {
+	Status int
+	Err    error
+}
+
+func (e *DecodeError) Error() string { return fmt.Sprintf("decode daemon response: %v", e.Err) }
+func (e *DecodeError) Unwrap() error { return e.Err }
+
 // ReceiptError preserves the binding after an uncertain submission or lookup.
 // Expiry/instance changes cannot establish whether the original intent ran.
 type ReceiptError struct {
@@ -68,6 +79,18 @@ func New(endpoint string) (*Client, error) {
 }
 
 func (c *Client) Close() { c.http.CloseIdleConnections() }
+
+// Health describes the HTTP service only; it does not prove a device is online.
+type Health struct {
+	Status     string `json:"status"`
+	APIVersion string `json:"api_version"`
+}
+
+func (c *Client) Health(ctx context.Context) (out Health, err error) {
+	err = c.do(ctx, http.MethodGet, "/healthz", nil, &out)
+	return
+}
+
 func (c *Client) Devices(ctx context.Context) (out []control.DeviceState, err error) {
 	err = c.do(ctx, http.MethodGet, "/v1/devices", nil, &out)
 	return
@@ -235,7 +258,7 @@ func (c *Client) doResponse(ctx context.Context, method, path string, input, out
 		return nil, &Error{Status: resp.StatusCode, Code: failure.Error.Code, Message: failure.Error.Message}
 	}
 	if err := json.NewDecoder(reader).Decode(output); err != nil {
-		return nil, fmt.Errorf("decode daemon response: %w", err)
+		return nil, &DecodeError{Status: resp.StatusCode, Err: err}
 	}
 	return resp.Header, nil
 }

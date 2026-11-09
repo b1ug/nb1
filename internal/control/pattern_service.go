@@ -30,6 +30,7 @@ const (
 	PatternResolveIntegrity     PatternResolveErrorKind = "integrity"
 	PatternResolveUnsupported   PatternResolveErrorKind = "unsupported"
 	PatternResolveConfiguration PatternResolveErrorKind = "configuration"
+	PatternResolveUnknown       PatternResolveErrorKind = "unknown"
 )
 
 // PatternResolveError preserves the diagnostic and an explicit classification.

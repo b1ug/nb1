@@ -1,9 +1,10 @@
-package jsoninput
+package jsoninput_test
 
 import (
 	"testing"
 
 	"github.com/b1ug/nb1/internal/control"
+	"github.com/b1ug/nb1/internal/jsoninput"
 )
 
 func TestRejectAmbiguousControlInput(t *testing.T) {
@@ -15,7 +16,7 @@ func TestRejectAmbiguousControlInput(t *testing.T) {
 		`{"steps":null}`, `{"steps":[]} {}`, `null`, `[]`, `{"steps":[{"color":true}]}`,
 	} {
 		var program control.Program
-		if err := DecodeObject([]byte(input), &program); err == nil {
+		if err := jsoninput.DecodeObject([]byte(input), &program); err == nil {
 			t.Errorf("accepted ambiguous/invalid input %s", input)
 		}
 	}
@@ -23,7 +24,7 @@ func TestRejectAmbiguousControlInput(t *testing.T) {
 
 func TestAcceptCanonicalOmittedDefaults(t *testing.T) {
 	var program control.Program
-	if err := DecodeObject([]byte(`{"steps":[{"color":"#800000","led":2}],"on_finish":"hold"}`), &program); err != nil {
+	if err := jsoninput.DecodeObject([]byte(`{"steps":[{"color":"#800000","led":2}],"on_finish":"hold"}`), &program); err != nil {
 		t.Fatal(err)
 	}
 	p, err := control.Normalize(program)

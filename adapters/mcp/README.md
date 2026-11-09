@@ -154,7 +154,7 @@ MCP仅校验字段、枚举和基本范围，并将RGB规范为小写；省略�
 - `accepted=true` 仅表示看到了 HTTP202，并不表示执行完成。`data.status` 是实际任务状态；非终态结果提供 `poll_after_ms=200` 作为建议。
 - `queued`、`running`、`cancelling` 需要继续查询；`succeeded`、`cancelled`、`failed` 是终态。取消后要等到 `cancelled` 才表示执行器确认硬件清理；清理失败会保留 `failed`。
 - HTTP 错误保留 `error.code`、`message`、`http_status` 并设置 MCP `isError=true`。输入 schema 错误由官方 SDK 返回 `isError`。
-- POST 超时或响应损坏时，可能已被 daemon 接收：`error.outcome_unknown=true`，不会盲目重试。此时 `accepted=false` 只表示没有确认到202，不能解释为未执行。应查询设备/任务，必要时显式停止已有任务。
+- 提交 Job 的 POST 超时或响应损坏时，可能已被 daemon 接收：`error.outcome_unknown=true`，不会盲目重试。此时 `accepted=false` 只表示没有确认到202，不能解释为未执行。应查询设备/任务，必要时显式停止已有任务。
 - MCP 请求超时或 MCP 会话关闭，不会替用户取消 daemon 中已接受的任务。请求取消应调用 `cancel_job`。
 
 本适配器不提供固件升级、Flash 写入、任意 HID 报文、系统服务安装或公网控制。

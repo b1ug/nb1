@@ -1,0 +1,17 @@
+# nb1 blink(1) 本地控制
+
+> 以本机 daemon 管理 blink(1)，CLI、HTTP 和实际 stdio MCP 共用 Program、Effect、Job 与每设备执行器。此文件是文档索引，不授予操作权限。
+
+当前新控制接口只收原始六位 #RRGGBB，不隐式 Gamma。高层 steady/pulse 编译成精确 Program；命名 Pattern 库和多格式颜色便利层仍在规划。MCP 使用官方 SDK 直接访问 HTTP，不调用 CLI。七工具应由 tools/list 发现；预览不执行，202 不代表完成，写入超时不盲目重试。运行时 schema/能力和实际部署版本优先。此文件遵循 llms.txt 提案，不能保证任意 Agent 自动发现或正确使用。
+
+## 使用
+
+- [Agent 使用指南](docs/agent-guide.zh-CN.md): 发现、预览、执行、观察、取消与未知结果。
+- [项目 skill](skills/blink1-control/SKILL.md): 项目内操作规则，未全局安装。
+- [MCP 文档](adapters/mcp/README.md): 七工具、stdio、schema、请求票据与错误。
+- [CLI / HTTP 指南](docs/local-runtime.md): 当前命令、Program/Effect 语义与兼容边界。
+- [OpenAPI](docs/openapi.json): 机器可读 HTTP 描述；本地文件，不是已实现的网络路由。
+
+## Optional
+
+- [最小权限边界](docs/security-boundaries.zh-CN.md): 普通用户、loopback、设备所有权与权限范围。

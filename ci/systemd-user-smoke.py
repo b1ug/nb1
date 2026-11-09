@@ -5,6 +5,7 @@ No --execute means preparation only. This script never runs nb1's real server:
 the explicitly supplied stdlib fixture is the installed service executable.
 """
 import argparse
+import grp
 import hashlib
 import json
 import os
@@ -76,6 +77,12 @@ def trusted_tool(name):
     info = os.stat(path)
     require(stat.S_ISREG(info.st_mode) and info.st_uid == 0 and info.st_mode & 0o111 and not info.st_mode & 0o022,
             "host tool is not a root-owned protected executable: " + name)
+    # Resolve merged-/usr symlinks first, then verify the real directory chain.
+    # Standard /bin -> /usr/bin and Python executable symlinks remain valid.
+    for parent in pathlib.Path(path).parents:
+        info = parent.lstat()
+        require(stat.S_ISDIR(info.st_mode) and info.st_uid == 0 and not info.st_mode & 0o022,
+                "host tool parent is not a root-owned protected directory: " + name)
     return path
 
 
@@ -180,6 +187,13 @@ class Smoke:
         self.user = "nb1ci-" + secrets.token_hex(6)
         self.account = None
         self.created = False
+        self.creation_attempted = False
+        self.creation_verified = False
+        self.creation_timed_out = False
+        self.creation_completion_confirmed = False
+        self.creation_marker = "nb1-systemd-smoke-" + secrets.token_hex(16)
+        self.creation_baseline = None
+        self.user_commands_closed = False
         self.user_ready = False
         self.manager_requested = False
         self.linger_requested = False
@@ -208,6 +222,7 @@ class Smoke:
         return self.command(label, self.privilege + [self.tools[name], *args], "host-fixture", allowed)
 
     def user_command(self, label, argv, allowed=(0,), overrides=None):
+        require(not self.user_commands_closed, "runuser is forbidden after final manager shutdown begins")
         require(self.account is not None, "fresh account has not been established")
         values = {
             "HOME": self.account.pw_dir, "USER": self.user, "LOGNAME": self.user,
@@ -457,6 +472,101 @@ class Smoke:
             self.absent()
         self.report["negative_cases"][name]["status"] = "PASS"
 
+    def prepare_creation(self):
+        require(USER_PATTERN.fullmatch(self.user), "uncontrolled fixture user name")
+        try:
+            pwd.getpwnam(self.user)
+        except KeyError:
+            pass
+        else:
+            raise SmokeError("refusing a pre-existing test user")
+        try:
+            grp.getgrnam(self.user)
+        except KeyError:
+            pass
+        else:
+            raise SmokeError("refusing a pre-existing fixture group")
+        fresh_home = "/home/" + self.user
+        require(not os.path.lexists(fresh_home), "refusing a pre-existing fixture HOME")
+        require(not os.path.lexists("/var/lib/systemd/linger/" + self.user), "refusing a pre-existing linger marker")
+        # Keep only ID sets in memory; never export other users/groups or passwd
+        # records. Together with the unique GECOS marker these distinguish a new
+        # account from a concurrent/unrelated same-name creation.
+        self.creation_baseline = {
+            "uids": {entry.pw_uid for entry in pwd.getpwall()},
+            "gids": {entry.gr_gid for entry in grp.getgrall()},
+        }
+        self.report["creation"] = {"attempted": False, "name": self.user, "expected_home": fresh_home,
+                                   "preexisting_name_group_home_linger": False,
+                                   "marker_sha256": digest(self.creation_marker.encode()),
+                                   "supplementary_groups_requested": []}
+
+    def creation_state(self):
+        """Read-only attribution; must not invoke runuser, sudo or systemctl."""
+        require(self.creation_attempted and self.creation_baseline is not None, "no recorded fixture creation request")
+        try:
+            account = pwd.getpwnam(self.user)
+        except KeyError:
+            account = None
+        try:
+            group = grp.getgrnam(self.user)
+        except KeyError:
+            group = None
+        home_path = "/home/" + self.user
+        try:
+            info = os.lstat(home_path)
+        except FileNotFoundError:
+            info = None
+        home = {"exists": info is not None}
+        if info is not None:
+            home.update(uid=info.st_uid, gid=info.st_gid, inode=info.st_ino, device=info.st_dev,
+                        mode=stat.S_IMODE(info.st_mode), directory=stat.S_ISDIR(info.st_mode))
+        state = {"name": self.user, "account": {"exists": account is not None}, "home": home,
+                 "group": {"exists": group is not None},
+                 "linger_exists": os.path.lexists("/var/lib/systemd/linger/" + self.user)}
+        checks = {}
+        if account is not None:
+            state["account"].update(uid=account.pw_uid, gid=account.pw_gid, home_matches=account.pw_dir == home_path,
+                                    marker_matches=account.pw_gecos == self.creation_marker)
+            state["runtime_exists"] = os.path.lexists("/run/user/" + str(account.pw_uid))
+            same_uid = [entry for entry in pwd.getpwall() if entry.pw_uid == account.pw_uid]
+            checks.update(
+                exact_name=account.pw_name == self.user,
+                ordinary_fresh_uid=account.pw_uid >= 1000 and account.pw_uid != os.getuid() and account.pw_uid not in self.creation_baseline["uids"],
+                unique_uid=len(same_uid) == 1 and same_uid[0].pw_name == self.user,
+                exact_home=account.pw_dir == home_path,
+                exact_marker=account.pw_gecos == self.creation_marker,
+                absent_or_owned_home=info is None or (stat.S_ISDIR(info.st_mode) and info.st_uid == account.pw_uid and
+                                                      info.st_gid == account.pw_gid and not info.st_mode & 0o022),
+            )
+        if group is not None:
+            same_gid = [entry for entry in grp.getgrall() if entry.gr_gid == group.gr_gid]
+            state["group"].update(gid=group.gr_gid, other_members_count=len([member for member in group.gr_mem if member != self.user]))
+            checks.update(fresh_private_gid=group.gr_gid >= 1000 and group.gr_gid not in self.creation_baseline["gids"],
+                          unique_private_gid=len(same_gid) == 1 and same_gid[0].gr_name == self.user,
+                          exact_private_group=account is not None and account.pw_gid == group.gr_gid and group.gr_name == self.user,
+                          no_other_group_members=all(member == self.user for member in group.gr_mem))
+        else:
+            checks["exact_private_group"] = False
+        state["proof_checks"] = checks
+        state["attributed_to_this_run"] = account is not None and bool(checks) and all(checks.values())
+        self.report["creation_observation"] = state
+        return account, state
+
+    def claim_created_account(self):
+        account, state = self.creation_state()
+        require(state["attributed_to_this_run"], "cannot attribute partial fixture creation; preserve and report observed remnants")
+        self.account = account
+        self.created = self.creation_verified = True
+        self.report["creation_attribution"] = state
+        self.report["fixture_user"] = {"name": self.user, "uid": account.pw_uid, "primary_gid": account.pw_gid, "home": account.pw_dir}
+
+    def verify_groups(self):
+        groups = sorted(set(os.getgrouplist(self.user, self.account.pw_gid)))
+        self.report["fixture_user"]["effective_group_ids"] = groups
+        self.report["fixture_user"]["supplementary_group_ids"] = [gid for gid in groups if gid != self.account.pw_gid]
+        require(groups == [self.account.pw_gid], "fixture inherited unexpected supplementary groups")
+
     def setup(self):
         require(all(self.report["guard"].values()), "ENVIRONMENT_UNAVAILABLE: requires GITHUB_ACTIONS=true, Linux, and systemd PID 1")
         require(self.args.execute and self.args.binary and self.args.fixture, "--execute requires explicit --binary and --fixture")
@@ -465,23 +575,24 @@ class Smoke:
         require(cli_source != fixture_source and cli_hash != fixture_hash, "actual CLI and USB-free fixture must be different executables")
         self.tools = {name: trusted_tool(name) for name in ("sudo", "runuser", "env", "useradd", "userdel", "install", "loginctl", "systemctl", "systemd-run", "python3") if name != "sudo" or os.geteuid() != 0}
         self.privilege = [] if os.geteuid() == 0 else [self.tools["sudo"], "-n", "--"]
-        require(USER_PATTERN.fullmatch(self.user), "uncontrolled fixture user name")
-        try:
-            pwd.getpwnam(self.user)
-        except KeyError:
-            pass
-        else:
-            raise SmokeError("refusing a pre-existing test user")
+        self.prepare_creation()
         fresh_home = "/home/" + self.user
-        require(not os.path.lexists(fresh_home), "refusing a pre-existing fixture HOME")
-        require(not os.path.lexists("/var/lib/systemd/linger/" + self.user), "refusing a pre-existing linger marker")
-        self.host("create-fresh-user", "useradd", "--create-home", "--home-dir", fresh_home, "--user-group", "--shell", "/bin/sh", self.user)
-        self.created = True
-        self.account = pwd.getpwnam(self.user)
-        require(self.account.pw_uid >= 1000 and self.account.pw_uid != os.getuid() and self.account.pw_dir == "/home/" + self.user,
-                "created account does not have the expected ordinary UID and fresh HOME")
+        self.creation_attempted = True  # before even a failing/timed-out useradd
+        self.report["creation"]["attempted"] = True
+        try:
+            self.host("create-fresh-user", "useradd", "--create-home", "--home-dir", fresh_home, "--user-group",
+                      "--groups", "", "--comment", self.creation_marker, "--no-log-init",
+                      "--shell", "/bin/sh", self.user)
+        except (SmokeError, OSError):
+            self.creation_timed_out = any(entry.get("label") == "create-fresh-user" and entry.get("status") == "TIMEOUT"
+                                          for entry in self.report["commands"])
+            self.creation_completion_confirmed = any(entry.get("label") == "create-fresh-user" and isinstance(entry.get("exit_code"), int)
+                                                     for entry in self.report["commands"])
+            raise
+        self.creation_completion_confirmed = True
+        self.claim_created_account()
+        self.verify_groups()
         require(not os.path.lexists("/run/user/" + str(self.account.pw_uid)), "refusing a pre-existing runtime for the newly assigned UID")
-        self.report["fixture_user"] = {"name": self.user, "uid": self.account.pw_uid, "home": self.account.pw_dir}
         binary_dir = self.account.pw_dir + "/bin"
         self.host("create-user-bin", "install", "-d", "-m", "0755", "-o", self.user, "-g", str(self.account.pw_gid), binary_dir)
         self.cli_path, self.fixture_path = binary_dir + "/nb1-cli", binary_dir + "/nb1-systemd-fixture"
@@ -510,21 +621,48 @@ class Smoke:
         self.report["status"] = "RUNNING"
 
     def matching_account(self):
-        require(self.created and self.account is not None and USER_PATTERN.fullmatch(self.user), "no verified fresh account for cleanup")
+        require(self.created and self.creation_verified and self.account is not None and USER_PATTERN.fullmatch(self.user), "no verified fresh account for cleanup")
         current = pwd.getpwnam(self.user)
         require(self.account.pw_uid >= 1000 and self.account.pw_dir == "/home/" + self.user, "fresh account scope is not confirmed")
         require((current.pw_uid, current.pw_gid, current.pw_dir) == (self.account.pw_uid, self.account.pw_gid, self.account.pw_dir),
                 "fixture account changed; refusing host cleanup")
+        require(current.pw_gecos == self.creation_marker, "fixture attribution marker changed; refusing host cleanup")
 
     def cleanup(self):
         if not self.created:
-            return
+            if not self.creation_attempted:
+                return
+            try:
+                self.claim_created_account()
+                self.report["cleanup"].append({"step": "recover-partial-creation", "status": "PASS"})
+            except (SmokeError, OSError, ValueError, KeyError) as error:
+                self.report["cleanup_failed"] = True
+                self.report["cleanup"].append({"step": "recover-partial-creation", "status": "FAIL", "error": str(error),
+                                              "residual_observation": self.report.get("creation_observation", {"state": "unknown"})})
+                return
         errors = []
         try:
             self.matching_account()
         except (SmokeError, KeyError) as error:
             self.report["cleanup"].append({"step": "verify-fresh-account", "status": "FAIL", "error": str(error)})
             return
+        # PAM in runuser may recreate sessions/managers. Finish every user-side
+        # read/unlink BEFORE terminating the user or stopping either template.
+        files_clean = True
+        try:
+            for path in list(self.owned_artifacts):
+                self.remove_injected(path)
+            for path, expected in self.managed_files.items():
+                current = self.snapshot(path)[path]
+                if current["exists"]:
+                    require(current == expected, "managed test artifact changed; refuse unlink")
+                    self.helper("remove", path, json.dumps(expected, sort_keys=True))
+            self.report["cleanup"].append({"step": "exact-tracked-unit-links-artifacts", "status": "PASS"})
+        except (SmokeError, OSError, ValueError, KeyError) as error:
+            files_clean = False
+            errors.append("exact-tracked-unit-links-artifacts")
+            self.report["cleanup"].append({"step": "exact-tracked-unit-links-artifacts", "status": "FAIL", "error": str(error)})
+        self.user_commands_closed = True
         # These units/linger/home belong solely to our newly-created UID. Do not
         # touch the runner's user manager or use systemctl disable/kill/killall.
         steps = [
@@ -558,16 +696,7 @@ class Smoke:
                 require(fields.get("ActiveState") == "inactive" and fields.get("SubState") == "dead", "fresh user manager/runtime is not confirmed inactive")
             require(not pathlib.Path("/run/user/" + str(self.account.pw_uid)).exists(), "fresh runtime remains before account removal")
             require(not pathlib.Path("/var/lib/systemd/linger/" + self.user).exists(), "fresh linger marker remains before account removal")
-            # Remove only exact tracked test artifacts. Any changed artifact is
-            # reported as cleanup failure, never blindly unlinked.
-            for path in list(self.owned_artifacts):
-                self.remove_injected(path)
-            for path, expected in self.managed_files.items():
-                current = self.snapshot(path)[path]
-                if current["exists"]:
-                    require(current == expected, "managed test artifact changed; refuse unlink")
-                    self.helper("remove", path, json.dumps(expected, sort_keys=True))
-            self.report["cleanup"].append({"step": "exact-tracked-unit-links-artifacts", "status": "PASS"})
+            require(files_clean, "preserving fresh account/HOME because a tracked artifact could not be safely removed")
             self.host("remove-fresh-account-home", "userdel", "--remove", self.user)
             try:
                 pwd.getpwnam(self.user)
@@ -575,6 +704,12 @@ class Smoke:
                 pass
             else:
                 raise SmokeError("fresh account remains after userdel")
+            try:
+                grp.getgrnam(self.user)
+            except KeyError:
+                pass
+            else:
+                raise SmokeError("fresh private group remains after userdel")
             require(not pathlib.Path(self.account.pw_dir).exists(), "fresh HOME remains after cleanup")
             require(not pathlib.Path("/run/user/" + str(self.account.pw_uid)).exists(), "fresh runtime remains after cleanup")
             require(not pathlib.Path("/var/lib/systemd/linger/" + self.user).exists(), "fresh linger marker remains after cleanup")
@@ -592,6 +727,18 @@ class Smoke:
             self.report["cleanup"].append({"step": "remove-fresh-account-home", "status": "FAIL", "error": str(error)})
         if errors:
             self.report["cleanup_failed"] = True
+        if self.creation_attempted and not self.creation_completion_confirmed:
+            # subprocess timeout does not prove a privileged useradd descendant
+            # stopped. Even observed cleanup cannot rule out delayed writes.
+            self.report["cleanup_failed"] = True
+            self.report["cleanup"].append({"step": "creation-completion", "status": "FAIL",
+                                          "error": "useradd native completion remains unconfirmed after observed cleanup",
+                                          "timed_out": self.creation_timed_out})
+        if self.report.get("cleanup_failed"):
+            try:
+                self.creation_state()
+            except (SmokeError, OSError, ValueError, KeyError):
+                self.report["creation_observation"] = {"state": "unknown"}
 
     def execute(self):
         if not self.args.execute:

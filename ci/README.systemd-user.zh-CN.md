@@ -1,6 +1,6 @@
 # Linux 用户服务原生验收工具
 
-当前交付状态：**工具已准备，尚未在真实 Linux systemd 上执行**。本机语法、fake 回归和 Go 1.18 fixture 编译不构成 Linux 服务 PASS。这个提交不修改 workflow，也不包含 Linux 服务工厂；必须先整合 Linux `service install/start/stop/status/uninstall` 和包含 `NoNewPrivileges=yes` 的模板，再构建待验收 CLI。
+当前交付状态：**工具已准备，尚未在真实 Linux systemd 上执行**。本机语法、fake 回归和 Go 1.18 fixture 编译不构成 Linux 服务 PASS。主线已整合 Linux 服务工厂和 `NoNewPrivileges=yes` 模板；下一步通过独立 runner job 执行原生验收，接线见 [CI 说明](README.systemd-user-ci.zh-CN.md)。
 
 `systemd-user-smoke.py` 只允许在 `GITHUB_ACTIONS=true`、Linux、PID 1 为 systemd 的环境中显式 `--execute`。建议选择 `ubuntu-24.04` 的完整 GitHub 托管 VM，不能使用 `ubuntu-slim` 容器。GitHub 官方说明了 VM 与容器的区别及 Linux runner 的管理权限：[GitHub 托管 runner](https://docs.github.com/en/actions/reference/runners/github-hosted-runners)。环境不满足时返回非零及 `ENVIRONMENT_UNAVAILABLE`，不跳过为 PASS。
 
@@ -25,7 +25,9 @@ python3 ci/systemd-user-smoke.py --execute \
 
 ## 实际执行范围
 
-每次随机生成 `nb1ci-` 加 12 位十六进制的用户名，拒绝预存在用户。host 权限只用于创建这个账户、复制 fixture/CLI、临时启用它的 linger/user manager，以及 finally 清理。用户 manager 和 runtime 目录由 systemd 的标准模板创建，不手工伪造 `/run/user/UID`：[user@.service 与 user-runtime-dir@.service](https://www.freedesktop.org/software/systemd/man/latest/user@.service.html)。
+每次随机生成 `nb1ci-` 加 12 位十六进制的用户名，拒绝预存在用户、组、HOME 和 linger。创建请求前记录 `creation_attempted`、现有 UID/GID 集合，并用唯一 GECOS marker 标记本次账户；显式 `--groups ''` 禁止默认附加组，随后核对实际组集合仅包含自己的主组。账户/GID 基线只留在内存，不导出其他用户信息。空附加组的解析依据为 [shadow 官方 useradd 源码](https://github.com/shadow-maint/shadow/blob/master/src/useradd.c)。
+
+host 权限只用于创建这个账户、复制 fixture/CLI、临时启用它的 linger/user manager，以及 finally 清理。用户 manager 和 runtime 目录由 systemd 的标准模板创建，不手工伪造 `/run/user/UID`：[user@.service 与 user-runtime-dir@.service](https://www.freedesktop.org/software/systemd/man/latest/user@.service.html)。
 
 所有产品 CLI、用户级 systemctl、文件观测和负例注入都通过该专用普通 UID 和 `env -i` 执行。只注入固定的 HOME、USER、LOGNAME、PATH、locale、XDG_RUNTIME_DIR、用户 bus 地址；不继承 runner 的 token、SUDO 或 XDG_CONFIG_HOME。不会操作 runner 原账号的 unit、设备或权限。
 
@@ -68,7 +70,9 @@ fixture 仅接受 `server --devices HEX8 --listen LOOPBACK_IP:PORT`，兼容可�
 
 ## 清理、证据及界限
 
-finally 再次核对新账户的名字、UID/GID 和 HOME；只取消该用户的 linger、终止该用户、停止它自己的两个模板实例，并核对其 manager/runtime inactive。只按记录的完整 inode/摘要/target 删除测试 unit、link 和注入文件，遇到变更拒绝 unlink。然后删除核实的新账户及其新 HOME，检查账户、HOME、runtime、linger 和最后一个 fixture 进程均已消失。不会调用宽泛 `systemctl disable`、killall 或原 runner 用户的管理命令。即使主流程通过，清理失败也会把总结果降为 FAIL。无法确认归属时保留并报告失败，不尝试扩大权限。
+如果 useradd 失败或超时，finally 也会只读核对随机用户名、唯一 marker、此前不存在且当前唯一的普通 UID/GID、准确 HOME 及其属主。能证明是本次新建的账户才进入清理；只剩孤立组/HOME、marker 不符、旧 UID 或无法读取时，明确记录 cleanup FAIL 和最小残留观测，保留资源，不盲删。useradd 超时仍不能证明原生创建已结束；即使当前观测已清理，也保留 cleanup FAIL，防止把潜在延迟写入误报为清理成功。
+
+finally 再次核对新账户的名字、UID/GID、HOME 和 marker。**先完成全部 runuser 文件观测和精确清理，再取消 linger、终止用户并停止它自己的两个模板实例**；之后永久禁止 runuser，避免 PAM 重建会话。只按记录的完整 inode/摘要/target 删除测试 unit、link 和注入文件，遇到变更拒绝 unlink。原生 host 查询确认 manager/runtime inactive 后，才删除核实的新账户及其新 HOME，检查账户、主组、HOME、runtime、linger 和最后一个 fixture 进程均已消失。文件变化时保留账户/HOME 并报告失败。不会调用宽泛 `systemctl disable`、killall 或原 runner 用户的管理命令。即使主流程通过，清理失败也会把总结果降为 FAIL。
 
 证据包含二进制 SHA-256、精选原生属性、HTTP fixture PID、最小 `/proc/status` 字段、文件 inode/摘要/链接目标及清理结果。命令 stderr 只保存长度和 SHA-256，不保存原文；不采环境、token、键盘/USB 信息、journal 或 `/proc/environ`。轮询时间只是观察预算，命令超时不等于原生操作被取消。SIGINT/SIGTERM 会尽力进入清理；SIGKILL 或 VM 强制销毁无法保证 finally 执行，runner 的销毁不能计为清理 PASS。
 

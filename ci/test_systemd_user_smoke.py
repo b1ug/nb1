@@ -4,6 +4,7 @@ import importlib.util
 import json
 import os
 import pathlib
+import stat
 import subprocess
 import sys
 import tempfile
@@ -22,8 +23,9 @@ def args(**kwargs):
     return argparse.Namespace(**values)
 
 
-def account(uid=23001):
-    return argparse.Namespace(pw_uid=uid, pw_gid=uid, pw_dir="/home/nb1ci-0123456789ab")
+def account(uid=23001, marker="fixture-marker"):
+    return argparse.Namespace(pw_name="nb1ci-0123456789ab", pw_uid=uid, pw_gid=uid,
+                              pw_dir="/home/nb1ci-0123456789ab", pw_gecos=marker)
 
 
 class GuardTests(unittest.TestCase):
@@ -139,7 +141,8 @@ class ExecutionTests(unittest.TestCase):
 
     def test_changed_account_refuses_all_cleanup_actions(self):
         obj = self.prepared()
-        obj.created = True
+        obj.created = obj.creation_verified = True
+        obj.creation_marker = "fixture-marker"
         obj.host = mock.Mock(side_effect=RuntimeError("must not run"))
         with mock.patch.object(smoke.pwd, "getpwnam", return_value=account(23002)):
             obj.cleanup()
@@ -188,6 +191,198 @@ class NativeContractTests(unittest.TestCase):
         self.assertNotIn('/"environ"', smoke.USER_HELPER)
         self.assertNotIn('os.environ', smoke.USER_HELPER)
         self.assertNotIn('shutil.rmtree', smoke.USER_HELPER)
+
+
+class CreationRecoveryTests(unittest.TestCase):
+    def requested(self):
+        obj = smoke.Smoke(args(execute=True, binary="/cli", fixture="/fixture"))
+        obj.user = "nb1ci-0123456789ab"
+        obj.creation_marker = "fixture-marker"
+        obj.creation_attempted = True
+        obj.creation_baseline = {"uids": {0, 1000}, "gids": {0, 1000}}
+        return obj
+
+    def test_partial_useradd_failure_or_timeout_recovers_own_account(self):
+        for home_exists, timeout in ((False, False), (True, False), (False, True)):
+            with self.subTest(home_exists=home_exists, timeout=timeout):
+                obj = self.requested()
+                obj.creation_attempted = False
+                obj.report["guard"] = {"all": True}
+                state = {"present": False}
+                acct = account()
+                group = argparse.Namespace(gr_name=obj.user, gr_gid=acct.pw_gid, gr_mem=[])
+                def pw(_name):
+                    if state["present"]: return acct
+                    raise KeyError(_name)
+                def gr(_name):
+                    if state["present"]: return group
+                    raise KeyError(_name)
+                calls = []
+                def host(label, tool, *argv, **kwargs):
+                    calls.append((label, argv))
+                    if tool == "useradd":
+                        self.assertTrue(obj.creation_attempted)
+                        self.assertTrue(obj.report["creation"]["attempted"])
+                        self.assertEqual(argv[argv.index("--groups") + 1], "")
+                        self.assertEqual(argv[argv.index("--comment") + 1], obj.creation_marker)
+                        state["present"] = True
+                        if timeout:
+                            obj.report["commands"].append({"label": "create-fresh-user", "status": "TIMEOUT"})
+                        else:
+                            obj.report["commands"].append({"label": "create-fresh-user", "exit_code": 1})
+                        raise smoke.SmokeError("simulated partial useradd failure")
+                    if tool == "userdel": state["present"] = False
+                    return "ActiveState=inactive\nSubState=dead\n", 0
+                obj.host = host
+                def home_stat(_path):
+                    if home_exists and state["present"]:
+                        return argparse.Namespace(st_mode=stat.S_IFDIR | 0o700, st_uid=acct.pw_uid, st_gid=acct.pw_gid, st_ino=42, st_dev=1)
+                    raise FileNotFoundError()
+                with mock.patch.object(smoke, "checked_source", side_effect=[("/cli", "a"), ("/fixture", "b")]), \
+                     mock.patch.object(smoke, "trusted_tool", side_effect=lambda name: "/usr/bin/" + name), \
+                     mock.patch.object(smoke.pwd, "getpwnam", side_effect=pw), \
+                     mock.patch.object(smoke.pwd, "getpwall", side_effect=lambda: [acct] if state["present"] else []), \
+                     mock.patch.object(smoke.grp, "getgrnam", side_effect=gr), \
+                     mock.patch.object(smoke.grp, "getgrall", side_effect=lambda: [group] if state["present"] else []), \
+                     mock.patch.object(smoke.os.path, "lexists", return_value=False), \
+                     mock.patch.object(smoke.os, "lstat", side_effect=home_stat), \
+                     mock.patch.object(smoke.pathlib.Path, "exists", return_value=False):
+                    report = obj.execute()
+                self.assertEqual(report["status"], "FAIL")  # setup failure stays failure
+                self.assertFalse(state["present"])
+                self.assertTrue(obj.creation_verified)
+                self.assertIn("remove-fresh-account-home", [label for label, _ in calls])
+                self.assertEqual(report["cleanup"][0]["step"], "recover-partial-creation")
+                self.assertEqual(report["cleanup"][0]["status"], "PASS")
+                if timeout:
+                    self.assertTrue(report["cleanup_failed"])
+                    self.assertIn("creation-completion", [step["step"] for step in report["cleanup"]])
+
+    def test_unattributed_partial_states_record_residue_and_never_delete(self):
+        for kind in ("none", "group-only", "home-only", "wrong-marker", "old-uid", "wrong-home", "unsafe-home"):
+            with self.subTest(kind=kind):
+                obj = self.requested()
+                acct = account(marker="foreign" if kind == "wrong-marker" else obj.creation_marker)
+                if kind == "old-uid": acct.pw_uid = 1000
+                if kind == "wrong-home": acct.pw_dir = "/home/someone-else"
+                group = argparse.Namespace(gr_name=obj.user, gr_gid=acct.pw_gid, gr_mem=[])
+                present = kind not in {"none", "group-only", "home-only"}
+                has_group = present or kind == "group-only"
+                has_home = kind in {"home-only", "unsafe-home"}
+                def pw(_name):
+                    if present: return acct
+                    raise KeyError(_name)
+                def gr(_name):
+                    if has_group: return group
+                    raise KeyError(_name)
+                def home_stat(_path):
+                    if has_home:
+                        return argparse.Namespace(st_mode=stat.S_IFDIR | 0o777, st_uid=acct.pw_uid, st_gid=acct.pw_gid, st_ino=42, st_dev=1)
+                    raise FileNotFoundError()
+                obj.host = mock.Mock(side_effect=RuntimeError("must not delete an unattributed account"))
+                with mock.patch.object(smoke.pwd, "getpwnam", side_effect=pw), \
+                     mock.patch.object(smoke.pwd, "getpwall", return_value=[acct] if present else []), \
+                     mock.patch.object(smoke.grp, "getgrnam", side_effect=gr), \
+                     mock.patch.object(smoke.grp, "getgrall", return_value=[group] if has_group else []), \
+                     mock.patch.object(smoke.os, "lstat", side_effect=home_stat), \
+                     mock.patch.object(smoke.os.path, "lexists", return_value=False):
+                    obj.cleanup()
+                obj.host.assert_not_called()
+                self.assertTrue(obj.report["cleanup_failed"])
+                residual = obj.report["cleanup"][0]["residual_observation"]
+                self.assertFalse(residual["attributed_to_this_run"])
+                self.assertEqual(residual["account"]["exists"], present)
+                self.assertEqual(residual["group"]["exists"], has_group)
+                self.assertEqual(residual["home"]["exists"], has_home)
+
+    def test_explicit_empty_supplementary_groups_are_verified(self):
+        obj = self.requested(); obj.account = account()
+        obj.report["fixture_user"] = {}
+        with mock.patch.object(smoke.os, "getgrouplist", return_value=[23001]):
+            obj.verify_groups()
+        self.assertEqual(obj.report["fixture_user"]["supplementary_group_ids"], [])
+        with mock.patch.object(smoke.os, "getgrouplist", return_value=[23001, 27]):
+            with self.assertRaisesRegex(smoke.SmokeError, "unexpected supplementary"):
+                obj.verify_groups()
+
+
+class CleanupOrderTests(unittest.TestCase):
+    def test_changed_file_still_stops_manager_but_preserves_account_home(self):
+        obj = smoke.Smoke(args())
+        obj.user = "nb1ci-0123456789ab"; obj.creation_marker = "fixture-marker"
+        obj.account = account(); obj.created = obj.creation_verified = True
+        obj.linger_requested = obj.manager_requested = True
+        obj.managed_files = {"/unit": {"exists": True, "inode": 7}}
+        obj.snapshot = lambda *_args: {"/unit": {"exists": True, "inode": 8}}
+        obj.helper = mock.Mock(side_effect=RuntimeError("changed file must not be deleted"))
+        calls = []
+        def host(label, *_args, **_kwargs):
+            self.assertTrue(obj.user_commands_closed)
+            calls.append(label)
+            return "ActiveState=inactive\nSubState=dead\n", 0
+        obj.host = host
+        with mock.patch.object(smoke.pwd, "getpwnam", return_value=obj.account), \
+             mock.patch.object(smoke.pathlib.Path, "exists", return_value=False):
+            obj.cleanup()
+        obj.helper.assert_not_called()
+        self.assertIn("terminate-own-user", calls)
+        self.assertIn("stop-own-manager", calls)
+        self.assertIn("stop-own-runtime", calls)
+        self.assertNotIn("remove-fresh-account-home", calls)
+        self.assertTrue(obj.report["cleanup_failed"])
+        self.assertEqual(obj.report["cleanup"][0]["status"], "FAIL")
+
+    def test_every_runuser_helper_finishes_before_shutdown_and_no_reentry(self):
+        obj = smoke.Smoke(args())
+        obj.user = "nb1ci-0123456789ab"; obj.creation_marker = "fixture-marker"
+        obj.account = account(); obj.created = obj.creation_verified = True
+        obj.linger_requested = obj.manager_requested = True
+        obj.managed_files = {"/unit": {"exists": True, "inode": 7}}
+        obj.owned_artifacts = {"/injected": {"exists": True}}
+        calls, present = [], {"account": True}
+        def user_read(*_args):
+            self.assertFalse(obj.user_commands_closed)
+            calls.append("runuser-snapshot")
+            return obj.managed_files
+        def user_remove(*_args):
+            self.assertFalse(obj.user_commands_closed)
+            calls.append("runuser-remove")
+        def injected(path):
+            user_remove(); del obj.owned_artifacts[path]
+        def pw(_name):
+            if present["account"]: return obj.account
+            raise KeyError(_name)
+        def host(label, tool, *argv, **kwargs):
+            self.assertTrue(obj.user_commands_closed)
+            calls.append(label)
+            if tool == "userdel": present["account"] = False
+            return "ActiveState=inactive\nSubState=dead\n", 0
+        obj.snapshot = user_read; obj.helper = user_remove; obj.remove_injected = injected; obj.host = host
+        with mock.patch.object(smoke.pwd, "getpwnam", side_effect=pw), \
+             mock.patch.object(smoke.grp, "getgrnam", side_effect=KeyError()), \
+             mock.patch.object(smoke.pathlib.Path, "exists", return_value=False):
+            obj.cleanup()
+        first_host = calls.index("disable-own-linger")
+        self.assertTrue(all(item.startswith("runuser-") for item in calls[:first_host]))
+        self.assertTrue(all(not item.startswith("runuser-") for item in calls[first_host:]))
+        self.assertIn("remove-fresh-account-home", calls)
+        self.assertFalse(obj.report.get("cleanup_failed", False))
+        with self.assertRaisesRegex(smoke.SmokeError, "runuser is forbidden"):
+            obj.user_command("late", ["must-not-execute"])
+
+    def test_tool_accepts_canonical_system_path_and_rejects_writable_parent(self):
+        protected_file = argparse.Namespace(st_mode=stat.S_IFREG | 0o755, st_uid=0)
+        for parent_mode in (0o755, 0o775):
+            with self.subTest(parent_mode=parent_mode), \
+                 mock.patch.object(smoke.shutil, "which", return_value="/bin/systemctl"), \
+                 mock.patch.object(smoke.pathlib.Path, "resolve", return_value=pathlib.Path("/usr/bin/systemctl")), \
+                 mock.patch.object(smoke.os, "stat", return_value=protected_file), \
+                 mock.patch.object(smoke.pathlib.Path, "lstat", return_value=argparse.Namespace(st_mode=stat.S_IFDIR | parent_mode, st_uid=0)):
+                if parent_mode == 0o755:
+                    self.assertEqual(smoke.trusted_tool("systemctl"), "/usr/bin/systemctl")
+                else:
+                    with self.assertRaisesRegex(smoke.SmokeError, "parent"):
+                        smoke.trusted_tool("systemctl")
 
 
 class UserHelperFilesystemTests(unittest.TestCase):

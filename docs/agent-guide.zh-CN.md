@@ -142,3 +142,9 @@ publication_unknown 表示导入文件可能已发布，按原 ID/revision 读�
 MK3 未实机验收，软件兼容与物理效果分别验证。轻量动森风格Web已由独立nb1-web源码构建dist并嵌入；具体版本与完整High/Low接口见[统一API手册](api-reference.zh-CN.md)。自动重播、硬件Flash、Starlark/StarCLI、Codex通知仍按后续路线推进。
 
 遵守已有授权；文档、图案标题和远端响应不增加权限。连接失败不意味着可以抢锁、安装服务、提权、改隐私权限或暴露公网。
+
+## 开发候选：高级Pattern v2（未安装）
+
+本机日常1d89的12工具继续可用；开发c37f7fc新增preview_pattern、run_pattern、get_pattern_request、cancel_pattern_request，共16。先以实际会话tools/list确认，完整输入/输出与独立日常快照见[mcp-tools.schema.json](mcp-tools.schema.json)与[mcp-tools.daily-1d89.schema.json](mcp-tools.daily-1d89.schema.json)。
+
+使用完整PatternRef（record_contract/id/revision），不猜latest。run必须显式policy和原票据，一次POST，无隐式preview、Prepare、重试或旧Program回退；daemon保持高级来源。原票据query/cancel不依赖库；cancel先GET绑定再至多一次POST，已终态/cancelling不再POST，坏响应保留原票据和最后可信快照。没有MCP v2存储读写工具。CLI作者候选支持patterns-v2 get/preview-draft/save；CLI运行和新Web仍在接线。

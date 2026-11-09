@@ -1,8 +1,10 @@
 {
   "schema_version": 1,
-  "source": "actual stdio tools/list from installed1d89",
-  "daemon_and_adapter_source": "1d89eae92278f24a68fff1a34e3c1e696a962c3c",
-  "mcp_binary_sha256": "5167dddbf369bac48b12614df73752e2006b81cf3ca0033747539b21ee22236d",
+  "source": "actual stdio tools/list from clean local c37f7fc candidate; not installed",
+  "daemon_and_adapter_source": "c37f7fc33d52cc25619b10a5bc477965bf544cc0",
+  "mcp_binary_sha256": "ff881f09e541b4742cd5dd98fb600ddcaaa11e8a0c3af48c2c7ea5beca0b0af9",
+  "tools_list_sha256": "6789b4dc776b4687e4e4bfe3cd0924f3f3fa64d0ce7e2b38efd948c9c25caec6",
+  "daily_baseline_schema": "mcp-tools.daily-1d89.schema.json",
   "tools": [
     {
       "annotations": {
@@ -29,35 +31,26 @@
       },
       "name": "cancel_job",
       "outputSchema": {
-        "type": "object",
+        "additionalProperties": false,
         "properties": {
-          "kind": {
-            "type": "string"
-          },
-          "data": true,
           "accepted": {
             "type": "boolean"
           },
+          "data": true,
           "dry_run": {
             "type": "boolean"
           },
-          "poll_after_ms": {
-            "type": "integer"
-          },
           "error": {
-            "type": [
-              "null",
-              "object"
-            ],
+            "additionalProperties": false,
             "properties": {
               "code": {
                 "type": "string"
               },
-              "message": {
-                "type": "string"
-              },
               "http_status": {
                 "type": "integer"
+              },
+              "message": {
+                "type": "string"
               },
               "outcome_unknown": {
                 "type": "boolean"
@@ -67,18 +60,30 @@
               "code",
               "message"
             ],
-            "additionalProperties": false
-          },
-          "request_ticket": {
             "type": [
               "null",
               "object"
-            ],
+            ]
+          },
+          "instance_binding_verified": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "kind": {
+            "type": "string"
+          },
+          "poll_after_ms": {
+            "type": "integer"
+          },
+          "request_ticket": {
+            "additionalProperties": false,
             "properties": {
-              "request_id": {
+              "expected_daemon_instance_id": {
                 "type": "string"
               },
-              "expected_daemon_instance_id": {
+              "request_id": {
                 "type": "string"
               }
             },
@@ -86,12 +91,9 @@
               "request_id",
               "expected_daemon_instance_id"
             ],
-            "additionalProperties": false
-          },
-          "instance_binding_verified": {
             "type": [
               "null",
-              "boolean"
+              "object"
             ]
           }
         },
@@ -99,7 +101,550 @@
           "kind",
           "accepted"
         ],
-        "additionalProperties": false
+        "type": "object"
+      }
+    },
+    {
+      "annotations": {
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": false
+      },
+      "description": "Cancel an experimental-v2 Pattern through its original exact Ref and complete ticket. First GETs and validates that receipt, then makes at most one bound cancel POST with confirmed_job_id. Optional known job_id/execution_digest further bind it. Does not access the Store, prepare tickets, retry writes, or force off a naturally completed hold. cancelling is in progress; inspect get_pattern_request. Errors retain the original ticket and last trustworthy Job, with cancel_attempted indicating whether the sole POST was attempted.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "execution_digest": {
+            "maxLength": 71,
+            "minLength": 71,
+            "pattern": "^sha256:[0-9a-f]{64}$",
+            "type": "string"
+          },
+          "expected_daemon_instance_id": {
+            "pattern": "^daemon_[0-9a-f]{32}$",
+            "type": "string"
+          },
+          "job_id": {
+            "pattern": "^(job_|framejob_)[0-9a-f]{32}$",
+            "type": "string"
+          },
+          "pattern_ref": {
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "maxLength": 64,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$",
+                "type": "string"
+              },
+              "record_contract": {
+                "const": "nb1-pattern-record/experimental-v2"
+              },
+              "revision": {
+                "maxLength": 71,
+                "minLength": 71,
+                "pattern": "^sha256:[0-9a-f]{64}$",
+                "type": "string"
+              }
+            },
+            "required": [
+              "record_contract",
+              "id",
+              "revision"
+            ],
+            "type": "object"
+          },
+          "request_id": {
+            "pattern": "^req_[1-9][0-9]{0,18}_[0-9a-f]{32}$",
+            "type": "string"
+          },
+          "serial": {
+            "pattern": "^[0-9a-fA-F]{8}$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "pattern_ref",
+          "serial",
+          "request_id",
+          "expected_daemon_instance_id"
+        ],
+        "type": "object"
+      },
+      "name": "cancel_pattern_request",
+      "outputSchema": {
+        "additionalProperties": false,
+        "oneOf": [
+          {
+            "not": {
+              "required": [
+                "error"
+              ]
+            },
+            "properties": {
+              "kind": {
+                "const": "pattern_cancel"
+              }
+            },
+            "required": [
+              "data"
+            ]
+          },
+          {
+            "properties": {
+              "accepted": {
+                "const": false
+              },
+              "kind": {
+                "const": "error"
+              }
+            },
+            "required": [
+              "error"
+            ]
+          }
+        ],
+        "properties": {
+          "accepted": {
+            "type": "boolean"
+          },
+          "data": {
+            "additionalProperties": false,
+            "properties": {
+              "cancel_attempted": {
+                "type": "boolean"
+              },
+              "pattern_job": {
+                "additionalProperties": false,
+                "oneOf": [
+                  {
+                    "properties": {
+                      "job": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "completed_steps": {
+                            "maximum": 10240000,
+                            "minimum": 0,
+                            "type": "integer"
+                          },
+                          "created_at": {
+                            "format": "date-time",
+                            "type": "string"
+                          },
+                          "device": {
+                            "pattern": "^[0-9a-fA-F]{8}$",
+                            "type": "string"
+                          },
+                          "error": {
+                            "minLength": 1,
+                            "type": "string"
+                          },
+                          "finished_at": {
+                            "format": "date-time",
+                            "type": "string"
+                          },
+                          "id": {
+                            "pattern": "^job_[0-9a-f]{32}$",
+                            "type": "string"
+                          },
+                          "program": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "on_finish": {
+                                "enum": [
+                                  "off",
+                                  "hold"
+                                ],
+                                "type": "string"
+                              },
+                              "repeat": {
+                                "maximum": 10000,
+                                "minimum": 1,
+                                "type": "integer"
+                              },
+                              "steps": {
+                                "items": {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "color": {
+                                      "pattern": "^#[0-9a-f]{6}$",
+                                      "type": "string"
+                                    },
+                                    "fade_ms": {
+                                      "maximum": 600000,
+                                      "minimum": 0,
+                                      "multipleOf": 10,
+                                      "type": "integer"
+                                    },
+                                    "hold_ms": {
+                                      "maximum": 3600000,
+                                      "minimum": 0,
+                                      "type": "integer"
+                                    },
+                                    "led": {
+                                      "enum": [
+                                        0,
+                                        1,
+                                        2
+                                      ],
+                                      "type": "integer"
+                                    }
+                                  },
+                                  "required": [
+                                    "led",
+                                    "color",
+                                    "fade_ms",
+                                    "hold_ms"
+                                  ],
+                                  "type": "object"
+                                },
+                                "maxItems": 1024,
+                                "minItems": 1,
+                                "type": "array"
+                              }
+                            },
+                            "required": [
+                              "steps",
+                              "repeat",
+                              "on_finish"
+                            ],
+                            "type": "object"
+                          },
+                          "started_at": {
+                            "format": "date-time",
+                            "type": "string"
+                          },
+                          "status": {
+                            "enum": [
+                              "queued",
+                              "running",
+                              "cancelling",
+                              "succeeded",
+                              "failed",
+                              "cancelled"
+                            ]
+                          },
+                          "total_steps": {
+                            "maximum": 10240000,
+                            "minimum": 0,
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "device",
+                          "status",
+                          "program",
+                          "created_at",
+                          "completed_steps",
+                          "total_steps"
+                        ],
+                        "type": "object"
+                      },
+                      "job_kind": {
+                        "const": "program"
+                      }
+                    }
+                  },
+                  {
+                    "properties": {
+                      "job": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "completed_frames": {
+                            "maximum": 1024,
+                            "minimum": 0,
+                            "type": "integer"
+                          },
+                          "completed_target_writes": {
+                            "maximum": 2050,
+                            "minimum": 0,
+                            "type": "integer"
+                          },
+                          "created_at": {
+                            "format": "date-time",
+                            "type": "string"
+                          },
+                          "device": {
+                            "pattern": "^[0-9a-fA-F]{8}$",
+                            "type": "string"
+                          },
+                          "error": {
+                            "minLength": 1,
+                            "type": "string"
+                          },
+                          "finished_at": {
+                            "format": "date-time",
+                            "type": "string"
+                          },
+                          "id": {
+                            "pattern": "^framejob_[0-9a-f]{32}$",
+                            "type": "string"
+                          },
+                          "planned_target_writes": {
+                            "maximum": 2050,
+                            "minimum": 0,
+                            "type": "integer"
+                          },
+                          "program": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "contract": {
+                                "const": "nb1-frame-program/experimental-v1"
+                              },
+                              "frames": {
+                                "items": {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "fade_ms": {
+                                      "maximum": 600000,
+                                      "minimum": 0,
+                                      "multipleOf": 10,
+                                      "type": "integer"
+                                    },
+                                    "interval_ms": {
+                                      "maximum": 600000,
+                                      "minimum": 50,
+                                      "type": "integer"
+                                    },
+                                    "targets": {
+                                      "items": {
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "color": {
+                                            "pattern": "^#[0-9a-f]{6}$",
+                                            "type": "string"
+                                          },
+                                          "led": {
+                                            "enum": [
+                                              1,
+                                              2
+                                            ],
+                                            "type": "integer"
+                                          }
+                                        },
+                                        "required": [
+                                          "led",
+                                          "color"
+                                        ],
+                                        "type": "object"
+                                      },
+                                      "maxItems": 2,
+                                      "minItems": 1,
+                                      "type": "array"
+                                    }
+                                  },
+                                  "required": [
+                                    "targets",
+                                    "fade_ms",
+                                    "interval_ms"
+                                  ],
+                                  "type": "object"
+                                },
+                                "maxItems": 1024,
+                                "minItems": 1,
+                                "type": "array"
+                              },
+                              "initial": {
+                                "items": {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "color": {
+                                      "pattern": "^#[0-9a-f]{6}$",
+                                      "type": "string"
+                                    },
+                                    "led": {
+                                      "enum": [
+                                        1,
+                                        2
+                                      ],
+                                      "type": "integer"
+                                    }
+                                  },
+                                  "required": [
+                                    "led",
+                                    "color"
+                                  ],
+                                  "type": "object"
+                                },
+                                "maxItems": 2,
+                                "minItems": 1,
+                                "type": "array"
+                              },
+                              "on_finish": {
+                                "enum": [
+                                  "off",
+                                  "hold"
+                                ],
+                                "type": "string"
+                              },
+                              "repeat": {
+                                "maximum": 10000,
+                                "minimum": 1,
+                                "type": "integer"
+                              }
+                            },
+                            "required": [
+                              "contract",
+                              "initial",
+                              "frames",
+                              "repeat",
+                              "on_finish"
+                            ],
+                            "type": "object"
+                          },
+                          "started_at": {
+                            "format": "date-time",
+                            "type": "string"
+                          },
+                          "status": {
+                            "enum": [
+                              "queued",
+                              "running",
+                              "cancelling",
+                              "succeeded",
+                              "failed",
+                              "cancelled"
+                            ]
+                          },
+                          "total_frames": {
+                            "maximum": 1024,
+                            "minimum": 0,
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "device",
+                          "status",
+                          "program",
+                          "created_at",
+                          "completed_frames",
+                          "total_frames",
+                          "completed_target_writes",
+                          "planned_target_writes"
+                        ],
+                        "type": "object"
+                      },
+                      "job_kind": {
+                        "const": "frame"
+                      }
+                    }
+                  }
+                ],
+                "properties": {
+                  "execution_digest": {
+                    "maxLength": 71,
+                    "minLength": 71,
+                    "pattern": "^sha256:[0-9a-f]{64}$",
+                    "type": "string"
+                  },
+                  "job": {},
+                  "job_kind": {
+                    "enum": [
+                      "program",
+                      "frame"
+                    ]
+                  },
+                  "pattern_ref": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "id": {
+                        "maxLength": 64,
+                        "minLength": 1,
+                        "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$",
+                        "type": "string"
+                      },
+                      "record_contract": {
+                        "const": "nb1-pattern-record/experimental-v2"
+                      },
+                      "revision": {
+                        "maxLength": 71,
+                        "minLength": 71,
+                        "pattern": "^sha256:[0-9a-f]{64}$",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "record_contract",
+                      "id",
+                      "revision"
+                    ],
+                    "type": "object"
+                  }
+                },
+                "required": [
+                  "pattern_ref",
+                  "execution_digest",
+                  "job_kind",
+                  "job"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "cancel_attempted"
+            ],
+            "type": "object"
+          },
+          "error": {
+            "additionalProperties": false,
+            "properties": {
+              "code": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "http_status": {
+                "type": "integer"
+              },
+              "message": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "outcome_unknown": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "code",
+              "message"
+            ],
+            "type": "object"
+          },
+          "kind": {
+            "enum": [
+              "pattern_cancel",
+              "error"
+            ]
+          },
+          "poll_after_ms": {
+            "const": 200
+          },
+          "request_ticket": {
+            "additionalProperties": false,
+            "properties": {
+              "expected_daemon_instance_id": {
+                "pattern": "^daemon_[0-9a-f]{32}$",
+                "type": "string"
+              },
+              "request_id": {
+                "pattern": "^req_[1-9][0-9]{0,18}_[0-9a-f]{32}$",
+                "type": "string"
+              }
+            },
+            "required": [
+              "request_id",
+              "expected_daemon_instance_id"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "kind",
+          "accepted"
+        ],
+        "type": "object"
       }
     },
     {
@@ -127,35 +672,26 @@
       },
       "name": "get_device_state",
       "outputSchema": {
-        "type": "object",
+        "additionalProperties": false,
         "properties": {
-          "kind": {
-            "type": "string"
-          },
-          "data": true,
           "accepted": {
             "type": "boolean"
           },
+          "data": true,
           "dry_run": {
             "type": "boolean"
           },
-          "poll_after_ms": {
-            "type": "integer"
-          },
           "error": {
-            "type": [
-              "null",
-              "object"
-            ],
+            "additionalProperties": false,
             "properties": {
               "code": {
                 "type": "string"
               },
-              "message": {
-                "type": "string"
-              },
               "http_status": {
                 "type": "integer"
+              },
+              "message": {
+                "type": "string"
               },
               "outcome_unknown": {
                 "type": "boolean"
@@ -165,18 +701,30 @@
               "code",
               "message"
             ],
-            "additionalProperties": false
-          },
-          "request_ticket": {
             "type": [
               "null",
               "object"
-            ],
+            ]
+          },
+          "instance_binding_verified": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "kind": {
+            "type": "string"
+          },
+          "poll_after_ms": {
+            "type": "integer"
+          },
+          "request_ticket": {
+            "additionalProperties": false,
             "properties": {
-              "request_id": {
+              "expected_daemon_instance_id": {
                 "type": "string"
               },
-              "expected_daemon_instance_id": {
+              "request_id": {
                 "type": "string"
               }
             },
@@ -184,12 +732,9 @@
               "request_id",
               "expected_daemon_instance_id"
             ],
-            "additionalProperties": false
-          },
-          "instance_binding_verified": {
             "type": [
               "null",
-              "boolean"
+              "object"
             ]
           }
         },
@@ -197,7 +742,7 @@
           "kind",
           "accepted"
         ],
-        "additionalProperties": false
+        "type": "object"
       }
     },
     {
@@ -302,35 +847,26 @@
       },
       "name": "get_job",
       "outputSchema": {
-        "type": "object",
+        "additionalProperties": false,
         "properties": {
-          "kind": {
-            "type": "string"
-          },
-          "data": true,
           "accepted": {
             "type": "boolean"
           },
+          "data": true,
           "dry_run": {
             "type": "boolean"
           },
-          "poll_after_ms": {
-            "type": "integer"
-          },
           "error": {
-            "type": [
-              "null",
-              "object"
-            ],
+            "additionalProperties": false,
             "properties": {
               "code": {
                 "type": "string"
               },
-              "message": {
-                "type": "string"
-              },
               "http_status": {
                 "type": "integer"
+              },
+              "message": {
+                "type": "string"
               },
               "outcome_unknown": {
                 "type": "boolean"
@@ -340,18 +876,30 @@
               "code",
               "message"
             ],
-            "additionalProperties": false
-          },
-          "request_ticket": {
             "type": [
               "null",
               "object"
-            ],
+            ]
+          },
+          "instance_binding_verified": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "kind": {
+            "type": "string"
+          },
+          "poll_after_ms": {
+            "type": "integer"
+          },
+          "request_ticket": {
+            "additionalProperties": false,
             "properties": {
-              "request_id": {
+              "expected_daemon_instance_id": {
                 "type": "string"
               },
-              "expected_daemon_instance_id": {
+              "request_id": {
                 "type": "string"
               }
             },
@@ -359,12 +907,9 @@
               "request_id",
               "expected_daemon_instance_id"
             ],
-            "additionalProperties": false
-          },
-          "instance_binding_verified": {
             "type": [
               "null",
-              "boolean"
+              "object"
             ]
           }
         },
@@ -372,7 +917,7 @@
           "kind",
           "accepted"
         ],
-        "additionalProperties": false
+        "type": "object"
       }
     },
     {
@@ -748,6 +1293,537 @@
         "openWorldHint": false,
         "readOnlyHint": true
       },
+      "description": "Read an experimental-v2 Pattern Job only through its original serial, exact Ref and complete original request ticket. No Store lookup, source recompilation, ticket replacement or execution retry. Optional known job_id and execution_digest must match. Expired/missing receipts or changed instances leave the original outcome unknown. The independent envelope retains provenance and job_kind; do not use legacy get_job for these Jobs.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "execution_digest": {
+            "maxLength": 71,
+            "minLength": 71,
+            "pattern": "^sha256:[0-9a-f]{64}$",
+            "type": "string"
+          },
+          "expected_daemon_instance_id": {
+            "pattern": "^daemon_[0-9a-f]{32}$",
+            "type": "string"
+          },
+          "job_id": {
+            "pattern": "^(job_|framejob_)[0-9a-f]{32}$",
+            "type": "string"
+          },
+          "pattern_ref": {
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "maxLength": 64,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$",
+                "type": "string"
+              },
+              "record_contract": {
+                "const": "nb1-pattern-record/experimental-v2"
+              },
+              "revision": {
+                "maxLength": 71,
+                "minLength": 71,
+                "pattern": "^sha256:[0-9a-f]{64}$",
+                "type": "string"
+              }
+            },
+            "required": [
+              "record_contract",
+              "id",
+              "revision"
+            ],
+            "type": "object"
+          },
+          "request_id": {
+            "pattern": "^req_[1-9][0-9]{0,18}_[0-9a-f]{32}$",
+            "type": "string"
+          },
+          "serial": {
+            "pattern": "^[0-9a-fA-F]{8}$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "pattern_ref",
+          "serial",
+          "request_id",
+          "expected_daemon_instance_id"
+        ],
+        "type": "object"
+      },
+      "name": "get_pattern_request",
+      "outputSchema": {
+        "additionalProperties": false,
+        "oneOf": [
+          {
+            "not": {
+              "required": [
+                "error"
+              ]
+            },
+            "properties": {
+              "kind": {
+                "const": "pattern_request"
+              }
+            },
+            "required": [
+              "data"
+            ]
+          },
+          {
+            "properties": {
+              "accepted": {
+                "const": false
+              },
+              "kind": {
+                "const": "error"
+              }
+            },
+            "required": [
+              "error"
+            ]
+          }
+        ],
+        "properties": {
+          "accepted": {
+            "const": false
+          },
+          "data": {
+            "additionalProperties": false,
+            "oneOf": [
+              {
+                "properties": {
+                  "job": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "completed_steps": {
+                        "maximum": 10240000,
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "created_at": {
+                        "format": "date-time",
+                        "type": "string"
+                      },
+                      "device": {
+                        "pattern": "^[0-9a-fA-F]{8}$",
+                        "type": "string"
+                      },
+                      "error": {
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "finished_at": {
+                        "format": "date-time",
+                        "type": "string"
+                      },
+                      "id": {
+                        "pattern": "^job_[0-9a-f]{32}$",
+                        "type": "string"
+                      },
+                      "program": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "on_finish": {
+                            "enum": [
+                              "off",
+                              "hold"
+                            ],
+                            "type": "string"
+                          },
+                          "repeat": {
+                            "maximum": 10000,
+                            "minimum": 1,
+                            "type": "integer"
+                          },
+                          "steps": {
+                            "items": {
+                              "additionalProperties": false,
+                              "properties": {
+                                "color": {
+                                  "pattern": "^#[0-9a-f]{6}$",
+                                  "type": "string"
+                                },
+                                "fade_ms": {
+                                  "maximum": 600000,
+                                  "minimum": 0,
+                                  "multipleOf": 10,
+                                  "type": "integer"
+                                },
+                                "hold_ms": {
+                                  "maximum": 3600000,
+                                  "minimum": 0,
+                                  "type": "integer"
+                                },
+                                "led": {
+                                  "enum": [
+                                    0,
+                                    1,
+                                    2
+                                  ],
+                                  "type": "integer"
+                                }
+                              },
+                              "required": [
+                                "led",
+                                "color",
+                                "fade_ms",
+                                "hold_ms"
+                              ],
+                              "type": "object"
+                            },
+                            "maxItems": 1024,
+                            "minItems": 1,
+                            "type": "array"
+                          }
+                        },
+                        "required": [
+                          "steps",
+                          "repeat",
+                          "on_finish"
+                        ],
+                        "type": "object"
+                      },
+                      "started_at": {
+                        "format": "date-time",
+                        "type": "string"
+                      },
+                      "status": {
+                        "enum": [
+                          "queued",
+                          "running",
+                          "cancelling",
+                          "succeeded",
+                          "failed",
+                          "cancelled"
+                        ]
+                      },
+                      "total_steps": {
+                        "maximum": 10240000,
+                        "minimum": 0,
+                        "type": "integer"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "device",
+                      "status",
+                      "program",
+                      "created_at",
+                      "completed_steps",
+                      "total_steps"
+                    ],
+                    "type": "object"
+                  },
+                  "job_kind": {
+                    "const": "program"
+                  }
+                }
+              },
+              {
+                "properties": {
+                  "job": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "completed_frames": {
+                        "maximum": 1024,
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "completed_target_writes": {
+                        "maximum": 2050,
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "created_at": {
+                        "format": "date-time",
+                        "type": "string"
+                      },
+                      "device": {
+                        "pattern": "^[0-9a-fA-F]{8}$",
+                        "type": "string"
+                      },
+                      "error": {
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "finished_at": {
+                        "format": "date-time",
+                        "type": "string"
+                      },
+                      "id": {
+                        "pattern": "^framejob_[0-9a-f]{32}$",
+                        "type": "string"
+                      },
+                      "planned_target_writes": {
+                        "maximum": 2050,
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "program": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "contract": {
+                            "const": "nb1-frame-program/experimental-v1"
+                          },
+                          "frames": {
+                            "items": {
+                              "additionalProperties": false,
+                              "properties": {
+                                "fade_ms": {
+                                  "maximum": 600000,
+                                  "minimum": 0,
+                                  "multipleOf": 10,
+                                  "type": "integer"
+                                },
+                                "interval_ms": {
+                                  "maximum": 600000,
+                                  "minimum": 50,
+                                  "type": "integer"
+                                },
+                                "targets": {
+                                  "items": {
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "color": {
+                                        "pattern": "^#[0-9a-f]{6}$",
+                                        "type": "string"
+                                      },
+                                      "led": {
+                                        "enum": [
+                                          1,
+                                          2
+                                        ],
+                                        "type": "integer"
+                                      }
+                                    },
+                                    "required": [
+                                      "led",
+                                      "color"
+                                    ],
+                                    "type": "object"
+                                  },
+                                  "maxItems": 2,
+                                  "minItems": 1,
+                                  "type": "array"
+                                }
+                              },
+                              "required": [
+                                "targets",
+                                "fade_ms",
+                                "interval_ms"
+                              ],
+                              "type": "object"
+                            },
+                            "maxItems": 1024,
+                            "minItems": 1,
+                            "type": "array"
+                          },
+                          "initial": {
+                            "items": {
+                              "additionalProperties": false,
+                              "properties": {
+                                "color": {
+                                  "pattern": "^#[0-9a-f]{6}$",
+                                  "type": "string"
+                                },
+                                "led": {
+                                  "enum": [
+                                    1,
+                                    2
+                                  ],
+                                  "type": "integer"
+                                }
+                              },
+                              "required": [
+                                "led",
+                                "color"
+                              ],
+                              "type": "object"
+                            },
+                            "maxItems": 2,
+                            "minItems": 1,
+                            "type": "array"
+                          },
+                          "on_finish": {
+                            "enum": [
+                              "off",
+                              "hold"
+                            ],
+                            "type": "string"
+                          },
+                          "repeat": {
+                            "maximum": 10000,
+                            "minimum": 1,
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "contract",
+                          "initial",
+                          "frames",
+                          "repeat",
+                          "on_finish"
+                        ],
+                        "type": "object"
+                      },
+                      "started_at": {
+                        "format": "date-time",
+                        "type": "string"
+                      },
+                      "status": {
+                        "enum": [
+                          "queued",
+                          "running",
+                          "cancelling",
+                          "succeeded",
+                          "failed",
+                          "cancelled"
+                        ]
+                      },
+                      "total_frames": {
+                        "maximum": 1024,
+                        "minimum": 0,
+                        "type": "integer"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "device",
+                      "status",
+                      "program",
+                      "created_at",
+                      "completed_frames",
+                      "total_frames",
+                      "completed_target_writes",
+                      "planned_target_writes"
+                    ],
+                    "type": "object"
+                  },
+                  "job_kind": {
+                    "const": "frame"
+                  }
+                }
+              }
+            ],
+            "properties": {
+              "execution_digest": {
+                "maxLength": 71,
+                "minLength": 71,
+                "pattern": "^sha256:[0-9a-f]{64}$",
+                "type": "string"
+              },
+              "job": {},
+              "job_kind": {
+                "enum": [
+                  "program",
+                  "frame"
+                ]
+              },
+              "pattern_ref": {
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "maxLength": 64,
+                    "minLength": 1,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$",
+                    "type": "string"
+                  },
+                  "record_contract": {
+                    "const": "nb1-pattern-record/experimental-v2"
+                  },
+                  "revision": {
+                    "maxLength": 71,
+                    "minLength": 71,
+                    "pattern": "^sha256:[0-9a-f]{64}$",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "record_contract",
+                  "id",
+                  "revision"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "pattern_ref",
+              "execution_digest",
+              "job_kind",
+              "job"
+            ],
+            "type": "object"
+          },
+          "error": {
+            "additionalProperties": false,
+            "properties": {
+              "code": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "http_status": {
+                "type": "integer"
+              },
+              "message": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "outcome_unknown": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "code",
+              "message"
+            ],
+            "type": "object"
+          },
+          "kind": {
+            "enum": [
+              "pattern_request",
+              "error"
+            ]
+          },
+          "poll_after_ms": {
+            "const": 200
+          },
+          "request_ticket": {
+            "additionalProperties": false,
+            "properties": {
+              "expected_daemon_instance_id": {
+                "pattern": "^daemon_[0-9a-f]{32}$",
+                "type": "string"
+              },
+              "request_id": {
+                "pattern": "^req_[1-9][0-9]{0,18}_[0-9a-f]{32}$",
+                "type": "string"
+              }
+            },
+            "required": [
+              "request_id",
+              "expected_daemon_instance_id"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "kind",
+          "accepted"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
       "description": "List configured daemon devices. Optional include_capabilities returns data {devices,capabilities} with the daemon's software compiler catalog; default data remains a device array. Optional prepare_request independently returns a fresh request_ticket bound to this daemon instance, without submitting or reserving a job; save it before submission. Repeated preparation creates different tickets.",
       "inputSchema": {
         "additionalProperties": false,
@@ -763,35 +1839,26 @@
       },
       "name": "list_devices",
       "outputSchema": {
-        "type": "object",
+        "additionalProperties": false,
         "properties": {
-          "kind": {
-            "type": "string"
-          },
-          "data": true,
           "accepted": {
             "type": "boolean"
           },
+          "data": true,
           "dry_run": {
             "type": "boolean"
           },
-          "poll_after_ms": {
-            "type": "integer"
-          },
           "error": {
-            "type": [
-              "null",
-              "object"
-            ],
+            "additionalProperties": false,
             "properties": {
               "code": {
                 "type": "string"
               },
-              "message": {
-                "type": "string"
-              },
               "http_status": {
                 "type": "integer"
+              },
+              "message": {
+                "type": "string"
               },
               "outcome_unknown": {
                 "type": "boolean"
@@ -801,18 +1868,30 @@
               "code",
               "message"
             ],
-            "additionalProperties": false
-          },
-          "request_ticket": {
             "type": [
               "null",
               "object"
-            ],
+            ]
+          },
+          "instance_binding_verified": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "kind": {
+            "type": "string"
+          },
+          "poll_after_ms": {
+            "type": "integer"
+          },
+          "request_ticket": {
+            "additionalProperties": false,
             "properties": {
-              "request_id": {
+              "expected_daemon_instance_id": {
                 "type": "string"
               },
-              "expected_daemon_instance_id": {
+              "request_id": {
                 "type": "string"
               }
             },
@@ -820,12 +1899,9 @@
               "request_id",
               "expected_daemon_instance_id"
             ],
-            "additionalProperties": false
-          },
-          "instance_binding_verified": {
             "type": [
               "null",
-              "boolean"
+              "object"
             ]
           }
         },
@@ -833,7 +1909,7 @@
           "kind",
           "accepted"
         ],
-        "additionalProperties": false
+        "type": "object"
       }
     },
     {
@@ -3483,6 +4559,786 @@
         "openWorldHint": false,
         "readOnlyHint": true
       },
+      "description": "Preview an exact experimental-v2 stored Pattern Ref through one read-only daemon POST. The daemon verifies its original high-level source, recipe and frozen execution; this adapter verifies the typed execution digest, not the source compiler. Optional serial checks cached capabilities only. No Job, ticket, admission or USB; accepted:false. Unknown sources remain unsupported, never converted to legacy steps.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "pattern_ref": {
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "maxLength": 64,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$",
+                "type": "string"
+              },
+              "record_contract": {
+                "const": "nb1-pattern-record/experimental-v2"
+              },
+              "revision": {
+                "maxLength": 71,
+                "minLength": 71,
+                "pattern": "^sha256:[0-9a-f]{64}$",
+                "type": "string"
+              }
+            },
+            "required": [
+              "record_contract",
+              "id",
+              "revision"
+            ],
+            "type": "object"
+          },
+          "serial": {
+            "pattern": "^[0-9a-fA-F]{8}$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "pattern_ref"
+        ],
+        "type": "object"
+      },
+      "name": "preview_pattern",
+      "outputSchema": {
+        "additionalProperties": false,
+        "oneOf": [
+          {
+            "not": {
+              "required": [
+                "error"
+              ]
+            },
+            "properties": {
+              "kind": {
+                "const": "pattern_ref_preview"
+              }
+            },
+            "required": [
+              "data"
+            ]
+          },
+          {
+            "properties": {
+              "accepted": {
+                "const": false
+              },
+              "kind": {
+                "const": "error"
+              }
+            },
+            "required": [
+              "error"
+            ]
+          }
+        ],
+        "properties": {
+          "accepted": {
+            "const": false
+          },
+          "data": {
+            "additionalProperties": false,
+            "properties": {
+              "contract": {
+                "const": "nb1-pattern-ref-preview/experimental-v1"
+              },
+              "execution": {
+                "additionalProperties": false,
+                "oneOf": [
+                  {
+                    "properties": {
+                      "contract": {
+                        "const": "nb1-program-effect/v1"
+                      },
+                      "kind": {
+                        "const": "program"
+                      },
+                      "program": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "on_finish": {
+                            "enum": [
+                              "off",
+                              "hold"
+                            ],
+                            "type": "string"
+                          },
+                          "repeat": {
+                            "maximum": 10000,
+                            "minimum": 1,
+                            "type": "integer"
+                          },
+                          "steps": {
+                            "items": {
+                              "additionalProperties": false,
+                              "properties": {
+                                "color": {
+                                  "pattern": "^#[0-9a-f]{6}$",
+                                  "type": "string"
+                                },
+                                "fade_ms": {
+                                  "maximum": 600000,
+                                  "minimum": 0,
+                                  "multipleOf": 10,
+                                  "type": "integer"
+                                },
+                                "hold_ms": {
+                                  "maximum": 3600000,
+                                  "minimum": 0,
+                                  "type": "integer"
+                                },
+                                "led": {
+                                  "enum": [
+                                    0,
+                                    1,
+                                    2
+                                  ],
+                                  "type": "integer"
+                                }
+                              },
+                              "required": [
+                                "led",
+                                "color",
+                                "fade_ms",
+                                "hold_ms"
+                              ],
+                              "type": "object"
+                            },
+                            "maxItems": 1024,
+                            "minItems": 1,
+                            "type": "array"
+                          }
+                        },
+                        "required": [
+                          "steps",
+                          "repeat",
+                          "on_finish"
+                        ],
+                        "type": "object"
+                      }
+                    }
+                  },
+                  {
+                    "properties": {
+                      "contract": {
+                        "const": "nb1-frame-program/experimental-v1"
+                      },
+                      "kind": {
+                        "const": "frame_program"
+                      },
+                      "program": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "contract": {
+                            "const": "nb1-frame-program/experimental-v1"
+                          },
+                          "frames": {
+                            "items": {
+                              "additionalProperties": false,
+                              "properties": {
+                                "fade_ms": {
+                                  "maximum": 600000,
+                                  "minimum": 0,
+                                  "multipleOf": 10,
+                                  "type": "integer"
+                                },
+                                "interval_ms": {
+                                  "maximum": 600000,
+                                  "minimum": 50,
+                                  "type": "integer"
+                                },
+                                "targets": {
+                                  "items": {
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "color": {
+                                        "pattern": "^#[0-9a-f]{6}$",
+                                        "type": "string"
+                                      },
+                                      "led": {
+                                        "enum": [
+                                          1,
+                                          2
+                                        ],
+                                        "type": "integer"
+                                      }
+                                    },
+                                    "required": [
+                                      "led",
+                                      "color"
+                                    ],
+                                    "type": "object"
+                                  },
+                                  "maxItems": 2,
+                                  "minItems": 1,
+                                  "type": "array"
+                                }
+                              },
+                              "required": [
+                                "targets",
+                                "fade_ms",
+                                "interval_ms"
+                              ],
+                              "type": "object"
+                            },
+                            "maxItems": 1024,
+                            "minItems": 1,
+                            "type": "array"
+                          },
+                          "initial": {
+                            "items": {
+                              "additionalProperties": false,
+                              "properties": {
+                                "color": {
+                                  "pattern": "^#[0-9a-f]{6}$",
+                                  "type": "string"
+                                },
+                                "led": {
+                                  "enum": [
+                                    1,
+                                    2
+                                  ],
+                                  "type": "integer"
+                                }
+                              },
+                              "required": [
+                                "led",
+                                "color"
+                              ],
+                              "type": "object"
+                            },
+                            "maxItems": 2,
+                            "minItems": 1,
+                            "type": "array"
+                          },
+                          "on_finish": {
+                            "enum": [
+                              "off",
+                              "hold"
+                            ],
+                            "type": "string"
+                          },
+                          "repeat": {
+                            "maximum": 10000,
+                            "minimum": 1,
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "contract",
+                          "initial",
+                          "frames",
+                          "repeat",
+                          "on_finish"
+                        ],
+                        "type": "object"
+                      }
+                    }
+                  }
+                ],
+                "properties": {
+                  "contract": {
+                    "enum": [
+                      "nb1-program-effect/v1",
+                      "nb1-frame-program/experimental-v1"
+                    ]
+                  },
+                  "kind": {
+                    "enum": [
+                      "program",
+                      "frame_program"
+                    ]
+                  },
+                  "program": {}
+                },
+                "required": [
+                  "kind",
+                  "contract",
+                  "program"
+                ],
+                "type": "object"
+              },
+              "execution_digest": {
+                "maxLength": 71,
+                "minLength": 71,
+                "pattern": "^sha256:[0-9a-f]{64}$",
+                "type": "string"
+              },
+              "pattern_execution": {
+                "additionalProperties": false,
+                "properties": {
+                  "available": {
+                    "type": "boolean"
+                  },
+                  "reason": {
+                    "enum": [
+                      "pattern_service_configured",
+                      "pattern_service_unsupported",
+                      "pattern_library_unconfigured",
+                      "pattern_library_configuration_error"
+                    ]
+                  }
+                },
+                "required": [
+                  "available",
+                  "reason"
+                ],
+                "type": "object"
+              },
+              "pattern_ref": {
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "maxLength": 64,
+                    "minLength": 1,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$",
+                    "type": "string"
+                  },
+                  "record_contract": {
+                    "const": "nb1-pattern-record/experimental-v2"
+                  },
+                  "revision": {
+                    "maxLength": 71,
+                    "minLength": 71,
+                    "pattern": "^sha256:[0-9a-f]{64}$",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "record_contract",
+                  "id",
+                  "revision"
+                ],
+                "type": "object"
+              },
+              "preview": {
+                "oneOf": [
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "compile_contract": {
+                        "const": "nb1-program-effect/v1"
+                      },
+                      "device": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "capabilities": {
+                            "items": {
+                              "type": "string"
+                            },
+                            "type": "array"
+                          },
+                          "connection": {
+                            "type": "string"
+                          },
+                          "serial": {
+                            "pattern": "^[0-9a-fA-F]{8}$",
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "serial",
+                          "capabilities"
+                        ],
+                        "type": "object"
+                      },
+                      "input_kind": {
+                        "const": "program"
+                      },
+                      "nominal_duration_ms": {
+                        "maximum": 86400000,
+                        "minimum": 10,
+                        "type": "integer"
+                      },
+                      "program": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "on_finish": {
+                            "enum": [
+                              "off",
+                              "hold"
+                            ],
+                            "type": "string"
+                          },
+                          "repeat": {
+                            "maximum": 10000,
+                            "minimum": 1,
+                            "type": "integer"
+                          },
+                          "steps": {
+                            "items": {
+                              "additionalProperties": false,
+                              "properties": {
+                                "color": {
+                                  "pattern": "^#[0-9a-f]{6}$",
+                                  "type": "string"
+                                },
+                                "fade_ms": {
+                                  "maximum": 600000,
+                                  "minimum": 0,
+                                  "multipleOf": 10,
+                                  "type": "integer"
+                                },
+                                "hold_ms": {
+                                  "maximum": 3600000,
+                                  "minimum": 0,
+                                  "type": "integer"
+                                },
+                                "led": {
+                                  "enum": [
+                                    0,
+                                    1,
+                                    2
+                                  ],
+                                  "type": "integer"
+                                }
+                              },
+                              "required": [
+                                "led",
+                                "color",
+                                "fade_ms",
+                                "hold_ms"
+                              ],
+                              "type": "object"
+                            },
+                            "maxItems": 1024,
+                            "minItems": 1,
+                            "type": "array"
+                          }
+                        },
+                        "required": [
+                          "steps",
+                          "repeat",
+                          "on_finish"
+                        ],
+                        "type": "object"
+                      },
+                      "required_capabilities": {
+                        "items": {
+                          "type": "string"
+                        },
+                        "type": "array"
+                      },
+                      "schema_version": {
+                        "const": 1
+                      },
+                      "total_steps": {
+                        "maximum": 10240000,
+                        "minimum": 1,
+                        "type": "integer"
+                      },
+                      "validation": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "device": {
+                            "enum": [
+                              "not_requested",
+                              "unknown",
+                              "supported",
+                              "unsupported"
+                            ]
+                          },
+                          "missing_capabilities": {
+                            "items": {
+                              "type": "string"
+                            },
+                            "type": "array"
+                          },
+                          "program": {
+                            "const": "valid"
+                          },
+                          "reason": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "program",
+                          "device"
+                        ],
+                        "type": "object"
+                      }
+                    },
+                    "required": [
+                      "schema_version",
+                      "compile_contract",
+                      "input_kind",
+                      "program",
+                      "nominal_duration_ms",
+                      "total_steps",
+                      "required_capabilities",
+                      "validation"
+                    ],
+                    "type": "object"
+                  },
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "contract": {
+                        "const": "nb1-frame-program/experimental-v1"
+                      },
+                      "cycle_duration_ms": {
+                        "minimum": 1,
+                        "type": "integer"
+                      },
+                      "device": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "connection": {
+                            "minLength": 1,
+                            "type": "string"
+                          },
+                          "serial": {
+                            "maxLength": 128,
+                            "minLength": 1,
+                            "pattern": "^[A-Za-z0-9_-]+$",
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "serial",
+                          "connection"
+                        ],
+                        "type": "object"
+                      },
+                      "execution": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "available": {
+                            "type": "boolean"
+                          },
+                          "reason": {
+                            "minLength": 1,
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "available",
+                          "reason"
+                        ],
+                        "type": "object"
+                      },
+                      "nominal_duration_ms": {
+                        "minimum": 1,
+                        "type": "integer"
+                      },
+                      "nominal_initial_ms": {
+                        "minimum": 1,
+                        "type": "integer"
+                      },
+                      "nominal_tail_ms": {
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "planned_target_writes": {
+                        "maximum": 2050,
+                        "minimum": 1,
+                        "type": "integer"
+                      },
+                      "program": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "contract": {
+                            "const": "nb1-frame-program/experimental-v1"
+                          },
+                          "frames": {
+                            "items": {
+                              "additionalProperties": false,
+                              "properties": {
+                                "fade_ms": {
+                                  "maximum": 600000,
+                                  "minimum": 0,
+                                  "multipleOf": 10,
+                                  "type": "integer"
+                                },
+                                "interval_ms": {
+                                  "maximum": 600000,
+                                  "minimum": 50,
+                                  "type": "integer"
+                                },
+                                "targets": {
+                                  "items": {
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "color": {
+                                        "pattern": "^#[0-9a-f]{6}$",
+                                        "type": "string"
+                                      },
+                                      "led": {
+                                        "enum": [
+                                          1,
+                                          2
+                                        ],
+                                        "type": "integer"
+                                      }
+                                    },
+                                    "required": [
+                                      "led",
+                                      "color"
+                                    ],
+                                    "type": "object"
+                                  },
+                                  "maxItems": 2,
+                                  "minItems": 1,
+                                  "type": "array"
+                                }
+                              },
+                              "required": [
+                                "targets",
+                                "fade_ms",
+                                "interval_ms"
+                              ],
+                              "type": "object"
+                            },
+                            "maxItems": 1024,
+                            "minItems": 1,
+                            "type": "array"
+                          },
+                          "initial": {
+                            "items": {
+                              "additionalProperties": false,
+                              "properties": {
+                                "color": {
+                                  "pattern": "^#[0-9a-f]{6}$",
+                                  "type": "string"
+                                },
+                                "led": {
+                                  "enum": [
+                                    1,
+                                    2
+                                  ],
+                                  "type": "integer"
+                                }
+                              },
+                              "required": [
+                                "led",
+                                "color"
+                              ],
+                              "type": "object"
+                            },
+                            "maxItems": 2,
+                            "minItems": 1,
+                            "type": "array"
+                          },
+                          "on_finish": {
+                            "enum": [
+                              "off",
+                              "hold"
+                            ],
+                            "type": "string"
+                          },
+                          "repeat": {
+                            "maximum": 10000,
+                            "minimum": 1,
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "contract",
+                          "initial",
+                          "frames",
+                          "repeat",
+                          "on_finish"
+                        ],
+                        "type": "object"
+                      },
+                      "required_capabilities": {
+                        "items": {
+                          "type": "string"
+                        },
+                        "type": "array"
+                      },
+                      "stored_target_writes": {
+                        "maximum": 2050,
+                        "minimum": 1,
+                        "type": "integer"
+                      },
+                      "timing_basis": {
+                        "const": "host-nominal-excludes-native-io"
+                      },
+                      "total_frames": {
+                        "maximum": 1024,
+                        "minimum": 1,
+                        "type": "integer"
+                      }
+                    },
+                    "required": [
+                      "contract",
+                      "program",
+                      "total_frames",
+                      "stored_target_writes",
+                      "planned_target_writes",
+                      "cycle_duration_ms",
+                      "nominal_initial_ms",
+                      "nominal_tail_ms",
+                      "nominal_duration_ms",
+                      "timing_basis",
+                      "required_capabilities",
+                      "execution"
+                    ],
+                    "type": "object"
+                  }
+                ]
+              },
+              "schema_version": {
+                "const": 1
+              }
+            },
+            "required": [
+              "schema_version",
+              "contract",
+              "pattern_ref",
+              "execution_digest",
+              "execution",
+              "preview",
+              "pattern_execution"
+            ],
+            "type": "object"
+          },
+          "error": {
+            "additionalProperties": false,
+            "properties": {
+              "code": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "http_status": {
+                "type": "integer"
+              },
+              "message": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "outcome_unknown": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "code",
+              "message"
+            ],
+            "type": "object"
+          },
+          "kind": {
+            "enum": [
+              "pattern_ref_preview",
+              "error"
+            ]
+          }
+        },
+        "required": [
+          "kind",
+          "accepted"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
       "description": "Ask the daemon to preview exactly one program, steady/pulse effect, or fixed pattern_ref without creating a job, receipt or USB access. Pattern references return kind:pattern_preview and data:{pattern_ref,preview}; other inputs retain kind:program_preview and their original data shape. Optional serial checks only cached device capabilities, not execution or admission. Returns authoritative program_preview with accepted:false. Unlike existing dry_run, this sends one read-only HTTP POST; no retry or direct fallback, and errors do not imply an unknown job outcome.",
       "inputSchema": {
         "additionalProperties": false,
@@ -3774,35 +5630,26 @@
       },
       "name": "preview_program",
       "outputSchema": {
-        "type": "object",
+        "additionalProperties": false,
         "properties": {
-          "kind": {
-            "type": "string"
-          },
-          "data": true,
           "accepted": {
             "type": "boolean"
           },
+          "data": true,
           "dry_run": {
             "type": "boolean"
           },
-          "poll_after_ms": {
-            "type": "integer"
-          },
           "error": {
-            "type": [
-              "null",
-              "object"
-            ],
+            "additionalProperties": false,
             "properties": {
               "code": {
                 "type": "string"
               },
-              "message": {
-                "type": "string"
-              },
               "http_status": {
                 "type": "integer"
+              },
+              "message": {
+                "type": "string"
               },
               "outcome_unknown": {
                 "type": "boolean"
@@ -3812,18 +5659,30 @@
               "code",
               "message"
             ],
-            "additionalProperties": false
-          },
-          "request_ticket": {
             "type": [
               "null",
               "object"
-            ],
+            ]
+          },
+          "instance_binding_verified": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "kind": {
+            "type": "string"
+          },
+          "poll_after_ms": {
+            "type": "integer"
+          },
+          "request_ticket": {
+            "additionalProperties": false,
             "properties": {
-              "request_id": {
+              "expected_daemon_instance_id": {
                 "type": "string"
               },
-              "expected_daemon_instance_id": {
+              "request_id": {
                 "type": "string"
               }
             },
@@ -3831,12 +5690,9 @@
               "request_id",
               "expected_daemon_instance_id"
             ],
-            "additionalProperties": false
-          },
-          "instance_binding_verified": {
             "type": [
               "null",
-              "boolean"
+              "object"
             ]
           }
         },
@@ -3844,7 +5700,7 @@
           "kind",
           "accepted"
         ],
-        "additionalProperties": false
+        "type": "object"
       }
     },
     {
@@ -5219,35 +7075,26 @@
       },
       "name": "run_light",
       "outputSchema": {
-        "type": "object",
+        "additionalProperties": false,
         "properties": {
-          "kind": {
-            "type": "string"
-          },
-          "data": true,
           "accepted": {
             "type": "boolean"
           },
+          "data": true,
           "dry_run": {
             "type": "boolean"
           },
-          "poll_after_ms": {
-            "type": "integer"
-          },
           "error": {
-            "type": [
-              "null",
-              "object"
-            ],
+            "additionalProperties": false,
             "properties": {
               "code": {
                 "type": "string"
               },
-              "message": {
-                "type": "string"
-              },
               "http_status": {
                 "type": "integer"
+              },
+              "message": {
+                "type": "string"
               },
               "outcome_unknown": {
                 "type": "boolean"
@@ -5257,18 +7104,30 @@
               "code",
               "message"
             ],
-            "additionalProperties": false
-          },
-          "request_ticket": {
             "type": [
               "null",
               "object"
-            ],
+            ]
+          },
+          "instance_binding_verified": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "kind": {
+            "type": "string"
+          },
+          "poll_after_ms": {
+            "type": "integer"
+          },
+          "request_ticket": {
+            "additionalProperties": false,
             "properties": {
-              "request_id": {
+              "expected_daemon_instance_id": {
                 "type": "string"
               },
-              "expected_daemon_instance_id": {
+              "request_id": {
                 "type": "string"
               }
             },
@@ -5276,12 +7135,9 @@
               "request_id",
               "expected_daemon_instance_id"
             ],
-            "additionalProperties": false
-          },
-          "instance_binding_verified": {
             "type": [
               "null",
-              "boolean"
+              "object"
             ]
           }
         },
@@ -5289,7 +7145,537 @@
           "kind",
           "accepted"
         ],
-        "additionalProperties": false
+        "type": "object"
+      }
+    },
+    {
+      "annotations": {
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": false
+      },
+      "description": "Submit one exact experimental-v2 Pattern Ref with explicit replace/queue/reject and the complete original request ticket. Makes at most one execution POST, no implicit preview, ticket preparation, retry or CLI/USB fallback. The daemon retains source identity and owns compilation/verification; the adapter recomputes the returned frozen execution digest. Acceptance is not completion. Keep the Ref and ticket for get_pattern_request/cancel_pattern_request even if the library disappears or the response is lost.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "expected_daemon_instance_id": {
+            "pattern": "^daemon_[0-9a-f]{32}$",
+            "type": "string"
+          },
+          "pattern_ref": {
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "maxLength": 64,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$",
+                "type": "string"
+              },
+              "record_contract": {
+                "const": "nb1-pattern-record/experimental-v2"
+              },
+              "revision": {
+                "maxLength": 71,
+                "minLength": 71,
+                "pattern": "^sha256:[0-9a-f]{64}$",
+                "type": "string"
+              }
+            },
+            "required": [
+              "record_contract",
+              "id",
+              "revision"
+            ],
+            "type": "object"
+          },
+          "policy": {
+            "enum": [
+              "replace",
+              "queue",
+              "reject"
+            ],
+            "type": "string"
+          },
+          "request_id": {
+            "pattern": "^req_[1-9][0-9]{0,18}_[0-9a-f]{32}$",
+            "type": "string"
+          },
+          "serial": {
+            "pattern": "^[0-9a-fA-F]{8}$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "pattern_ref",
+          "serial",
+          "policy",
+          "request_id",
+          "expected_daemon_instance_id"
+        ],
+        "type": "object"
+      },
+      "name": "run_pattern",
+      "outputSchema": {
+        "additionalProperties": false,
+        "oneOf": [
+          {
+            "not": {
+              "required": [
+                "error"
+              ]
+            },
+            "properties": {
+              "kind": {
+                "const": "pattern_job"
+              }
+            },
+            "required": [
+              "data"
+            ]
+          },
+          {
+            "properties": {
+              "accepted": {
+                "const": false
+              },
+              "kind": {
+                "const": "error"
+              }
+            },
+            "required": [
+              "error"
+            ]
+          }
+        ],
+        "properties": {
+          "accepted": {
+            "type": "boolean"
+          },
+          "data": {
+            "additionalProperties": false,
+            "oneOf": [
+              {
+                "properties": {
+                  "job": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "completed_steps": {
+                        "maximum": 10240000,
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "created_at": {
+                        "format": "date-time",
+                        "type": "string"
+                      },
+                      "device": {
+                        "pattern": "^[0-9a-fA-F]{8}$",
+                        "type": "string"
+                      },
+                      "error": {
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "finished_at": {
+                        "format": "date-time",
+                        "type": "string"
+                      },
+                      "id": {
+                        "pattern": "^job_[0-9a-f]{32}$",
+                        "type": "string"
+                      },
+                      "program": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "on_finish": {
+                            "enum": [
+                              "off",
+                              "hold"
+                            ],
+                            "type": "string"
+                          },
+                          "repeat": {
+                            "maximum": 10000,
+                            "minimum": 1,
+                            "type": "integer"
+                          },
+                          "steps": {
+                            "items": {
+                              "additionalProperties": false,
+                              "properties": {
+                                "color": {
+                                  "pattern": "^#[0-9a-f]{6}$",
+                                  "type": "string"
+                                },
+                                "fade_ms": {
+                                  "maximum": 600000,
+                                  "minimum": 0,
+                                  "multipleOf": 10,
+                                  "type": "integer"
+                                },
+                                "hold_ms": {
+                                  "maximum": 3600000,
+                                  "minimum": 0,
+                                  "type": "integer"
+                                },
+                                "led": {
+                                  "enum": [
+                                    0,
+                                    1,
+                                    2
+                                  ],
+                                  "type": "integer"
+                                }
+                              },
+                              "required": [
+                                "led",
+                                "color",
+                                "fade_ms",
+                                "hold_ms"
+                              ],
+                              "type": "object"
+                            },
+                            "maxItems": 1024,
+                            "minItems": 1,
+                            "type": "array"
+                          }
+                        },
+                        "required": [
+                          "steps",
+                          "repeat",
+                          "on_finish"
+                        ],
+                        "type": "object"
+                      },
+                      "started_at": {
+                        "format": "date-time",
+                        "type": "string"
+                      },
+                      "status": {
+                        "enum": [
+                          "queued",
+                          "running",
+                          "cancelling",
+                          "succeeded",
+                          "failed",
+                          "cancelled"
+                        ]
+                      },
+                      "total_steps": {
+                        "maximum": 10240000,
+                        "minimum": 0,
+                        "type": "integer"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "device",
+                      "status",
+                      "program",
+                      "created_at",
+                      "completed_steps",
+                      "total_steps"
+                    ],
+                    "type": "object"
+                  },
+                  "job_kind": {
+                    "const": "program"
+                  }
+                }
+              },
+              {
+                "properties": {
+                  "job": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "completed_frames": {
+                        "maximum": 1024,
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "completed_target_writes": {
+                        "maximum": 2050,
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "created_at": {
+                        "format": "date-time",
+                        "type": "string"
+                      },
+                      "device": {
+                        "pattern": "^[0-9a-fA-F]{8}$",
+                        "type": "string"
+                      },
+                      "error": {
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "finished_at": {
+                        "format": "date-time",
+                        "type": "string"
+                      },
+                      "id": {
+                        "pattern": "^framejob_[0-9a-f]{32}$",
+                        "type": "string"
+                      },
+                      "planned_target_writes": {
+                        "maximum": 2050,
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "program": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "contract": {
+                            "const": "nb1-frame-program/experimental-v1"
+                          },
+                          "frames": {
+                            "items": {
+                              "additionalProperties": false,
+                              "properties": {
+                                "fade_ms": {
+                                  "maximum": 600000,
+                                  "minimum": 0,
+                                  "multipleOf": 10,
+                                  "type": "integer"
+                                },
+                                "interval_ms": {
+                                  "maximum": 600000,
+                                  "minimum": 50,
+                                  "type": "integer"
+                                },
+                                "targets": {
+                                  "items": {
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "color": {
+                                        "pattern": "^#[0-9a-f]{6}$",
+                                        "type": "string"
+                                      },
+                                      "led": {
+                                        "enum": [
+                                          1,
+                                          2
+                                        ],
+                                        "type": "integer"
+                                      }
+                                    },
+                                    "required": [
+                                      "led",
+                                      "color"
+                                    ],
+                                    "type": "object"
+                                  },
+                                  "maxItems": 2,
+                                  "minItems": 1,
+                                  "type": "array"
+                                }
+                              },
+                              "required": [
+                                "targets",
+                                "fade_ms",
+                                "interval_ms"
+                              ],
+                              "type": "object"
+                            },
+                            "maxItems": 1024,
+                            "minItems": 1,
+                            "type": "array"
+                          },
+                          "initial": {
+                            "items": {
+                              "additionalProperties": false,
+                              "properties": {
+                                "color": {
+                                  "pattern": "^#[0-9a-f]{6}$",
+                                  "type": "string"
+                                },
+                                "led": {
+                                  "enum": [
+                                    1,
+                                    2
+                                  ],
+                                  "type": "integer"
+                                }
+                              },
+                              "required": [
+                                "led",
+                                "color"
+                              ],
+                              "type": "object"
+                            },
+                            "maxItems": 2,
+                            "minItems": 1,
+                            "type": "array"
+                          },
+                          "on_finish": {
+                            "enum": [
+                              "off",
+                              "hold"
+                            ],
+                            "type": "string"
+                          },
+                          "repeat": {
+                            "maximum": 10000,
+                            "minimum": 1,
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "contract",
+                          "initial",
+                          "frames",
+                          "repeat",
+                          "on_finish"
+                        ],
+                        "type": "object"
+                      },
+                      "started_at": {
+                        "format": "date-time",
+                        "type": "string"
+                      },
+                      "status": {
+                        "enum": [
+                          "queued",
+                          "running",
+                          "cancelling",
+                          "succeeded",
+                          "failed",
+                          "cancelled"
+                        ]
+                      },
+                      "total_frames": {
+                        "maximum": 1024,
+                        "minimum": 0,
+                        "type": "integer"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "device",
+                      "status",
+                      "program",
+                      "created_at",
+                      "completed_frames",
+                      "total_frames",
+                      "completed_target_writes",
+                      "planned_target_writes"
+                    ],
+                    "type": "object"
+                  },
+                  "job_kind": {
+                    "const": "frame"
+                  }
+                }
+              }
+            ],
+            "properties": {
+              "execution_digest": {
+                "maxLength": 71,
+                "minLength": 71,
+                "pattern": "^sha256:[0-9a-f]{64}$",
+                "type": "string"
+              },
+              "job": {},
+              "job_kind": {
+                "enum": [
+                  "program",
+                  "frame"
+                ]
+              },
+              "pattern_ref": {
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "maxLength": 64,
+                    "minLength": 1,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$",
+                    "type": "string"
+                  },
+                  "record_contract": {
+                    "const": "nb1-pattern-record/experimental-v2"
+                  },
+                  "revision": {
+                    "maxLength": 71,
+                    "minLength": 71,
+                    "pattern": "^sha256:[0-9a-f]{64}$",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "record_contract",
+                  "id",
+                  "revision"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "pattern_ref",
+              "execution_digest",
+              "job_kind",
+              "job"
+            ],
+            "type": "object"
+          },
+          "error": {
+            "additionalProperties": false,
+            "properties": {
+              "code": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "http_status": {
+                "type": "integer"
+              },
+              "message": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "outcome_unknown": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "code",
+              "message"
+            ],
+            "type": "object"
+          },
+          "kind": {
+            "enum": [
+              "pattern_job",
+              "error"
+            ]
+          },
+          "poll_after_ms": {
+            "const": 200
+          },
+          "request_ticket": {
+            "additionalProperties": false,
+            "properties": {
+              "expected_daemon_instance_id": {
+                "pattern": "^daemon_[0-9a-f]{32}$",
+                "type": "string"
+              },
+              "request_id": {
+                "pattern": "^req_[1-9][0-9]{0,18}_[0-9a-f]{32}$",
+                "type": "string"
+              }
+            },
+            "required": [
+              "request_id",
+              "expected_daemon_instance_id"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "kind",
+          "accepted"
+        ],
+        "type": "object"
       }
     },
     {
@@ -5637,35 +8023,26 @@
       },
       "name": "run_program",
       "outputSchema": {
-        "type": "object",
+        "additionalProperties": false,
         "properties": {
-          "kind": {
-            "type": "string"
-          },
-          "data": true,
           "accepted": {
             "type": "boolean"
           },
+          "data": true,
           "dry_run": {
             "type": "boolean"
           },
-          "poll_after_ms": {
-            "type": "integer"
-          },
           "error": {
-            "type": [
-              "null",
-              "object"
-            ],
+            "additionalProperties": false,
             "properties": {
               "code": {
                 "type": "string"
               },
-              "message": {
-                "type": "string"
-              },
               "http_status": {
                 "type": "integer"
+              },
+              "message": {
+                "type": "string"
               },
               "outcome_unknown": {
                 "type": "boolean"
@@ -5675,18 +8052,30 @@
               "code",
               "message"
             ],
-            "additionalProperties": false
-          },
-          "request_ticket": {
             "type": [
               "null",
               "object"
-            ],
+            ]
+          },
+          "instance_binding_verified": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "kind": {
+            "type": "string"
+          },
+          "poll_after_ms": {
+            "type": "integer"
+          },
+          "request_ticket": {
+            "additionalProperties": false,
             "properties": {
-              "request_id": {
+              "expected_daemon_instance_id": {
                 "type": "string"
               },
-              "expected_daemon_instance_id": {
+              "request_id": {
                 "type": "string"
               }
             },
@@ -5694,12 +8083,9 @@
               "request_id",
               "expected_daemon_instance_id"
             ],
-            "additionalProperties": false
-          },
-          "instance_binding_verified": {
             "type": [
               "null",
-              "boolean"
+              "object"
             ]
           }
         },
@@ -5707,7 +8093,7 @@
           "kind",
           "accepted"
         ],
-        "additionalProperties": false
+        "type": "object"
       }
     },
     {
@@ -5793,35 +8179,26 @@
       },
       "name": "set_device_state",
       "outputSchema": {
-        "type": "object",
+        "additionalProperties": false,
         "properties": {
-          "kind": {
-            "type": "string"
-          },
-          "data": true,
           "accepted": {
             "type": "boolean"
           },
+          "data": true,
           "dry_run": {
             "type": "boolean"
           },
-          "poll_after_ms": {
-            "type": "integer"
-          },
           "error": {
-            "type": [
-              "null",
-              "object"
-            ],
+            "additionalProperties": false,
             "properties": {
               "code": {
                 "type": "string"
               },
-              "message": {
-                "type": "string"
-              },
               "http_status": {
                 "type": "integer"
+              },
+              "message": {
+                "type": "string"
               },
               "outcome_unknown": {
                 "type": "boolean"
@@ -5831,18 +8208,30 @@
               "code",
               "message"
             ],
-            "additionalProperties": false
-          },
-          "request_ticket": {
             "type": [
               "null",
               "object"
-            ],
+            ]
+          },
+          "instance_binding_verified": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "kind": {
+            "type": "string"
+          },
+          "poll_after_ms": {
+            "type": "integer"
+          },
+          "request_ticket": {
+            "additionalProperties": false,
             "properties": {
-              "request_id": {
+              "expected_daemon_instance_id": {
                 "type": "string"
               },
-              "expected_daemon_instance_id": {
+              "request_id": {
                 "type": "string"
               }
             },
@@ -5850,12 +8239,9 @@
               "request_id",
               "expected_daemon_instance_id"
             ],
-            "additionalProperties": false
-          },
-          "instance_binding_verified": {
             "type": [
               "null",
-              "boolean"
+              "object"
             ]
           }
         },
@@ -5863,7 +8249,7 @@
           "kind",
           "accepted"
         ],
-        "additionalProperties": false
+        "type": "object"
       }
     }
   ]

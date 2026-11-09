@@ -29,10 +29,16 @@ v2 取消使用 control light cancel SERIAL FILE 加同一对原票据，可选 
 - [颜色输入](docs/color-input.zh-CN.md)：名字、Hex3/Hex6、RGB8、HSV。
 - [完整中文API手册](docs/api-reference.zh-CN.md)：High/Low职责、参数、当前状态、全部HTTP操作、CLI/MCP和记忆边界。
 - [HTTP OpenAPI](docs/openapi.json)：版本化机器合同；按x-availability区分日常接口与需显式启用的开发接口，仍须核对实际daemon。
-- [实际MCP工具schema](docs/mcp-tools.schema.json)：12个工具的已采集输入/输出定义。
+- [实际MCP工具schema](docs/mcp-tools.schema.json)：开发16个工具的已采集输入/输出；日常1d89仍12，按实际tools/list判断。
 
 ## 图案与边界
 
 现有 Pattern 库保存 v1 Program/Effect。MCP 用 list_patterns/get_pattern 读取，preview_program/run_program 传固定 pattern_ref；不提供 MCP 导入。v1 Action 可保存其冻结 result.program，不能保存 source.action。v2 FrameProgram 尚不能导入现有库，可独立保存原 Action JSON 文件；不要降成手写 steps。
 
-区分软件预览、Job 终态、带 sampled_at 的设备读回和相机观测。MK3 未实机验收；没有自动重放或硬件 Flash 承诺。轻量 debug Web、Starlark/StarCLI 和 Codex 通知在后续 backlog，不作为本指南已支持的接口。本文不保证 Agent 自动读取，也不授予额外权限。
+区分软件预览、Job 终态、带 sampled_at 的设备读回和相机观测。MK3 未实机验收；没有自动重放或硬件 Flash 承诺。同源debug Web已内嵌日常1d89；新的高级Pattern页面、Starlark/StarCLI和Codex通知仍在后续开发。本文不保证 Agent 自动读取，也不授予额外权限。
+
+## 开发：保留高级来源的Pattern v2
+
+开发MCP c37f7fc新增preview_pattern/run_pattern/get_pattern_request/cancel_pattern_request四工具，共16，尚未安装到日常1d89（12工具）。原12schema不变。全部使用完整pattern_ref={record_contract,id,revision}；run显式policy+原票据，仅一次POST，无隐式preview/Get/Prepare或重试；query/cancel仅原receipt，不依赖库。cancel先GET再至多一次confirmed_job_id POST，terminal/cancelling不POST；unknown保留Ref/票据/最后可信Job。
+
+高级source/recipe验证属于daemon，MCP只验证返回typed执行摘要与身份。v2列表/读取/保存工具未提供，旧list_patterns/get_pattern仍为v1。CLI作者候选有control patterns-v2 get/preview-draft/save；运行/查停与Web接线继续推进。完整参数、输出和版本界限见API手册与MCP schema。

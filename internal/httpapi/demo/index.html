@@ -30,12 +30,14 @@
           <button type="button" data-action="blink" class="action" aria-pressed="false"><span>✦</span>闪烁<small>blink</small></button>
           <button type="button" data-action="breathe" class="action" aria-pressed="false"><span>∿</span>呼吸<small>breathe</small></button>
           <button type="button" data-action="pulse" class="action" aria-pressed="false"><span>⌁</span>脉冲<small>pulse</small></button>
-          <button type="button" data-action="alternate" class="action" aria-pressed="false"><span>⇄</span>红蓝交替<small>alternate</small></button>
+          <button type="button" data-action="alternate" class="action" aria-pressed="false" title="两种颜色直接交换"><span>⇄</span>两色交替<small>alternate</small></button>
+          <button type="button" data-action="orbit" class="action" aria-pressed="false" title="颜色与亮度错相，形成环绕相位感"><span>◌</span>环绕<small>orbit</small></button>
           <button type="button" data-action="rainbow" class="action" aria-pressed="false"><span>◒</span>彩虹<small>rainbow</small></button>
-          <button type="button" id="pattern-action" data-action="pattern" class="action" aria-pressed="false" disabled><span>▣</span>已存图案<small>pattern</small></button>
+          <button type="button" id="pattern-action" data-action="pattern" class="action" aria-pressed="false" aria-controls="library-select" aria-describedby="pattern-entry-help" title="从电脑上的图案库选择并载入，不会自动播放"><span>▣</span>已存图案<small>pattern</small></button>
           <button type="button" data-action="program" class="action" aria-pressed="false"><span>≡</span>精确序列<small>run</small></button>
         </div>
 
+        <p id="pattern-entry-help" class="footnote">图案保存在电脑上；先从图案库选择并载入，再点击播放。</p>
         <p id="action-description" class="description">保持指定颜色，直到你再次操作或明确熄灭。</p>
         <div id="pattern-row" class="pattern-current" hidden><strong id="pattern-loaded">尚未载入图案。</strong><p>固定版本只读。播放使用此版本的冻结 Program，不重新编译旧来源。</p><button id="pattern-edit-copy" type="button" class="secondary" disabled>编辑副本为精确序列</button></div>
         <form id="parameters" novalidate>
@@ -106,7 +108,7 @@
 
     <section class="panel library" aria-labelledby="library-heading">
       <div class="section-title"><h2 id="library-heading">04 / 保存与复用图案</h2><button id="library-refresh" type="button" class="text-button">刷新图案库</button></div>
-      <p class="description">保存只写本地图案库，不播放、不占用设备。相同 ID 不覆盖；原始动作先由 nb1 编译，再保存冻结 Program。</p>
+      <p class="description">图案保存在这台电脑的本地图案库。保存不播放、不占用设备；相同 ID 不覆盖，原始动作先由 nb1 编译，再保存冻结 Program。</p>
       <div class="library-grid">
         <div class="library-save">
           <label for="pattern-id">图案 ID <small>字母或数字开头，可用 - 与 _，最多 64 字符</small></label><input id="pattern-id" maxlength="64" autocomplete="off" spellcheck="false" placeholder="my-light-pattern">

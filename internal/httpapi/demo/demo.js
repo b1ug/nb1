@@ -4,7 +4,7 @@
   const contract = "nb1-light-action/v1";
   const programContract = "nb1-program-effect/v1";
   const $ = id => document.getElementById(id);
-  const names = {set:"常亮",fade:"渐变",off:"熄灭",blink:"闪烁",breathe:"呼吸",pulse:"脉冲",alternate:"红蓝交替",rainbow:"彩虹",program:"精确序列",pattern:"已存图案"};
+  const names = {set:"常亮",fade:"渐变",off:"熄灭",blink:"闪烁",breathe:"呼吸",pulse:"脉冲",alternate:"两色交替",orbit:"环绕",rainbow:"彩虹",program:"精确序列",pattern:"已存图案"};
   const descriptions = {
     set:"保持指定颜色，直到你再次操作或明确熄灭。", fade:"从当前颜色逐渐变到目标颜色，完成后保持。", off:"明确发送黑色，让所选输出熄灭。",
     blink:"直接亮、直接灭。亮灭时长与循环次数都明确可见。", breathe:"平滑、对称地渐亮渐暗。曲线由 nb1 核心的固定采样表编译。",
@@ -207,6 +207,19 @@
     const limits = flowing ? "每周期 66 步；本页周期 1300–10000ms，最多 15 次。两颗 LED 依次写入，不是原子同步。" : "本页周期 400–10000ms，最多 10 次。";
     $("transition-help").textContent = `${transitionDescriptions[mode] || "请选择有效的交替方式。"} ${limits}${invalidPeriod || invalidCycles ? " 当前数值超出范围，请修改后再预览或播放；不会自动替换你的输入。" : ""}`;
     $("transition-help").classList.toggle("invalid",invalidPeriod || invalidCycles);
+    showActionSelection();
+  }
+  function showActionSelection() {
+    const selected = kind === "alternate" && $("transition").value === "orbit" ? "orbit" : kind;
+    document.querySelectorAll("[data-action]").forEach(button => {
+      const active = button.dataset.action === selected;
+      button.classList.toggle("selected",active);
+      button.setAttribute("aria-pressed",String(active));
+    });
+    $("kind-label").textContent = `${["set","fade","off","program","pattern"].includes(kind) ? "基础" : "艺术"} · ${kind === "program" ? "run" : selected}`;
+    $("action-description").textContent = selected === "orbit"
+      ? "环绕相位：颜色混合与亮度变化错开，形成连续流动感。两颗 LED 不能据此区分真实旋转方向。"
+      : descriptions[kind];
   }
   function intent(forcedKind) {
     const selected = forcedKind || kind;
@@ -246,12 +259,22 @@
     } catch (_) { $("surface-call").textContent = `light.${kind === "program" ? "run" : kind}(…)`; }
   }
   function selectAction(value) {
-    if(value==="pattern" && !loadedPattern) return;
+    if(value==="pattern" && !loadedPattern) {
+      // This tile is also a navigation entry. No loaded record means that
+      // choosing it must leave the current intent and any receipt untouched.
+      $("library-heading").closest("section").scrollIntoView({behavior:"auto",block:"start"});
+      $("library-select").focus({preventScroll:true});
+      if(libraryReady) libraryNote(libraryItems.length
+        ? "先从列表选择一条图案，再点「载入固定版本」；载入不会播放。"
+        : "还没有已保存的图案。先设置效果、填写图案 ID 和名称并保存到这台电脑，再载入播放。");
+      return;
+    }
+    // Orbit is a visible shortcut for the existing alternate transition.
+    // Keep the actual API kind and the user's timing/color inputs unchanged.
+    if(value === "orbit") { $("transition").value="orbit"; value="alternate"; }
+    else if(value === "alternate") $("transition").value="cut";
     kind = value;
     if(value!=="pattern") {loadedPattern=null;$("pattern-loaded").textContent="尚未载入图案。";}
-    document.querySelectorAll("[data-action]").forEach(b => { const active = b.dataset.action === kind; b.classList.toggle("selected",active); b.setAttribute("aria-pressed",String(active)); });
-    $("kind-label").textContent = `${["set","fade","off","program","pattern"].includes(kind) ? "基础" : "艺术"} · ${kind === "program" ? "run" : kind}`;
-    $("action-description").textContent = descriptions[kind];
     $("pattern-row").hidden=kind!=="pattern";
     const rows = {"single-color-row":!["off","alternate","rainbow","program","pattern"].includes(kind),"alternate-row":kind==="alternate","led-row":!["alternate","program","pattern"].includes(kind),"duration-row":kind==="fade","period-row":["breathe","alternate","rainbow"].includes(kind),"transition-row":kind==="alternate","blink-row":kind==="blink","pulse-row":kind==="pulse","cycles-row":["blink","breathe","pulse","alternate","rainbow"].includes(kind),"finish-row":["blink","breathe","pulse","alternate","rainbow"].includes(kind),"program-row":kind==="program"};
     for (const [id, visible] of Object.entries(rows)) $(id).hidden = !visible;
@@ -391,7 +414,8 @@
       const accepted = verifyJob(result.value,submittedTicket);
       submittedTicket.confirmed = true; submittedTicket.jobId = accepted.id;
       showJob(accepted);
-      note(`${names[value.kind]}已提交到 ${serial}。${accepted.program.on_finish === "hold" ? "完成后保留最后状态；需要熄灭请点击停止按钮。" : "任务完成后会熄灭。"}`);
+      const name = value.kind === "alternate" && value.action.transition === "orbit" ? names.orbit : names[value.kind];
+      note(`${name}已提交到 ${serial}。${accepted.program.on_finish === "hold" ? "完成后保留最后状态；需要熄灭请点击停止按钮。" : "任务完成后会熄灭。"}`);
       return accepted;
     } catch (error) {
       if (ticket !== submittedTicket) return null;
@@ -486,7 +510,9 @@
     $("pattern-save").disabled=busy || !libraryReady || Boolean(pendingSave || saveOperation);
     $("pattern-check-save").hidden=!pendingSave;
     $("pattern-check-save").disabled=Boolean(saveOperation || checkOperation);
-    $("pattern-action").disabled=!loadedPattern;
+    $("pattern-action").title=loadedPattern
+      ? "查看已载入的固定版本，点击播放才会执行"
+      : "从电脑上的图案库选择并载入，不会自动播放";
     $("pattern-edit-copy").disabled=busy || kind!=="pattern" || !loadedPattern;
   }
   async function loadLibrary(preserveSelection=false) {

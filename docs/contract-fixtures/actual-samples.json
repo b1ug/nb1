@@ -1,0 +1,2555 @@
+[
+  {
+    "name": "light-action-set",
+    "schema": "LightActionSet",
+    "source": {
+      "kind": "pure-codec",
+      "base_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+      "function": "lightaction.CompileJSON input"
+    },
+    "value": {
+      "kind": "set",
+      "color": "red"
+    }
+  },
+  {
+    "name": "light-normalized-set",
+    "schema": "NormalizedLightActionSet",
+    "source": {
+      "kind": "pure-codec",
+      "base_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+      "function": "lightaction.CompileJSON.Action",
+      "request_sample": "light-action-set"
+    },
+    "value": {
+      "kind": "set",
+      "led": 0,
+      "color": "#ff0000",
+      "on_finish": "hold"
+    }
+  },
+  {
+    "name": "light-compilation-set",
+    "schema": "LightCompilation",
+    "source": {
+      "kind": "pure-codec",
+      "base_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+      "function": "lightaction.CompileJSON + control.Preview",
+      "request_sample": "light-action-set"
+    },
+    "value": {
+      "schema_version": 1,
+      "contract": "nb1-light-action/v1",
+      "program_compile_contract": "nb1-program-effect/v1",
+      "action": {
+        "kind": "set",
+        "led": 0,
+        "color": "#ff0000",
+        "on_finish": "hold"
+      },
+      "program": {
+        "steps": [
+          {
+            "led": 0,
+            "color": "#ff0000",
+            "fade_ms": 0,
+            "hold_ms": 0
+          }
+        ],
+        "repeat": 1,
+        "on_finish": "hold"
+      },
+      "nominal_duration_ms": 10,
+      "total_steps": 1,
+      "required_capabilities": [
+        "set",
+        "program",
+        "raw-rgb",
+        "hold"
+      ]
+    }
+  },
+  {
+    "name": "light-action-off",
+    "schema": "LightActionOff",
+    "source": {
+      "kind": "pure-codec",
+      "base_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+      "function": "lightaction.CompileJSON input"
+    },
+    "value": {
+      "kind": "off"
+    }
+  },
+  {
+    "name": "light-normalized-off",
+    "schema": "NormalizedLightActionOff",
+    "source": {
+      "kind": "pure-codec",
+      "base_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+      "function": "lightaction.CompileJSON.Action",
+      "request_sample": "light-action-off"
+    },
+    "value": {
+      "kind": "off",
+      "led": 0,
+      "on_finish": "hold"
+    }
+  },
+  {
+    "name": "light-compilation-off",
+    "schema": "LightCompilation",
+    "source": {
+      "kind": "pure-codec",
+      "base_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+      "function": "lightaction.CompileJSON + control.Preview",
+      "request_sample": "light-action-off"
+    },
+    "value": {
+      "schema_version": 1,
+      "contract": "nb1-light-action/v1",
+      "program_compile_contract": "nb1-program-effect/v1",
+      "action": {
+        "kind": "off",
+        "led": 0,
+        "on_finish": "hold"
+      },
+      "program": {
+        "steps": [
+          {
+            "led": 0,
+            "color": "#000000",
+            "fade_ms": 0,
+            "hold_ms": 0
+          }
+        ],
+        "repeat": 1,
+        "on_finish": "hold"
+      },
+      "nominal_duration_ms": 10,
+      "total_steps": 1,
+      "required_capabilities": [
+        "set",
+        "program",
+        "raw-rgb",
+        "hold"
+      ]
+    }
+  },
+  {
+    "name": "light-action-fade",
+    "schema": "LightActionFade",
+    "source": {
+      "kind": "pure-codec",
+      "base_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+      "function": "lightaction.CompileJSON input"
+    },
+    "value": {
+      "kind": "fade",
+      "color": "blue",
+      "duration_ms": 10
+    }
+  },
+  {
+    "name": "light-normalized-fade",
+    "schema": "NormalizedLightActionFade",
+    "source": {
+      "kind": "pure-codec",
+      "base_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+      "function": "lightaction.CompileJSON.Action",
+      "request_sample": "light-action-fade"
+    },
+    "value": {
+      "kind": "fade",
+      "led": 0,
+      "color": "#0000ff",
+      "duration_ms": 10,
+      "on_finish": "hold"
+    }
+  },
+  {
+    "name": "light-compilation-fade",
+    "schema": "LightCompilation",
+    "source": {
+      "kind": "pure-codec",
+      "base_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+      "function": "lightaction.CompileJSON + control.Preview",
+      "request_sample": "light-action-fade"
+    },
+    "value": {
+      "schema_version": 1,
+      "contract": "nb1-light-action/v1",
+      "program_compile_contract": "nb1-program-effect/v1",
+      "action": {
+        "kind": "fade",
+        "led": 0,
+        "color": "#0000ff",
+        "duration_ms": 10,
+        "on_finish": "hold"
+      },
+      "program": {
+        "steps": [
+          {
+            "led": 0,
+            "color": "#0000ff",
+            "fade_ms": 10,
+            "hold_ms": 0
+          }
+        ],
+        "repeat": 1,
+        "on_finish": "hold"
+      },
+      "nominal_duration_ms": 20,
+      "total_steps": 1,
+      "required_capabilities": [
+        "set",
+        "program",
+        "raw-rgb",
+        "hold"
+      ]
+    }
+  },
+  {
+    "name": "light-action-blink",
+    "schema": "LightActionBlink",
+    "source": {
+      "kind": "pure-codec",
+      "base_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+      "function": "lightaction.CompileJSON input"
+    },
+    "value": {
+      "kind": "blink",
+      "color": "lime",
+      "on_ms": 100,
+      "off_ms": 150,
+      "cycles": 2
+    }
+  },
+  {
+    "name": "light-normalized-blink",
+    "schema": "NormalizedLightActionBlink",
+    "source": {
+      "kind": "pure-codec",
+      "base_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+      "function": "lightaction.CompileJSON.Action",
+      "request_sample": "light-action-blink"
+    },
+    "value": {
+      "kind": "blink",
+      "led": 0,
+      "color": "#00ff00",
+      "on_ms": 100,
+      "off_ms": 150,
+      "cycles": 2,
+      "on_finish": "off"
+    }
+  },
+  {
+    "name": "light-compilation-blink",
+    "schema": "LightCompilation",
+    "source": {
+      "kind": "pure-codec",
+      "base_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+      "function": "lightaction.CompileJSON + control.Preview",
+      "request_sample": "light-action-blink"
+    },
+    "value": {
+      "schema_version": 1,
+      "contract": "nb1-light-action/v1",
+      "program_compile_contract": "nb1-program-effect/v1",
+      "action": {
+        "kind": "blink",
+        "led": 0,
+        "color": "#00ff00",
+        "on_ms": 100,
+        "off_ms": 150,
+        "cycles": 2,
+        "on_finish": "off"
+      },
+      "program": {
+        "steps": [
+          {
+            "led": 0,
+            "color": "#00ff00",
+            "fade_ms": 0,
+            "hold_ms": 90
+          },
+          {
+            "led": 0,
+            "color": "#000000",
+            "fade_ms": 0,
+            "hold_ms": 140
+          }
+        ],
+        "repeat": 2,
+        "on_finish": "off"
+      },
+      "nominal_duration_ms": 500,
+      "total_steps": 4,
+      "required_capabilities": [
+        "set",
+        "program",
+        "raw-rgb"
+      ]
+    }
+  },
+  {
+    "name": "light-action-breathe",
+    "schema": "LightActionBreathe",
+    "source": {
+      "kind": "pure-codec",
+      "base_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+      "function": "lightaction.CompileJSON input"
+    },
+    "value": {
+      "kind": "breathe",
+      "color": "#f80",
+      "period_ms": 2000,
+      "cycles": 1
+    }
+  },
+  {
+    "name": "light-normalized-breathe",
+    "schema": "NormalizedLightActionBreathe",
+    "source": {
+      "kind": "pure-codec",
+      "base_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+      "function": "lightaction.CompileJSON.Action",
+      "request_sample": "light-action-breathe"
+    },
+    "value": {
+      "kind": "breathe",
+      "led": 0,
+      "color": "#ff8800",
+      "period_ms": 2000,
+      "cycles": 1,
+      "on_finish": "off"
+    }
+  },
+  {
+    "name": "light-compilation-breathe",
+    "schema": "LightCompilation",
+    "source": {
+      "kind": "pure-codec",
+      "base_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+      "function": "lightaction.CompileJSON + control.Preview",
+      "request_sample": "light-action-breathe"
+    },
+    "value": {
+      "schema_version": 1,
+      "contract": "nb1-light-action/v1",
+      "program_compile_contract": "nb1-program-effect/v1",
+      "action": {
+        "kind": "breathe",
+        "led": 0,
+        "color": "#ff8800",
+        "period_ms": 2000,
+        "cycles": 1,
+        "on_finish": "off"
+      },
+      "program": {
+        "steps": [
+          {
+            "led": 0,
+            "color": "#000000",
+            "fade_ms": 0,
+            "hold_ms": 0
+          },
+          {
+            "led": 0,
+            "color": "#0a0500",
+            "fade_ms": 110,
+            "hold_ms": 4
+          },
+          {
+            "led": 0,
+            "color": "#251400",
+            "fade_ms": 110,
+            "hold_ms": 4
+          },
+          {
+            "led": 0,
+            "color": "#4f2a00",
+            "fade_ms": 110,
+            "hold_ms": 5
+          },
+          {
+            "led": 0,
+            "color": "#804400",
+            "fade_ms": 110,
+            "hold_ms": 4
+          },
+          {
+            "led": 0,
+            "color": "#b05e00",
+            "fade_ms": 110,
+            "hold_ms": 4
+          },
+          {
+            "led": 0,
+            "color": "#da7400",
+            "fade_ms": 110,
+            "hold_ms": 5
+          },
+          {
+            "led": 0,
+            "color": "#f58300",
+            "fade_ms": 110,
+            "hold_ms": 4
+          },
+          {
+            "led": 0,
+            "color": "#ff8800",
+            "fade_ms": 110,
+            "hold_ms": 5
+          },
+          {
+            "led": 0,
+            "color": "#f58300",
+            "fade_ms": 110,
+            "hold_ms": 4
+          },
+          {
+            "led": 0,
+            "color": "#da7400",
+            "fade_ms": 110,
+            "hold_ms": 4
+          },
+          {
+            "led": 0,
+            "color": "#b05e00",
+            "fade_ms": 110,
+            "hold_ms": 5
+          },
+          {
+            "led": 0,
+            "color": "#804400",
+            "fade_ms": 110,
+            "hold_ms": 4
+          },
+          {
+            "led": 0,
+            "color": "#4f2a00",
+            "fade_ms": 110,
+            "hold_ms": 4
+          },
+          {
+            "led": 0,
+            "color": "#251400",
+            "fade_ms": 110,
+            "hold_ms": 5
+          },
+          {
+            "led": 0,
+            "color": "#0a0500",
+            "fade_ms": 110,
+            "hold_ms": 4
+          },
+          {
+            "led": 0,
+            "color": "#000000",
+            "fade_ms": 110,
+            "hold_ms": 5
+          }
+        ],
+        "repeat": 1,
+        "on_finish": "off"
+      },
+      "nominal_duration_ms": 2000,
+      "total_steps": 17,
+      "required_capabilities": [
+        "set",
+        "program",
+        "raw-rgb"
+      ]
+    }
+  },
+  {
+    "name": "light-preview-breathe",
+    "schema": "LightPreviewResponse",
+    "source": {
+      "kind": "httptest-no-service",
+      "base_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+      "function": "httpapi.New(nil).ServeHTTP + httptest.NewRecorder",
+      "method": "POST",
+      "path": "/v1/light/preview",
+      "request_sample": "light-action-breathe"
+    },
+    "value": {
+      "result": {
+        "schema_version": 1,
+        "contract": "nb1-light-action/v1",
+        "program_compile_contract": "nb1-program-effect/v1",
+        "action": {
+          "kind": "breathe",
+          "led": 0,
+          "color": "#ff8800",
+          "period_ms": 2000,
+          "cycles": 1,
+          "on_finish": "off"
+        },
+        "program": {
+          "steps": [
+            {
+              "led": 0,
+              "color": "#000000",
+              "fade_ms": 0,
+              "hold_ms": 0
+            },
+            {
+              "led": 0,
+              "color": "#0a0500",
+              "fade_ms": 110,
+              "hold_ms": 4
+            },
+            {
+              "led": 0,
+              "color": "#251400",
+              "fade_ms": 110,
+              "hold_ms": 4
+            },
+            {
+              "led": 0,
+              "color": "#4f2a00",
+              "fade_ms": 110,
+              "hold_ms": 5
+            },
+            {
+              "led": 0,
+              "color": "#804400",
+              "fade_ms": 110,
+              "hold_ms": 4
+            },
+            {
+              "led": 0,
+              "color": "#b05e00",
+              "fade_ms": 110,
+              "hold_ms": 4
+            },
+            {
+              "led": 0,
+              "color": "#da7400",
+              "fade_ms": 110,
+              "hold_ms": 5
+            },
+            {
+              "led": 0,
+              "color": "#f58300",
+              "fade_ms": 110,
+              "hold_ms": 4
+            },
+            {
+              "led": 0,
+              "color": "#ff8800",
+              "fade_ms": 110,
+              "hold_ms": 5
+            },
+            {
+              "led": 0,
+              "color": "#f58300",
+              "fade_ms": 110,
+              "hold_ms": 4
+            },
+            {
+              "led": 0,
+              "color": "#da7400",
+              "fade_ms": 110,
+              "hold_ms": 4
+            },
+            {
+              "led": 0,
+              "color": "#b05e00",
+              "fade_ms": 110,
+              "hold_ms": 5
+            },
+            {
+              "led": 0,
+              "color": "#804400",
+              "fade_ms": 110,
+              "hold_ms": 4
+            },
+            {
+              "led": 0,
+              "color": "#4f2a00",
+              "fade_ms": 110,
+              "hold_ms": 4
+            },
+            {
+              "led": 0,
+              "color": "#251400",
+              "fade_ms": 110,
+              "hold_ms": 5
+            },
+            {
+              "led": 0,
+              "color": "#0a0500",
+              "fade_ms": 110,
+              "hold_ms": 4
+            },
+            {
+              "led": 0,
+              "color": "#000000",
+              "fade_ms": 110,
+              "hold_ms": 5
+            }
+          ],
+          "repeat": 1,
+          "on_finish": "off"
+        },
+        "nominal_duration_ms": 2000,
+        "total_steps": 17,
+        "required_capabilities": [
+          "set",
+          "program",
+          "raw-rgb"
+        ]
+      },
+      "preview": {
+        "schema_version": 1,
+        "compile_contract": "nb1-program-effect/v1",
+        "input_kind": "program",
+        "program": {
+          "steps": [
+            {
+              "led": 0,
+              "color": "#000000",
+              "fade_ms": 0,
+              "hold_ms": 0
+            },
+            {
+              "led": 0,
+              "color": "#0a0500",
+              "fade_ms": 110,
+              "hold_ms": 4
+            },
+            {
+              "led": 0,
+              "color": "#251400",
+              "fade_ms": 110,
+              "hold_ms": 4
+            },
+            {
+              "led": 0,
+              "color": "#4f2a00",
+              "fade_ms": 110,
+              "hold_ms": 5
+            },
+            {
+              "led": 0,
+              "color": "#804400",
+              "fade_ms": 110,
+              "hold_ms": 4
+            },
+            {
+              "led": 0,
+              "color": "#b05e00",
+              "fade_ms": 110,
+              "hold_ms": 4
+            },
+            {
+              "led": 0,
+              "color": "#da7400",
+              "fade_ms": 110,
+              "hold_ms": 5
+            },
+            {
+              "led": 0,
+              "color": "#f58300",
+              "fade_ms": 110,
+              "hold_ms": 4
+            },
+            {
+              "led": 0,
+              "color": "#ff8800",
+              "fade_ms": 110,
+              "hold_ms": 5
+            },
+            {
+              "led": 0,
+              "color": "#f58300",
+              "fade_ms": 110,
+              "hold_ms": 4
+            },
+            {
+              "led": 0,
+              "color": "#da7400",
+              "fade_ms": 110,
+              "hold_ms": 4
+            },
+            {
+              "led": 0,
+              "color": "#b05e00",
+              "fade_ms": 110,
+              "hold_ms": 5
+            },
+            {
+              "led": 0,
+              "color": "#804400",
+              "fade_ms": 110,
+              "hold_ms": 4
+            },
+            {
+              "led": 0,
+              "color": "#4f2a00",
+              "fade_ms": 110,
+              "hold_ms": 4
+            },
+            {
+              "led": 0,
+              "color": "#251400",
+              "fade_ms": 110,
+              "hold_ms": 5
+            },
+            {
+              "led": 0,
+              "color": "#0a0500",
+              "fade_ms": 110,
+              "hold_ms": 4
+            },
+            {
+              "led": 0,
+              "color": "#000000",
+              "fade_ms": 110,
+              "hold_ms": 5
+            }
+          ],
+          "repeat": 1,
+          "on_finish": "off"
+        },
+        "nominal_duration_ms": 2000,
+        "total_steps": 17,
+        "required_capabilities": [
+          "set",
+          "program",
+          "raw-rgb"
+        ],
+        "validation": {
+          "program": "valid",
+          "device": "not_requested"
+        }
+      }
+    }
+  },
+  {
+    "name": "light-action-pulse",
+    "schema": "LightActionPulse",
+    "source": {
+      "kind": "pure-codec",
+      "base_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+      "function": "lightaction.CompileJSON input"
+    },
+    "value": {
+      "kind": "pulse",
+      "color": {
+        "space": "hsv",
+        "h_deg": 120,
+        "s_pct": 100,
+        "v_pct": 50.5
+      },
+      "attack_ms": 60,
+      "decay_ms": 240,
+      "rest_ms": 700,
+      "cycles": 2
+    }
+  },
+  {
+    "name": "light-normalized-pulse",
+    "schema": "NormalizedLightActionPulse",
+    "source": {
+      "kind": "pure-codec",
+      "base_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+      "function": "lightaction.CompileJSON.Action",
+      "request_sample": "light-action-pulse"
+    },
+    "value": {
+      "kind": "pulse",
+      "led": 0,
+      "color": "#008100",
+      "attack_ms": 60,
+      "decay_ms": 240,
+      "rest_ms": 700,
+      "cycles": 2,
+      "on_finish": "off"
+    }
+  },
+  {
+    "name": "light-compilation-pulse",
+    "schema": "LightCompilation",
+    "source": {
+      "kind": "pure-codec",
+      "base_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+      "function": "lightaction.CompileJSON + control.Preview",
+      "request_sample": "light-action-pulse"
+    },
+    "value": {
+      "schema_version": 1,
+      "contract": "nb1-light-action/v1",
+      "program_compile_contract": "nb1-program-effect/v1",
+      "action": {
+        "kind": "pulse",
+        "led": 0,
+        "color": "#008100",
+        "attack_ms": 60,
+        "decay_ms": 240,
+        "rest_ms": 700,
+        "cycles": 2,
+        "on_finish": "off"
+      },
+      "program": {
+        "steps": [
+          {
+            "led": 0,
+            "color": "#000000",
+            "fade_ms": 0,
+            "hold_ms": 0
+          },
+          {
+            "led": 0,
+            "color": "#008100",
+            "fade_ms": 60,
+            "hold_ms": 0
+          },
+          {
+            "led": 0,
+            "color": "#000000",
+            "fade_ms": 240,
+            "hold_ms": 700
+          }
+        ],
+        "repeat": 2,
+        "on_finish": "off"
+      },
+      "nominal_duration_ms": 2060,
+      "total_steps": 6,
+      "required_capabilities": [
+        "set",
+        "program",
+        "raw-rgb"
+      ]
+    }
+  },
+  {
+    "name": "light-action-alternate",
+    "schema": "LightActionAlternate",
+    "source": {
+      "kind": "pure-codec",
+      "base_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+      "function": "lightaction.CompileJSON input"
+    },
+    "value": {
+      "kind": "alternate",
+      "colors": [
+        "red",
+        {
+          "space": "rgb8",
+          "r": 0,
+          "g": 0,
+          "b": 255
+        }
+      ],
+      "leds": [
+        2,
+        1
+      ],
+      "period_ms": 2000,
+      "cycles": 2,
+      "transition": "orbit"
+    }
+  },
+  {
+    "name": "light-normalized-alternate",
+    "schema": "NormalizedLightActionAlternate",
+    "source": {
+      "kind": "pure-codec",
+      "base_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+      "function": "lightaction.CompileJSON.Action",
+      "request_sample": "light-action-alternate"
+    },
+    "value": {
+      "kind": "alternate",
+      "colors": [
+        "#ff0000",
+        "#0000ff"
+      ],
+      "leds": [
+        2,
+        1
+      ],
+      "period_ms": 2000,
+      "cycles": 2,
+      "transition": "orbit",
+      "on_finish": "off"
+    }
+  },
+  {
+    "name": "light-compilation-alternate",
+    "schema": "LightCompilation",
+    "source": {
+      "kind": "pure-codec",
+      "base_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+      "function": "lightaction.CompileJSON + control.Preview",
+      "request_sample": "light-action-alternate"
+    },
+    "value": {
+      "schema_version": 1,
+      "contract": "nb1-light-action/v1",
+      "program_compile_contract": "nb1-program-effect/v1",
+      "action": {
+        "kind": "alternate",
+        "colors": [
+          "#ff0000",
+          "#0000ff"
+        ],
+        "leds": [
+          2,
+          1
+        ],
+        "period_ms": 2000,
+        "cycles": 2,
+        "transition": "orbit",
+        "on_finish": "off"
+      },
+      "program": {
+        "steps": [
+          {
+            "led": 2,
+            "color": "#990000",
+            "fade_ms": 0,
+            "hold_ms": 0
+          },
+          {
+            "led": 1,
+            "color": "#000099",
+            "fade_ms": 0,
+            "hold_ms": 0
+          },
+          {
+            "led": 2,
+            "color": "#ab0002",
+            "fade_ms": 20,
+            "hold_ms": 0
+          },
+          {
+            "led": 1,
+            "color": "#010084",
+            "fade_ms": 20,
+            "hold_ms": 1
+          },
+          {
+            "led": 2,
+            "color": "#b90007",
+            "fade_ms": 20,
+            "hold_ms": 1
+          },
+          {
+            "led": 1,
+            "color": "#04006e",
+            "fade_ms": 20,
+            "hold_ms": 1
+          },
+          {
+            "led": 2,
+            "color": "#c00012",
+            "fade_ms": 20,
+            "hold_ms": 1
+          },
+          {
+            "led": 1,
+            "color": "#080058",
+            "fade_ms": 20,
+            "hold_ms": 1
+          },
+          {
+            "led": 2,
+            "color": "#c00021",
+            "fade_ms": 20,
+            "hold_ms": 1
+          },
+          {
+            "led": 1,
+            "color": "#0c0045",
+            "fade_ms": 20,
+            "hold_ms": 1
+          },
+          {
+            "led": 2,
+            "color": "#b90035",
+            "fade_ms": 20,
+            "hold_ms": 1
+          },
+          {
+            "led": 1,
+            "color": "#0f0035",
+            "fade_ms": 20,
+            "hold_ms": 1
+          },
+          {
+            "led": 2,
+            "color": "#ab004c",
+            "fade_ms": 20,
+            "hold_ms": 1
+          },
+          {
+            "led": 1,
+            "color": "#120029",
+            "fade_ms": 20,
+            "hold_ms": 1
+          },
+          {
+            "led": 2,
+            "color": "#970066",
+            "fade_ms": 20,
+            "hold_ms": 1
+          },
+          {
+            "led": 1,
+            "color": "#150020",
+            "fade_ms": 20,
+            "hold_ms": 1
+          },
+          {
+            "led": 2,
+            "color": "#800080",
+            "fade_ms": 20,
+            "hold_ms": 1
+          },
+          {
+            "led": 1,
+            "color": "#1a001a",
+            "fade_ms": 20,
+            "hold_ms": 1
+          },
+          {
+            "led": 2,
+            "color": "#660097",
+            "fade_ms": 20,
+            "hold_ms": 0
+          },
+          {
+            "led": 1,
+            "color": "#200015",
+            "fade_ms": 20,
+            "hold_ms": 1
+          },
+          {
+            "led": 2,
+            "color": "#4c00ab",
+            "fade_ms": 20,
+            "hold_ms": 1
+          },
+          {
+            "led": 1,
+            "color": "#290012",
+            "fade_ms": 20,
+            "hold_ms": 1
+          },
+          {
+            "led": 2,
+            "color": "#3500b9",
+            "fade_ms": 20,
+            "hold_ms": 1
+          },
+          {
+            "led": 1,
+            "color": "#35000f",
+            "fade_ms": 20,
+            "hold_ms": 1
+          },
+          {
+            "led": 2,
+            "color": "#2100c0",
+            "fade_ms": 20,
+            "hold_ms": 1
+          },
+          {
+            "led": 1,
+            "color": "#45000c",
+            "fade_ms": 20,
+            "hold_ms": 1
+          },
+          {
+            "led": 2,
+            "color": "#1200c0",
+            "fade_ms": 20,
+            "hold_ms": 1
+          },
+          {
+            "led": 1,
+            "color": "#580008",
+            "fade_ms": 20,
+            "hold_ms": 1
+          },
+          {
+            "led": 2,
+            "color": "#0700b9",
+            "fade_ms": 20,
+            "hold_ms": 1
+          },
+          {
+            "led": 1,
+            "color": "#6e0004",
+            "fade_ms": 20,
+            "hold_ms": 1
+          },
+          {
+            "led": 2,
+            "color": "#0200ab",
+            "fade_ms": 20,
+            "hold_ms": 1
+          },
+          {
+            "led": 1,
+            "color": "#840001",
+            "fade_ms": 20,
+            "hold_ms": 1
+          },
+          {
+            "led": 2,
+            "color": "#000099",
+            "fade_ms": 20,
+            "hold_ms": 1
+          },
+          {
+            "led": 1,
+            "color": "#990000",
+            "fade_ms": 20,
+            "hold_ms": 1
+          },
+          {
+            "led": 2,
+            "color": "#010084",
+            "fade_ms": 20,
+            "hold_ms": 0
+          },
+          {
+            "led": 1,
+            "color": "#ab0002",
+            "fade_ms": 20,
+            "hold_ms": 1
+          },
+          {
+            "led": 2,
+            "color": "#04006e",
+            "fade_ms": 20,
+            "hold_ms": 1
+          },
+          {
+            "led": 1,
+            "color": "#b90007",
+            "fade_ms": 20,
+            "hold_ms": 1
+          },
+          {
+            "led": 2,
+            "color": "#080058",
+            "fade_ms": 20,
+            "hold_ms": 1
+          },
+          {
+            "led": 1,
+            "color": "#c00012",
+            "fade_ms": 20,
+            "hold_ms": 1
+          },
+          {
+            "led": 2,
+            "color": "#0c0045",
+            "fade_ms": 20,
+            "hold_ms": 1
+          },
+          {
+            "led": 1,
+            "color": "#c00021",
+            "fade_ms": 20,
+            "hold_ms": 1
+          },
+          {
+            "led": 2,
+            "color": "#0f0035",
+            "fade_ms": 20,
+            "hold_ms": 1
+          },
+          {
+            "led": 1,
+            "color": "#b90035",
+            "fade_ms": 20,
+            "hold_ms": 1
+          },
+          {
+            "led": 2,
+            "color": "#120029",
+            "fade_ms": 20,
+            "hold_ms": 1
+          },
+          {
+            "led": 1,
+            "color": "#ab004c",
+            "fade_ms": 20,
+            "hold_ms": 1
+          },
+          {
+            "led": 2,
+            "color": "#150020",
+            "fade_ms": 20,
+            "hold_ms": 1
+          },
+          {
+            "led": 1,
+            "color": "#970066",
+            "fade_ms": 20,
+            "hold_ms": 1
+          },
+          {
+            "led": 2,
+            "color": "#1a001a",
+            "fade_ms": 20,
+            "hold_ms": 1
+          },
+          {
+            "led": 1,
+            "color": "#800080",
+            "fade_ms": 20,
+            "hold_ms": 1
+          },
+          {
+            "led": 2,
+            "color": "#200015",
+            "fade_ms": 20,
+            "hold_ms": 0
+          },
+          {
+            "led": 1,
+            "color": "#660097",
+            "fade_ms": 20,
+            "hold_ms": 1
+          },
+          {
+            "led": 2,
+            "color": "#290012",
+            "fade_ms": 20,
+            "hold_ms": 1
+          },
+          {
+            "led": 1,
+            "color": "#4c00ab",
+            "fade_ms": 20,
+            "hold_ms": 1
+          },
+          {
+            "led": 2,
+            "color": "#35000f",
+            "fade_ms": 20,
+            "hold_ms": 1
+          },
+          {
+            "led": 1,
+            "color": "#3500b9",
+            "fade_ms": 20,
+            "hold_ms": 1
+          },
+          {
+            "led": 2,
+            "color": "#45000c",
+            "fade_ms": 20,
+            "hold_ms": 1
+          },
+          {
+            "led": 1,
+            "color": "#2100c0",
+            "fade_ms": 20,
+            "hold_ms": 1
+          },
+          {
+            "led": 2,
+            "color": "#580008",
+            "fade_ms": 20,
+            "hold_ms": 1
+          },
+          {
+            "led": 1,
+            "color": "#1200c0",
+            "fade_ms": 20,
+            "hold_ms": 1
+          },
+          {
+            "led": 2,
+            "color": "#6e0004",
+            "fade_ms": 20,
+            "hold_ms": 1
+          },
+          {
+            "led": 1,
+            "color": "#0700b9",
+            "fade_ms": 20,
+            "hold_ms": 1
+          },
+          {
+            "led": 2,
+            "color": "#840001",
+            "fade_ms": 20,
+            "hold_ms": 1
+          },
+          {
+            "led": 1,
+            "color": "#0200ab",
+            "fade_ms": 20,
+            "hold_ms": 1
+          },
+          {
+            "led": 2,
+            "color": "#990000",
+            "fade_ms": 20,
+            "hold_ms": 1
+          },
+          {
+            "led": 1,
+            "color": "#000099",
+            "fade_ms": 20,
+            "hold_ms": 1
+          }
+        ],
+        "repeat": 2,
+        "on_finish": "off"
+      },
+      "nominal_duration_ms": 4000,
+      "total_steps": 132,
+      "required_capabilities": [
+        "set",
+        "program",
+        "raw-rgb"
+      ]
+    }
+  },
+  {
+    "name": "light-action-rainbow",
+    "schema": "LightActionRainbow",
+    "source": {
+      "kind": "pure-codec",
+      "base_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+      "function": "lightaction.CompileJSON input"
+    },
+    "value": {
+      "kind": "rainbow",
+      "led": 1,
+      "period_ms": 3000,
+      "cycles": 1,
+      "on_finish": "hold"
+    }
+  },
+  {
+    "name": "light-normalized-rainbow",
+    "schema": "NormalizedLightActionRainbow",
+    "source": {
+      "kind": "pure-codec",
+      "base_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+      "function": "lightaction.CompileJSON.Action",
+      "request_sample": "light-action-rainbow"
+    },
+    "value": {
+      "kind": "rainbow",
+      "led": 1,
+      "period_ms": 3000,
+      "cycles": 1,
+      "on_finish": "hold"
+    }
+  },
+  {
+    "name": "light-compilation-rainbow",
+    "schema": "LightCompilation",
+    "source": {
+      "kind": "pure-codec",
+      "base_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+      "function": "lightaction.CompileJSON + control.Preview",
+      "request_sample": "light-action-rainbow"
+    },
+    "value": {
+      "schema_version": 1,
+      "contract": "nb1-light-action/v1",
+      "program_compile_contract": "nb1-program-effect/v1",
+      "action": {
+        "kind": "rainbow",
+        "led": 1,
+        "period_ms": 3000,
+        "cycles": 1,
+        "on_finish": "hold"
+      },
+      "program": {
+        "steps": [
+          {
+            "led": 1,
+            "color": "#ff0000",
+            "fade_ms": 0,
+            "hold_ms": 0
+          },
+          {
+            "led": 1,
+            "color": "#ffff00",
+            "fade_ms": 480,
+            "hold_ms": 8
+          },
+          {
+            "led": 1,
+            "color": "#00ff00",
+            "fade_ms": 480,
+            "hold_ms": 8
+          },
+          {
+            "led": 1,
+            "color": "#00ffff",
+            "fade_ms": 480,
+            "hold_ms": 9
+          },
+          {
+            "led": 1,
+            "color": "#0000ff",
+            "fade_ms": 480,
+            "hold_ms": 8
+          },
+          {
+            "led": 1,
+            "color": "#ff00ff",
+            "fade_ms": 480,
+            "hold_ms": 8
+          },
+          {
+            "led": 1,
+            "color": "#ff0000",
+            "fade_ms": 480,
+            "hold_ms": 9
+          }
+        ],
+        "repeat": 1,
+        "on_finish": "hold"
+      },
+      "nominal_duration_ms": 3000,
+      "total_steps": 7,
+      "required_capabilities": [
+        "set",
+        "program",
+        "raw-rgb",
+        "hold"
+      ]
+    }
+  },
+  {
+    "name": "orbit-segments4-action",
+    "schema": "OrbitAction",
+    "source": {
+      "kind": "pure-codec",
+      "base_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+      "function": "lightactionv2.CompileJSON input"
+    },
+    "value": {
+      "kind": "orbit",
+      "colors": [
+        "red",
+        {
+          "space": "hsv",
+          "h_deg": 240,
+          "s_pct": 100,
+          "v_pct": 100
+        }
+      ],
+      "leds": [
+        2,
+        1
+      ],
+      "period_ms": 3001,
+      "cycles": 2,
+      "segments": 4,
+      "on_finish": "hold"
+    }
+  },
+  {
+    "name": "orbit-segments4-normalized",
+    "schema": "NormalizedOrbitAction",
+    "source": {
+      "kind": "pure-codec",
+      "base_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+      "function": "lightactionv2.CompileJSON.Action",
+      "request_sample": "orbit-segments4-action"
+    },
+    "value": {
+      "kind": "orbit",
+      "colors": [
+        "#ff0000",
+        "#0000ff"
+      ],
+      "leds": [
+        2,
+        1
+      ],
+      "period_ms": 3001,
+      "cycles": 2,
+      "segments": 4,
+      "on_finish": "hold"
+    }
+  },
+  {
+    "name": "orbit-segments4-compilation",
+    "schema": "OrbitCompilation",
+    "source": {
+      "kind": "pure-codec",
+      "base_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+      "function": "lightactionv2.CompileJSON + control.PreviewFrameProgram",
+      "request_sample": "orbit-segments4-action"
+    },
+    "value": {
+      "schema_version": 1,
+      "contract": "nb1-light-action/experimental-v2",
+      "program_compile_contract": "nb1-frame-program/experimental-v1",
+      "recipe_id": "orbit-paired-linear-4/experimental-v1",
+      "action": {
+        "kind": "orbit",
+        "colors": [
+          "#ff0000",
+          "#0000ff"
+        ],
+        "leds": [
+          2,
+          1
+        ],
+        "period_ms": 3001,
+        "cycles": 2,
+        "segments": 4,
+        "on_finish": "hold"
+      },
+      "program": {
+        "contract": "nb1-frame-program/experimental-v1",
+        "initial": [
+          {
+            "led": 2,
+            "color": "#990000"
+          },
+          {
+            "led": 1,
+            "color": "#000099"
+          }
+        ],
+        "frames": [
+          {
+            "targets": [
+              {
+                "led": 2,
+                "color": "#800080"
+              },
+              {
+                "led": 1,
+                "color": "#1a001a"
+              }
+            ],
+            "fade_ms": 750,
+            "interval_ms": 750
+          },
+          {
+            "targets": [
+              {
+                "led": 2,
+                "color": "#000099"
+              },
+              {
+                "led": 1,
+                "color": "#990000"
+              }
+            ],
+            "fade_ms": 750,
+            "interval_ms": 750
+          },
+          {
+            "targets": [
+              {
+                "led": 2,
+                "color": "#1a001a"
+              },
+              {
+                "led": 1,
+                "color": "#800080"
+              }
+            ],
+            "fade_ms": 750,
+            "interval_ms": 750
+          },
+          {
+            "targets": [
+              {
+                "led": 2,
+                "color": "#990000"
+              },
+              {
+                "led": 1,
+                "color": "#000099"
+              }
+            ],
+            "fade_ms": 760,
+            "interval_ms": 751
+          }
+        ],
+        "repeat": 2,
+        "on_finish": "hold"
+      },
+      "nominal_duration_ms": 6051,
+      "total_frames": 8,
+      "planned_target_writes": 18,
+      "required_capabilities": [
+        "set",
+        "raw-rgb",
+        "frame-program-experimental-v1",
+        "hold"
+      ]
+    }
+  },
+  {
+    "name": "orbit-segments4-preview",
+    "schema": "OrbitPreviewResponse",
+    "source": {
+      "kind": "httptest-no-service",
+      "base_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+      "function": "httpapi.New(nil).ServeHTTP + httptest.NewRecorder",
+      "method": "POST",
+      "path": "/v2/light/preview",
+      "request_sample": "orbit-segments4-action"
+    },
+    "value": {
+      "result": {
+        "schema_version": 1,
+        "contract": "nb1-light-action/experimental-v2",
+        "program_compile_contract": "nb1-frame-program/experimental-v1",
+        "recipe_id": "orbit-paired-linear-4/experimental-v1",
+        "action": {
+          "kind": "orbit",
+          "colors": [
+            "#ff0000",
+            "#0000ff"
+          ],
+          "leds": [
+            2,
+            1
+          ],
+          "period_ms": 3001,
+          "cycles": 2,
+          "segments": 4,
+          "on_finish": "hold"
+        },
+        "program": {
+          "contract": "nb1-frame-program/experimental-v1",
+          "initial": [
+            {
+              "led": 2,
+              "color": "#990000"
+            },
+            {
+              "led": 1,
+              "color": "#000099"
+            }
+          ],
+          "frames": [
+            {
+              "targets": [
+                {
+                  "led": 2,
+                  "color": "#800080"
+                },
+                {
+                  "led": 1,
+                  "color": "#1a001a"
+                }
+              ],
+              "fade_ms": 750,
+              "interval_ms": 750
+            },
+            {
+              "targets": [
+                {
+                  "led": 2,
+                  "color": "#000099"
+                },
+                {
+                  "led": 1,
+                  "color": "#990000"
+                }
+              ],
+              "fade_ms": 750,
+              "interval_ms": 750
+            },
+            {
+              "targets": [
+                {
+                  "led": 2,
+                  "color": "#1a001a"
+                },
+                {
+                  "led": 1,
+                  "color": "#800080"
+                }
+              ],
+              "fade_ms": 750,
+              "interval_ms": 750
+            },
+            {
+              "targets": [
+                {
+                  "led": 2,
+                  "color": "#990000"
+                },
+                {
+                  "led": 1,
+                  "color": "#000099"
+                }
+              ],
+              "fade_ms": 760,
+              "interval_ms": 751
+            }
+          ],
+          "repeat": 2,
+          "on_finish": "hold"
+        },
+        "nominal_duration_ms": 6051,
+        "total_frames": 8,
+        "planned_target_writes": 18,
+        "required_capabilities": [
+          "set",
+          "raw-rgb",
+          "frame-program-experimental-v1",
+          "hold"
+        ]
+      },
+      "preview": {
+        "contract": "nb1-frame-program/experimental-v1",
+        "program": {
+          "contract": "nb1-frame-program/experimental-v1",
+          "initial": [
+            {
+              "led": 2,
+              "color": "#990000"
+            },
+            {
+              "led": 1,
+              "color": "#000099"
+            }
+          ],
+          "frames": [
+            {
+              "targets": [
+                {
+                  "led": 2,
+                  "color": "#800080"
+                },
+                {
+                  "led": 1,
+                  "color": "#1a001a"
+                }
+              ],
+              "fade_ms": 750,
+              "interval_ms": 750
+            },
+            {
+              "targets": [
+                {
+                  "led": 2,
+                  "color": "#000099"
+                },
+                {
+                  "led": 1,
+                  "color": "#990000"
+                }
+              ],
+              "fade_ms": 750,
+              "interval_ms": 750
+            },
+            {
+              "targets": [
+                {
+                  "led": 2,
+                  "color": "#1a001a"
+                },
+                {
+                  "led": 1,
+                  "color": "#800080"
+                }
+              ],
+              "fade_ms": 750,
+              "interval_ms": 750
+            },
+            {
+              "targets": [
+                {
+                  "led": 2,
+                  "color": "#990000"
+                },
+                {
+                  "led": 1,
+                  "color": "#000099"
+                }
+              ],
+              "fade_ms": 760,
+              "interval_ms": 751
+            }
+          ],
+          "repeat": 2,
+          "on_finish": "hold"
+        },
+        "total_frames": 8,
+        "stored_target_writes": 10,
+        "planned_target_writes": 18,
+        "cycle_duration_ms": 3001,
+        "nominal_initial_ms": 20,
+        "nominal_tail_ms": 29,
+        "nominal_duration_ms": 6051,
+        "timing_basis": "host-nominal-excludes-native-io",
+        "required_capabilities": [
+          "set",
+          "raw-rgb",
+          "frame-program-experimental-v1",
+          "hold"
+        ],
+        "execution": {
+          "available": false,
+          "reason": "frame_service_unsupported"
+        }
+      }
+    }
+  },
+  {
+    "name": "orbit-segments8-action",
+    "schema": "OrbitAction",
+    "source": {
+      "kind": "pure-codec",
+      "base_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+      "function": "lightactionv2.CompileJSON input"
+    },
+    "value": {
+      "kind": "orbit",
+      "colors": [
+        "red",
+        {
+          "space": "hsv",
+          "h_deg": 240,
+          "s_pct": 100,
+          "v_pct": 100
+        }
+      ],
+      "leds": [
+        2,
+        1
+      ],
+      "period_ms": 3001,
+      "cycles": 2,
+      "segments": 8,
+      "on_finish": "hold"
+    }
+  },
+  {
+    "name": "orbit-segments8-normalized",
+    "schema": "NormalizedOrbitAction",
+    "source": {
+      "kind": "pure-codec",
+      "base_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+      "function": "lightactionv2.CompileJSON.Action",
+      "request_sample": "orbit-segments8-action"
+    },
+    "value": {
+      "kind": "orbit",
+      "colors": [
+        "#ff0000",
+        "#0000ff"
+      ],
+      "leds": [
+        2,
+        1
+      ],
+      "period_ms": 3001,
+      "cycles": 2,
+      "segments": 8,
+      "on_finish": "hold"
+    }
+  },
+  {
+    "name": "orbit-segments8-compilation",
+    "schema": "OrbitCompilation",
+    "source": {
+      "kind": "pure-codec",
+      "base_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+      "function": "lightactionv2.CompileJSON + control.PreviewFrameProgram",
+      "request_sample": "orbit-segments8-action"
+    },
+    "value": {
+      "schema_version": 1,
+      "contract": "nb1-light-action/experimental-v2",
+      "program_compile_contract": "nb1-frame-program/experimental-v1",
+      "recipe_id": "orbit-paired-linear-8/experimental-v1",
+      "action": {
+        "kind": "orbit",
+        "colors": [
+          "#ff0000",
+          "#0000ff"
+        ],
+        "leds": [
+          2,
+          1
+        ],
+        "period_ms": 3001,
+        "cycles": 2,
+        "segments": 8,
+        "on_finish": "hold"
+      },
+      "program": {
+        "contract": "nb1-frame-program/experimental-v1",
+        "initial": [
+          {
+            "led": 2,
+            "color": "#990000"
+          },
+          {
+            "led": 1,
+            "color": "#000099"
+          }
+        ],
+        "frames": [
+          {
+            "targets": [
+              {
+                "led": 2,
+                "color": "#c00021"
+              },
+              {
+                "led": 1,
+                "color": "#0c0045"
+              }
+            ],
+            "fade_ms": 380,
+            "interval_ms": 375
+          },
+          {
+            "targets": [
+              {
+                "led": 2,
+                "color": "#800080"
+              },
+              {
+                "led": 1,
+                "color": "#1a001a"
+              }
+            ],
+            "fade_ms": 380,
+            "interval_ms": 375
+          },
+          {
+            "targets": [
+              {
+                "led": 2,
+                "color": "#2100c0"
+              },
+              {
+                "led": 1,
+                "color": "#45000c"
+              }
+            ],
+            "fade_ms": 380,
+            "interval_ms": 375
+          },
+          {
+            "targets": [
+              {
+                "led": 2,
+                "color": "#000099"
+              },
+              {
+                "led": 1,
+                "color": "#990000"
+              }
+            ],
+            "fade_ms": 380,
+            "interval_ms": 375
+          },
+          {
+            "targets": [
+              {
+                "led": 2,
+                "color": "#0c0045"
+              },
+              {
+                "led": 1,
+                "color": "#c00021"
+              }
+            ],
+            "fade_ms": 380,
+            "interval_ms": 375
+          },
+          {
+            "targets": [
+              {
+                "led": 2,
+                "color": "#1a001a"
+              },
+              {
+                "led": 1,
+                "color": "#800080"
+              }
+            ],
+            "fade_ms": 380,
+            "interval_ms": 375
+          },
+          {
+            "targets": [
+              {
+                "led": 2,
+                "color": "#45000c"
+              },
+              {
+                "led": 1,
+                "color": "#2100c0"
+              }
+            ],
+            "fade_ms": 380,
+            "interval_ms": 375
+          },
+          {
+            "targets": [
+              {
+                "led": 2,
+                "color": "#990000"
+              },
+              {
+                "led": 1,
+                "color": "#000099"
+              }
+            ],
+            "fade_ms": 380,
+            "interval_ms": 376
+          }
+        ],
+        "repeat": 2,
+        "on_finish": "hold"
+      },
+      "nominal_duration_ms": 6046,
+      "total_frames": 16,
+      "planned_target_writes": 34,
+      "required_capabilities": [
+        "set",
+        "raw-rgb",
+        "frame-program-experimental-v1",
+        "hold"
+      ]
+    }
+  },
+  {
+    "name": "orbit-segments8-preview",
+    "schema": "OrbitPreviewResponse",
+    "source": {
+      "kind": "httptest-no-service",
+      "base_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+      "function": "httpapi.New(nil).ServeHTTP + httptest.NewRecorder",
+      "method": "POST",
+      "path": "/v2/light/preview",
+      "request_sample": "orbit-segments8-action"
+    },
+    "value": {
+      "result": {
+        "schema_version": 1,
+        "contract": "nb1-light-action/experimental-v2",
+        "program_compile_contract": "nb1-frame-program/experimental-v1",
+        "recipe_id": "orbit-paired-linear-8/experimental-v1",
+        "action": {
+          "kind": "orbit",
+          "colors": [
+            "#ff0000",
+            "#0000ff"
+          ],
+          "leds": [
+            2,
+            1
+          ],
+          "period_ms": 3001,
+          "cycles": 2,
+          "segments": 8,
+          "on_finish": "hold"
+        },
+        "program": {
+          "contract": "nb1-frame-program/experimental-v1",
+          "initial": [
+            {
+              "led": 2,
+              "color": "#990000"
+            },
+            {
+              "led": 1,
+              "color": "#000099"
+            }
+          ],
+          "frames": [
+            {
+              "targets": [
+                {
+                  "led": 2,
+                  "color": "#c00021"
+                },
+                {
+                  "led": 1,
+                  "color": "#0c0045"
+                }
+              ],
+              "fade_ms": 380,
+              "interval_ms": 375
+            },
+            {
+              "targets": [
+                {
+                  "led": 2,
+                  "color": "#800080"
+                },
+                {
+                  "led": 1,
+                  "color": "#1a001a"
+                }
+              ],
+              "fade_ms": 380,
+              "interval_ms": 375
+            },
+            {
+              "targets": [
+                {
+                  "led": 2,
+                  "color": "#2100c0"
+                },
+                {
+                  "led": 1,
+                  "color": "#45000c"
+                }
+              ],
+              "fade_ms": 380,
+              "interval_ms": 375
+            },
+            {
+              "targets": [
+                {
+                  "led": 2,
+                  "color": "#000099"
+                },
+                {
+                  "led": 1,
+                  "color": "#990000"
+                }
+              ],
+              "fade_ms": 380,
+              "interval_ms": 375
+            },
+            {
+              "targets": [
+                {
+                  "led": 2,
+                  "color": "#0c0045"
+                },
+                {
+                  "led": 1,
+                  "color": "#c00021"
+                }
+              ],
+              "fade_ms": 380,
+              "interval_ms": 375
+            },
+            {
+              "targets": [
+                {
+                  "led": 2,
+                  "color": "#1a001a"
+                },
+                {
+                  "led": 1,
+                  "color": "#800080"
+                }
+              ],
+              "fade_ms": 380,
+              "interval_ms": 375
+            },
+            {
+              "targets": [
+                {
+                  "led": 2,
+                  "color": "#45000c"
+                },
+                {
+                  "led": 1,
+                  "color": "#2100c0"
+                }
+              ],
+              "fade_ms": 380,
+              "interval_ms": 375
+            },
+            {
+              "targets": [
+                {
+                  "led": 2,
+                  "color": "#990000"
+                },
+                {
+                  "led": 1,
+                  "color": "#000099"
+                }
+              ],
+              "fade_ms": 380,
+              "interval_ms": 376
+            }
+          ],
+          "repeat": 2,
+          "on_finish": "hold"
+        },
+        "nominal_duration_ms": 6046,
+        "total_frames": 16,
+        "planned_target_writes": 34,
+        "required_capabilities": [
+          "set",
+          "raw-rgb",
+          "frame-program-experimental-v1",
+          "hold"
+        ]
+      },
+      "preview": {
+        "contract": "nb1-frame-program/experimental-v1",
+        "program": {
+          "contract": "nb1-frame-program/experimental-v1",
+          "initial": [
+            {
+              "led": 2,
+              "color": "#990000"
+            },
+            {
+              "led": 1,
+              "color": "#000099"
+            }
+          ],
+          "frames": [
+            {
+              "targets": [
+                {
+                  "led": 2,
+                  "color": "#c00021"
+                },
+                {
+                  "led": 1,
+                  "color": "#0c0045"
+                }
+              ],
+              "fade_ms": 380,
+              "interval_ms": 375
+            },
+            {
+              "targets": [
+                {
+                  "led": 2,
+                  "color": "#800080"
+                },
+                {
+                  "led": 1,
+                  "color": "#1a001a"
+                }
+              ],
+              "fade_ms": 380,
+              "interval_ms": 375
+            },
+            {
+              "targets": [
+                {
+                  "led": 2,
+                  "color": "#2100c0"
+                },
+                {
+                  "led": 1,
+                  "color": "#45000c"
+                }
+              ],
+              "fade_ms": 380,
+              "interval_ms": 375
+            },
+            {
+              "targets": [
+                {
+                  "led": 2,
+                  "color": "#000099"
+                },
+                {
+                  "led": 1,
+                  "color": "#990000"
+                }
+              ],
+              "fade_ms": 380,
+              "interval_ms": 375
+            },
+            {
+              "targets": [
+                {
+                  "led": 2,
+                  "color": "#0c0045"
+                },
+                {
+                  "led": 1,
+                  "color": "#c00021"
+                }
+              ],
+              "fade_ms": 380,
+              "interval_ms": 375
+            },
+            {
+              "targets": [
+                {
+                  "led": 2,
+                  "color": "#1a001a"
+                },
+                {
+                  "led": 1,
+                  "color": "#800080"
+                }
+              ],
+              "fade_ms": 380,
+              "interval_ms": 375
+            },
+            {
+              "targets": [
+                {
+                  "led": 2,
+                  "color": "#45000c"
+                },
+                {
+                  "led": 1,
+                  "color": "#2100c0"
+                }
+              ],
+              "fade_ms": 380,
+              "interval_ms": 375
+            },
+            {
+              "targets": [
+                {
+                  "led": 2,
+                  "color": "#990000"
+                },
+                {
+                  "led": 1,
+                  "color": "#000099"
+                }
+              ],
+              "fade_ms": 380,
+              "interval_ms": 376
+            }
+          ],
+          "repeat": 2,
+          "on_finish": "hold"
+        },
+        "total_frames": 16,
+        "stored_target_writes": 18,
+        "planned_target_writes": 34,
+        "cycle_duration_ms": 3001,
+        "nominal_initial_ms": 20,
+        "nominal_tail_ms": 24,
+        "nominal_duration_ms": 6046,
+        "timing_basis": "host-nominal-excludes-native-io",
+        "required_capabilities": [
+          "set",
+          "raw-rgb",
+          "frame-program-experimental-v1",
+          "hold"
+        ],
+        "execution": {
+          "available": false,
+          "reason": "frame_service_unsupported"
+        }
+      }
+    }
+  },
+  {
+    "name": "frame-program-request",
+    "schema": "FrameProgramRequest",
+    "source": {
+      "kind": "pure-codec",
+      "base_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+      "function": "control.PreviewFrameProgram input; omitted repeat/on_finish"
+    },
+    "value": {
+      "contract": "nb1-frame-program/experimental-v1",
+      "initial": [
+        {
+          "led": 2,
+          "color": "#ABCDEF"
+        }
+      ],
+      "frames": [
+        {
+          "targets": [
+            {
+              "led": 2,
+              "color": "#010203"
+            }
+          ],
+          "fade_ms": 0,
+          "interval_ms": 50
+        }
+      ]
+    }
+  },
+  {
+    "name": "frame-program-normalized",
+    "schema": "FrameProgram",
+    "source": {
+      "kind": "pure-codec",
+      "base_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+      "function": "control.PreviewFrameProgram.Program",
+      "request_sample": "frame-program-request"
+    },
+    "value": {
+      "contract": "nb1-frame-program/experimental-v1",
+      "initial": [
+        {
+          "led": 2,
+          "color": "#abcdef"
+        }
+      ],
+      "frames": [
+        {
+          "targets": [
+            {
+              "led": 2,
+              "color": "#010203"
+            }
+          ],
+          "fade_ms": 0,
+          "interval_ms": 50
+        }
+      ],
+      "repeat": 1,
+      "on_finish": "off"
+    }
+  },
+  {
+    "name": "frame-program-preview",
+    "schema": "FramePreview",
+    "source": {
+      "kind": "httptest-no-service",
+      "base_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+      "function": "httpapi.New(nil).ServeHTTP + httptest.NewRecorder",
+      "method": "POST",
+      "path": "/v1/frame-programs/preview",
+      "request_sample": "frame-program-request"
+    },
+    "value": {
+      "contract": "nb1-frame-program/experimental-v1",
+      "program": {
+        "contract": "nb1-frame-program/experimental-v1",
+        "initial": [
+          {
+            "led": 2,
+            "color": "#abcdef"
+          }
+        ],
+        "frames": [
+          {
+            "targets": [
+              {
+                "led": 2,
+                "color": "#010203"
+              }
+            ],
+            "fade_ms": 0,
+            "interval_ms": 50
+          }
+        ],
+        "repeat": 1,
+        "on_finish": "off"
+      },
+      "total_frames": 1,
+      "stored_target_writes": 2,
+      "planned_target_writes": 2,
+      "cycle_duration_ms": 50,
+      "nominal_initial_ms": 10,
+      "nominal_tail_ms": 0,
+      "nominal_duration_ms": 60,
+      "timing_basis": "host-nominal-excludes-native-io",
+      "required_capabilities": [
+        "set",
+        "raw-rgb",
+        "frame-program-experimental-v1"
+      ],
+      "execution": {
+        "available": false,
+        "reason": "frame_service_unsupported"
+      }
+    }
+  },
+  {
+    "name": "frame-capabilities-no-service",
+    "schema": "FrameCapabilities",
+    "source": {
+      "kind": "httptest-no-service",
+      "base_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+      "function": "httpapi.New(nil).ServeHTTP + httptest.NewRecorder",
+      "method": "GET",
+      "path": "/v1/frame-capabilities"
+    },
+    "value": {
+      "contract": "nb1-frame-program/experimental-v1",
+      "experimental": true,
+      "fade_quantum_ms": 10,
+      "initialization": "once_before_repeated_frames",
+      "max_executed_frames": 1024,
+      "max_frames": 1024,
+      "max_interval_ms": 600000,
+      "max_nominal_duration_ms": 86400000,
+      "max_target_writes": 2050,
+      "min_interval_ms": 50,
+      "policy": "reject",
+      "required_device_capabilities": [
+        "set",
+        "raw-rgb",
+        "mk2-basic"
+      ],
+      "schema_version": 1,
+      "software_supported": false,
+      "timing_basis": "host-nominal-excludes-native-io",
+      "write_spacing_ms": 10
+    }
+  },
+  {
+    "name": "frame-job-synthetic-failed-wire-only",
+    "schema": "FrameJob",
+    "source": {
+      "kind": "synthetic-Go-wire-struct",
+      "base_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+      "function": "control.FrameJob struct literal; synthetic wire shape only, no Engine or submission",
+      "request_sample": "frame-program-normalized"
+    },
+    "value": {
+      "id": "framejob_00000000000000000000000000000001",
+      "device": "fixture-device",
+      "status": "failed",
+      "program": {
+        "contract": "nb1-frame-program/experimental-v1",
+        "initial": [
+          {
+            "led": 2,
+            "color": "#abcdef"
+          }
+        ],
+        "frames": [
+          {
+            "targets": [
+              {
+                "led": 2,
+                "color": "#010203"
+              }
+            ],
+            "fade_ms": 0,
+            "interval_ms": 50
+          }
+        ],
+        "repeat": 1,
+        "on_finish": "off"
+      },
+      "completed_frames": 0,
+      "total_frames": 1,
+      "completed_target_writes": 1,
+      "planned_target_writes": 2,
+      "created_at": "2026-11-09T19:00:00Z",
+      "started_at": "2026-11-09T19:00:01Z",
+      "finished_at": "2026-11-09T19:00:02Z",
+      "error": "Synthetic wire-shape example only; no Engine, submission or execution occurred"
+    }
+  }
+]

@@ -4,7 +4,7 @@
   "info": {
     "title": "nb1 本地设备执行 API",
     "version": "0.1.0-local",
-    "description": "当前本地候选实现，未发布。仅loopback HTTP，无用户认证；拒绝非本地Host及跨源浏览器控制。请求使用规范小写字段名；未知字段、非规范字段大小写、重复对象键、显式null、尾随JSON和超过64层的嵌套被拒绝。省略默认字段合法，repeat=0规范为1。可选request_id/expected_daemon_instance_id绑定仅在同一daemon实例的有限回执内去重；旧提交无需准备步骤，客户端无自动重试，不提供跨重启exactly-once。"
+    "description": "当前本地候选实现，未发布。仅loopback HTTP，无用户认证；拒绝非本地Host及跨源浏览器控制。请求使用规范小写字段名；未知字段、非规范字段大小写、重复对象键、显式null、尾随JSON和超过64层的嵌套被拒绝。原低层Program可省略默认字段，repeat=0规范为1；Frame HTTP及高级Action有各自严格默认/显式零值规则。可选request_id/expected_daemon_instance_id绑定仅在同一daemon实例的有限回执内去重；旧提交无需准备步骤，客户端无自动重试，不提供跨重启exactly-once。 上述默认规则属于原低层Program；Frame HTTP与作者Action显式0/空值规则分别定义。此文档同时列出日常1d89和未安装开发4d62589；状态见每操作x-availability。JSON Schema仅验证结构，不证明SHA/来源、原始数字词法、无重复键、Unicode scalar、设备支持或物理效果。"
   },
   "servers": [
     {
@@ -30,6 +30,18 @@
     {
       "name": "patterns",
       "description": "daemon本机create-only库；固定revision复用，不自动重播"
+    },
+    {
+      "name": "frames"
+    },
+    {
+      "name": "light-v2"
+    },
+    {
+      "name": "patterns-v2"
+    },
+    {
+      "name": "debugger-assets"
     }
   ],
   "paths": {
@@ -58,6 +70,25 @@
           "405": {
             "$ref": "#/components/responses/405"
           }
+        },
+        "x-availability": {
+          "daily": {
+            "source_commit": "1d89eae92278f24a68fff1a34e3c1e696a962c3c",
+            "status": "implemented"
+          },
+          "development": {
+            "source_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+            "status": "implemented"
+          },
+          "deployment": "daily_source_available",
+          "hardware_qualification": "not_established_by_openapi"
+        },
+        "x-api-level": "discovery",
+        "x-source-evidence": {
+          "source": "internal/httpapi/httpapi.go",
+          "tests": [
+            "internal/httpapi/httpapi_test.go"
+          ]
         }
       }
     },
@@ -89,6 +120,25 @@
           "405": {
             "$ref": "#/components/responses/405"
           }
+        },
+        "x-availability": {
+          "daily": {
+            "source_commit": "1d89eae92278f24a68fff1a34e3c1e696a962c3c",
+            "status": "implemented"
+          },
+          "development": {
+            "source_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+            "status": "implemented"
+          },
+          "deployment": "daily_source_available",
+          "hardware_qualification": "not_established_by_openapi"
+        },
+        "x-api-level": "low-state",
+        "x-source-evidence": {
+          "source": "internal/httpapi/httpapi.go",
+          "tests": [
+            "internal/httpapi/httpapi_test.go"
+          ]
         }
       }
     },
@@ -134,6 +184,26 @@
           "500": {
             "$ref": "#/components/responses/500"
           }
+        },
+        "x-availability": {
+          "daily": {
+            "source_commit": "1d89eae92278f24a68fff1a34e3c1e696a962c3c",
+            "status": "implemented"
+          },
+          "development": {
+            "source_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+            "status": "implemented"
+          },
+          "deployment": "daily_source_available",
+          "hardware_qualification": "not_established_by_openapi"
+        },
+        "x-api-level": "low-state",
+        "x-source-evidence": {
+          "source": "internal/httpapi/httpapi.go",
+          "tests": [
+            "internal/httpapi/httpapi_test.go",
+            "internal/httpapi/preview_test.go"
+          ]
         }
       }
     },
@@ -242,7 +312,28 @@
             "$ref": "#/components/responses/501"
           }
         },
-        "x-max-json-depth": 64
+        "x-max-json-depth": 64,
+        "x-availability": {
+          "daily": {
+            "source_commit": "1d89eae92278f24a68fff1a34e3c1e696a962c3c",
+            "status": "implemented"
+          },
+          "development": {
+            "source_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+            "status": "implemented"
+          },
+          "deployment": "daily_source_available",
+          "hardware_qualification": "not_established_by_openapi"
+        },
+        "x-api-level": "low-program",
+        "x-source-evidence": {
+          "source": "internal/httpapi/httpapi.go",
+          "tests": [
+            "internal/httpapi/receipt_test.go",
+            "internal/httpapi/effects_test.go",
+            "internal/httpapi/patterns_execution_test.go"
+          ]
+        }
       }
     },
     "/v1/jobs/{jobId}": {
@@ -286,6 +377,26 @@
           "500": {
             "$ref": "#/components/responses/500"
           }
+        },
+        "x-availability": {
+          "daily": {
+            "source_commit": "1d89eae92278f24a68fff1a34e3c1e696a962c3c",
+            "status": "implemented"
+          },
+          "development": {
+            "source_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+            "status": "implemented"
+          },
+          "deployment": "daily_source_available",
+          "hardware_qualification": "not_established_by_openapi"
+        },
+        "x-api-level": "low-job",
+        "x-source-evidence": {
+          "source": "internal/httpapi/httpapi.go",
+          "tests": [
+            "internal/httpapi/httpapi_test.go",
+            "internal/httpapi/receipt_test.go"
+          ]
         }
       }
     },
@@ -352,7 +463,27 @@
             "$ref": "#/components/responses/500"
           }
         },
-        "x-max-json-depth": 64
+        "x-max-json-depth": 64,
+        "x-availability": {
+          "daily": {
+            "source_commit": "1d89eae92278f24a68fff1a34e3c1e696a962c3c",
+            "status": "implemented"
+          },
+          "development": {
+            "source_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+            "status": "implemented"
+          },
+          "deployment": "daily_source_available",
+          "hardware_qualification": "not_established_by_openapi"
+        },
+        "x-api-level": "low-job",
+        "x-source-evidence": {
+          "source": "internal/httpapi/httpapi.go",
+          "tests": [
+            "internal/httpapi/httpapi_test.go",
+            "internal/control/engine_test.go"
+          ]
+        }
       }
     },
     "/v1/transport-metrics": {
@@ -383,6 +514,25 @@
           "405": {
             "$ref": "#/components/responses/405"
           }
+        },
+        "x-availability": {
+          "daily": {
+            "source_commit": "1d89eae92278f24a68fff1a34e3c1e696a962c3c",
+            "status": "implemented"
+          },
+          "development": {
+            "source_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+            "status": "implemented"
+          },
+          "deployment": "daily_source_available",
+          "hardware_qualification": "not_established_by_openapi"
+        },
+        "x-api-level": "diagnostic",
+        "x-source-evidence": {
+          "source": "internal/httpapi/httpapi.go",
+          "tests": [
+            "internal/httpapi/httpapi_test.go"
+          ]
         }
       }
     },
@@ -423,6 +573,25 @@
           "501": {
             "$ref": "#/components/responses/501"
           }
+        },
+        "x-availability": {
+          "daily": {
+            "source_commit": "1d89eae92278f24a68fff1a34e3c1e696a962c3c",
+            "status": "implemented"
+          },
+          "development": {
+            "source_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+            "status": "implemented"
+          },
+          "deployment": "daily_source_available",
+          "hardware_qualification": "not_established_by_openapi"
+        },
+        "x-api-level": "receipt",
+        "x-source-evidence": {
+          "source": "internal/httpapi/httpapi.go",
+          "tests": [
+            "internal/httpapi/receipt_test.go"
+          ]
         }
       }
     },
@@ -511,6 +680,26 @@
           "501": {
             "$ref": "#/components/responses/501"
           }
+        },
+        "x-availability": {
+          "daily": {
+            "source_commit": "1d89eae92278f24a68fff1a34e3c1e696a962c3c",
+            "status": "implemented"
+          },
+          "development": {
+            "source_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+            "status": "implemented"
+          },
+          "deployment": "daily_source_available",
+          "hardware_qualification": "not_established_by_openapi"
+        },
+        "x-api-level": "receipt",
+        "x-source-evidence": {
+          "source": "internal/httpapi/httpapi.go",
+          "tests": [
+            "internal/httpapi/receipt_test.go",
+            "internal/httpapi/patterns_execution_test.go"
+          ]
         }
       }
     },
@@ -539,6 +728,26 @@
           "405": {
             "$ref": "#/components/responses/405"
           }
+        },
+        "x-availability": {
+          "daily": {
+            "source_commit": "1d89eae92278f24a68fff1a34e3c1e696a962c3c",
+            "status": "implemented"
+          },
+          "development": {
+            "source_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+            "status": "implemented"
+          },
+          "deployment": "daily_source_available",
+          "hardware_qualification": "not_established_by_openapi"
+        },
+        "x-api-level": "discovery",
+        "x-source-evidence": {
+          "source": "internal/httpapi/preview.go",
+          "tests": [
+            "internal/httpapi/preview_test.go",
+            "internal/httpapi/patterns_test.go"
+          ]
         }
       }
     },
@@ -610,6 +819,26 @@
           "501": {
             "$ref": "#/components/responses/501"
           }
+        },
+        "x-availability": {
+          "daily": {
+            "source_commit": "1d89eae92278f24a68fff1a34e3c1e696a962c3c",
+            "status": "implemented"
+          },
+          "development": {
+            "source_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+            "status": "implemented"
+          },
+          "deployment": "daily_source_available",
+          "hardware_qualification": "not_established_by_openapi"
+        },
+        "x-api-level": "low-program",
+        "x-source-evidence": {
+          "source": "internal/httpapi/preview.go",
+          "tests": [
+            "internal/httpapi/preview_test.go",
+            "internal/httpapi/patterns_test.go"
+          ]
         }
       }
     },
@@ -693,6 +922,25 @@
               }
             }
           }
+        },
+        "x-availability": {
+          "daily": {
+            "source_commit": "1d89eae92278f24a68fff1a34e3c1e696a962c3c",
+            "status": "implemented"
+          },
+          "development": {
+            "source_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+            "status": "implemented"
+          },
+          "deployment": "daily_source_available",
+          "hardware_qualification": "not_established_by_openapi"
+        },
+        "x-api-level": "color",
+        "x-source-evidence": {
+          "source": "internal/httpapi/color.go",
+          "tests": [
+            "internal/httpapi/color_test.go"
+          ]
         }
       }
     },
@@ -753,6 +1001,25 @@
               }
             }
           }
+        },
+        "x-availability": {
+          "daily": {
+            "source_commit": "1d89eae92278f24a68fff1a34e3c1e696a962c3c",
+            "status": "implemented"
+          },
+          "development": {
+            "source_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+            "status": "implemented"
+          },
+          "deployment": "daily_source_available",
+          "hardware_qualification": "not_established_by_openapi"
+        },
+        "x-api-level": "high-action",
+        "x-source-evidence": {
+          "source": "internal/httpapi/light.go",
+          "tests": [
+            "internal/httpapi/light_test.go"
+          ]
         }
       }
     },
@@ -868,6 +1135,25 @@
           "501": {
             "$ref": "#/components/responses/501"
           }
+        },
+        "x-availability": {
+          "daily": {
+            "source_commit": "1d89eae92278f24a68fff1a34e3c1e696a962c3c",
+            "status": "implemented"
+          },
+          "development": {
+            "source_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+            "status": "implemented"
+          },
+          "deployment": "daily_source_available",
+          "hardware_qualification": "not_established_by_openapi"
+        },
+        "x-api-level": "high-action",
+        "x-source-evidence": {
+          "source": "internal/httpapi/light.go",
+          "tests": [
+            "internal/httpapi/light_test.go"
+          ]
         }
       }
     },
@@ -928,7 +1214,26 @@
         "operationId": "listPatterns",
         "summary": "读取同一daemon图案库，或导出全库冻结快照",
         "description": "无请求体；读取缺失库不创建目录。默认PatternList，format=snapshot返回规范PatternSnapshot。",
-        "x-no-request-body": true
+        "x-no-request-body": true,
+        "x-availability": {
+          "daily": {
+            "source_commit": "1d89eae92278f24a68fff1a34e3c1e696a962c3c",
+            "status": "implemented"
+          },
+          "development": {
+            "source_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+            "status": "implemented"
+          },
+          "deployment": "daily_source_available",
+          "hardware_qualification": "not_established_by_openapi"
+        },
+        "x-api-level": "pattern-library",
+        "x-source-evidence": {
+          "source": "internal/httpapi/patterns.go",
+          "tests": [
+            "internal/httpapi/patterns_test.go"
+          ]
+        }
       }
     },
     "/v1/patterns/{id}": {
@@ -998,7 +1303,26 @@
           }
         },
         "operationId": "getPattern",
-        "summary": "读取或导出指定ID，保留内容revision"
+        "summary": "读取或导出指定ID，保留内容revision",
+        "x-availability": {
+          "daily": {
+            "source_commit": "1d89eae92278f24a68fff1a34e3c1e696a962c3c",
+            "status": "implemented"
+          },
+          "development": {
+            "source_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+            "status": "implemented"
+          },
+          "deployment": "daily_source_available",
+          "hardware_qualification": "not_established_by_openapi"
+        },
+        "x-api-level": "pattern-library",
+        "x-source-evidence": {
+          "source": "internal/httpapi/patterns.go",
+          "tests": [
+            "internal/httpapi/patterns_test.go"
+          ]
+        }
       }
     },
     "/v1/patterns/import": {
@@ -1055,6 +1379,2114 @@
               }
             }
           }
+        },
+        "x-availability": {
+          "daily": {
+            "source_commit": "1d89eae92278f24a68fff1a34e3c1e696a962c3c",
+            "status": "implemented"
+          },
+          "development": {
+            "source_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+            "status": "implemented"
+          },
+          "deployment": "daily_source_available",
+          "hardware_qualification": "not_established_by_openapi"
+        },
+        "x-api-level": "pattern-library",
+        "x-source-evidence": {
+          "source": "internal/httpapi/patterns.go",
+          "tests": [
+            "internal/httpapi/patterns_test.go"
+          ]
+        }
+      },
+      "get": {
+        "tags": [
+          "patterns"
+        ],
+        "parameters": [
+          {
+            "name": "format",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "const": "snapshot"
+            },
+            "description": "仅一次format=snapshot；未知、重复和空查询参数拒绝。省略返回目录/记录。"
+          }
+        ],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "405": {
+            "$ref": "#/components/responses/405"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "501": {
+            "$ref": "#/components/responses/501"
+          },
+          "503": {
+            "$ref": "#/components/responses/503"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "200": {
+            "description": "单条记录或单条冻结包，依format选择",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/PatternRecord"
+                    },
+                    {
+                      "$ref": "#/components/schemas/PatternSnapshot"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "operationId": "getV1ImportID",
+        "summary": "读取普通图案ID import",
+        "x-availability": {
+          "daily": {
+            "source_commit": "1d89eae92278f24a68fff1a34e3c1e696a962c3c",
+            "status": "implemented"
+          },
+          "development": {
+            "source_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+            "status": "implemented"
+          },
+          "deployment": "daily_source_available",
+          "hardware_qualification": "not_established_by_openapi"
+        },
+        "x-alias-of": "GET /v1/patterns/{id}",
+        "description": "GET treats this literal operation-looking name as an ordinary ID. ",
+        "x-api-level": "pattern-library",
+        "x-source-evidence": {
+          "source": "internal/httpapi/patterns.go",
+          "tests": [
+            "internal/httpapi/patterns_test.go"
+          ]
+        }
+      }
+    },
+    "/v1/frame-capabilities": {
+      "get": {
+        "operationId": "getFrameCapabilities",
+        "summary": "帧软件契约和门槛",
+        "tags": [
+          "frames"
+        ],
+        "x-api-level": "low-frame",
+        "x-availability": {
+          "daily": {
+            "source_commit": "1d89eae92278f24a68fff1a34e3c1e696a962c3c",
+            "status": "implemented"
+          },
+          "development": {
+            "source_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+            "status": "implemented"
+          },
+          "deployment": "daily_source_available",
+          "hardware_qualification": "not_established_by_openapi"
+        },
+        "responses": {
+          "200": {
+            "description": "成功；不等同设备已完成或物理验收。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FrameCapabilities"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "405": {
+            "$ref": "#/components/responses/405"
+          }
+        },
+        "x-runtime-validation": [
+          "Common loopback Host/same-origin Origin, no CORS; preserve exact request on uncertainty",
+          "Strict route-specific body/media/query checks; unknown/null/duplicate/trailing values rejected"
+        ],
+        "x-source-evidence": {
+          "source": "internal/httpapi/frames.go",
+          "tests": [
+            "internal/httpapi/frames_test.go"
+          ]
+        }
+      }
+    },
+    "/v1/frame-programs/preview": {
+      "post": {
+        "operationId": "previewFrameProgram",
+        "summary": "纯帧预览",
+        "tags": [
+          "frames"
+        ],
+        "x-api-level": "low-frame",
+        "x-availability": {
+          "daily": {
+            "source_commit": "1d89eae92278f24a68fff1a34e3c1e696a962c3c",
+            "status": "implemented"
+          },
+          "development": {
+            "source_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+            "status": "implemented"
+          },
+          "deployment": "daily_source_available",
+          "hardware_qualification": "not_established_by_openapi"
+        },
+        "responses": {
+          "200": {
+            "description": "成功；不等同设备已完成或物理验收。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FramePreview"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "405": {
+            "$ref": "#/components/responses/405"
+          },
+          "413": {
+            "$ref": "#/components/responses/413"
+          },
+          "415": {
+            "$ref": "#/components/responses/415"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          },
+          "503": {
+            "$ref": "#/components/responses/503"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FramePreviewRequest"
+              }
+            }
+          }
+        },
+        "x-max-body-bytes": 1048576,
+        "x-runtime-validation": [
+          "Common loopback Host/same-origin Origin, no CORS; preserve exact request on uncertainty",
+          "Strict route-specific body/media/query checks; unknown/null/duplicate/trailing values rejected"
+        ],
+        "x-source-evidence": {
+          "source": "internal/httpapi/frames.go",
+          "tests": [
+            "internal/httpapi/frames_test.go"
+          ]
+        }
+      }
+    },
+    "/v1/devices/{serial}/frame-jobs": {
+      "post": {
+        "operationId": "submitFrameProgram",
+        "summary": "以reject和完整票据提交帧",
+        "tags": [
+          "frames"
+        ],
+        "x-api-level": "low-frame",
+        "x-availability": {
+          "daily": {
+            "source_commit": "1d89eae92278f24a68fff1a34e3c1e696a962c3c",
+            "status": "implemented"
+          },
+          "development": {
+            "source_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+            "status": "implemented"
+          },
+          "deployment": "daily_source_available",
+          "hardware_qualification": "not_established_by_openapi"
+        },
+        "responses": {
+          "202": {
+            "description": "成功；不等同设备已完成或物理验收。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FrameJob"
+                }
+              }
+            },
+            "headers": {
+              "Location": {
+                "description": "Original receipt query path with the expected daemon instance.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-NB1-Replayed": {
+                "description": "Always true or false; true returns the original Job rather than another execution.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "true",
+                    "false"
+                  ]
+                }
+              },
+              "X-NB1-Daemon-Instance-ID": {
+                "description": "Always confirms the exact requested daemon instance.",
+                "schema": {
+                  "type": "string",
+                  "pattern": "^daemon_[0-9a-f]{32}$",
+                  "description": "原daemon实例绑定；实例改变时旧结果仍可能未知，不可自动换绑。"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "405": {
+            "$ref": "#/components/responses/405"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "410": {
+            "$ref": "#/components/responses/410"
+          },
+          "413": {
+            "$ref": "#/components/responses/413"
+          },
+          "415": {
+            "$ref": "#/components/responses/415"
+          },
+          "429": {
+            "$ref": "#/components/responses/429"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          },
+          "501": {
+            "$ref": "#/components/responses/501"
+          },
+          "503": {
+            "$ref": "#/components/responses/503"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FrameSubmitRequest"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "serial",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,128}$",
+              "description": "明确配置的真实序列号；无索引或别名解析。"
+            }
+          }
+        ],
+        "x-max-body-bytes": 1048576,
+        "x-runtime-validation": [
+          "Common loopback Host/same-origin Origin, no CORS; preserve exact request on uncertainty",
+          "Strict route-specific body/media/query checks; unknown/null/duplicate/trailing values rejected"
+        ],
+        "x-source-evidence": {
+          "source": "internal/httpapi/frames.go",
+          "tests": [
+            "internal/httpapi/frames_test.go",
+            "internal/httpapi/frames_engine_test.go"
+          ]
+        }
+      }
+    },
+    "/v1/devices/{serial}/frame-requests/{request_id}": {
+      "get": {
+        "operationId": "getFrameReceipt",
+        "summary": "查询原帧票据",
+        "tags": [
+          "frames"
+        ],
+        "x-api-level": "receipt",
+        "x-availability": {
+          "daily": {
+            "source_commit": "1d89eae92278f24a68fff1a34e3c1e696a962c3c",
+            "status": "implemented"
+          },
+          "development": {
+            "source_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+            "status": "implemented"
+          },
+          "deployment": "daily_source_available",
+          "hardware_qualification": "not_established_by_openapi"
+        },
+        "responses": {
+          "200": {
+            "description": "成功；不等同设备已完成或物理验收。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FrameJob"
+                }
+              }
+            },
+            "headers": {
+              "X-NB1-Daemon-Instance-ID": {
+                "description": "Always present; exactly confirms the original expected daemon instance.",
+                "schema": {
+                  "type": "string",
+                  "pattern": "^daemon_[0-9a-f]{32}$",
+                  "description": "原daemon实例绑定；实例改变时旧结果仍可能未知，不可自动换绑。"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "405": {
+            "$ref": "#/components/responses/405"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "410": {
+            "$ref": "#/components/responses/410"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          },
+          "501": {
+            "$ref": "#/components/responses/501"
+          },
+          "503": {
+            "$ref": "#/components/responses/503"
+          }
+        },
+        "parameters": [
+          {
+            "name": "serial",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,128}$",
+              "description": "明确配置的真实序列号；无索引或别名解析。"
+            }
+          },
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^req_[1-9][0-9]{0,18}_[0-9a-f]{32}$"
+            }
+          },
+          {
+            "name": "expected_daemon_instance_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^daemon_[0-9a-f]{32}$",
+              "description": "原daemon实例绑定；实例改变时旧结果仍可能未知，不可自动换绑。"
+            }
+          }
+        ],
+        "x-runtime-validation": [
+          "Common loopback Host/same-origin Origin, no CORS; preserve exact request on uncertainty",
+          "Strict route-specific body/media/query checks; unknown/null/duplicate/trailing values rejected"
+        ],
+        "x-source-evidence": {
+          "source": "internal/httpapi/frames.go",
+          "tests": [
+            "internal/httpapi/frames_test.go"
+          ]
+        }
+      }
+    },
+    "/v1/frame-jobs/{jobId}": {
+      "get": {
+        "operationId": "getFrameJob",
+        "summary": "读取旧帧Job",
+        "tags": [
+          "frames"
+        ],
+        "x-api-level": "low-job",
+        "x-availability": {
+          "daily": {
+            "source_commit": "1d89eae92278f24a68fff1a34e3c1e696a962c3c",
+            "status": "implemented"
+          },
+          "development": {
+            "source_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+            "status": "implemented"
+          },
+          "deployment": "daily_source_available",
+          "hardware_qualification": "not_established_by_openapi"
+        },
+        "responses": {
+          "200": {
+            "description": "成功；不等同设备已完成或物理验收。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FrameJob"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "405": {
+            "$ref": "#/components/responses/405"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          },
+          "501": {
+            "$ref": "#/components/responses/501"
+          }
+        },
+        "parameters": [
+          {
+            "name": "jobId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^framejob_[0-9a-f]{32}$"
+            }
+          }
+        ],
+        "x-runtime-validation": [
+          "Common loopback Host/same-origin Origin, no CORS; preserve exact request on uncertainty",
+          "Strict route-specific body/media/query checks; unknown/null/duplicate/trailing values rejected"
+        ],
+        "x-source-evidence": {
+          "source": "internal/httpapi/frames.go",
+          "tests": [
+            "internal/httpapi/frames_test.go"
+          ]
+        }
+      }
+    },
+    "/v1/frame-jobs/{jobId}/cancel": {
+      "post": {
+        "operationId": "cancelFrameJob",
+        "summary": "取消旧帧Job，可选原实例绑定",
+        "tags": [
+          "frames"
+        ],
+        "x-api-level": "low-job",
+        "x-availability": {
+          "daily": {
+            "source_commit": "1d89eae92278f24a68fff1a34e3c1e696a962c3c",
+            "status": "implemented"
+          },
+          "development": {
+            "source_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+            "status": "implemented"
+          },
+          "deployment": "daily_source_available",
+          "hardware_qualification": "not_established_by_openapi"
+        },
+        "responses": {
+          "202": {
+            "description": "成功；不等同设备已完成或物理验收。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FrameJob"
+                }
+              }
+            },
+            "headers": {
+              "X-NB1-Daemon-Instance-ID": {
+                "description": "Present only when request supplied the matching expected_daemon_instance_id; absent for legacy empty/unbound cancel.",
+                "schema": {
+                  "type": "string",
+                  "pattern": "^daemon_[0-9a-f]{32}$",
+                  "description": "原daemon实例绑定；实例改变时旧结果仍可能未知，不可自动换绑。"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "405": {
+            "$ref": "#/components/responses/405"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "413": {
+            "$ref": "#/components/responses/413"
+          },
+          "415": {
+            "$ref": "#/components/responses/415"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          },
+          "501": {
+            "$ref": "#/components/responses/501"
+          }
+        },
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FrameCancelRequest"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "jobId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^framejob_[0-9a-f]{32}$"
+            }
+          }
+        ],
+        "x-max-body-bytes": 1048576,
+        "x-runtime-validation": [
+          "Common loopback Host/same-origin Origin, no CORS; preserve exact request on uncertainty",
+          "Strict route-specific body/media/query checks; unknown/null/duplicate/trailing values rejected"
+        ],
+        "description": "Empty body/{} permitted for legacy cancel; optional expected instance checked before mutation. Already terminal hold remains held; active cancellation awaits native return+off cleanup+Read.",
+        "x-source-evidence": {
+          "source": "internal/httpapi/frames.go",
+          "tests": [
+            "internal/httpapi/frame_cancel_bound_test.go",
+            "internal/httpapi/frames_test.go"
+          ]
+        }
+      }
+    },
+    "/v2/light/preview": {
+      "post": {
+        "operationId": "previewOrbit",
+        "summary": "预览实验Orbit高级动作",
+        "tags": [
+          "light-v2"
+        ],
+        "x-api-level": "high-action",
+        "x-availability": {
+          "daily": {
+            "source_commit": "1d89eae92278f24a68fff1a34e3c1e696a962c3c",
+            "status": "implemented"
+          },
+          "development": {
+            "source_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+            "status": "implemented"
+          },
+          "deployment": "daily_source_available",
+          "hardware_qualification": "not_established_by_openapi"
+        },
+        "responses": {
+          "200": {
+            "description": "成功；不等同设备已完成或物理验收。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrbitPreviewResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "405": {
+            "$ref": "#/components/responses/405"
+          },
+          "413": {
+            "$ref": "#/components/responses/413"
+          },
+          "415": {
+            "$ref": "#/components/responses/415"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          },
+          "503": {
+            "$ref": "#/components/responses/503"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrbitPreviewRequest"
+              }
+            }
+          }
+        },
+        "x-max-body-bytes": 65536,
+        "x-runtime-validation": [
+          "Common loopback Host/same-origin Origin, no CORS; preserve exact request on uncertainty",
+          "Strict route-specific body/media/query checks; unknown/null/duplicate/trailing values rejected"
+        ],
+        "x-source-evidence": {
+          "source": "internal/httpapi/light_v2.go",
+          "tests": [
+            "internal/httpapi/frames_test.go",
+            "internal/httpapi/frames_engine_test.go"
+          ]
+        }
+      }
+    },
+    "/v2/devices/{serial}/light": {
+      "post": {
+        "operationId": "submitOrbit",
+        "summary": "服务端编译Orbit后提交FrameJob",
+        "tags": [
+          "light-v2"
+        ],
+        "x-api-level": "high-action",
+        "x-availability": {
+          "daily": {
+            "source_commit": "1d89eae92278f24a68fff1a34e3c1e696a962c3c",
+            "status": "implemented"
+          },
+          "development": {
+            "source_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+            "status": "implemented"
+          },
+          "deployment": "daily_source_available",
+          "hardware_qualification": "not_established_by_openapi"
+        },
+        "responses": {
+          "202": {
+            "description": "成功；不等同设备已完成或物理验收。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FrameJob"
+                }
+              }
+            },
+            "headers": {
+              "Location": {
+                "description": "Original receipt query path with the expected daemon instance.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-NB1-Replayed": {
+                "description": "Always true or false; true returns the original Job rather than another execution.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "true",
+                    "false"
+                  ]
+                }
+              },
+              "X-NB1-Daemon-Instance-ID": {
+                "description": "Always confirms the exact requested daemon instance.",
+                "schema": {
+                  "type": "string",
+                  "pattern": "^daemon_[0-9a-f]{32}$",
+                  "description": "原daemon实例绑定；实例改变时旧结果仍可能未知，不可自动换绑。"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "405": {
+            "$ref": "#/components/responses/405"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "410": {
+            "$ref": "#/components/responses/410"
+          },
+          "413": {
+            "$ref": "#/components/responses/413"
+          },
+          "415": {
+            "$ref": "#/components/responses/415"
+          },
+          "429": {
+            "$ref": "#/components/responses/429"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          },
+          "501": {
+            "$ref": "#/components/responses/501"
+          },
+          "503": {
+            "$ref": "#/components/responses/503"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrbitSubmitRequest"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "serial",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,128}$",
+              "description": "明确配置的真实序列号；无索引或别名解析。"
+            }
+          }
+        ],
+        "x-max-body-bytes": 65536,
+        "x-runtime-validation": [
+          "Common loopback Host/same-origin Origin, no CORS; preserve exact request on uncertainty",
+          "Strict route-specific body/media/query checks; unknown/null/duplicate/trailing values rejected"
+        ],
+        "x-source-evidence": {
+          "source": "internal/httpapi/light_v2.go",
+          "tests": [
+            "internal/httpapi/frames_test.go",
+            "internal/httpapi/frames_engine_test.go"
+          ]
+        }
+      }
+    },
+    "/v2/patterns/preview": {
+      "post": {
+        "operationId": "previewPatternV2",
+        "summary": "高级来源生成冻结候选，零Store/Engine",
+        "tags": [
+          "patterns-v2"
+        ],
+        "x-api-level": "pattern-authoring",
+        "x-availability": {
+          "daily": {
+            "source_commit": "1d89eae92278f24a68fff1a34e3c1e696a962c3c",
+            "status": "not_implemented"
+          },
+          "development": {
+            "source_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+            "status": "implemented"
+          },
+          "deployment": "development_not_installed",
+          "hardware_qualification": "not_established_by_openapi"
+        },
+        "responses": {
+          "200": {
+            "description": "成功；不等同设备已完成或物理验收。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PatternPreviewResponseV2"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "405": {
+            "$ref": "#/components/responses/405"
+          },
+          "413": {
+            "$ref": "#/components/responses/413"
+          },
+          "415": {
+            "$ref": "#/components/responses/415"
+          },
+          "501": {
+            "$ref": "#/components/responses/501"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PatternAuthorPreviewRequestV2"
+              }
+            }
+          }
+        },
+        "x-max-body-bytes": 1048576,
+        "x-runtime-validation": [
+          "Common loopback Host/same-origin Origin, no CORS; preserve exact request on uncertainty",
+          "Strict route-specific body/media/query checks; unknown/null/duplicate/trailing values rejected"
+        ],
+        "x-no-execution": true,
+        "x-max-json-depth": 32,
+        "description": " P3保存/读取不运行；无Job/receipt/daemon绑定。未注入v2 store时存储操作501，纯preview不受影响。合法未知项可读/导出但不能写；Schema不替代canonical/SHA/source验证。",
+        "x-error-codes": {
+          "400": [
+            "invalid_pattern_request"
+          ],
+          "403": [
+            "local_only"
+          ],
+          "405": [
+            "method_not_allowed"
+          ],
+          "413": [
+            "pattern_package_too_large"
+          ],
+          "415": [
+            "json_required"
+          ],
+          "501": [
+            "pattern_source_unsupported"
+          ]
+        },
+        "x-source-evidence": {
+          "source": "internal/httpapi/patterns_v2.go",
+          "tests": [
+            "internal/httpapi/patterns_v2_test.go"
+          ]
+        }
+      },
+      "get": {
+        "operationId": "getV2PreviewID",
+        "summary": "读取普通图案ID preview",
+        "tags": [
+          "patterns-v2"
+        ],
+        "x-api-level": "pattern-library",
+        "x-availability": {
+          "daily": {
+            "source_commit": "1d89eae92278f24a68fff1a34e3c1e696a962c3c",
+            "status": "not_implemented"
+          },
+          "development": {
+            "source_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+            "status": "requires_explicit_store_injection"
+          },
+          "deployment": "development_not_installed",
+          "hardware_qualification": "not_established_by_openapi",
+          "store_configuration": "Go WithPatternStoreV2 only; CLI does not select a v2 store; valid storage operations default to501; pure preview needs none"
+        },
+        "responses": {
+          "200": {
+            "description": "成功；不等同设备已完成或物理验收。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/PatternRecordResponseV2"
+                    },
+                    {
+                      "$ref": "#/components/schemas/PatternSnapshotV2Read"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "405": {
+            "$ref": "#/components/responses/405"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "501": {
+            "$ref": "#/components/responses/501"
+          },
+          "503": {
+            "$ref": "#/components/responses/503"
+          }
+        },
+        "parameters": [
+          {
+            "name": "format",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "const": "snapshot"
+            },
+            "description": "Exactly one if present; v2 rejects empty? and unknown/duplicate query."
+          }
+        ],
+        "x-runtime-validation": [
+          "Common loopback Host/same-origin Origin, no CORS; preserve exact request on uncertainty",
+          "Strict route-specific body/media/query checks; unknown/null/duplicate/trailing values rejected"
+        ],
+        "x-no-execution": true,
+        "x-max-json-depth": 32,
+        "description": "GET treats this literal operation-looking name as an ordinary ID.  P3保存/读取不运行；无Job/receipt/daemon绑定。未注入v2 store时存储操作501，纯preview不受影响。合法未知项可读/导出但不能写；Schema不替代canonical/SHA/source验证。",
+        "x-canonical-snapshot-response": "format=snapshot returns exact bytes with no added newline; unknown preserved",
+        "x-error-codes": {
+          "400": [
+            "invalid_pattern_request"
+          ],
+          "403": [
+            "local_only"
+          ],
+          "405": [
+            "method_not_allowed"
+          ],
+          "501": [
+            "pattern_library_unsupported"
+          ],
+          "503": [
+            "pattern_library_unavailable",
+            "pattern_library_format_mismatch",
+            "pattern_commit_uncertain"
+          ],
+          "409": [
+            "pattern_library_busy"
+          ],
+          "404": [
+            "pattern_not_found"
+          ]
+        },
+        "x-alias-of": "GET /v2/patterns/{id}",
+        "x-source-evidence": {
+          "source": "internal/httpapi/patterns_v2.go",
+          "tests": [
+            "internal/httpapi/patterns_v2_test.go"
+          ]
+        }
+      }
+    },
+    "/v2/patterns": {
+      "get": {
+        "operationId": "listPatternsV2",
+        "summary": "一次List的只读状态与摘要",
+        "tags": [
+          "patterns-v2"
+        ],
+        "x-api-level": "pattern-library",
+        "x-availability": {
+          "daily": {
+            "source_commit": "1d89eae92278f24a68fff1a34e3c1e696a962c3c",
+            "status": "not_implemented"
+          },
+          "development": {
+            "source_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+            "status": "requires_explicit_store_injection"
+          },
+          "deployment": "development_not_installed",
+          "hardware_qualification": "not_established_by_openapi",
+          "store_configuration": "Go WithPatternStoreV2 only; CLI does not select a v2 store; valid storage operations default to501; pure preview needs none"
+        },
+        "responses": {
+          "200": {
+            "description": "成功；不等同设备已完成或物理验收。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/PatternListV2"
+                    },
+                    {
+                      "$ref": "#/components/schemas/PatternSnapshotV2Read"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "405": {
+            "$ref": "#/components/responses/405"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "501": {
+            "$ref": "#/components/responses/501"
+          },
+          "503": {
+            "$ref": "#/components/responses/503"
+          }
+        },
+        "parameters": [
+          {
+            "name": "format",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "const": "snapshot"
+            },
+            "description": "Exactly one if present; v2 rejects empty? and unknown/duplicate query."
+          }
+        ],
+        "x-runtime-validation": [
+          "Common loopback Host/same-origin Origin, no CORS; preserve exact request on uncertainty",
+          "Strict route-specific body/media/query checks; unknown/null/duplicate/trailing values rejected"
+        ],
+        "x-no-execution": true,
+        "x-max-json-depth": 32,
+        "description": " P3保存/读取不运行；无Job/receipt/daemon绑定。未注入v2 store时存储操作501，纯preview不受影响。合法未知项可读/导出但不能写；Schema不替代canonical/SHA/source验证。",
+        "x-canonical-snapshot-response": "format=snapshot returns exact bytes with no added newline; unknown preserved",
+        "x-error-codes": {
+          "400": [
+            "invalid_pattern_request"
+          ],
+          "403": [
+            "local_only"
+          ],
+          "405": [
+            "method_not_allowed"
+          ],
+          "501": [
+            "pattern_library_unsupported"
+          ],
+          "503": [
+            "pattern_library_unavailable",
+            "pattern_library_format_mismatch",
+            "pattern_commit_uncertain"
+          ],
+          "409": [
+            "pattern_library_busy"
+          ]
+        },
+        "x-source-evidence": {
+          "source": "internal/httpapi/patterns_v2.go",
+          "tests": [
+            "internal/httpapi/patterns_v2_test.go"
+          ]
+        }
+      },
+      "post": {
+        "operationId": "savePatternV2",
+        "summary": "确认完整revision后create-only保存",
+        "tags": [
+          "patterns-v2"
+        ],
+        "x-api-level": "pattern-authoring",
+        "x-availability": {
+          "daily": {
+            "source_commit": "1d89eae92278f24a68fff1a34e3c1e696a962c3c",
+            "status": "not_implemented"
+          },
+          "development": {
+            "source_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+            "status": "requires_explicit_store_injection"
+          },
+          "deployment": "development_not_installed",
+          "hardware_qualification": "not_established_by_openapi",
+          "store_configuration": "Go WithPatternStoreV2 only; CLI does not select a v2 store; valid storage operations default to501; pure preview needs none"
+        },
+        "responses": {
+          "201": {
+            "description": "成功；不等同设备已完成或物理验收。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PatternWriteResponseV2"
+                }
+              }
+            },
+            "headers": {
+              "Location": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Unique /v2/patterns/{original-id}; only on confirmed success."
+              }
+            }
+          },
+          "200": {
+            "description": "相同完整记录已存在；没有重写或运行。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PatternWriteResponseV2"
+                }
+              }
+            },
+            "headers": {
+              "Location": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Unique /v2/patterns/{original-id}; only on confirmed success."
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "405": {
+            "$ref": "#/components/responses/405"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "413": {
+            "$ref": "#/components/responses/413"
+          },
+          "415": {
+            "$ref": "#/components/responses/415"
+          },
+          "501": {
+            "$ref": "#/components/responses/501"
+          },
+          "503": {
+            "$ref": "#/components/responses/503"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PatternAuthorSaveRequestV2"
+              }
+            }
+          }
+        },
+        "x-max-body-bytes": 1048576,
+        "x-runtime-validation": [
+          "Common loopback Host/same-origin Origin, no CORS; preserve exact request on uncertainty",
+          "Strict route-specific body/media/query checks; unknown/null/duplicate/trailing values rejected"
+        ],
+        "x-no-execution": true,
+        "x-max-json-depth": 32,
+        "description": " P3保存/读取不运行；无Job/receipt/daemon绑定。未注入v2 store时存储操作501，纯preview不受影响。合法未知项可读/导出但不能写；Schema不替代canonical/SHA/source验证。",
+        "x-error-codes": {
+          "400": [
+            "invalid_pattern_request"
+          ],
+          "403": [
+            "local_only"
+          ],
+          "405": [
+            "method_not_allowed"
+          ],
+          "413": [
+            "pattern_package_too_large"
+          ],
+          "415": [
+            "json_required"
+          ],
+          "501": [
+            "pattern_library_unsupported",
+            "pattern_source_unsupported"
+          ],
+          "503": [
+            "pattern_library_unavailable",
+            "pattern_library_format_mismatch",
+            "pattern_commit_uncertain"
+          ],
+          "409": [
+            "pattern_library_busy",
+            "pattern_conflict",
+            "pattern_library_read_only",
+            "pattern_library_limit",
+            "pattern_revision_conflict"
+          ]
+        },
+        "x-source-evidence": {
+          "source": "internal/httpapi/patterns_v2.go",
+          "tests": [
+            "internal/httpapi/patterns_v2_test.go"
+          ]
+        }
+      }
+    },
+    "/v2/patterns/{id}": {
+      "get": {
+        "operationId": "getPatternV2",
+        "summary": "精确原ID读取，或单条unknown-safe快照",
+        "tags": [
+          "patterns-v2"
+        ],
+        "x-api-level": "pattern-library",
+        "x-availability": {
+          "daily": {
+            "source_commit": "1d89eae92278f24a68fff1a34e3c1e696a962c3c",
+            "status": "not_implemented"
+          },
+          "development": {
+            "source_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+            "status": "requires_explicit_store_injection"
+          },
+          "deployment": "development_not_installed",
+          "hardware_qualification": "not_established_by_openapi",
+          "store_configuration": "Go WithPatternStoreV2 only; CLI does not select a v2 store; valid storage operations default to501; pure preview needs none"
+        },
+        "responses": {
+          "200": {
+            "description": "成功；不等同设备已完成或物理验收。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/PatternRecordResponseV2"
+                    },
+                    {
+                      "$ref": "#/components/schemas/PatternSnapshotV2Read"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "405": {
+            "$ref": "#/components/responses/405"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "501": {
+            "$ref": "#/components/responses/501"
+          },
+          "503": {
+            "$ref": "#/components/responses/503"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$"
+            }
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "const": "snapshot"
+            },
+            "description": "Exactly one if present; v2 rejects empty? and unknown/duplicate query."
+          }
+        ],
+        "x-runtime-validation": [
+          "Common loopback Host/same-origin Origin, no CORS; preserve exact request on uncertainty",
+          "Strict route-specific body/media/query checks; unknown/null/duplicate/trailing values rejected"
+        ],
+        "x-no-execution": true,
+        "x-max-json-depth": 32,
+        "description": " P3保存/读取不运行；无Job/receipt/daemon绑定。未注入v2 store时存储操作501，纯preview不受影响。合法未知项可读/导出但不能写；Schema不替代canonical/SHA/source验证。",
+        "x-canonical-snapshot-response": "format=snapshot returns exact bytes with no added newline; unknown preserved",
+        "x-error-codes": {
+          "400": [
+            "invalid_pattern_request"
+          ],
+          "403": [
+            "local_only"
+          ],
+          "405": [
+            "method_not_allowed"
+          ],
+          "501": [
+            "pattern_library_unsupported"
+          ],
+          "503": [
+            "pattern_library_unavailable",
+            "pattern_library_format_mismatch",
+            "pattern_commit_uncertain"
+          ],
+          "409": [
+            "pattern_library_busy"
+          ],
+          "404": [
+            "pattern_not_found"
+          ]
+        },
+        "x-source-evidence": {
+          "source": "internal/httpapi/patterns_v2.go",
+          "tests": [
+            "internal/httpapi/patterns_v2_test.go"
+          ]
+        }
+      }
+    },
+    "/v2/patterns/import": {
+      "post": {
+        "operationId": "importPatternsV2",
+        "summary": "完整已验证快照一次事务导入",
+        "tags": [
+          "patterns-v2"
+        ],
+        "x-api-level": "pattern-library",
+        "x-availability": {
+          "daily": {
+            "source_commit": "1d89eae92278f24a68fff1a34e3c1e696a962c3c",
+            "status": "not_implemented"
+          },
+          "development": {
+            "source_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+            "status": "requires_explicit_store_injection"
+          },
+          "deployment": "development_not_installed",
+          "hardware_qualification": "not_established_by_openapi",
+          "store_configuration": "Go WithPatternStoreV2 only; CLI does not select a v2 store; valid storage operations default to501; pure preview needs none"
+        },
+        "responses": {
+          "200": {
+            "description": "成功；不等同设备已完成或物理验收。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PatternWriteResponseV2"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "405": {
+            "$ref": "#/components/responses/405"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "413": {
+            "$ref": "#/components/responses/413"
+          },
+          "415": {
+            "$ref": "#/components/responses/415"
+          },
+          "501": {
+            "$ref": "#/components/responses/501"
+          },
+          "503": {
+            "$ref": "#/components/responses/503"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PatternSnapshotV2Write"
+              }
+            }
+          }
+        },
+        "x-max-body-bytes": 1048576,
+        "x-runtime-validation": [
+          "Common loopback Host/same-origin Origin, no CORS; preserve exact request on uncertainty",
+          "Strict route-specific body/media/query checks; unknown/null/duplicate/trailing values rejected"
+        ],
+        "x-no-execution": true,
+        "x-max-json-depth": 32,
+        "description": " P3保存/读取不运行；无Job/receipt/daemon绑定。未注入v2 store时存储操作501，纯preview不受影响。合法未知项可读/导出但不能写；Schema不替代canonical/SHA/source验证。",
+        "x-error-codes": {
+          "400": [
+            "invalid_pattern_request"
+          ],
+          "403": [
+            "local_only"
+          ],
+          "405": [
+            "method_not_allowed"
+          ],
+          "413": [
+            "pattern_package_too_large"
+          ],
+          "415": [
+            "json_required"
+          ],
+          "501": [
+            "pattern_library_unsupported"
+          ],
+          "503": [
+            "pattern_library_unavailable",
+            "pattern_library_format_mismatch",
+            "pattern_commit_uncertain"
+          ],
+          "409": [
+            "pattern_library_busy",
+            "pattern_conflict",
+            "pattern_library_read_only",
+            "pattern_library_limit"
+          ]
+        },
+        "x-source-evidence": {
+          "source": "internal/httpapi/patterns_v2.go",
+          "tests": [
+            "internal/httpapi/patterns_v2_test.go"
+          ]
+        }
+      },
+      "get": {
+        "operationId": "getV2ImportID",
+        "summary": "读取普通图案ID import",
+        "tags": [
+          "patterns-v2"
+        ],
+        "x-api-level": "pattern-library",
+        "x-availability": {
+          "daily": {
+            "source_commit": "1d89eae92278f24a68fff1a34e3c1e696a962c3c",
+            "status": "not_implemented"
+          },
+          "development": {
+            "source_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+            "status": "requires_explicit_store_injection"
+          },
+          "deployment": "development_not_installed",
+          "hardware_qualification": "not_established_by_openapi",
+          "store_configuration": "Go WithPatternStoreV2 only; CLI does not select a v2 store; valid storage operations default to501; pure preview needs none"
+        },
+        "responses": {
+          "200": {
+            "description": "成功；不等同设备已完成或物理验收。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/PatternRecordResponseV2"
+                    },
+                    {
+                      "$ref": "#/components/schemas/PatternSnapshotV2Read"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "405": {
+            "$ref": "#/components/responses/405"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "501": {
+            "$ref": "#/components/responses/501"
+          },
+          "503": {
+            "$ref": "#/components/responses/503"
+          }
+        },
+        "parameters": [
+          {
+            "name": "format",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "const": "snapshot"
+            },
+            "description": "Exactly one if present; v2 rejects empty? and unknown/duplicate query."
+          }
+        ],
+        "x-runtime-validation": [
+          "Common loopback Host/same-origin Origin, no CORS; preserve exact request on uncertainty",
+          "Strict route-specific body/media/query checks; unknown/null/duplicate/trailing values rejected"
+        ],
+        "x-no-execution": true,
+        "x-max-json-depth": 32,
+        "description": "GET treats this literal operation-looking name as an ordinary ID.  P3保存/读取不运行；无Job/receipt/daemon绑定。未注入v2 store时存储操作501，纯preview不受影响。合法未知项可读/导出但不能写；Schema不替代canonical/SHA/source验证。",
+        "x-canonical-snapshot-response": "format=snapshot returns exact bytes with no added newline; unknown preserved",
+        "x-error-codes": {
+          "400": [
+            "invalid_pattern_request"
+          ],
+          "403": [
+            "local_only"
+          ],
+          "405": [
+            "method_not_allowed"
+          ],
+          "501": [
+            "pattern_library_unsupported"
+          ],
+          "503": [
+            "pattern_library_unavailable",
+            "pattern_library_format_mismatch",
+            "pattern_commit_uncertain"
+          ],
+          "409": [
+            "pattern_library_busy"
+          ],
+          "404": [
+            "pattern_not_found"
+          ]
+        },
+        "x-alias-of": "GET /v2/patterns/{id}",
+        "x-source-evidence": {
+          "source": "internal/httpapi/patterns_v2.go",
+          "tests": [
+            "internal/httpapi/patterns_v2_test.go"
+          ]
+        }
+      }
+    },
+    "/demo": {
+      "get": {
+        "operationId": "debugger_demo",
+        "tags": [
+          "debugger-assets"
+        ],
+        "summary": "本地嵌入调试资源",
+        "x-availability": {
+          "daily": {
+            "source_commit": "1d89eae92278f24a68fff1a34e3c1e696a962c3c",
+            "status": "implemented"
+          },
+          "development": {
+            "source_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+            "status": "implemented"
+          },
+          "deployment": "daily_source_available",
+          "hardware_qualification": "not_established_by_openapi"
+        },
+        "x-no-request-body": true,
+        "description": "No query/body. Host/Origin guard applies; no USB action from GET. /demo/index.html is not registered.",
+        "responses": {
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "405": {
+            "$ref": "#/components/responses/405"
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          },
+          "307": {
+            "description": "Redirect to /demo/",
+            "headers": {
+              "Location": {
+                "schema": {
+                  "const": "/demo/"
+                }
+              }
+            }
+          }
+        },
+        "x-api-level": "embedded-web",
+        "x-source-evidence": {
+          "source": "internal/httpapi/light.go",
+          "tests": [
+            "internal/httpapi/light_test.go"
+          ]
+        }
+      }
+    },
+    "/demo/": {
+      "get": {
+        "operationId": "debugger_demo_",
+        "tags": [
+          "debugger-assets"
+        ],
+        "summary": "本地嵌入调试资源",
+        "x-availability": {
+          "daily": {
+            "source_commit": "1d89eae92278f24a68fff1a34e3c1e696a962c3c",
+            "status": "implemented"
+          },
+          "development": {
+            "source_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+            "status": "implemented"
+          },
+          "deployment": "daily_source_available",
+          "hardware_qualification": "not_established_by_openapi"
+        },
+        "x-no-request-body": true,
+        "description": "No query/body. Host/Origin guard applies; no USB action from GET. /demo/index.html is not registered.",
+        "responses": {
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "405": {
+            "$ref": "#/components/responses/405"
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          },
+          "200": {
+            "description": "Offline embedded static resource; CSP self-only scripts/style/connect, no external asset fetch.",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "headers": {
+              "Content-Security-Policy": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Referrer-Policy": {
+                "schema": {
+                  "const": "no-referrer"
+                }
+              }
+            }
+          }
+        },
+        "x-api-level": "embedded-web",
+        "x-source-evidence": {
+          "source": "internal/httpapi/light.go",
+          "tests": [
+            "internal/httpapi/light_test.go"
+          ]
+        }
+      }
+    },
+    "/demo/demo.js": {
+      "get": {
+        "operationId": "debugger_demo_demo_js",
+        "tags": [
+          "debugger-assets"
+        ],
+        "summary": "本地嵌入调试资源",
+        "x-availability": {
+          "daily": {
+            "source_commit": "1d89eae92278f24a68fff1a34e3c1e696a962c3c",
+            "status": "implemented"
+          },
+          "development": {
+            "source_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+            "status": "implemented"
+          },
+          "deployment": "daily_source_available",
+          "hardware_qualification": "not_established_by_openapi"
+        },
+        "x-no-request-body": true,
+        "description": "No query/body. Host/Origin guard applies; no USB action from GET. /demo/index.html is not registered.",
+        "responses": {
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "405": {
+            "$ref": "#/components/responses/405"
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          },
+          "200": {
+            "description": "Offline embedded static resource; CSP self-only scripts/style/connect, no external asset fetch.",
+            "content": {
+              "text/javascript": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "headers": {
+              "Content-Security-Policy": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Referrer-Policy": {
+                "schema": {
+                  "const": "no-referrer"
+                }
+              }
+            }
+          }
+        },
+        "x-api-level": "embedded-web",
+        "x-source-evidence": {
+          "source": "internal/httpapi/light.go",
+          "tests": [
+            "internal/httpapi/light_test.go"
+          ]
+        }
+      }
+    },
+    "/demo/demo.css": {
+      "get": {
+        "operationId": "debugger_demo_demo_css",
+        "tags": [
+          "debugger-assets"
+        ],
+        "summary": "本地嵌入调试资源",
+        "x-availability": {
+          "daily": {
+            "source_commit": "1d89eae92278f24a68fff1a34e3c1e696a962c3c",
+            "status": "implemented"
+          },
+          "development": {
+            "source_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+            "status": "implemented"
+          },
+          "deployment": "daily_source_available",
+          "hardware_qualification": "not_established_by_openapi"
+        },
+        "x-no-request-body": true,
+        "description": "No query/body. Host/Origin guard applies; no USB action from GET. /demo/index.html is not registered.",
+        "responses": {
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "405": {
+            "$ref": "#/components/responses/405"
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          },
+          "200": {
+            "description": "Offline embedded static resource; CSP self-only scripts/style/connect, no external asset fetch.",
+            "content": {
+              "text/css": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "headers": {
+              "Content-Security-Policy": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Referrer-Policy": {
+                "schema": {
+                  "const": "no-referrer"
+                }
+              }
+            }
+          }
+        },
+        "x-api-level": "embedded-web",
+        "x-source-evidence": {
+          "source": "internal/httpapi/light.go",
+          "tests": [
+            "internal/httpapi/light_test.go"
+          ]
+        }
+      }
+    },
+    "/demo/orbit.html": {
+      "get": {
+        "operationId": "debugger_demo_orbit_html",
+        "tags": [
+          "debugger-assets"
+        ],
+        "summary": "本地嵌入调试资源",
+        "x-availability": {
+          "daily": {
+            "source_commit": "1d89eae92278f24a68fff1a34e3c1e696a962c3c",
+            "status": "implemented"
+          },
+          "development": {
+            "source_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+            "status": "implemented"
+          },
+          "deployment": "daily_source_available",
+          "hardware_qualification": "not_established_by_openapi"
+        },
+        "x-no-request-body": true,
+        "description": "No query/body. Host/Origin guard applies; no USB action from GET. /demo/index.html is not registered.",
+        "responses": {
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "405": {
+            "$ref": "#/components/responses/405"
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          },
+          "200": {
+            "description": "Offline embedded static resource; CSP self-only scripts/style/connect, no external asset fetch.",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "headers": {
+              "Content-Security-Policy": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Referrer-Policy": {
+                "schema": {
+                  "const": "no-referrer"
+                }
+              }
+            }
+          }
+        },
+        "x-api-level": "embedded-web",
+        "x-source-evidence": {
+          "source": "internal/httpapi/light.go",
+          "tests": [
+            "internal/httpapi/light_test.go"
+          ]
+        }
+      }
+    },
+    "/demo/orbit.js": {
+      "get": {
+        "operationId": "debugger_demo_orbit_js",
+        "tags": [
+          "debugger-assets"
+        ],
+        "summary": "本地嵌入调试资源",
+        "x-availability": {
+          "daily": {
+            "source_commit": "1d89eae92278f24a68fff1a34e3c1e696a962c3c",
+            "status": "implemented"
+          },
+          "development": {
+            "source_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+            "status": "implemented"
+          },
+          "deployment": "daily_source_available",
+          "hardware_qualification": "not_established_by_openapi"
+        },
+        "x-no-request-body": true,
+        "description": "No query/body. Host/Origin guard applies; no USB action from GET. /demo/index.html is not registered.",
+        "responses": {
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "405": {
+            "$ref": "#/components/responses/405"
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          },
+          "200": {
+            "description": "Offline embedded static resource; CSP self-only scripts/style/connect, no external asset fetch.",
+            "content": {
+              "text/javascript": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "headers": {
+              "Content-Security-Policy": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Referrer-Policy": {
+                "schema": {
+                  "const": "no-referrer"
+                }
+              }
+            }
+          }
+        },
+        "x-api-level": "embedded-web",
+        "x-source-evidence": {
+          "source": "internal/httpapi/light.go",
+          "tests": [
+            "internal/httpapi/light_test.go"
+          ]
+        }
+      }
+    },
+    "/demo/orbit.css": {
+      "get": {
+        "operationId": "debugger_demo_orbit_css",
+        "tags": [
+          "debugger-assets"
+        ],
+        "summary": "本地嵌入调试资源",
+        "x-availability": {
+          "daily": {
+            "source_commit": "1d89eae92278f24a68fff1a34e3c1e696a962c3c",
+            "status": "implemented"
+          },
+          "development": {
+            "source_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+            "status": "implemented"
+          },
+          "deployment": "daily_source_available",
+          "hardware_qualification": "not_established_by_openapi"
+        },
+        "x-no-request-body": true,
+        "description": "No query/body. Host/Origin guard applies; no USB action from GET. /demo/index.html is not registered.",
+        "responses": {
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "405": {
+            "$ref": "#/components/responses/405"
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          },
+          "200": {
+            "description": "Offline embedded static resource; CSP self-only scripts/style/connect, no external asset fetch.",
+            "content": {
+              "text/css": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "headers": {
+              "Content-Security-Policy": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Referrer-Policy": {
+                "schema": {
+                  "const": "no-referrer"
+                }
+              }
+            }
+          }
+        },
+        "x-api-level": "embedded-web",
+        "x-source-evidence": {
+          "source": "internal/httpapi/light.go",
+          "tests": [
+            "internal/httpapi/light_test.go"
+          ]
         }
       }
     }
@@ -1076,7 +3508,8 @@
               2
             ],
             "default": 0,
-            "description": "0=两颗，1/2=单颗；省略按0，显式null拒绝。"
+            "description": "0=两颗，1/2=单颗；省略按0，显式null拒绝。",
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           },
           "color": {
             "type": "string",
@@ -1089,14 +3522,16 @@
             "maximum": 600000,
             "multipleOf": 10,
             "default": 0,
-            "description": "淡入毫秒数，10ms整数倍；省略按0，显式null拒绝。"
+            "description": "淡入毫秒数，10ms整数倍；省略按0，显式null拒绝。",
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           },
           "hold_ms": {
             "type": "integer",
             "minimum": 0,
             "maximum": 3600000,
             "default": 0,
-            "description": "淡入后的保持毫秒数；省略按0，显式null拒绝。"
+            "description": "淡入后的保持毫秒数；省略按0，显式null拒绝。",
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           }
         },
         "description": "整数字段请使用普通十进制JSON整数字面量；Go int解码不接受1.0或1e0，JSON Schema本身不约束数值的词法拼写。"
@@ -1117,7 +3552,8 @@
               0,
               1,
               2
-            ]
+            ],
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           },
           "color": {
             "type": "string",
@@ -1127,12 +3563,14 @@
             "type": "integer",
             "minimum": 0,
             "maximum": 600000,
-            "multipleOf": 10
+            "multipleOf": 10,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           },
           "hold_ms": {
             "type": "integer",
             "minimum": 0,
-            "maximum": 3600000
+            "maximum": 3600000,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           }
         }
       },
@@ -1157,7 +3595,8 @@
             "minimum": 0,
             "maximum": 10000,
             "default": 1,
-            "description": "省略或0规范为1，显式null拒绝；0不是无限循环。"
+            "description": "省略或0规范为1，显式null拒绝；0不是无限循环。",
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           },
           "on_finish": {
             "type": "string",
@@ -1167,7 +3606,7 @@
               "hold"
             ],
             "default": "off",
-            "description": "省略或空字符串按off；显式null拒绝。hold保留结束时当前读回颜色；取消和daemon退出仍off。"
+            "description": "省略或空串默认off；运行中取消/错误执行off清理；已succeeded hold的取消不自动熄灯。"
           }
         },
         "examples": [
@@ -1229,7 +3668,8 @@
           "repeat": {
             "type": "integer",
             "minimum": 1,
-            "maximum": 10000
+            "maximum": 10000,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           },
           "on_finish": {
             "type": "string",
@@ -1238,7 +3678,11 @@
               "hold"
             ]
           }
-        }
+        },
+        "x-runtime-validation": [
+          "sum((fade_ms+hold_ms+10) per stored step)*repeat <=86400000",
+          "stored steps<=1024; executed steps may exceed1024"
+        ]
       },
       "SubmitRequest": {
         "type": "object",
@@ -1402,7 +3846,8 @@
           },
           "firmware": {
             "type": "integer",
-            "minimum": 0
+            "minimum": 0,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           },
           "capabilities": {
             "type": [
@@ -1433,7 +3878,8 @@
           "queue_depth": {
             "type": "integer",
             "minimum": 0,
-            "maximum": 1024
+            "maximum": 1024,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           },
           "desired": {
             "$ref": "#/components/schemas/Step"
@@ -1508,11 +3954,13 @@
           },
           "completed_steps": {
             "type": "integer",
-            "minimum": 0
+            "minimum": 0,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           },
           "total_steps": {
             "type": "integer",
-            "minimum": 1
+            "minimum": 1,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           },
           "created_at": {
             "type": "string",
@@ -1576,7 +4024,13 @@
                   "pattern_library_busy",
                   "pattern_library_unsupported",
                   "pattern_library_unavailable",
-                  "pattern_commit_uncertain"
+                  "pattern_commit_uncertain",
+                  "invalid_color",
+                  "invalid_light_action",
+                  "frame_unsupported",
+                  "pattern_source_unsupported",
+                  "pattern_library_read_only",
+                  "pattern_library_format_mismatch"
                 ]
               },
               "message": {
@@ -1632,19 +4086,23 @@
           },
           "calls": {
             "type": "integer",
-            "minimum": 0
+            "minimum": 0,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           },
           "attempts": {
             "type": "integer",
-            "minimum": 0
+            "minimum": 0,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           },
           "retries": {
             "type": "integer",
-            "minimum": 0
+            "minimum": 0,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           },
           "failures": {
             "type": "integer",
-            "minimum": 0
+            "minimum": 0,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           },
           "last_error": {
             "type": "string"
@@ -1692,27 +4150,32 @@
           },
           "accept_until_uptime_ms": {
             "type": "integer",
-            "minimum": 1
+            "minimum": 1,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           },
           "max_accept_window_ms": {
             "type": "integer",
             "minimum": 1,
-            "description": "当前默认60000ms。"
+            "description": "当前默认60000ms。",
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           },
           "receipt_retention_ms": {
             "type": "integer",
             "minimum": 1,
-            "description": "当前默认终态后至少60000ms，且不早于准入截止点；查询/重放不续期。"
+            "description": "当前默认终态后至少60000ms，且不早于准入截止点；查询/重放不续期。",
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           },
           "max_entries": {
             "type": "integer",
             "minimum": 1,
-            "description": "当前默认全Engine4096条，不驱逐未过期/活动回执。"
+            "description": "当前默认全Engine4096条，不驱逐未过期/活动回执。",
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           },
           "max_retained_steps": {
             "type": "integer",
             "minimum": 1,
-            "description": "当前默认65536步，按原steps长度计算，不展开repeat。"
+            "description": "当前默认65536步，按原steps长度计算，不展开repeat。",
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           }
         }
       },
@@ -1761,7 +4224,8 @@
               2
             ],
             "default": 0,
-            "description": "0=两颗，1/2=单颗；省略按0，显式null拒绝。"
+            "description": "0=两颗，1/2=单颗；省略按0，显式null拒绝。",
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           },
           "fade_ms": {
             "type": "integer",
@@ -1769,7 +4233,8 @@
             "maximum": 600000,
             "multipleOf": 10,
             "default": 0,
-            "description": "淡入毫秒数，10ms整数倍；省略按0，显式null拒绝。"
+            "description": "淡入毫秒数，10ms整数倍；省略按0，显式null拒绝。",
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           }
         },
         "description": "编译为一个步骤、repeat=1、on_finish=hold；仅允许kind/color/led/fade_ms。色彩为原始RGB。即使提供cycles=0、period_ms或on_finish=hold也拒绝。"
@@ -1799,14 +4264,16 @@
               2
             ],
             "default": 0,
-            "description": "0=两颗，1/2=单颗；省略按0，显式null拒绝。"
+            "description": "0=两颗，1/2=单颗；省略按0，显式null拒绝。",
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           },
           "cycles": {
             "type": "integer",
             "minimum": 1,
             "maximum": 10000,
             "default": 1,
-            "description": "省略为1，显式0不合法；不展开为无限程序。"
+            "description": "省略为1，显式0不合法；不展开为无限程序。",
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           },
           "period_ms": {
             "type": "integer",
@@ -1814,7 +4281,8 @@
             "maximum": 1200000,
             "multipleOf": 10,
             "default": 1000,
-            "description": "名义周期包含每周期三个10ms更新等待，仍须cycles*period_ms<=86400000；原生I/O和前后清理另计，非墙钟/实时保证。"
+            "description": "名义周期包含每周期三个10ms更新等待，仍须cycles*period_ms<=86400000；原生I/O和前后清理另计，非墙钟/实时保证。",
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           },
           "on_finish": {
             "type": "string",
@@ -2005,7 +4473,8 @@
         "properties": {
           "schema_version": {
             "const": 1,
-            "type": "integer"
+            "type": "integer",
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           },
           "compile_contract": {
             "const": "nb1-program-effect/v1",
@@ -2024,12 +4493,14 @@
           "nominal_duration_ms": {
             "type": "integer",
             "minimum": 10,
-            "maximum": 86400000
+            "maximum": 86400000,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           },
           "total_steps": {
             "type": "integer",
             "minimum": 1,
-            "maximum": 10240000
+            "maximum": 10240000,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           },
           "required_capabilities": {
             "type": "array",
@@ -2064,31 +4535,38 @@
         "properties": {
           "max_steps": {
             "const": 1024,
-            "type": "integer"
+            "type": "integer",
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           },
           "max_repeat": {
             "const": 10000,
-            "type": "integer"
+            "type": "integer",
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           },
           "max_fade_ms": {
             "const": 600000,
-            "type": "integer"
+            "type": "integer",
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           },
           "fade_quantum_ms": {
             "const": 10,
-            "type": "integer"
+            "type": "integer",
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           },
           "max_hold_ms": {
             "const": 3600000,
-            "type": "integer"
+            "type": "integer",
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           },
           "max_nominal_duration_ms": {
             "const": 86400000,
-            "type": "integer"
+            "type": "integer",
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           },
           "step_overhead_ms": {
             "const": 10,
-            "type": "integer"
+            "type": "integer",
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           }
         }
       },
@@ -2103,15 +4581,18 @@
         "properties": {
           "min_pulse_period_ms": {
             "const": 60,
-            "type": "integer"
+            "type": "integer",
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           },
           "max_pulse_period_ms": {
             "const": 1200000,
-            "type": "integer"
+            "type": "integer",
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           },
           "max_pulse_cycles": {
             "const": 10000,
-            "type": "integer"
+            "type": "integer",
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           }
         }
       },
@@ -2137,7 +4618,8 @@
         "properties": {
           "schema_version": {
             "const": 1,
-            "type": "integer"
+            "type": "integer",
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           },
           "api_version": {
             "const": "v1",
@@ -2183,15 +4665,18 @@
             "prefixItems": [
               {
                 "const": 0,
-                "type": "integer"
+                "type": "integer",
+                "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
               },
               {
                 "const": 1,
-                "type": "integer"
+                "type": "integer",
+                "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
               },
               {
                 "const": 2,
-                "type": "integer"
+                "type": "integer",
+                "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
               }
             ],
             "minItems": 3,
@@ -2218,7 +4703,8 @@
           "max_request_bytes": {
             "type": "integer",
             "minimum": 1,
-            "maximum": 1048576
+            "maximum": 1048576,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           }
         },
         "description": "软件能力与编译契约，非设备实物验证。当前输入program/effect、效果steady/pulse、策略replace/queue/reject；保留已知编译契约时未来目录可以追加能力名称或声明新feature。设备启用能力仍来自已有GET /v1/devices快照，不扫描/不试写。"
@@ -2235,19 +4721,22 @@
             "type": "integer",
             "minimum": 0,
             "maximum": 255,
-            "description": "Ordinary nonnegative JSON integer token; decimal/exponent forms and negative zero are rejected."
+            "description": "Ordinary nonnegative JSON integer token; decimal/exponent forms and negative zero are rejected.",
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           },
           "g": {
             "type": "integer",
             "minimum": 0,
             "maximum": 255,
-            "description": "Ordinary nonnegative JSON integer token; decimal/exponent forms and negative zero are rejected."
+            "description": "Ordinary nonnegative JSON integer token; decimal/exponent forms and negative zero are rejected.",
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           },
           "b": {
             "type": "integer",
             "minimum": 0,
             "maximum": 255,
-            "description": "Ordinary nonnegative JSON integer token; decimal/exponent forms and negative zero are rejected."
+            "description": "Ordinary nonnegative JSON integer token; decimal/exponent forms and negative zero are rejected.",
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           }
         },
         "required": [
@@ -2255,6 +4744,10 @@
           "r",
           "g",
           "b"
+        ],
+        "x-runtime-validation": [
+          "Original numeric lexemes and strict JSON are checked by versioned runtime compiler",
+          "Colors resolve to raw RGB8; no gamma/physical sRGB guarantee"
         ]
       },
       "ColorHSV": {
@@ -2289,6 +4782,10 @@
           "h_deg",
           "s_pct",
           "v_pct"
+        ],
+        "x-runtime-validation": [
+          "Original numeric lexemes and strict JSON are checked by versioned runtime compiler",
+          "Colors resolve to raw RGB8; no gamma/physical sRGB guarantee"
         ]
       },
       "ColorInput": {
@@ -2306,7 +4803,13 @@
             "$ref": "#/components/schemas/ColorHSV"
           }
         ],
-        "description": "Color authoring only. Does not widen Program/Effect/set color; normalize to canonical_color first. No implicit gamma, calibration or physical sRGB guarantee."
+        "description": "Color authoring only. Does not widen Program/Effect/set color; normalize to canonical_color first. No implicit gamma, calibration or physical sRGB guarantee.",
+        "x-runtime-validation": [
+          "Original numeric lexemes and strict JSON are checked by versioned runtime compiler",
+          "Colors resolve to raw RGB8; no gamma/physical sRGB guarantee",
+          "Decoded string byte length<=64 before trimming; exact frozen CSS dictionary; no transparent/currentColor/CSS functions",
+          "HSV360 equals0; at most six decimal fractional digits; final half-up RGB8 rounding"
+        ]
       },
       "ColorResolveRequest": {
         "type": "object",
@@ -2327,17 +4830,20 @@
           "r": {
             "type": "integer",
             "minimum": 0,
-            "maximum": 255
+            "maximum": 255,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           },
           "g": {
             "type": "integer",
             "minimum": 0,
-            "maximum": 255
+            "maximum": 255,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           },
           "b": {
             "type": "integer",
             "minimum": 0,
-            "maximum": 255
+            "maximum": 255,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           }
         },
         "required": [
@@ -2352,7 +4858,8 @@
         "properties": {
           "schema_version": {
             "type": "integer",
-            "const": 1
+            "const": 1,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           },
           "color_contract": {
             "type": "string",
@@ -2434,7 +4941,8 @@
             "type": "integer",
             "minimum": 0,
             "maximum": 2,
-            "default": 0
+            "default": 0,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           },
           "color": {
             "$ref": "#/components/schemas/ColorInput",
@@ -2465,7 +4973,8 @@
           "led": {
             "type": "integer",
             "minimum": 0,
-            "maximum": 2
+            "maximum": 2,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           },
           "color": {
             "type": "string",
@@ -2500,7 +5009,8 @@
             "type": "integer",
             "minimum": 0,
             "maximum": 2,
-            "default": 0
+            "default": 0,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           }
         },
         "required": [
@@ -2526,7 +5036,8 @@
           "led": {
             "type": "integer",
             "minimum": 0,
-            "maximum": 2
+            "maximum": 2,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           }
         },
         "required": [
@@ -2556,7 +5067,8 @@
             "type": "integer",
             "minimum": 0,
             "maximum": 2,
-            "default": 0
+            "default": 0,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           },
           "color": {
             "$ref": "#/components/schemas/ColorInput",
@@ -2566,7 +5078,8 @@
             "type": "integer",
             "minimum": 10,
             "maximum": 600000,
-            "multipleOf": 10
+            "multipleOf": 10,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           }
         },
         "required": [
@@ -2594,7 +5107,8 @@
           "led": {
             "type": "integer",
             "minimum": 0,
-            "maximum": 2
+            "maximum": 2,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           },
           "color": {
             "type": "string",
@@ -2604,7 +5118,8 @@
             "type": "integer",
             "minimum": 10,
             "maximum": 600000,
-            "multipleOf": 10
+            "multipleOf": 10,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           }
         },
         "required": [
@@ -2636,7 +5151,8 @@
             "type": "integer",
             "minimum": 0,
             "maximum": 2,
-            "default": 0
+            "default": 0,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           },
           "color": {
             "$ref": "#/components/schemas/ColorInput",
@@ -2646,19 +5162,22 @@
             "type": "integer",
             "minimum": 1,
             "maximum": 512,
-            "default": 1
+            "default": 1,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           },
           "on_ms": {
             "type": "integer",
             "minimum": 10,
             "maximum": 3600000,
-            "default": 250
+            "default": 250,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           },
           "off_ms": {
             "type": "integer",
             "minimum": 10,
             "maximum": 3600000,
-            "default": 250
+            "default": 250,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           }
         },
         "required": [
@@ -2685,7 +5204,8 @@
           "led": {
             "type": "integer",
             "minimum": 0,
-            "maximum": 2
+            "maximum": 2,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           },
           "color": {
             "type": "string",
@@ -2694,17 +5214,20 @@
           "cycles": {
             "type": "integer",
             "minimum": 1,
-            "maximum": 512
+            "maximum": 512,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           },
           "on_ms": {
             "type": "integer",
             "minimum": 10,
-            "maximum": 3600000
+            "maximum": 3600000,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           },
           "off_ms": {
             "type": "integer",
             "minimum": 10,
-            "maximum": 3600000
+            "maximum": 3600000,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           }
         },
         "required": [
@@ -2738,7 +5261,8 @@
             "type": "integer",
             "minimum": 0,
             "maximum": 2,
-            "default": 0
+            "default": 0,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           },
           "color": {
             "$ref": "#/components/schemas/ColorInput",
@@ -2748,13 +5272,15 @@
             "type": "integer",
             "minimum": 1,
             "maximum": 60,
-            "default": 1
+            "default": 1,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           },
           "period_ms": {
             "type": "integer",
             "minimum": 330,
             "maximum": 1200000,
-            "default": 2000
+            "default": 2000,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           }
         },
         "required": [
@@ -2781,7 +5307,8 @@
           "led": {
             "type": "integer",
             "minimum": 0,
-            "maximum": 2
+            "maximum": 2,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           },
           "color": {
             "type": "string",
@@ -2790,12 +5317,14 @@
           "cycles": {
             "type": "integer",
             "minimum": 1,
-            "maximum": 60
+            "maximum": 60,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           },
           "period_ms": {
             "type": "integer",
             "minimum": 330,
-            "maximum": 1200000
+            "maximum": 1200000,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           }
         },
         "required": [
@@ -2828,7 +5357,8 @@
             "type": "integer",
             "minimum": 0,
             "maximum": 2,
-            "default": 0
+            "default": 0,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           },
           "color": {
             "$ref": "#/components/schemas/ColorInput",
@@ -2838,27 +5368,31 @@
             "type": "integer",
             "minimum": 1,
             "maximum": 341,
-            "default": 1
+            "default": 1,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           },
           "attack_ms": {
             "type": "integer",
             "minimum": 10,
             "maximum": 600000,
             "default": 60,
-            "multipleOf": 10
+            "multipleOf": 10,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           },
           "decay_ms": {
             "type": "integer",
             "minimum": 10,
             "maximum": 600000,
             "default": 240,
-            "multipleOf": 10
+            "multipleOf": 10,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           },
           "rest_ms": {
             "type": "integer",
             "minimum": 0,
             "maximum": 3600000,
-            "default": 700
+            "default": 700,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           }
         },
         "required": [
@@ -2885,7 +5419,8 @@
           "led": {
             "type": "integer",
             "minimum": 0,
-            "maximum": 2
+            "maximum": 2,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           },
           "color": {
             "type": "string",
@@ -2894,24 +5429,28 @@
           "cycles": {
             "type": "integer",
             "minimum": 1,
-            "maximum": 341
+            "maximum": 341,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           },
           "attack_ms": {
             "type": "integer",
             "minimum": 10,
             "maximum": 600000,
-            "multipleOf": 10
+            "multipleOf": 10,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           },
           "decay_ms": {
             "type": "integer",
             "minimum": 10,
             "maximum": 600000,
-            "multipleOf": 10
+            "multipleOf": 10,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           },
           "rest_ms": {
             "type": "integer",
             "minimum": 0,
-            "maximum": 3600000
+            "maximum": 3600000,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           }
         },
         "required": [
@@ -2946,7 +5485,8 @@
             "type": "integer",
             "minimum": 1,
             "maximum": 256,
-            "default": 1
+            "default": 1,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           },
           "colors": {
             "type": "array",
@@ -2983,7 +5523,8 @@
             "type": "integer",
             "minimum": 40,
             "maximum": 1200000,
-            "default": 2000
+            "default": 2000,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           },
           "transition": {
             "type": "string",
@@ -2999,7 +5540,7 @@
         "required": [
           "kind"
         ],
-        "description": "Raw RGB; finite action. Server also enforces the aggregate 24h nominal budget. Integer fields require ordinary integer JSON lexemes, not 1.0, exponents or negative zero. period_ms includes the executor's step allowances; native I/O adds elapsed time. New non-cut transitions use 66 sequential steps per cycle and at most 15 cycles; frame targets are compiled in Go, not the browser or MCP.",
+        "description": "Raw RGB; finite action. Server also enforces the aggregate 24h nominal budget. Integer fields require ordinary integer JSON lexemes, not 1.0, exponents or negative zero. period_ms includes the executor's step allowances; native I/O adds elapsed time. New non-cut transitions use 66 sequential steps per cycle and at most 15 cycles; sequential Program steps are compiled in Go, not the browser or MCP.",
         "allOf": [
           {
             "if": {
@@ -3047,7 +5588,8 @@
           "cycles": {
             "type": "integer",
             "minimum": 1,
-            "maximum": 256
+            "maximum": 256,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           },
           "colors": {
             "type": "array",
@@ -3076,7 +5618,8 @@
           "period_ms": {
             "type": "integer",
             "minimum": 40,
-            "maximum": 1200000
+            "maximum": 1200000,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           },
           "transition": {
             "type": "string",
@@ -3097,7 +5640,7 @@
           "leds",
           "period_ms"
         ],
-        "description": "Raw RGB; finite action. Server also enforces the aggregate 24h nominal budget. Integer fields require ordinary integer JSON lexemes, not 1.0, exponents or negative zero. period_ms includes the executor's step allowances; native I/O adds elapsed time. New non-cut transitions use 66 sequential steps per cycle and at most 15 cycles; frame targets are compiled in Go, not the browser or MCP.",
+        "description": "Raw RGB; finite action. Server also enforces the aggregate 24h nominal budget. Integer fields require ordinary integer JSON lexemes, not 1.0, exponents or negative zero. period_ms includes the executor's step allowances; native I/O adds elapsed time. New non-cut transitions use 66 sequential steps per cycle and at most 15 cycles; sequential Program steps are compiled in Go, not the browser or MCP.",
         "allOf": [
           {
             "if": {
@@ -3147,19 +5690,22 @@
             "type": "integer",
             "minimum": 0,
             "maximum": 2,
-            "default": 0
+            "default": 0,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           },
           "cycles": {
             "type": "integer",
             "minimum": 1,
             "maximum": 146,
-            "default": 1
+            "default": 1,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           },
           "period_ms": {
             "type": "integer",
             "minimum": 130,
             "maximum": 1200000,
-            "default": 3000
+            "default": 3000,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           }
         },
         "required": [
@@ -3185,17 +5731,20 @@
           "led": {
             "type": "integer",
             "minimum": 0,
-            "maximum": 2
+            "maximum": 2,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           },
           "cycles": {
             "type": "integer",
             "minimum": 1,
-            "maximum": 146
+            "maximum": 146,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           },
           "period_ms": {
             "type": "integer",
             "minimum": 130,
-            "maximum": 1200000
+            "maximum": 1200000,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           }
         },
         "required": [
@@ -3233,6 +5782,10 @@
           {
             "$ref": "#/components/schemas/LightActionRainbow"
           }
+        ],
+        "x-runtime-validation": [
+          "Original numeric lexemes and strict JSON are checked by versioned runtime compiler",
+          "Colors resolve to raw RGB8; no gamma/physical sRGB guarantee"
         ]
       },
       "NormalizedLightAction": {
@@ -3261,6 +5814,10 @@
           {
             "$ref": "#/components/schemas/NormalizedLightActionRainbow"
           }
+        ],
+        "x-runtime-validation": [
+          "Original numeric lexemes and strict JSON are checked by versioned runtime compiler",
+          "Colors resolve to raw RGB8; no gamma/physical sRGB guarantee"
         ]
       },
       "LightRequest": {
@@ -3341,7 +5898,8 @@
         "properties": {
           "schema_version": {
             "type": "integer",
-            "const": 1
+            "const": 1,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           },
           "contract": {
             "type": "string",
@@ -3360,12 +5918,14 @@
           "nominal_duration_ms": {
             "type": "integer",
             "minimum": 10,
-            "maximum": 86400000
+            "maximum": 86400000,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           },
           "total_steps": {
             "type": "integer",
             "minimum": 1,
-            "maximum": 1024
+            "maximum": 1024,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           },
           "required_capabilities": {
             "type": "array",
@@ -3581,7 +6141,8 @@
         "properties": {
           "schema_version": {
             "const": 1,
-            "type": "integer"
+            "type": "integer",
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           },
           "patterns": {
             "type": "array",
@@ -3603,7 +6164,8 @@
         "properties": {
           "schema_version": {
             "const": 1,
-            "type": "integer"
+            "type": "integer",
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           },
           "kind": {
             "const": "nb1-pattern-snapshot"
@@ -3698,12 +6260,14 @@
           "total_steps": {
             "type": "integer",
             "minimum": 1,
-            "maximum": 10240000
+            "maximum": 10240000,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           },
           "nominal_duration_ms": {
             "type": "integer",
             "minimum": 10,
-            "maximum": 86400000
+            "maximum": 86400000,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           },
           "on_finish": {
             "enum": [
@@ -3744,7 +6308,8 @@
         "properties": {
           "schema_version": {
             "type": "integer",
-            "const": 1
+            "const": 1,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           },
           "contract": {
             "const": "nb1-pattern-library/v1"
@@ -3800,7 +6365,8 @@
           "total": {
             "type": "integer",
             "minimum": 0,
-            "maximum": 128
+            "maximum": 128,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
           }
         },
         "required": [
@@ -3827,6 +6393,1871 @@
           "preview"
         ],
         "description": "保存的冻结Program经共同预览校验；preview.input_kind恒为program。无Job/票据/USB操作。"
+      },
+      "FrameTargetRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "led": {
+            "enum": [
+              1,
+              2
+            ]
+          },
+          "color": {
+            "type": "string",
+            "pattern": "^#[0-9A-Fa-f]{6}$"
+          }
+        },
+        "required": [
+          "led",
+          "color"
+        ]
+      },
+      "FrameRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "targets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FrameTargetRequest"
+            },
+            "minItems": 1,
+            "maxItems": 2
+          },
+          "fade_ms": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 600000,
+            "multipleOf": 10,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
+          },
+          "interval_ms": {
+            "type": "integer",
+            "minimum": 50,
+            "maximum": 600000,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
+          }
+        },
+        "required": [
+          "targets",
+          "fade_ms",
+          "interval_ms"
+        ]
+      },
+      "FrameProgramRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "contract": {
+            "const": "nb1-frame-program/experimental-v1"
+          },
+          "initial": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FrameTargetRequest"
+            },
+            "minItems": 1,
+            "maxItems": 2
+          },
+          "frames": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FrameRequest"
+            },
+            "minItems": 1,
+            "maxItems": 1024
+          },
+          "repeat": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10000,
+            "default": 1,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
+          },
+          "on_finish": {
+            "enum": [
+              "off",
+              "hold"
+            ],
+            "default": "off"
+          }
+        },
+        "required": [
+          "contract",
+          "initial",
+          "frames"
+        ],
+        "x-runtime-validation": [
+          "Each target array has distinct LEDs1/2 and exactly the same count/order as initial",
+          "fade_ms <=ceil(interval_ms/10)*10; no silent quantization on this low API",
+          "stored/executed frames<=1024; stored/planned targets<=2050; nominal duration<=86400000",
+          "initial once; repeat applies to frames only; all zero fields required in frozen output",
+          "Explicit repeat0 and empty on_finish rejected on HTTP; only omitted values default"
+        ]
+      },
+      "FrameTarget": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "led": {
+            "enum": [
+              1,
+              2
+            ]
+          },
+          "color": {
+            "type": "string",
+            "pattern": "^#[0-9a-f]{6}$"
+          }
+        },
+        "required": [
+          "led",
+          "color"
+        ]
+      },
+      "Frame": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "targets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FrameTarget"
+            },
+            "minItems": 1,
+            "maxItems": 2
+          },
+          "fade_ms": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 600000,
+            "multipleOf": 10,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
+          },
+          "interval_ms": {
+            "type": "integer",
+            "minimum": 50,
+            "maximum": 600000,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
+          }
+        },
+        "required": [
+          "targets",
+          "fade_ms",
+          "interval_ms"
+        ]
+      },
+      "FrameProgram": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "contract": {
+            "const": "nb1-frame-program/experimental-v1"
+          },
+          "initial": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FrameTarget"
+            },
+            "minItems": 1,
+            "maxItems": 2
+          },
+          "frames": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Frame"
+            },
+            "minItems": 1,
+            "maxItems": 1024
+          },
+          "repeat": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10000,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
+          },
+          "on_finish": {
+            "enum": [
+              "off",
+              "hold"
+            ]
+          }
+        },
+        "required": [
+          "contract",
+          "initial",
+          "frames",
+          "repeat",
+          "on_finish"
+        ],
+        "x-runtime-validation": [
+          "Each target array has distinct LEDs1/2 and exactly the same count/order as initial",
+          "fade_ms <=ceil(interval_ms/10)*10; no silent quantization on this low API",
+          "stored/executed frames<=1024; stored/planned targets<=2050; nominal duration<=86400000",
+          "initial once; repeat applies to frames only; all zero fields required in frozen output",
+          "Explicit repeat0 and empty on_finish rejected on HTTP; only omitted values default"
+        ]
+      },
+      "FrameExecutionAvailability": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "available": {
+            "type": "boolean"
+          },
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "available",
+          "reason"
+        ]
+      },
+      "FramePreview": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "contract": {
+            "const": "nb1-frame-program/experimental-v1"
+          },
+          "program": {
+            "$ref": "#/components/schemas/FrameProgram"
+          },
+          "total_frames": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1024,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
+          },
+          "stored_target_writes": {
+            "type": "integer",
+            "minimum": 2,
+            "maximum": 2050,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
+          },
+          "planned_target_writes": {
+            "type": "integer",
+            "minimum": 2,
+            "maximum": 2050,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
+          },
+          "cycle_duration_ms": {
+            "type": "integer",
+            "minimum": 0,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
+          },
+          "nominal_initial_ms": {
+            "type": "integer",
+            "minimum": 10,
+            "maximum": 20,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
+          },
+          "nominal_tail_ms": {
+            "type": "integer",
+            "minimum": 0,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
+          },
+          "nominal_duration_ms": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 86400000,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
+          },
+          "timing_basis": {
+            "const": "host-nominal-excludes-native-io"
+          },
+          "required_capabilities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 3,
+            "uniqueItems": true
+          },
+          "execution": {
+            "$ref": "#/components/schemas/FrameExecutionAvailability"
+          },
+          "device": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "serial": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_-]{1,128}$"
+              },
+              "connection": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "serial",
+              "connection"
+            ]
+          }
+        },
+        "required": [
+          "contract",
+          "program",
+          "total_frames",
+          "stored_target_writes",
+          "planned_target_writes",
+          "cycle_duration_ms",
+          "nominal_initial_ms",
+          "nominal_tail_ms",
+          "nominal_duration_ms",
+          "timing_basis",
+          "required_capabilities",
+          "execution"
+        ],
+        "description": "纯计划统计，可选serial只查缓存。available不是视觉验收；native I/O/Read/额外off清理不在名义时长中。"
+      },
+      "FramePreviewRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "program": {
+            "$ref": "#/components/schemas/FrameProgramRequest"
+          },
+          "serial": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{1,128}$",
+            "description": "明确配置的真实序列号；无索引或别名解析。"
+          }
+        },
+        "required": [
+          "program"
+        ]
+      },
+      "FrameSubmitRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "program": {
+            "$ref": "#/components/schemas/FrameProgramRequest"
+          },
+          "policy": {
+            "const": "reject"
+          },
+          "request_id": {
+            "type": "string",
+            "pattern": "^req_[1-9][0-9]{0,18}_[0-9a-f]{32}$",
+            "description": "服务端request_id_prefix追加128bit小写hex nonce。截止点是daemon单调uptime毫秒；服务端另查int64溢出、过期及最大60000ms准入窗口。"
+          },
+          "expected_daemon_instance_id": {
+            "type": "string",
+            "pattern": "^daemon_[0-9a-f]{32}$",
+            "description": "原daemon实例绑定；实例改变时旧结果仍可能未知，不可自动换绑。"
+          }
+        },
+        "required": [
+          "program",
+          "policy",
+          "request_id",
+          "expected_daemon_instance_id"
+        ],
+        "description": "当前HTTP与Go Frame core均只允许reject+完整票据；仅Program低层支持replace/queue/reject。P4将来的多policy来源准入尚未实现。"
+      },
+      "FrameCancelRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "expected_daemon_instance_id": {
+            "type": "string",
+            "pattern": "^daemon_[0-9a-f]{32}$",
+            "description": "原daemon实例绑定；实例改变时旧结果仍可能未知，不可自动换绑。"
+          }
+        },
+        "required": [],
+        "description": "空body或{}保留旧取消语义；提供实例绑定时先核对再取消，返回唯一instance header。不是Pattern身份绑定取消。"
+      },
+      "FrameJob": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^framejob_[0-9a-f]{32}$"
+          },
+          "device": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{1,128}$",
+            "description": "明确配置的真实序列号；无索引或别名解析。"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "running",
+              "cancelling",
+              "succeeded",
+              "cancelled",
+              "failed"
+            ]
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "started_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "finished_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "error": {
+            "type": "string"
+          },
+          "program": {
+            "$ref": "#/components/schemas/FrameProgram"
+          },
+          "completed_frames": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1024,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
+          },
+          "total_frames": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1024,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
+          },
+          "completed_target_writes": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2050,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
+          },
+          "planned_target_writes": {
+            "type": "integer",
+            "minimum": 2,
+            "maximum": 2050,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
+          }
+        },
+        "required": [
+          "id",
+          "device",
+          "status",
+          "program",
+          "completed_frames",
+          "total_frames",
+          "completed_target_writes",
+          "planned_target_writes",
+          "created_at"
+        ],
+        "description": "原FrameJob形状；无Pattern来源元数据。状态/清理与原worker一致，completed计数不含额外off清理。"
+      },
+      "FrameCapabilities": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "schema_version": {
+            "const": 1
+          },
+          "contract": {
+            "const": "nb1-frame-program/experimental-v1"
+          },
+          "experimental": {
+            "const": true
+          },
+          "software_supported": {
+            "type": "boolean"
+          },
+          "max_frames": {
+            "const": 1024
+          },
+          "max_executed_frames": {
+            "const": 1024
+          },
+          "max_target_writes": {
+            "const": 2050
+          },
+          "min_interval_ms": {
+            "const": 50
+          },
+          "max_interval_ms": {
+            "const": 600000
+          },
+          "fade_quantum_ms": {
+            "const": 10
+          },
+          "write_spacing_ms": {
+            "const": 10
+          },
+          "max_nominal_duration_ms": {
+            "const": 86400000
+          },
+          "policy": {
+            "const": "reject"
+          },
+          "initialization": {
+            "const": "once_before_repeated_frames"
+          },
+          "timing_basis": {
+            "const": "host-nominal-excludes-native-io"
+          },
+          "required_device_capabilities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 3,
+            "maxItems": 3
+          }
+        },
+        "required": [
+          "schema_version",
+          "contract",
+          "experimental",
+          "software_supported",
+          "max_frames",
+          "max_executed_frames",
+          "max_target_writes",
+          "min_interval_ms",
+          "max_interval_ms",
+          "fade_quantum_ms",
+          "write_spacing_ms",
+          "max_nominal_duration_ms",
+          "policy",
+          "initialization",
+          "timing_basis",
+          "required_device_capabilities"
+        ]
+      },
+      "OrbitAction": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "orbit"
+          },
+          "colors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ColorInput"
+            },
+            "minItems": 2,
+            "maxItems": 2,
+            "default": [
+              "red",
+              "blue"
+            ]
+          },
+          "leds": {
+            "enum": [
+              [
+                1,
+                2
+              ],
+              [
+                2,
+                1
+              ]
+            ],
+            "default": [
+              1,
+              2
+            ]
+          },
+          "period_ms": {
+            "type": "integer",
+            "minimum": 200,
+            "maximum": 4800000,
+            "default": 3000,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
+          },
+          "cycles": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 256,
+            "default": 1,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
+          },
+          "segments": {
+            "enum": [
+              4,
+              8
+            ],
+            "default": 4
+          },
+          "on_finish": {
+            "enum": [
+              "off",
+              "hold"
+            ],
+            "default": "off"
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "allOf": [
+          {
+            "if": {
+              "required": [
+                "segments"
+              ],
+              "properties": {
+                "segments": {
+                  "const": 8
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "period_ms": {
+                  "type": "integer",
+                  "minimum": 400,
+                  "maximum": 4800000,
+                  "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
+                },
+                "cycles": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 128,
+                  "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
+                }
+              }
+            },
+            "else": {
+              "properties": {
+                "period_ms": {
+                  "type": "integer",
+                  "minimum": 200,
+                  "maximum": 2400000,
+                  "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
+                },
+                "cycles": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 256,
+                  "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
+                }
+              }
+            }
+          }
+        ],
+        "description": "4/8段paired-linear艺术环绕；不是几何360度/视觉质量承诺。period不要求10ms倍数；interval按整数余数分摊、内部fade向上10ms量化。",
+        "x-runtime-validation": [
+          "all raw integer fields require ordinary integer lexemes",
+          "total frames<=1024 and nominal duration<=24h; not merely period*cycles",
+          "source contract is experimental and explicitly selected; no v1 fallback"
+        ]
+      },
+      "NormalizedOrbitAction": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "orbit"
+          },
+          "colors": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^#[0-9a-f]{6}$"
+            },
+            "minItems": 2,
+            "maxItems": 2
+          },
+          "leds": {
+            "enum": [
+              [
+                1,
+                2
+              ],
+              [
+                2,
+                1
+              ]
+            ]
+          },
+          "period_ms": {
+            "type": "integer",
+            "minimum": 200,
+            "maximum": 4800000,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
+          },
+          "cycles": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 256,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
+          },
+          "segments": {
+            "enum": [
+              4,
+              8
+            ]
+          },
+          "on_finish": {
+            "enum": [
+              "off",
+              "hold"
+            ]
+          }
+        },
+        "required": [
+          "kind",
+          "colors",
+          "leds",
+          "period_ms",
+          "cycles",
+          "segments",
+          "on_finish"
+        ],
+        "allOf": [
+          {
+            "if": {
+              "required": [
+                "segments"
+              ],
+              "properties": {
+                "segments": {
+                  "const": 8
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "period_ms": {
+                  "type": "integer",
+                  "minimum": 400,
+                  "maximum": 4800000,
+                  "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
+                },
+                "cycles": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 128,
+                  "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
+                }
+              }
+            },
+            "else": {
+              "properties": {
+                "period_ms": {
+                  "type": "integer",
+                  "minimum": 200,
+                  "maximum": 2400000,
+                  "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
+                },
+                "cycles": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 256,
+                  "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "OrbitCompilation": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "schema_version": {
+            "const": 1
+          },
+          "contract": {
+            "const": "nb1-light-action/experimental-v2"
+          },
+          "program_compile_contract": {
+            "const": "nb1-frame-program/experimental-v1"
+          },
+          "recipe_id": {
+            "enum": [
+              "orbit-paired-linear-4/experimental-v1",
+              "orbit-paired-linear-8/experimental-v1"
+            ]
+          },
+          "action": {
+            "$ref": "#/components/schemas/NormalizedOrbitAction"
+          },
+          "program": {
+            "$ref": "#/components/schemas/FrameProgram"
+          },
+          "nominal_duration_ms": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 86400000,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
+          },
+          "total_frames": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1024,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
+          },
+          "planned_target_writes": {
+            "type": "integer",
+            "minimum": 2,
+            "maximum": 2050,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
+          },
+          "required_capabilities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 3,
+            "uniqueItems": true
+          }
+        },
+        "required": [
+          "schema_version",
+          "contract",
+          "program_compile_contract",
+          "recipe_id",
+          "action",
+          "program",
+          "nominal_duration_ms",
+          "total_frames",
+          "planned_target_writes",
+          "required_capabilities"
+        ]
+      },
+      "OrbitPreviewRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "contract": {
+            "const": "nb1-light-action/experimental-v2"
+          },
+          "action": {
+            "$ref": "#/components/schemas/OrbitAction"
+          },
+          "serial": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{1,128}$",
+            "description": "明确配置的真实序列号；无索引或别名解析。"
+          }
+        },
+        "required": [
+          "contract",
+          "action"
+        ]
+      },
+      "OrbitSubmitRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "contract": {
+            "const": "nb1-light-action/experimental-v2"
+          },
+          "action": {
+            "$ref": "#/components/schemas/OrbitAction"
+          },
+          "policy": {
+            "const": "reject"
+          },
+          "request_id": {
+            "type": "string",
+            "pattern": "^req_[1-9][0-9]{0,18}_[0-9a-f]{32}$",
+            "description": "服务端request_id_prefix追加128bit小写hex nonce。截止点是daemon单调uptime毫秒；服务端另查int64溢出、过期及最大60000ms准入窗口。"
+          },
+          "expected_daemon_instance_id": {
+            "type": "string",
+            "pattern": "^daemon_[0-9a-f]{32}$",
+            "description": "原daemon实例绑定；实例改变时旧结果仍可能未知，不可自动换绑。"
+          }
+        },
+        "required": [
+          "contract",
+          "action",
+          "policy",
+          "request_id",
+          "expected_daemon_instance_id"
+        ]
+      },
+      "OrbitPreviewResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "result": {
+            "$ref": "#/components/schemas/OrbitCompilation"
+          },
+          "preview": {
+            "$ref": "#/components/schemas/FramePreview"
+          }
+        },
+        "required": [
+          "result",
+          "preview"
+        ]
+      },
+      "PatternRefV2": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "record_contract": {
+            "const": "nb1-pattern-record/experimental-v2"
+          },
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$"
+          },
+          "revision": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          }
+        },
+        "required": [
+          "record_contract",
+          "id",
+          "revision"
+        ],
+        "description": "精确数据身份；目前P3读摘要，不存在Pattern v2运行/查停入口。"
+      },
+      "PatternOpaqueJSON": {
+        "oneOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "boolean"
+          },
+          {
+            "type": "number",
+            "minimum": 0
+          },
+          {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PatternOpaqueJSON"
+            },
+            "minItems": 0
+          },
+          {
+            "type": "object",
+            "propertyNames": {
+              "pattern": "^[\\x00-\\x7f]*$"
+            },
+            "additionalProperties": {
+              "$ref": "#/components/schemas/PatternOpaqueJSON"
+            }
+          }
+        ],
+        "x-runtime-validation": [
+          "P1 ordinary nonnegative int64-part numbers, at most6 decimal digits, no exponent/sign/negative-zero",
+          "UTF-8 Unicode scalars, no null/duplicate, total bytes/depth checked before canonical inspection"
+        ]
+      },
+      "PatternSourceV2Read": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "light_action"
+          },
+          "contract": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_./-]{1,128}$"
+          },
+          "action": {
+            "type": "object",
+            "propertyNames": {
+              "pattern": "^[\\x00-\\x7f]*$"
+            },
+            "additionalProperties": {
+              "$ref": "#/components/schemas/PatternOpaqueJSON"
+            }
+          }
+        },
+        "required": [
+          "kind",
+          "contract",
+          "action"
+        ]
+      },
+      "PatternSourceV2Known": {
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "const": "light_action"
+              },
+              "contract": {
+                "const": "nb1-light-action/v1"
+              },
+              "action": {
+                "$ref": "#/components/schemas/LightAction"
+              }
+            },
+            "required": [
+              "kind",
+              "contract",
+              "action"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "const": "light_action"
+              },
+              "contract": {
+                "const": "nb1-light-action/experimental-v2"
+              },
+              "action": {
+                "$ref": "#/components/schemas/OrbitAction"
+              }
+            },
+            "required": [
+              "kind",
+              "contract",
+              "action"
+            ]
+          }
+        ]
+      },
+      "PatternExecutionV2": {
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "const": "program"
+              },
+              "contract": {
+                "const": "nb1-program-effect/v1"
+              },
+              "program": {
+                "$ref": "#/components/schemas/Program"
+              }
+            },
+            "required": [
+              "kind",
+              "contract",
+              "program"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "const": "frame_program"
+              },
+              "contract": {
+                "const": "nb1-frame-program/experimental-v1"
+              },
+              "program": {
+                "$ref": "#/components/schemas/FrameProgram"
+              }
+            },
+            "required": [
+              "kind",
+              "contract",
+              "program"
+            ]
+          }
+        ]
+      },
+      "PatternCompiledV2Read": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "normalized_action": {
+            "type": "object",
+            "propertyNames": {
+              "pattern": "^[\\x00-\\x7f]*$"
+            },
+            "additionalProperties": {
+              "$ref": "#/components/schemas/PatternOpaqueJSON"
+            }
+          },
+          "recipe_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_./-]{1,128}$"
+          },
+          "execution": {
+            "$ref": "#/components/schemas/PatternExecutionV2"
+          }
+        },
+        "required": [
+          "normalized_action",
+          "execution"
+        ]
+      },
+      "PatternRecordV2Read": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "record_contract": {
+            "const": "nb1-pattern-record/experimental-v2"
+          },
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "source": {
+            "$ref": "#/components/schemas/PatternSourceV2Read"
+          },
+          "compiled": {
+            "$ref": "#/components/schemas/PatternCompiledV2Read"
+          },
+          "revision": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          }
+        },
+        "required": [
+          "record_contract",
+          "id",
+          "title",
+          "source",
+          "compiled",
+          "revision"
+        ],
+        "x-runtime-validation": [
+          "revision = sha256(record_contract+LF+canonical record without revision); JSON Schema does not calculate it",
+          "Source→normalized_action→recipe→frozen execution must match known version verifier",
+          "title1..256 Unicode scalars and<=1024 UTF8 bytes; source and normalized action<=65536bytes; depth32; canonical max1MiB",
+          "Read permits integrity-valid unsupported source/recipe; Known/write must be verified; schema success alone is insufficient"
+        ]
+      },
+      "PatternRecordV2Known": {
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "record_contract": {
+                "const": "nb1-pattern-record/experimental-v2"
+              },
+              "id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$"
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256
+              },
+              "source": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "kind": {
+                    "const": "light_action"
+                  },
+                  "contract": {
+                    "const": "nb1-light-action/v1"
+                  },
+                  "action": {
+                    "$ref": "#/components/schemas/LightAction"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "contract",
+                  "action"
+                ]
+              },
+              "compiled": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "normalized_action": {
+                    "$ref": "#/components/schemas/NormalizedLightAction"
+                  },
+                  "execution": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "kind": {
+                        "const": "program"
+                      },
+                      "contract": {
+                        "const": "nb1-program-effect/v1"
+                      },
+                      "program": {
+                        "$ref": "#/components/schemas/Program"
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "contract",
+                      "program"
+                    ]
+                  }
+                },
+                "required": [
+                  "normalized_action",
+                  "execution"
+                ]
+              },
+              "revision": {
+                "type": "string",
+                "pattern": "^sha256:[0-9a-f]{64}$"
+              }
+            },
+            "required": [
+              "record_contract",
+              "id",
+              "title",
+              "source",
+              "compiled",
+              "revision"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "record_contract": {
+                "const": "nb1-pattern-record/experimental-v2"
+              },
+              "id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$"
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256
+              },
+              "source": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "kind": {
+                    "const": "light_action"
+                  },
+                  "contract": {
+                    "const": "nb1-light-action/experimental-v2"
+                  },
+                  "action": {
+                    "$ref": "#/components/schemas/OrbitAction"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "contract",
+                  "action"
+                ]
+              },
+              "compiled": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "normalized_action": {
+                    "$ref": "#/components/schemas/NormalizedOrbitAction"
+                  },
+                  "recipe_id": {
+                    "enum": [
+                      "orbit-paired-linear-4/experimental-v1",
+                      "orbit-paired-linear-8/experimental-v1"
+                    ]
+                  },
+                  "execution": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "kind": {
+                        "const": "frame_program"
+                      },
+                      "contract": {
+                        "const": "nb1-frame-program/experimental-v1"
+                      },
+                      "program": {
+                        "$ref": "#/components/schemas/FrameProgram"
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "contract",
+                      "program"
+                    ]
+                  }
+                },
+                "required": [
+                  "normalized_action",
+                  "recipe_id",
+                  "execution"
+                ]
+              },
+              "revision": {
+                "type": "string",
+                "pattern": "^sha256:[0-9a-f]{64}$"
+              }
+            },
+            "required": [
+              "record_contract",
+              "id",
+              "title",
+              "source",
+              "compiled",
+              "revision"
+            ]
+          }
+        ],
+        "x-runtime-validation": [
+          "revision = sha256(record_contract+LF+canonical record without revision); JSON Schema does not calculate it",
+          "Source→normalized_action→recipe→frozen execution must match known version verifier",
+          "title1..256 Unicode scalars and<=1024 UTF8 bytes; source and normalized action<=65536bytes; depth32; canonical max1MiB",
+          "Read permits integrity-valid unsupported source/recipe; Known/write must be verified; schema success alone is insufficient"
+        ]
+      },
+      "PatternSnapshotV2Read": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "schema_version": {
+            "const": 2
+          },
+          "kind": {
+            "const": "nb1-pattern-snapshot/experimental-v2"
+          },
+          "records": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PatternRecordV2Read"
+            },
+            "minItems": 0,
+            "maxItems": 128
+          }
+        },
+        "required": [
+          "schema_version",
+          "kind",
+          "records"
+        ],
+        "x-runtime-validation": [
+          "canonical ASCII-ID ordering, distinct IDs and<=1MiB whole snapshot",
+          "Import is fully verified create-only, no unknown writes; Read/export preserve valid unknowns"
+        ]
+      },
+      "PatternSnapshotV2Write": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "schema_version": {
+            "const": 2
+          },
+          "kind": {
+            "const": "nb1-pattern-snapshot/experimental-v2"
+          },
+          "records": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PatternRecordV2Known"
+            },
+            "minItems": 0,
+            "maxItems": 128
+          }
+        },
+        "required": [
+          "schema_version",
+          "kind",
+          "records"
+        ],
+        "x-runtime-validation": [
+          "Input need not be pre-sorted or byte-canonical: InspectSnapshot validates then sorts. Distinct IDs and<=1MiB raw/canonical whole package; stored/exported output is canonical ASCII-ID order.",
+          "Import is fully verified create-only, no unknown writes; Read/export preserve valid unknowns"
+        ]
+      },
+      "PatternAuthorPreviewRequestV2": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "source": {
+            "$ref": "#/components/schemas/PatternSourceV2Known"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "source"
+        ]
+      },
+      "PatternAuthorSaveRequestV2": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "source": {
+            "$ref": "#/components/schemas/PatternSourceV2Known"
+          },
+          "expected_revision": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "source",
+          "expected_revision"
+        ],
+        "x-runtime-validation": [
+          "Expected revision confirms the complete candidate before any Store call; not a store version/overwrite authorization/daemon ticket"
+        ]
+      },
+      "PatternVerificationV2": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "verified": {
+            "type": "boolean"
+          },
+          "reason": {
+            "enum": [
+              "verified",
+              "unsupported_recipe",
+              "unsupported_source"
+            ]
+          }
+        },
+        "required": [
+          "verified",
+          "reason"
+        ],
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "verified": {
+                  "const": true
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "reason": {
+                  "const": "verified"
+                }
+              }
+            },
+            "else": {
+              "properties": {
+                "reason": {
+                  "enum": [
+                    "unsupported_recipe",
+                    "unsupported_source"
+                  ]
+                }
+              }
+            }
+          }
+        ]
+      },
+      "PatternExecutionAvailabilityV2": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "available": {
+            "const": false
+          },
+          "reason": {
+            "const": "pattern_identity_admission_not_integrated"
+          }
+        },
+        "required": [
+          "available",
+          "reason"
+        ]
+      },
+      "PatternRecordResponseV2": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "schema_version": {
+            "const": 2
+          },
+          "contract": {
+            "const": "nb1-pattern-library/experimental-v2"
+          },
+          "record": {
+            "$ref": "#/components/schemas/PatternRecordV2Read"
+          },
+          "verification": {
+            "$ref": "#/components/schemas/PatternVerificationV2"
+          },
+          "execution_digest": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          }
+        },
+        "required": [
+          "schema_version",
+          "contract",
+          "record",
+          "verification",
+          "execution_digest"
+        ]
+      },
+      "PatternPreviewFactsV2": {
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "const": "program"
+              },
+              "contract": {
+                "const": "nb1-program-effect/v1"
+              },
+              "nominal_duration_ms": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 86400000,
+                "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
+              },
+              "timing_basis": {
+                "const": "host-nominal-excludes-native-io"
+              },
+              "required_capabilities": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "minItems": 3,
+                "uniqueItems": true
+              },
+              "total_steps": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 1024,
+                "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
+              }
+            },
+            "required": [
+              "kind",
+              "contract",
+              "nominal_duration_ms",
+              "timing_basis",
+              "required_capabilities",
+              "total_steps"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "const": "frame_program"
+              },
+              "contract": {
+                "const": "nb1-frame-program/experimental-v1"
+              },
+              "total_frames": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 1024,
+                "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
+              },
+              "stored_target_writes": {
+                "type": "integer",
+                "minimum": 2,
+                "maximum": 2050,
+                "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
+              },
+              "planned_target_writes": {
+                "type": "integer",
+                "minimum": 2,
+                "maximum": 2050,
+                "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
+              },
+              "cycle_duration_ms": {
+                "type": "integer",
+                "minimum": 0,
+                "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
+              },
+              "nominal_initial_ms": {
+                "type": "integer",
+                "minimum": 10,
+                "maximum": 20,
+                "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
+              },
+              "nominal_tail_ms": {
+                "type": "integer",
+                "minimum": 0,
+                "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
+              },
+              "nominal_duration_ms": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 86400000,
+                "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
+              },
+              "timing_basis": {
+                "const": "host-nominal-excludes-native-io"
+              },
+              "required_capabilities": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "minItems": 3,
+                "uniqueItems": true
+              }
+            },
+            "required": [
+              "kind",
+              "contract",
+              "total_frames",
+              "stored_target_writes",
+              "planned_target_writes",
+              "cycle_duration_ms",
+              "nominal_initial_ms",
+              "nominal_tail_ms",
+              "nominal_duration_ms",
+              "timing_basis",
+              "required_capabilities"
+            ]
+          }
+        ],
+        "description": "Pure nominal counts only; no native/Read/off cleanup or device quality promise."
+      },
+      "PatternPreviewResponseV2": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "schema_version": {
+            "const": 2
+          },
+          "contract": {
+            "const": "nb1-pattern-library/experimental-v2"
+          },
+          "record": {
+            "$ref": "#/components/schemas/PatternRecordV2Known"
+          },
+          "verification": {
+            "$ref": "#/components/schemas/PatternVerificationV2"
+          },
+          "execution_digest": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          },
+          "preview": {
+            "$ref": "#/components/schemas/PatternPreviewFactsV2"
+          },
+          "pattern_execution": {
+            "$ref": "#/components/schemas/PatternExecutionAvailabilityV2"
+          }
+        },
+        "required": [
+          "schema_version",
+          "contract",
+          "record",
+          "verification",
+          "execution_digest",
+          "preview",
+          "pattern_execution"
+        ]
+      },
+      "PatternSummaryV2": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "pattern_ref": {
+            "$ref": "#/components/schemas/PatternRefV2"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "source_contract": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_./-]{1,128}$"
+          },
+          "execution_kind": {
+            "enum": [
+              "program",
+              "frame_program"
+            ]
+          },
+          "execution_contract": {
+            "enum": [
+              "nb1-program-effect/v1",
+              "nb1-frame-program/experimental-v1"
+            ]
+          },
+          "verification": {
+            "$ref": "#/components/schemas/PatternVerificationV2"
+          },
+          "execution_digest": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          }
+        },
+        "required": [
+          "pattern_ref",
+          "title",
+          "source_contract",
+          "execution_kind",
+          "execution_contract",
+          "verification",
+          "execution_digest"
+        ]
+      },
+      "PatternLibraryInfoV2": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "state": {
+            "enum": [
+              "ready",
+              "read_only"
+            ]
+          },
+          "create_only": {
+            "const": true
+          },
+          "max_records": {
+            "const": 128
+          },
+          "max_package_bytes": {
+            "const": 1048576
+          },
+          "record_contract": {
+            "const": "nb1-pattern-record/experimental-v2"
+          },
+          "snapshot_kind": {
+            "const": "nb1-pattern-snapshot/experimental-v2"
+          }
+        },
+        "required": [
+          "path",
+          "state",
+          "create_only",
+          "max_records",
+          "max_package_bytes",
+          "record_contract",
+          "snapshot_kind"
+        ]
+      },
+      "PatternListV2": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "schema_version": {
+            "const": 2
+          },
+          "contract": {
+            "const": "nb1-pattern-library/experimental-v2"
+          },
+          "library": {
+            "$ref": "#/components/schemas/PatternLibraryInfoV2"
+          },
+          "pattern_execution": {
+            "$ref": "#/components/schemas/PatternExecutionAvailabilityV2"
+          },
+          "patterns": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PatternSummaryV2"
+            },
+            "minItems": 0,
+            "maxItems": 128
+          }
+        },
+        "required": [
+          "schema_version",
+          "contract",
+          "library",
+          "pattern_execution",
+          "patterns"
+        ]
+      },
+      "PatternWriteResponseV2": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "schema_version": {
+            "const": 2
+          },
+          "contract": {
+            "const": "nb1-pattern-library/experimental-v2"
+          },
+          "records": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PatternRecordV2Known"
+            },
+            "minItems": 0,
+            "maxItems": 128
+          },
+          "created": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$"
+            },
+            "minItems": 0,
+            "maxItems": 128,
+            "uniqueItems": true
+          },
+          "existing": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$"
+            },
+            "minItems": 0,
+            "maxItems": 128,
+            "uniqueItems": true
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 128,
+            "x-json-number-lexeme": "ordinary integer token; schema mathematical integer alone cannot reject1.0/exponent/-0"
+          }
+        },
+        "required": [
+          "schema_version",
+          "contract",
+          "records",
+          "created",
+          "existing",
+          "total"
+        ],
+        "x-runtime-validation": [
+          "records in canonical ID order; created/existing disjoint and exactly cover input",
+          "save has one record and status201(created)/200(existing); import success always200",
+          "commit uncertain returns only error, no records/Location, never auto retry"
+        ]
       }
     },
     "responses": {
@@ -3881,7 +8312,7 @@
         }
       },
       "413": {
-        "description": "JSON体超过1MiB。",
+        "description": "超过该路由原始字节上限（Color4KiB、Light64KiB、Program/Frame/Pattern1MiB等）；具体x-max-body-bytes为准。",
         "content": {
           "application/json": {
             "schema": {
@@ -3941,7 +8372,7 @@
         }
       },
       "501": {
-        "description": "idempotency_unsupported：该服务未实现可选回执能力；不得移除绑定后自动降级提交。",
+        "description": "所需Receipt/Frame服务不可用，或v2存储未配置/平台不支持，或作者来源契约不支持；精确code区分，禁止降级执行。",
         "content": {
           "application/json": {
             "schema": {
@@ -3953,19 +8384,42 @@
     }
   },
   "x-verification": {
-    "date": "2026-11-09",
-    "hardware": "macOS 27.2 arm64 / blink(1) mk2 firmware204 only",
+    "date": "2026-11-10",
+    "scope": "Offline source inventory, structural schema and fixture checks only; no daemon installation or fresh hardware observation claim",
+    "daily_source": "1d89eae92278f24a68fff1a34e3c1e696a962c3c",
+    "development_source": "4d625891cc421c037807e2e6a193174016c05c71",
+    "reproduce": "docs/contract-fixtures/README.zh-CN.md",
     "limits": [
-      "No physical unplug/replug test",
-      "No mk3 hardware validation",
-      "CGO=0 cross-build is a stub, not native USB proof",
-      "Jobs/receipts are volatile; optional same-instance receipts do not provide restart recovery or durable exactly-once",
-      "Native synchronous I/O may exceed shutdown waiting deadlines",
-      "Request-receipt transport/CLI checks use fake services; this extension has no new USB hardware acceptance claim",
-      "High-level effect compiler/API/CLI checks use fake backends; new effect hardware acceptance is recorded separately"
-    ],
-    "pattern_scope": "Local development document. New routes/software tests qualified; current resident9e does not expose this candidate library.",
-    "flow_transition_scope": "Optional alternate.transition extension; exact old result bytes preserved when omitted. OpenAPI has structural/numeric bounds; server remains authoritative for lexical, aggregate and compiled waveform validation."
+      "No new USB/MK3/visual qualification",
+      "JSON Schema does not verify canonical SHA/source compilation, lexical JSON or aggregate hardware timing",
+      "P4 Pattern execution is planned, not registered by these sources"
+    ]
   },
-  "x-specification-source": "https://spec.openapis.org/oas/v3.2.1.html"
+  "x-specification-source": "https://spec.openapis.org/oas/v3.2.1.html",
+  "x-source-baselines": {
+    "daily": "1d89eae92278f24a68fff1a34e3c1e696a962c3c",
+    "development": "4d625891cc421c037807e2e6a193174016c05c71",
+    "inventory": "artifacts/api-complete-20261110/low-http-inventory.json"
+  },
+  "x-not-implemented": [
+    "Pattern v2 run/query/cancel and atomic source admission",
+    "generic high sequence/compose/spin",
+    "USB raw report/flash upload HTTP endpoints",
+    "separate HTTP /state or /set routes"
+  ],
+  "x-runtime-validation": {
+    "raw_json": [
+      "valid UTF-8",
+      "no duplicate or escaped duplicate fields",
+      "no explicit null",
+      "one JSON value",
+      "schema keys case-sensitive"
+    ],
+    "schema_limits": [
+      "JSON Schema integer accepts mathematical integers such as1.0; runtime lexical rules are stricter",
+      "SHA/source/compiler binding and aggregate timing/write budgets are runtime checks",
+      "known dictionary colors, Unicode scalar validity, raw byte/depth limits cannot be certified by this schema"
+    ],
+    "runtime_errors": "Error code/message and method/body/query checks are versioned per operation; no automatic retry or device fallback"
+  }
 }

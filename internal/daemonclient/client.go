@@ -229,6 +229,12 @@ func (c *Client) do(ctx context.Context, method, path string, input, output inte
 }
 
 func (c *Client) doResponse(ctx context.Context, method, path string, input, output interface{}) (http.Header, error) {
+	return c.doResponseExpected(ctx, method, path, input, output, 0)
+}
+
+// expectedStatus opts the new read-only compiler routes into an exact status
+// and strict response contract. Existing request/Job response behavior remains.
+func (c *Client) doResponseExpected(ctx context.Context, method, path string, input, output interface{}, expectedStatus int) (http.Header, error) {
 	var body io.Reader
 	if input != nil {
 		b, err := json.Marshal(input)
@@ -256,6 +262,15 @@ func (c *Client) doResponse(ctx context.Context, method, path string, input, out
 			return nil, &Error{Status: resp.StatusCode, Code: "http_error", Message: resp.Status}
 		}
 		return nil, &Error{Status: resp.StatusCode, Code: failure.Error.Code, Message: failure.Error.Message}
+	}
+	if expectedStatus != 0 {
+		if resp.StatusCode != expectedStatus {
+			return nil, &Error{Status: resp.StatusCode, Code: "unexpected_status", Message: fmt.Sprintf("read-only compiler response requires HTTP %d", expectedStatus)}
+		}
+		if err := decodeCompilerResponse(resp, output); err != nil {
+			return nil, &DecodeError{Status: resp.StatusCode, Err: err}
+		}
+		return resp.Header, nil
 	}
 	if err := json.NewDecoder(reader).Decode(output); err != nil {
 		return nil, &DecodeError{Status: resp.StatusCode, Err: err}

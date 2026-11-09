@@ -165,3 +165,73 @@ func TestEmbeddedBundle(t *testing.T) {
 		t.Fatal("nonasset lookup accepted", err)
 	}
 }
+
+func patternBundleFixture(t *testing.T) (fstest.MapFS, manifest) {
+	t.Helper()
+	files, record := bundleFixture(t)
+	for _, name := range patternAssetNames {
+		data := []byte("fixture " + name)
+		size := int64(len(data))
+		files["dist/"+name] = &fstest.MapFile{Data: data}
+		record.Files = append(record.Files, assetRecord{Path: name, Bytes: &size, SHA256: digest(data)})
+	}
+	record.APIContracts = append(record.APIContracts, "nb1-pattern-library/experimental-v2", "nb1-pattern-record/experimental-v2")
+	refreshProfileFixture(t, files, &record)
+	return files, record
+}
+
+func refreshProfileFixture(t *testing.T, files fstest.MapFS, record *manifest) {
+	t.Helper()
+	contents := map[string][]byte{}
+	for _, item := range record.Files {
+		contents[item.Path] = files["dist/"+item.Path].Data
+	}
+	record.Source.TreeSHA256 = treeDigest(contents)
+	setFixtureManifest(t, files, *record)
+}
+
+func TestPatternBundleProfileIsCompleteAndBoundToContracts(t *testing.T) {
+	files, _ := patternBundleFixture(t)
+	if err := validateBundle(files); err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range patternAssetNames {
+		t.Run("missing/"+name, func(t *testing.T) {
+			files, record := patternBundleFixture(t)
+			delete(files, "dist/"+name)
+			for i, item := range record.Files {
+				if item.Path == name {
+					record.Files = append(record.Files[:i], record.Files[i+1:]...)
+					break
+				}
+			}
+			refreshProfileFixture(t, files, &record)
+			if err := validateBundle(files); err == nil {
+				t.Fatal("partial Pattern profile accepted")
+			}
+		})
+	}
+	for _, mode := range []string{"base-contracts", "unknown-contract", "substituted-base-resource"} {
+		t.Run(mode, func(t *testing.T) {
+			files, record := patternBundleFixture(t)
+			switch mode {
+			case "base-contracts":
+				record.APIContracts = record.APIContracts[:2]
+			case "unknown-contract":
+				record.APIContracts[3] = "unknown/v1"
+			case "substituted-base-resource":
+				files, record = bundleFixture(t)
+				item := &record.Files[0]
+				delete(files, "dist/"+item.Path)
+				item.Path = "patterns.html"
+				files["dist/"+item.Path] = &fstest.MapFile{Data: []byte("substitution")}
+				size := int64(len(files["dist/"+item.Path].Data))
+				item.Bytes, item.SHA256 = &size, digest(files["dist/"+item.Path].Data)
+			}
+			refreshProfileFixture(t, files, &record)
+			if err := validateBundle(files); err == nil {
+				t.Fatal("mismatched asset/contract profile accepted")
+			}
+		})
+	}
+}

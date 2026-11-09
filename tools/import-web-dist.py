@@ -15,6 +15,8 @@ MAX_BYTES = 256 * 1024
 MAX_MANIFEST_BYTES = 16 * 1024
 ASSETS = frozenset(("index.html", "demo.css", "demo.js", "orbit.html", "orbit.css", "orbit.js", "LICENSE.txt"))
 CONTRACTS = frozenset(("nb1-light-action/v1", "nb1-light-action/experimental-v2"))
+PATTERN_ASSETS = ASSETS | {"patterns.html", "patterns.js", "patterns.css"}
+PATTERN_CONTRACTS = CONTRACTS | {"nb1-pattern-library/experimental-v2", "nb1-pattern-record/experimental-v2"}
 PENDING = b"Waiting for verified nb1-web dist.\n"
 
 
@@ -38,8 +40,9 @@ def sha(data):
 
 
 def tree_digest(files):
-    # ASSETS contains ASCII paths. Match the frontend builder byte for byte.
-    entries = "".join(name + "\0" + sha(files[name]) + "\n" for name in sorted(ASSETS))
+    # Both closed asset profiles use ASCII paths. The manifest is not itself
+    # part of the source tree hash. Match the frontend builder byte for byte.
+    entries = "".join(name + "\0" + sha(files[name]) + "\n" for name in sorted(files) if name != "manifest.json")
     return sha(entries.encode("utf-8"))
 
 
@@ -121,7 +124,7 @@ def names(directory):
     result = set()
     with os.scandir(str(directory)) as entries:
         for entry in entries:
-            require(len(result) < 8, "too many dist entries")
+            require(len(result) < len(PATTERN_ASSETS) + 1, "too many dist entries")
             result.add(entry.name)
     return result
 
@@ -130,8 +133,14 @@ def validate_directory(directory, expected_commit, expected_manifest_sha):
     require(hex_value(expected_commit, 40), "expected source commit must be 40 lowercase hex characters")
     require(hex_value(expected_manifest_sha, 64), "expected manifest SHA-256 must be 64 lowercase hex characters")
     directory = Path(directory)
-    wanted = ASSETS | {"manifest.json"}
-    require(names(directory) == wanted, "dist must contain exactly the seven named assets and manifest.json")
+    present = names(directory)
+    if present == ASSETS | {"manifest.json"}:
+        assets, required_contracts = ASSETS, CONTRACTS
+    elif present == PATTERN_ASSETS | {"manifest.json"}:
+        assets, required_contracts = PATTERN_ASSETS, PATTERN_CONTRACTS
+    else:
+        raise InvalidBundle("dist must match the complete base or Pattern asset profile and manifest.json")
+    wanted = assets | {"manifest.json"}
     data = read_plain(directory / "manifest.json", MAX_MANIFEST_BYTES)
     require(sha(data) == expected_manifest_sha, "manifest SHA-256 differs from the explicit pin")
     value = strict_json(data)
@@ -145,14 +154,14 @@ def validate_directory(directory, expected_commit, expected_manifest_sha):
     node = build["node"]
     require(build["tool"] == "copy-static/v1" and type(node) is str and 0 < len(node) <= 128 and node.strip() == node and all(32 <= ord(ch) < 127 for ch in node) and hex_value(build["lockfile_sha256"], 64), "invalid build metadata")
     contracts = value["api_contracts"]
-    require(type(contracts) is list and len(contracts) == len(CONTRACTS) and all(type(c) is str for c in contracts) and set(contracts) == CONTRACTS, "unsupported or duplicate API contracts")
-    require(type(value["files"]) is list and len(value["files"]) == len(ASSETS), "invalid asset declaration count")
+    require(type(contracts) is list and len(contracts) == len(required_contracts) and all(type(c) is str for c in contracts) and set(contracts) == required_contracts, "unsupported, incomplete or duplicate API contracts")
+    require(type(value["files"]) is list and len(value["files"]) == len(assets), "invalid asset declaration count")
     result = {"manifest.json": data}
     total = len(data)
     for item in value["files"]:
         object_keys(item, ("path", "bytes", "sha256"), "asset")
         name, size = item["path"], item["bytes"]
-        require(type(name) is str and name in ASSETS and name not in result, "unknown, duplicate or unsafe asset path")
+        require(type(name) is str and name in assets and name not in result, "unknown, duplicate or unsafe asset path")
         require(type(size) is int and 0 < size <= MAX_BYTES and hex_value(item["sha256"], 64), "invalid asset byte count or digest")
         total += size
         require(total <= MAX_BYTES, "dist exceeds 256 KiB including manifest")

@@ -21,6 +21,7 @@ const maxBundleBytes = 256 * 1024
 const maxManifestBytes = 16 * 1024
 
 var assetNames = []string{"LICENSE.txt", "demo.css", "demo.js", "index.html", "orbit.css", "orbit.html", "orbit.js"}
+var patternAssetNames = []string{"patterns.css", "patterns.html", "patterns.js"}
 
 //go:embed all:dist manifest.lock.json
 var bundled embed.FS
@@ -80,6 +81,11 @@ func ReadFile(name string) ([]byte, error) {
 
 func knownAsset(name string) bool {
 	for _, allowed := range assetNames {
+		if name == allowed {
+			return true
+		}
+	}
+	for _, allowed := range patternAssetNames {
 		if name == allowed {
 			return true
 		}
@@ -215,6 +221,12 @@ func validateBundle(files fs.FS) error {
 		}
 	}
 	contracts := map[string]bool{"nb1-light-action/v1": false, "nb1-light-action/experimental-v2": false}
+	expectedAssets := len(assetNames)
+	if len(record.Files) == len(assetNames)+len(patternAssetNames) {
+		expectedAssets += len(patternAssetNames)
+		contracts["nb1-pattern-library/experimental-v2"] = false
+		contracts["nb1-pattern-record/experimental-v2"] = false
+	}
 	if len(record.APIContracts) != len(contracts) {
 		return fmt.Errorf("invalid web API contract set")
 	}
@@ -225,7 +237,7 @@ func validateBundle(files fs.FS) error {
 		}
 		contracts[name] = true
 	}
-	if len(record.Files) != len(assetNames) {
+	if len(record.Files) != expectedAssets {
 		return fmt.Errorf("incomplete web asset set")
 	}
 	expected := map[string]bool{"manifest.json": true}
@@ -247,6 +259,18 @@ func validateBundle(files fs.FS) error {
 		total += *file.Bytes
 		if total > maxBundleBytes {
 			return fmt.Errorf("web bundle exceeds %d bytes", maxBundleBytes)
+		}
+	}
+	// The extended profile is all-or-nothing. A complete declaration count
+	// cannot substitute an optional asset for one of the base resources.
+	for _, name := range assetNames {
+		if !expected[name] {
+			return fmt.Errorf("incomplete base web asset set")
+		}
+	}
+	for _, name := range patternAssetNames {
+		if expected[name] != (expectedAssets != len(assetNames)) {
+			return fmt.Errorf("incomplete Pattern web asset profile")
 		}
 	}
 	if treeDigest(contents) != record.Source.TreeSHA256 {

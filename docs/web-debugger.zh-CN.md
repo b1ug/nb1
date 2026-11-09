@@ -2,7 +2,7 @@
 
 此页面由 nb1 的 HTTP 服务直接提供：`/demo/`。HTML、CSS 和 JavaScript 嵌入二进制，所有 API 请求使用同一个 origin；不依赖 Node、CDN、外部脚本或云端存储。
 
-Web 作者文件由独立的本地 `nb1-web` 仓库维护。nb1 只跟踪 `internal/webui/dist` 中的固定构建产物及其 `manifest.lock.json`，不在 Go 构建或启动时查找 Web 源码、运行 Node 或下载资源。原有六个 `/demo/` 地址与 HTTP 安全策略保持一致。
+Web 作者文件由独立的本地 `nb1-web` 仓库维护。nb1 只跟踪 `internal/webui/dist` 中的固定构建产物及其 `manifest.lock.json`，不在 Go 构建或启动时查找 Web 源码、运行 Node 或下载资源。原有六个 `/demo/` 资源地址与 HTTP 安全策略保持一致；扩展产物还可提供 `/demo/patterns.html`、`patterns.js`、`patterns.css`。首页地址是 `/demo/`，相对导航使用 `./`。
 
 ## 导入固定 Web 产物
 
@@ -17,7 +17,11 @@ python3 tools/import-web-dist.py /absolute/path/to/dist \
   --source-commit FULL_SOURCE_COMMIT --manifest-sha256 MANIFEST_SHA256
 ```
 
-前两条只读。导入只接受 `index.html`、`demo.css`、`demo.js`、`orbit.html`、`orbit.css`、`orbit.js`、`LICENSE.txt` 及 manifest；整个 dist 含 manifest 至多 256 KiB。它检查来源、原 manifest 字节、逐文件大小和摘要，并按 ASCII 路径排序后将 `path + NUL + sha256 + LF` 拼接为 UTF-8，重算七个资源的 `source.tree_sha256`。dirty 来源、未知文件、重复字段、null、符号链接、重解析点与硬链接均拒绝。独立 Web 仓库的源码提交和锁文件仍需由构建方审查；导入器验证的是明确指定的产物，不替代来源可信度判断。
+前两条只读。导入接受两个完整、闭合的产物组合：基础组合为 `index.html`、`demo.css`、`demo.js`、`orbit.html`、`orbit.css`、`orbit.js`、`LICENSE.txt`；扩展组合在此基础上要求全部三个 `patterns.html/js/css`。基础组合必须声明原来的两项 light 合同，扩展组合还必须声明 `nb1-pattern-library/experimental-v2` 与 `nb1-pattern-record/experimental-v2`。不接受只加入一两项新资源或合同，也不接受用已知新资源替换旧文件。
+
+整个 dist 含 manifest 仍至多 256 KiB。导入检查来源、原 manifest 字节、逐文件大小和摘要，并按 ASCII 路径排序后将 `path + NUL + sha256 + LF` 拼接为 UTF-8，重算七项或十项资源的 `source.tree_sha256`。dirty 来源、未知文件、重复字段、null、符号链接、重解析点与硬链接均拒绝。独立 Web 仓库的源码提交和锁文件仍需由构建方审查；导入器验证的是明确指定的产物，不替代来源可信度判断。
+
+可在明确重新指定旧来源及摘要后导入完整基础组合用于恢复。有效基础组合没有新页面时，其三个新资源返回404；必需资源缺失或摘要不符仍视为整个bundle校验失败，不以404掩盖。新增页面沿用同源、只允许GET、无query/body、no-store/nosniff、严格CSP与no-referrer。是否实际嵌入新页面，以本二进制的固定dist为准；单独升级host代码不构成新Web功能验收。
 
 导入在临时目录复制校验后更换生成目录和锁；普通错误会恢复旧版。它不承诺两个路径在崩溃时原子切换，不支持与 Go 构建并发执行。中断残留或不一致的生成目录会拒绝继续；Go 在读取任何页面前还会校验完整的嵌入文件集与锁，失败时不提供页面。`cleanup_warnings` 非空表示新产物可能已安装，但残留需检查，不能只凭命令退出码推断旧产物仍在。
 

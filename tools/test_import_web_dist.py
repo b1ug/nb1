@@ -19,18 +19,20 @@ spec.loader.exec_module(importer)
 COMMIT = "1" * 40
 
 
-def fixture(path):
+def fixture(path, patterns=False):
     path.mkdir()
-    for name in importer.ASSETS:
+    assets = importer.PATTERN_ASSETS if patterns else importer.ASSETS
+    contracts = importer.PATTERN_CONTRACTS if patterns else importer.CONTRACTS
+    for name in assets:
         (path / name).write_bytes(("fixture " + name + "\n").encode())
     manifest = {
         "schema_version": 1, "product": "nb1-web", "asset_base": "./",
         "source": {"repository": "local:nb1-web", "commit": COMMIT, "dirty": False, "tree_sha256": "2" * 64},
         "build": {"tool": "copy-static/v1", "node": "v24.0.0", "lockfile_sha256": "3" * 64},
-        "api_contracts": ["nb1-light-action/v1", "nb1-light-action/experimental-v2"],
-        "files": [{"path": name, "bytes": (path / name).stat().st_size, "sha256": importer.sha((path / name).read_bytes())} for name in sorted(importer.ASSETS)],
+        "api_contracts": sorted(contracts),
+        "files": [{"path": name, "bytes": (path / name).stat().st_size, "sha256": importer.sha((path / name).read_bytes())} for name in sorted(assets)],
     }
-    manifest["source"]["tree_sha256"] = importer.tree_digest({name: (path / name).read_bytes() for name in importer.ASSETS})
+    manifest["source"]["tree_sha256"] = importer.tree_digest({name: (path / name).read_bytes() for name in assets})
     write_manifest(path, manifest)
     return manifest
 
@@ -55,6 +57,53 @@ def snapshot(path):
 
 
 class ImportBoundaryTests(unittest.TestCase):
+    def test_pattern_profile_upgrade_rollback_and_explicit_legacy_restore(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root=Path(temporary)
+            old=root/'old';fixture(old)
+            extended=root/'patterns';fixture(extended, patterns=True)
+            old_bundle,new_bundle=validate(old),validate(extended)
+            self.assertEqual(len(old_bundle.files),8)
+            self.assertEqual(len(new_bundle.files),11)
+            target=root/'webui';initial_destination(target)
+            importer.install(old_bundle,target)
+            before=snapshot(target)
+            real_replace=os.replace
+            failed=[False]
+            def fail_new_lock(src,dst):
+                if not failed[0] and Path(src).parent.name.startswith('.webui-stage-') and Path(dst).name=='manifest.lock.json':
+                    failed[0]=True
+                    raise OSError('injected extended profile lock publication failure')
+                return real_replace(src,dst)
+            with mock.patch.object(importer.os,'replace',side_effect=fail_new_lock):
+                with self.assertRaises(OSError):importer.install(new_bundle,target)
+            self.assertTrue(failed[0]);self.assertEqual(snapshot(target),before)
+            importer.install(new_bundle,target)
+            self.assertEqual(snapshot(target/'dist'),new_bundle.files)
+            self.assertEqual(importer.snapshot_destination(target)[0],new_bundle.files)
+            importer.install(old_bundle,target)
+            self.assertEqual(snapshot(target),before)
+
+    def test_pattern_profile_is_closed_and_all_or_nothing(self):
+        for mode in ['missing-html','missing-js','missing-css','missing-pattern-contract','base-contracts','extra-contract','substituted-base-asset']:
+            with self.subTest(mode=mode),tempfile.TemporaryDirectory() as temporary:
+                path=Path(temporary)/'dist';manifest=fixture(path,patterns=True)
+                if mode.startswith('missing-') and mode.split('-')[1] in ['html','js','css']:
+                    (path/('patterns.'+mode.split('-')[1])).unlink()
+                elif mode=='missing-pattern-contract':manifest['api_contracts'].remove('nb1-pattern-record/experimental-v2')
+                elif mode=='base-contracts':manifest['api_contracts']=sorted(importer.CONTRACTS)
+                elif mode=='extra-contract':manifest['api_contracts'].append('unknown/v1')
+                elif mode=='substituted-base-asset':
+                    # Seven assets with a known optional file cannot masquerade
+                    # as the complete seven-asset legacy profile.
+                    for name in ['demo.js','patterns.js','patterns.css']:(path/name).unlink()
+                    manifest['files']=[v for v in manifest['files'] if (path/v['path']).exists()]
+                    manifest['api_contracts']=sorted(importer.CONTRACTS)
+                write_manifest(path,manifest)
+                before=snapshot(path)
+                with self.assertRaises(importer.InvalidBundle):validate(path)
+                self.assertEqual(snapshot(path),before)
+
     def test_check_and_dry_run_do_not_write(self):
         with tempfile.TemporaryDirectory() as temporary:
             source = Path(temporary) / "dist"

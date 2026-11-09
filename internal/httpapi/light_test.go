@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
+	"io/fs"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -34,6 +36,38 @@ func TestVerifiedWebBundleKeepsExistingRoutesAndPolicy(t *testing.T) {
 	for _, path := range []string{"/demo/manifest.json", "/demo/manifest.lock.json", "/demo/LICENSE.txt", "/demo/../manifest.lock.json", "/demox/index.html"} {
 		if response := previewRequest(h, http.MethodGet, path, ""); response.Code != http.StatusNotFound {
 			t.Fatalf("unexpected resource %s was exposed: %d", path, response.Code)
+		}
+	}
+}
+
+func TestPatternWebResourcesUseTheSelectedBundleProfileAndSameGuards(t *testing.T) {
+	h := httpapi.New(noPreviewIO{})
+	for path, file := range map[string]string{"/demo/patterns.html": "patterns.html", "/demo/patterns.js": "patterns.js", "/demo/patterns.css": "patterns.css"} {
+		w := previewRequest(h, http.MethodGet, path, "")
+		data, err := webui.ReadFile(file)
+		if err == nil {
+			if w.Code != 200 || !bytes.Equal(w.Body.Bytes(), data) || w.Header().Get("Content-Security-Policy") != "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'" {
+				t.Fatal(path, w.Code, w.Header())
+			}
+		} else if errors.Is(err, fs.ErrNotExist) && webui.Validate() == nil {
+			if w.Code != 404 {
+				t.Fatal("valid legacy bundle must not report corruption for its absent Pattern page", path, w.Code)
+			}
+		} else {
+			t.Fatal("invalid embedded bundle", err)
+		}
+		if w := previewRequest(h, http.MethodPost, path, ""); w.Code != 405 || w.Header().Get("Allow") != "GET" {
+			t.Fatal(path, w.Code, w.Header())
+		}
+		if w := previewRequest(h, http.MethodGet, path+"?", ""); w.Code != 400 {
+			t.Fatal("resource accepted query", path, w.Code)
+		}
+		r := httptest.NewRequest(http.MethodGet, "http://127.0.0.1"+path, nil)
+		r.Header.Set("Origin", "https://untrusted.invalid")
+		blocked := httptest.NewRecorder()
+		h.ServeHTTP(blocked, r)
+		if blocked.Code != 403 {
+			t.Fatal("resource bypassed same-origin guard", path, blocked.Code)
 		}
 	}
 }

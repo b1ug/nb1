@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"mime"
 	"net/http"
 	"strconv"
@@ -255,12 +256,24 @@ func (h *handler) serveLightDemo(w http.ResponseWriter, r *http.Request) {
 		file, contentType = "orbit.js", "text/javascript; charset=utf-8"
 	case "/demo/orbit.css":
 		file, contentType = "orbit.css", "text/css; charset=utf-8"
+	case "/demo/patterns.html":
+		file, contentType = "patterns.html", "text/html; charset=utf-8"
+	case "/demo/patterns.js":
+		file, contentType = "patterns.js", "text/javascript; charset=utf-8"
+	case "/demo/patterns.css":
+		file, contentType = "patterns.css", "text/css; charset=utf-8"
 	default:
 		writeError(w, http.StatusNotFound, "not_found", "unknown demo resource")
 		return
 	}
 	data, err := webui.ReadFile(file)
 	if err != nil {
+		// A valid legacy bundle need not include the optional Pattern page.
+		// Validation failure, including a missing required file, stays a 500.
+		if errors.Is(err, fs.ErrNotExist) && webui.Validate() == nil {
+			writeError(w, http.StatusNotFound, "not_found", "demo resource is not included in this build")
+			return
+		}
 		writeError(w, http.StatusInternalServerError, "internal_error", "embedded demo resource unavailable")
 		return
 	}

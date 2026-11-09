@@ -1,6 +1,6 @@
 # Windows 当前进程 token 原生 fixture
 
-当前状态：**run42564396412两ABI普通/管理员token用例原生PASS，整体FAIL_CLEANUP；本次owner兼容修复原生重跑NOT_RUN**。本工具只为隔离 GitHub Windows VM 提供两个 token 身份用例，不管理Task Scheduler、服务、USB、设备或机器安全策略。不得在开发机器执行 `-Execute`。
+当前状态：**run42565611347两ABI原生token/profile/清理主步骤PASS，但最终证据门禁FAIL；本次报告保留修复原生重跑NOT_RUN**。本工具只为隔离 GitHub Windows VM 提供两个 token 身份用例，不管理Task Scheduler、服务、USB、设备或机器安全策略。不得在开发机器执行 `-Execute`。
 
 需先整合 `taskuser.Current` 与 `TestNativeCurrentOptIn`（token守卫提交3f5d63d，显式opt-in fixture提交6ea176b，以及原生DWORD查询修复6331d4a），再由独立分支 `validation/windows-token-native` 触发 `.github/workflows/windows-token-native.yml`。该workflow不修改既有runtime-native矩阵，不代表当前Mac常驻版本已升级或Windows任务管理已完成。
 
@@ -36,3 +36,5 @@ workflow token仅contents:read、checkout不持久化凭据，不声明secrets�
 依据：[ProcessStartInfo.Password](https://learn.microsoft.com/en-us/dotnet/api/system.diagnostics.processstartinfo.password?view=netframework-4.8.1)、[EnvironmentVariables](https://learn.microsoft.com/en-us/dotnet/api/system.diagnostics.processstartinfo.environmentvariables?view=netframework-4.8.1)、[CreateProcessWithLogonW](https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-createprocesswithlogonw)、[DeleteProfileW](https://learn.microsoft.com/en-us/windows/win32/api/userenv/nf-userenv-deleteprofilew)。这些API资料和软件fake/交叉编译都不替代Windows原生运行证据。普通用户、filtered/Entra token、任务权限与真实Task Scheduler生命周期仍应分别记录实际验收。
 
 profile DACL原始证据由OPEN_REPARSE_POINT句柄上的GetSecurityInfo读取，仅申请READ_CONTROL/READ_ATTRIBUTES及owner/group/DACL，不申请SACL或写ACL/owner权限。返回buffer限制64KiB，LocalFree和SafeHandle统一释放。RawSecurityDescriptor/RawAcl逐ACE检查，拒绝missing/NULL/空DACL、object/callback/opaque/audit/未知ACE和未建模flags/rights，不通过GetAccessRules投影来忽略未知语义。精选结果仅保存原始描述符SHA256和访问判定摘要，不上传完整ACL。
+
+run42565611347两ABI实际满足原始DACL/owner归属条件且profile/account/fixture清理均PASS；整体仍红，因为清理时重复Claim重建fixture_user对象，擦掉先前已核的local_group_sids，最后证据门禁拒绝。现在重复Claim只接受相同name/SID/marker并保留原组证据；缺失group元数据仍明确报错。ARM64步骤当时被红门禁跳过，不声称已完成全job验收。

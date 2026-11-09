@@ -401,6 +401,25 @@ foreach ($snapshotCase in $snapshotCases) {
     $results += @{ case = ('snapshot-' + $snapshotCase); status = $(if ($rejected -eq ($snapshotCase -ne 'unchanged')) { 'PASS' } else { 'FAIL' }); scope = 'Injected filesystem metadata only' }
 }
 
+$claimEvidenceCases = @('repeat-preserves-group-proof', 'name-changed', 'sid-changed', 'marker-changed')
+foreach ($claimCase in $claimEvidenceCases) {
+    try {
+        $report = [ordered]@{}
+        $name = 'fresh'; $sid = 'S-1-5-21-11-22-33-1001'; $marker = 'same-marker-hash'
+        Set-Nb1FixtureUser $report $name $sid $marker
+        $report.fixture_user['local_group_sids'] = @('S-1-5-32-545')
+        if ($claimCase -eq 'name-changed') { $name = 'foreign' }
+        if ($claimCase -eq 'sid-changed') { $sid = 'S-1-5-21-11-22-33-1002' }
+        if ($claimCase -eq 'marker-changed') { $marker = 'different-marker-hash' }
+        $rejected = $false
+        try { Set-Nb1FixtureUser $report $name $sid $marker; Set-Nb1FixtureUser $report $name $sid $marker } catch { $rejected = $true }
+        Assert-Nb1Fake ($rejected -eq ($claimCase -ne 'repeat-preserves-group-proof')) 'repeated claims must preserve the exact original identity'
+        $decoded = $report | ConvertTo-Json -Depth 5 | ConvertFrom-Json
+        Assert-Nb1Fake (@($decoded.fixture_user.local_group_sids).Count -eq 1 -and $decoded.fixture_user.local_group_sids[0] -ceq 'S-1-5-32-545') 'repeated cleanup claims must preserve group proof through JSON encoding'
+        $results += @{ case = ('claim-evidence-' + $claimCase); status = 'PASS'; rejected = $rejected; scope = 'Injected report metadata only' }
+    } catch { $results += @{ case = ('claim-evidence-' + $claimCase); status = 'FAIL'; error = $_.Exception.Message } }
+}
+
 $failed = @($results | Where-Object { $_.status -ne 'PASS' })
 $summary = [ordered]@{
     schema_version = 1
@@ -416,6 +435,7 @@ $summary = [ordered]@{
     raw_ace_case_count = $aceCases.Count
     raw_dacl_case_count = $daclCases.Count
     snapshot_case_count = $snapshotCases.Count
+    claim_evidence_case_count = $claimEvidenceCases.Count
     passed = $results.Count - $failed.Count
     failed = $failed.Count
     results = $results

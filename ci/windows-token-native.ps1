@@ -197,6 +197,12 @@ function Get-Nb1LocalUser([string]$Name) {
     }
 }
 
+function Set-Nb1FixtureUser($Report, [string]$Name, [string]$SID, [string]$MarkerHash) {
+    if (-not $Report.Contains('fixture_user')) { $Report.fixture_user = [ordered]@{ name = $Name; sid = $SID; marker_sha256 = $MarkerHash }; return }
+    if ($Report.fixture_user.name -cne $Name -or $Report.fixture_user.sid -cne $SID -or $Report.fixture_user.marker_sha256 -cne $MarkerHash) { throw 'previous fixture account evidence differs from the verified claim' }
+    # Repeated attribution during cleanup must preserve the earlier group proof.
+}
+
 function Resolve-Nb1LocalGroupSIDs([string[]]$Names, [scriptblock]$Lookup) {
     # NetUserGetLocalGroups returns local alias names, including BUILTIN aliases.
     # Resolve on the local SAM through Get-LocalGroup; never invent a machine domain.
@@ -437,7 +443,7 @@ function New-Nb1NativeOps {
             $reverse = Get-LocalUser -SID $user.SID -ErrorAction Stop
             if ($reverse.Name -cne $s.Name -or $reverse.Description -cne $s.Marker -or ($s.CreationVerified -and $s.SID -cne $sid)) { throw 'fresh account reverse SID identity changed' }
             $s.SID = $sid; $s.CreationVerified = $true
-            $r.fixture_user = [ordered]@{ name = $s.Name; sid = $sid; marker_sha256 = $s.MarkerHash }
+            Set-Nb1FixtureUser $r $s.Name $sid $s.MarkerHash
             return $true
         }
         EnsureGroups = {

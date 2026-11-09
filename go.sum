@@ -65,6 +65,8 @@ github.com/b1ug/blink1-go v0.0.2-0.20261109014239-a69837ca7754 h1:XPssJnslTW68GS
 github.com/b1ug/blink1-go v0.0.2-0.20261109014239-a69837ca7754/go.mod h1:njVzPhVpvbCUTxD25kON3SNQ4FGHpIwuMXxzZi+2Duc=
 github.com/b1ug/blink1-go v0.0.2-0.20261109021311-c87c7c4888a0 h1:mybbWo5+RDwgYVK/yxK+coPd0PTzFpnybTiHpEOot2c=
 github.com/b1ug/blink1-go v0.0.2-0.20261109021311-c87c7c4888a0/go.mod h1:YbOYT7QtUwQSCfKXlEUabKyDd89VdY/ZS5dKjNbsQIw=
+github.com/b1ug/blink1-go v0.0.2-0.20261109044941-b3f2586cc730 h1:xgfMtQ205wQTmzfI9cME/2VAqZsKvZUS9fYd/dCoAo4=
+github.com/b1ug/blink1-go v0.0.2-0.20261109044941-b3f2586cc730/go.mod h1:qSlvFeMgoJkJIlnat/2oU2XFqchuDakPlfALfS9NczU=
 github.com/b1ug/gid v0.0.1/go.mod h1:b9pd+IB3F4qVXRRUOWgux7TWqxceIEGo/mhoBcOp9RM=
 github.com/b1ug/gid v0.0.2 h1:y/kIIXcR+59l0CADSUKUs4dUUXwJMWjlfLCRCn8VcA4=
 github.com/b1ug/gid v0.0.2/go.mod h1:b9pd+IB3F4qVXRRUOWgux7TWqxceIEGo/mhoBcOp9RM=
@@ -74,6 +76,8 @@ github.com/b1ug/gid v0.0.3-0.20261109013930-ece2bd07c11b h1:c+7vpMnY4kZM/AA72PL7
 github.com/b1ug/gid v0.0.3-0.20261109013930-ece2bd07c11b/go.mod h1:b9pd+IB3F4qVXRRUOWgux7TWqxceIEGo/mhoBcOp9RM=
 github.com/b1ug/gid v0.0.3-0.20261109020519-8915ba6f4beb h1:Y/pGViCO07yNojUrNckLbQ/PXWH+pcTw4Wx/LGGsCj0=
 github.com/b1ug/gid v0.0.3-0.20261109020519-8915ba6f4beb/go.mod h1:b9pd+IB3F4qVXRRUOWgux7TWqxceIEGo/mhoBcOp9RM=
+github.com/b1ug/gid v0.0.3-0.20261109043911-37d7cfde72ed h1:yxpXHZnzwCPfGfEfxYTeTJ6Pz72M1grVJ3EllxQEa38=
+github.com/b1ug/gid v0.0.3-0.20261109043911-37d7cfde72ed/go.mod h1:b9pd+IB3F4qVXRRUOWgux7TWqxceIEGo/mhoBcOp9RM=
 github.com/benbjohnson/clock v1.1.0 h1:Q92kusRqC1XV2MjkWETPvjJVqKetz1OzxZB7mHJLju8=
 github.com/benbjohnson/clock v1.1.0/go.mod h1:J11/hYXuz8f4ySSvYwY0FKfm+ezbsZBKZxNJlLklBHA=
 github.com/census-instrumentation/opencensus-proto v0.2.1/go.mod h1:f6KPmirojxKA12rnyqOA5BBL4O983OfeGPqjHWSTneU=

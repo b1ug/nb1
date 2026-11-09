@@ -8,8 +8,8 @@ require (
 	bitbucket.org/neiku/hlog v0.1.2
 	bitbucket.org/neiku/winornot v0.0.3
 	github.com/1set/gut v0.0.0-20201117175203-a82363231997
-	github.com/b1ug/blink1-go v0.0.2-0.20261109021311-c87c7c4888a0
-	github.com/b1ug/gid v0.0.3-0.20261109020519-8915ba6f4beb
+	github.com/b1ug/blink1-go v0.0.2-0.20261109044941-b3f2586cc730
+	github.com/b1ug/gid v0.0.3-0.20261109043911-37d7cfde72ed
 	github.com/muesli/termenv v0.13.0
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/spf13/cobra v1.7.0

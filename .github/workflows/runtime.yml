@@ -37,13 +37,13 @@ jobs:
       - uses: actions/checkout@v7
         with:
           repository: b1ug/blink1-go
-          ref: c87c7c4888a037fcd08572e3dbe1272568e01d39
+          ref: b3f2586cc73073a7a0432889ea14a18c13247f46
           path: sdk
           persist-credentials: false
       - uses: actions/checkout@v7
         with:
           repository: b1ug/gid
-          ref: 8915ba6f4beb8c6411b2e4d8051f7a75df898ac5
+          ref: 37d7cfde72ed26a7dffee470cc97ef7e735f3235
           path: gid
           persist-credentials: false
       - uses: actions/setup-go@v7
@@ -91,13 +91,13 @@ jobs:
       - uses: actions/checkout@v7
         with:
           repository: b1ug/blink1-go
-          ref: c87c7c4888a037fcd08572e3dbe1272568e01d39
+          ref: b3f2586cc73073a7a0432889ea14a18c13247f46
           path: sdk
           persist-credentials: false
       - uses: actions/checkout@v7
         with:
           repository: b1ug/gid
-          ref: 8915ba6f4beb8c6411b2e4d8051f7a75df898ac5
+          ref: 37d7cfde72ed26a7dffee470cc97ef7e735f3235
           path: gid
           persist-credentials: false
       - uses: actions/setup-go@v7
@@ -120,13 +120,13 @@ jobs:
       - uses: actions/checkout@v7
         with:
           repository: b1ug/blink1-go
-          ref: c87c7c4888a037fcd08572e3dbe1272568e01d39
+          ref: b3f2586cc73073a7a0432889ea14a18c13247f46
           path: sdk
           persist-credentials: false
       - uses: actions/checkout@v7
         with:
           repository: b1ug/gid
-          ref: 8915ba6f4beb8c6411b2e4d8051f7a75df898ac5
+          ref: 37d7cfde72ed26a7dffee470cc97ef7e735f3235
           path: gid
           persist-credentials: false
       - uses: actions/setup-go@v7
@@ -164,13 +164,13 @@ jobs:
       - uses: actions/checkout@v7
         with:
           repository: b1ug/blink1-go
-          ref: c87c7c4888a037fcd08572e3dbe1272568e01d39
+          ref: b3f2586cc73073a7a0432889ea14a18c13247f46
           path: sdk
           persist-credentials: false
       - uses: actions/checkout@v7
         with:
           repository: b1ug/gid
-          ref: 8915ba6f4beb8c6411b2e4d8051f7a75df898ac5
+          ref: 37d7cfde72ed26a7dffee470cc97ef7e735f3235
           path: gid
           persist-credentials: false
       - uses: actions/setup-go@v7
@@ -233,7 +233,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           repository: b1ug/blink1-go
-          ref: c87c7c4888a037fcd08572e3dbe1272568e01d39
+          ref: b3f2586cc73073a7a0432889ea14a18c13247f46
           path: sdk
           persist-credentials: false
       - uses: actions/setup-go@v7
@@ -252,8 +252,8 @@ jobs:
 
           sdk = "github.com/b1ug/blink1-go"
           gid = "github.com/b1ug/gid"
-          sdk_version = "v0.0.2-0.20261109021311-c87c7c4888a0"
-          gid_version = "v0.0.3-0.20261109020519-8915ba6f4beb"
+          sdk_version = "v0.0.2-0.20261109044941-b3f2586cc730"
+          gid_version = "v0.0.3-0.20261109043911-37d7cfde72ed"
           for directory, dependencies in [
               ("cli", {sdk: sdk_version, gid: gid_version}),
               ("sdk", {gid: gid_version}),
@@ -326,8 +326,8 @@ jobs:
           import subprocess
 
           expected = {
-              "github.com/b1ug/blink1-go": "v0.0.2-0.20261109021311-c87c7c4888a0",
-              "github.com/b1ug/gid": "v0.0.3-0.20261109020519-8915ba6f4beb",
+              "github.com/b1ug/blink1-go": "v0.0.2-0.20261109044941-b3f2586cc730",
+              "github.com/b1ug/gid": "v0.0.3-0.20261109043911-37d7cfde72ed",
           }
           modules = {}
           for module, version in expected.items():

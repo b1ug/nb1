@@ -179,3 +179,4 @@ $report = [ordered]@{
 if ($failed -ne 0) { $report.status = 'FAIL' }
 $report | ConvertTo-Json -Depth 8
 if ($failed -ne 0) { exit 1 }
+exit 0

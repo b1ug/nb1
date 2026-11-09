@@ -135,7 +135,16 @@ func (c *Client) SavePatternV2(ctx context.Context, data []byte) (PatternWriteRe
 	}
 	defer response.Body.Close()
 	if response.StatusCode < 200 || response.StatusCode >= 300 {
-		return PatternWriteResultV2{}, patternV2WriteError(decodeLightAPIError(response))
+		failure := decodeLightAPIError(response)
+		for _, name := range []string{"Location", "X-NB1-Daemon-Instance-ID", "X-NB1-Replayed"} {
+			if len(response.Header.Values(name)) != 0 {
+				// Conflicting publication metadata is not an authoritative
+				// rejection, even if its body contains a known status/code.
+				failure = &DecodeError{Status: response.StatusCode, Err: fmt.Errorf("Pattern v2 rejection contains publication metadata: %w", failure)}
+				break
+			}
+		}
+		return PatternWriteResultV2{}, patternV2WriteError(failure)
 	}
 	var value PatternWriteResultV2
 	err = decodeLightResponse(response, &value)
@@ -197,6 +206,10 @@ func patternV2WriteError(err error) error {
 	// Keep the established publication-only uncertainty classification and
 	// original cause. It does not imply a device submission or an execution ticket.
 	unknown := true
+	var malformed *DecodeError
+	if errors.As(err, &malformed) {
+		return &PatternImportError{Err: err, PublicationUnknown: true}
+	}
 	var api *Error
 	if errors.As(err, &api) {
 		switch api.Status {

@@ -377,3 +377,33 @@ func TestPatternV2SaveClientTransportFailurePreservesOriginalSinglePOST(t *testi
 		t.Fatal("transport failure lost uncertainty/cause or retried", calls, err)
 	}
 }
+
+func TestPatternV2SaveErrorWithPublicationHeadersRemainsUnknown(t *testing.T) {
+	for _, header := range []string{"Location", "X-NB1-Daemon-Instance-ID", "X-NB1-Replayed"} {
+		for _, content := range []string{"", "false", "original-publication"} {
+			t.Run(header+"/"+content, func(t *testing.T) {
+				calls := make(chan string, 2)
+				server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					calls <- r.Method + " " + r.URL.Path
+					w.Header().Set("Content-Type", "application/json")
+					w.Header().Set(header, content)
+					w.WriteHeader(http.StatusConflict)
+					io.WriteString(w, `{"error":{"code":"pattern_conflict","message":"known rejection body"}}`)
+				}))
+				defer server.Close()
+				client, _ := New(server.URL)
+				defer client.Close()
+				_, err := client.SavePatternV2(context.Background(), clientPatternV2Fixture(t, "requests/save-orbit-red-blue.json"))
+				var publication *PatternImportError
+				var malformed *DecodeError
+				var api *Error
+				if !errors.As(err, &publication) || !publication.PublicationUnknown || !errors.As(err, &malformed) || !errors.As(err, &api) || api.Status != 409 || api.Code != "pattern_conflict" {
+					t.Fatal("conflicting headers were accepted as an authoritative rejection or lost the diagnostic", err)
+				}
+				if len(calls) != 1 || <-calls != "POST /v2/patterns" {
+					t.Fatal("unexpected retry or lookup")
+				}
+			})
+		}
+	}
+}

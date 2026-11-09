@@ -19,6 +19,8 @@ PowerShell 路径来自 GetSystemDirectoryW，再追加固定 WindowsPowerShell\
 
 桥使用固定 argv：`-NoLogo -NoProfile -NonInteractive -InputFormat Text -OutputFormat Text -Command <固定代码>`。输入是 stdin JSON，不插值进代码。进程只带从系统 API 派生的 SystemRoot/WINDIR/PATH 和空 PSModulePath；工作目录固定系统目录。脚本禁用模块自动加载，使用强名称 .NET JSON 程序集和本机 COM，finally 释放 task/folder/service RCW。遇到企业约束语言/程序集限制时报告未知，不使用 ExecutionPolicy Bypass 或备用提权路径。
 
+子进程读取自己的 SID 也只申请 TokenAccessLevels.Query，显式使用 WindowsIdentity.GetCurrent(Query)；不使用默认请求 MaximumAllowed 的无参重载。实际子进程 argv 回归保留此权限边界，Windows 原生取证另列。
+
 私有桥执行使用调用者期限与3秒中的较短者。同步 token/系统文件/ACL 检查在调用前后核对 context，但这些 OS 检查没有原生强制取消接口，不承诺它们有硬退出期限。stdout最多16KiB，stderr只计至4KiB后取消且不保留内容；输出超限立即请求终止私有桥。Go1.18的 CommandContext 只管这个固定子进程，不把取消/进程退出说成 COM 服务或任意后台操作被原子取消。这里没有控制任务的副作用。
 
 ## 验证范围
@@ -43,3 +45,4 @@ GOWORK=off CGO_ENABLED=0 go vet ./internal/service/taskquery
 - [GetNamedSecurityInfoW与LocalFree](https://learn.microsoft.com/en-us/windows/win32/api/aclapi/nf-aclapi-getnamedsecurityinfow)
 - [ACCESS_ALLOWED_ACE布局](https://learn.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-access_allowed_ace)
 - [PowerShell5.1命令参数](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_powershell_exe?view=powershell-5.1)
+- [Microsoft .NET Framework WindowsIdentity源码与默认MaximumAllowed](https://github.com/microsoft/referencesource/blob/main/mscorlib/system/security/principal/windowsidentity.cs)

@@ -250,6 +250,12 @@ func TestNativeRunnerUsesFixedCodeAndCleanEnvironment(t *testing.T) {
 	if strings.Contains(strings.Join(out.Argv, " "), "not-a-code-fragment") {
 		t.Fatal("input became code")
 	}
+	// Assert what was actually passed to the private process, not only the
+	// source constant: .NET's no-argument overload requests MaximumAllowed.
+	if !strings.Contains(out.Argv[8], "WindowsIdentity]::GetCurrent([System.Security.Principal.TokenAccessLevels]::Query)") ||
+		strings.Contains(out.Argv[8], "WindowsIdentity]::GetCurrent()") {
+		t.Fatal("bridge token access must remain Query-only")
+	}
 	bridge.checkTrust = func() error { return ErrTrust }
 	if _, err = bridge.run(context.Background(), input); err != ErrTrust {
 		t.Fatal(err)

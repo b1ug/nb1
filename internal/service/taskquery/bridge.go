@@ -11,7 +11,7 @@ $PSModuleAutoLoadingPreference = 'None'
 $service = $null; $folder = $null; $task = $null; $identity = $null
 $caller = ''; $path = ''; $stage = 'identity'; $answer = $null
 try {
-  $identity = [System.Security.Principal.WindowsIdentity]::GetCurrent()
+  $identity = [System.Security.Principal.WindowsIdentity]::GetCurrent([System.Security.Principal.TokenAccessLevels]::Query)
   $caller = $identity.User.Value
   $path = '\B1UG-nb1-' + $caller
   $stage = 'bootstrap'

@@ -314,7 +314,14 @@ func (h *handler) previewPatternRefV2(w http.ResponseWriter, r *http.Request) {
 		if _, ok := h.service.(control.PatternService); !ok {
 			value.Execution = control.FrameExecutionAvailability{Reason: "pattern_service_unsupported"}
 		}
-		preview = value
+		result := frameHTTPPreview{FramePreview: value}
+		if input.Serial != nil {
+			result.Device = &framePreviewDevice{Serial: *input.Serial, Connection: "missing"}
+			if state != nil && state.Serial == *input.Serial {
+				result.Device.Connection = state.Connection
+			}
+		}
+		preview = result
 	}
 	if err := r.Context().Err(); err != nil {
 		patternExecutionErrorV2(w, err)

@@ -15,7 +15,7 @@
 
 `GET /v2/patterns/preview-ref` 仍是普通合法 ID 的读取，与 POST 预览互不占用。其余新路径精确匹配，不接受尾斜杠或多余路径段。
 
-预览响应 contract 为 `nb1-pattern-ref-preview/experimental-v1`，schema_version=1。execution 是原规范 `{kind,contract,program}`；preview 根据 kind 是现有 Program PreviewResult 或 FramePreview。可选 serial 只读一次缓存 Device，无 USB、Prepare、回执查询、Job 或取消。Frame hold 的缓存检查额外要求 hold。名义时长不含 native I/O、实际尾等待差异、Read 与清理，缓存支持不是执行承诺。
+预览响应 contract 为 `nb1-pattern-ref-preview/experimental-v1`，schema_version=1。execution 是原规范 `{kind,contract,program}`；preview 根据 kind 是现有 Program PreviewResult 或 Frame HTTP preview；两者在选择 serial 时均回显 device.serial/connection，未选择则不含 device。可选 serial 只读一次缓存 Device，无 USB、Prepare、回执查询、Job 或取消。Frame hold 的缓存检查额外要求 hold。名义时长不含 native I/O、实际尾等待差异、Read 与清理，缓存支持不是执行承诺。
 
 ## 票据与恢复
 

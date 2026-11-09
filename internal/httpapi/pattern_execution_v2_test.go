@@ -395,17 +395,46 @@ func TestPatternExecutionV2PreviewRefHasNoAdmissionAndPreservesFrozenExecution(t
 				}
 				if kind == "program" {
 					var p control.PreviewResult
-					if json.Unmarshal(out.Preview, &p) != nil || p.CompileContract != control.CompileContract || (target && p.Validation.Device != "supported") {
+					want, err := control.Preview(r.Compiled.Execution.Program, nil)
+					if err != nil {
+						t.Fatal(err)
+					}
+					if target {
+						want = control.WithDeviceSnapshot(want, "20005601", &s.state)
+					}
+					if json.Unmarshal(out.Preview, &p) != nil || !reflect.DeepEqual(p, want) {
 						t.Fatal(string(out.Preview))
 					}
 				} else {
 					var p control.FramePreview
-					if json.Unmarshal(out.Preview, &p) != nil || p.Contract != control.FrameContract || (target && !p.Execution.Available) {
+					want, err := control.PreviewFrameProgram(*r.Compiled.Execution.FrameProgram)
+					if err != nil {
+						t.Fatal(err)
+					}
+					want.Execution = control.FrameExecutionForDevice(nil)
+					if target {
+						want.Execution = control.FrameExecutionForDevice(&s.state)
+					}
+					if json.Unmarshal(out.Preview, &p) != nil || !reflect.DeepEqual(p, want) {
 						t.Fatal(string(out.Preview))
 					}
 				}
-				if w.Header().Get("Location") != "" || w.Header().Get("X-NB1-Replayed") != "" {
-					t.Fatal(w.Header())
+				var previewFields map[string]json.RawMessage
+				if err := json.Unmarshal(out.Preview, &previewFields); err != nil {
+					t.Fatal(err)
+				}
+				if target {
+					var device struct{ Serial, Connection string }
+					if json.Unmarshal(previewFields["device"], &device) != nil || device.Serial != "20005601" || device.Connection != "online" {
+						t.Fatal("unbound cached evidence", string(out.Preview))
+					}
+				} else if _, exists := previewFields["device"]; exists {
+					t.Fatal("untargeted preview added device", string(out.Preview))
+				}
+				for _, key := range []string{"Location", "X-NB1-Replayed", "X-NB1-Daemon-Instance-ID"} {
+					if len(w.Header().Values(key)) != 0 {
+						t.Fatal(w.Header())
+					}
 				}
 			}
 			if store.calls != 2 || s.devices != 1 || s.submits+s.queries+s.cancels != 0 {
@@ -548,6 +577,18 @@ func TestPatternExecutionV2FramePreviewHoldAndCachedProfileAreNotAdmission(t *te
 			}
 			if w.Code != 200 || json.Unmarshal(w.Body.Bytes(), &out) != nil || out.Preview.Execution.Available != tc.want || out.Preview.Execution.Reason != tc.reason {
 				t.Fatal(w.Code, w.Body.String())
+			}
+			var evidence struct {
+				Preview struct {
+					Device struct{ Serial, Connection string } `json:"device"`
+				} `json:"preview"`
+			}
+			wantConnection := tc.connection
+			if tc.serial != "20005601" {
+				wantConnection = "missing"
+			}
+			if json.Unmarshal(w.Body.Bytes(), &evidence) != nil || evidence.Preview.Device.Serial != "20005601" || evidence.Preview.Device.Connection != wantConnection {
+				t.Fatal("cached device binding", w.Body.String())
 			}
 			if store.calls != 1 || s.devices != 1 || s.submits+s.queries+s.cancels != 0 {
 				t.Fatal(store.calls, s)

@@ -76,6 +76,14 @@ function New-Nb1FakeOps {
                 if ($State.Case -eq 'query-complete') { $State.QueryCompleted = $true }
                 else { throw 'fake query missing/bad report or Go timeout does not prove PowerShell descendant exit' }
             }
+            if ($State.Case.StartsWith('timing-', [StringComparison]::Ordinal)) {
+                $State.TimingBinary = 'fake-timing.exe'
+                if ($State.Case -eq 'timing-stale-completion') { $State.DiagnosticsCompleted = $true }
+                Start-Nb1DiagnosticsAttempt $State
+                if ($State.Case -in @('timing-complete','timing-reported-failure','timing-after-query-failed')) { $State.DiagnosticsCompleted = $true }
+                if ($State.Case -eq 'timing-after-query-failed') { Start-Nb1QueryAttempt $State }
+                if ($State.Case -ne 'timing-complete') { throw 'fake failed/partial timing observation' }
+            }
         }
         ReapChildren = {
             param($State, $Report)
@@ -148,10 +156,12 @@ function Invoke-Nb1FakeCase {
     $cleanupCalls = Get-Nb1FakeEventCount $state 'CleanupResources'
     $claimCalls = Get-Nb1FakeEventCount $state 'ClaimUser'
     $expectedRemoval = $Name -in @('normal', 'partial-create', 'remove-failure',
-        'remove-partial-failure', 'groups-failure', 'stage-failure', 'ordinary-failure', 'query-complete')
+        'remove-partial-failure', 'groups-failure', 'stage-failure', 'ordinary-failure', 'query-complete', 'timing-complete', 'timing-reported-failure')
 
-    if ($Name -in @('normal','query-complete')) {
-        Assert-Nb1Fake ($actual.status -eq 'PASS') 'normal fake lifecycle must pass'
+    if ($Name -in @('normal','query-complete','timing-complete')) {
+        $expectedStatus = 'PASS'
+        if ($Name -eq 'timing-complete') { $expectedStatus = 'DIAGNOSTIC_ONLY' }
+        Assert-Nb1Fake ($actual.status -eq $expectedStatus) 'normal fake lifecycle must have the exact mode verdict'
     } else {
         Assert-Nb1Fake ($actual.status -ne 'PASS') 'any forward or cleanup failure must stay red'
     }
@@ -174,6 +184,11 @@ function Invoke-Nb1FakeCase {
     if ($Name.StartsWith('query-', [StringComparison]::Ordinal) -and $Name -ne 'query-complete') {
         Assert-Nb1Fake ($actual.status -eq 'FAIL_CLEANUP' -and -not $state.ChildrenExited -and $state.FakeUserExists -and $cleanupCalls -eq 0 -and $removeCalls -eq 0) 'direct Go exit is not query descendant exit proof; preserve all resources'
         Assert-Nb1Fake (-not $actual.query_bridge_exit_proven) 'incomplete query cannot acquire cleanup proof'
+    }
+    if ($Name.StartsWith('timing-', [StringComparison]::Ordinal)) {
+        Assert-Nb1Fake (-not $state.ContainsKey('QueryCompleted') -or -not $state.QueryCompleted) 'diagnostic success must never set ordinary QueryCompleted'
+        if ($Name -notin @('timing-complete','timing-reported-failure')) { Assert-Nb1Fake ($actual.status -eq 'FAIL_CLEANUP' -and -not $state.ChildrenExited -and $state.FakeUserExists -and $cleanupCalls -eq 0 -and $removeCalls -eq 0) 'unknown/partial timing or earlier failed query must block resource cleanup' }
+        if ($Name -eq 'timing-reported-failure') { Assert-Nb1Fake ($actual.status -eq 'FAIL' -and $actual.diagnostics_bridge_exit_proven -and -not $state.FakeUserExists) 'proven complete failed diagnostic may clean but cannot become acceptance' }
     }
     if ($Name -in @('unknown-child', 'child-unproven', 'foreign-marker', 'claim-exception', 'claim-true-unproven')) {
         Assert-Nb1Fake ($cleanupCalls -eq 0) 'unknown child/account must not reach resource cleanup'
@@ -210,7 +225,8 @@ $cases = @('normal', 'partial-create', 'foreign-marker', 'unknown-child', 'child
     'resource-changed', 'cleanup-failure', 'remove-failure', 'remove-partial-failure',
     'claim-changed-before-remove', 'claim-exception', 'claim-second-exception', 'claim-true-unproven',
     'groups-failure', 'stage-failure', 'ordinary-failure', 'preflight-failure', 'administrator-failure',
-    'query-complete', 'query-missing-report', 'query-bad-report', 'query-timeout-go-exited', 'query-stale-completion')
+    'query-complete', 'query-missing-report', 'query-bad-report', 'query-timeout-go-exited', 'query-stale-completion',
+    'timing-complete', 'timing-reported-failure', 'timing-missing-report', 'timing-bad-report', 'timing-timeout-go-exited', 'timing-partial-pswait', 'timing-stale-completion', 'timing-after-query-failed')
 $results = @()
 foreach ($name in $cases) {
     try {
@@ -432,19 +448,22 @@ foreach ($claimCase in $claimEvidenceCases) {
     } catch { $results += @{ case = ('claim-evidence-' + $claimCase); status = 'FAIL'; error = $_.Exception.Message } }
 }
 
-$caseSpecCases = @('token-admin','token-ordinary','query-ordinary','QUERY-ORDINARY','TOKEN-ADMIN','arbitrary-script')
+$caseSpecCases = @('token-admin','token-ordinary','query-ordinary','timing-ordinary','QUERY-ORDINARY','TOKEN-ADMIN','TIMING-ORDINARY','arbitrary-script')
 foreach ($caseKind in $caseSpecCases) {
     try {
         $state = @{ SID = 'fresh-sid'; HostSID = 'host-sid'; WindowsDirectory = 'C:\Windows'; SystemDirectory = 'C:\Windows\System32'; TempDir = 'C:\private\tmp'; Password = 'fake-credential'; Binary = 'C:\source\token.exe'; SourceSnapshot = @{ sha256 = 'token-hash' }; StagedBinary = 'C:\private\bin\token.exe'; StagedSnapshot = @{ sha256 = 'token-hash' }; QueryBinary = 'C:\source\query.exe'; StagedQueryBinary = 'C:\private\bin\query.exe'; StagedQuerySnapshot = @{ sha256 = 'query-hash' } }
+        if ($caseKind -ceq 'timing-ordinary') { $state.QueryBinary = $null; $state.TimingBinary = 'C:\source\timing.exe'; $state.StagedTimingBinary = 'C:\private\bin\timing.exe'; $state.StagedTimingSnapshot = @{ sha256 = 'timing-hash' } }
         $rejected = $false
         try { $spec = Get-Nb1NativeCaseSpec $state $caseKind } catch { $rejected = $true }
-        $valid = $caseKind -cin @('token-admin','token-ordinary','query-ordinary')
+        $valid = $caseKind -cin @('token-admin','token-ordinary','query-ordinary','timing-ordinary')
         Assert-Nb1Fake ($rejected -eq (-not $valid)) 'case protocol must reject arbitrary/case-mutated kinds'
         if ($valid) {
-            Assert-Nb1Fake ($spec.environment.Count -eq $(if ($caseKind -ceq 'query-ordinary') { 7 } else { 8 })) 'case must retain exact environment allowlist size'
+            Assert-Nb1Fake ($spec.environment.Count -eq $(if ($caseKind -cin @('query-ordinary','timing-ordinary')) { 7 } else { 8 })) 'case must retain exact environment allowlist size'
             Assert-Nb1Fake (-not $spec.environment.Contains('GITHUB_TOKEN') -and -not $spec.environment.Contains('SUDO_USER')) 'case cannot inherit runner credentials'
             if ($caseKind -ceq 'query-ordinary') {
                 Assert-Nb1Fake ($spec.executable -ceq $state.StagedQueryBinary -and $spec.snapshot.sha256 -ceq 'query-hash' -and $spec.sid -ceq 'fresh-sid' -and $spec.credential -ceq $state.Password -and $spec.prefix -ceq 'NB1_TASKQUERY_NATIVE_RESULT ' -and $spec.arguments -ceq '-test.run=^TestNativeQueryOptIn$ -test.v -test.count=1' -and -not $spec.environment.Contains('NB1_TASKUSER_NATIVE')) 'query protocol must use only its own binary/identity/argv/env/prefix'
+            } elseif ($caseKind -ceq 'timing-ordinary') {
+                Assert-Nb1Fake ($spec.executable -ceq $state.StagedTimingBinary -and $spec.snapshot.sha256 -ceq 'timing-hash' -and $spec.sid -ceq 'fresh-sid' -and $spec.credential -ceq $state.Password -and $spec.prefix -ceq 'NB1_TASKQUERY_TIMING_RESULT ' -and $spec.arguments -ceq '-test.run=^TestNativeQueryTiming$ -test.v -test.count=1' -and $spec.wait_ms -eq 90000 -and -not $spec.environment.Contains('NB1_TASKQUERY_NATIVE') -and -not $spec.environment.Contains('NB1_TASKUSER_NATIVE')) 'timing must use its own binary/fixed90s/diagnostic env without production opt-in'
             } else {
                 Assert-Nb1Fake ($spec.prefix -ceq 'NB1_TASKUSER_NATIVE_RESULT ' -and $spec.arguments -ceq '-test.run=^TestNativeCurrentOptIn$ -test.v -test.count=1' -and -not $spec.environment.Contains('NB1_TASKQUERY_NATIVE')) 'token protocol must stay distinct and unchanged'
                 if ($caseKind -ceq 'token-admin') { Assert-Nb1Fake ($null -eq $spec.credential -and $spec.sid -ceq 'host-sid' -and $spec.executable -ceq $state.Binary -and $spec.working_directory -ceq $state.SystemDirectory) 'admin protocol must use host without fresh-user credentials' }
@@ -453,13 +472,22 @@ foreach ($caseKind in $caseSpecCases) {
         $results += @{ case = ('closed-case-' + $caseKind); status = 'PASS'; rejected = $rejected; scope = 'Injected case state only' }
     } catch { $results += @{ case = ('closed-case-' + $caseKind); status = 'FAIL'; error = $_.Exception.Message } }
 }
-$stagedFileCases = @('token-only','token-and-query')
+$stagedFileCases = @('token-only','token-and-query','token-and-timing','mutually-exclusive')
 foreach ($stagedCase in $stagedFileCases) {
     $state = @{ StagedBinary = 'token.exe'; StagedSnapshot = @{ sha256 = 'token-hash' }; QueryBinary = $null }
     if ($stagedCase -eq 'token-and-query') { $state.QueryBinary = 'source-query.exe'; $state.StagedQueryBinary = 'query.exe'; $state.StagedQuerySnapshot = @{ sha256 = 'query-hash' } }
+    if ($stagedCase -in @('token-and-timing','mutually-exclusive')) { $state.TimingBinary = 'source-timing.exe'; $state.StagedTimingBinary = 'timing.exe'; $state.StagedTimingSnapshot = @{ sha256 = 'timing-hash' } }
+    if ($stagedCase -eq 'mutually-exclusive') {
+        $state.QueryBinary = 'source-query.exe'; $state.StagedQueryBinary = 'query.exe'; $state.StagedQuerySnapshot = @{ sha256 = 'query-hash' }
+        $rejected = $false
+        try { $files = @(Get-Nb1StagedFiles $state) } catch { $rejected = $true }
+        $results += @{ case = 'staged-file-mutually-exclusive'; status = $(if ($rejected) { 'PASS' } else { 'FAIL' }); scope = 'Injected mode state only' }
+        continue
+    }
     $files = @(Get-Nb1StagedFiles $state)
     $valid = $files.Count -eq $(if ($stagedCase -eq 'token-only') { 1 } else { 2 }) -and $files[0].snapshot.sha256 -ceq 'token-hash'
     if ($stagedCase -eq 'token-and-query') { $valid = $valid -and $files[1].snapshot.sha256 -ceq 'query-hash' }
+    if ($stagedCase -eq 'token-and-timing') { $valid = $valid -and $files[1].snapshot.sha256 -ceq 'timing-hash' }
     $results += @{ case = ('staged-file-' + $stagedCase); status = $(if ($valid) { 'PASS' } else { 'FAIL' }); scope = 'Injected known-file state only' }
 }
 

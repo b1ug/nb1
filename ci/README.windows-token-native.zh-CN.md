@@ -1,6 +1,6 @@
 # Windows 当前进程 token 原生 fixture
 
-当前状态：**token-only d83b10e/run42566121545 两ABI、最终门禁、清理及ARM编译全绿；新增QueryBinary只读观察尚未Windows原生执行**。本工具只为隔离 GitHub Windows VM 提供两个 token 身份用例及可选只读缺失合同观察，不管理Task Scheduler、服务、USB、设备或机器安全策略。不得在开发机器执行 `-Execute`。
+当前状态：**token-only d83/run42566121545 两ABI全绿；Query 951/run42568948786仅amd64原生全绿，WOW64 deadline/FAIL_CLEANUP；timing-only新增路径原生NOT_RUN**。本工具只为隔离 GitHub Windows VM 提供两个 token 身份用例及可选只读缺失合同观察，不管理Task Scheduler、服务、USB、设备或机器安全策略。不得在开发机器执行 `-Execute`。
 
 需先整合 `taskuser.Current` 与 `TestNativeCurrentOptIn`（token守卫提交3f5d63d，显式opt-in fixture提交6ea176b，以及原生DWORD查询修复6331d4a），再由独立分支 `validation/windows-token-native` 触发 `.github/workflows/windows-token-native.yml`。该workflow不修改既有runtime-native矩阵，不代表当前Mac常驻版本已升级或Windows任务管理已完成。
 
@@ -50,3 +50,15 @@ query_case使用独立 `NB1_TASKQUERY_NATIVE_RESULT ` 协议；PASS只接受六�
 Query会创建PowerShell孙进程。仅直接Go退出不够：调用开始先重置QueryCompleted，只有完整、精确且exit0的Query PASS（生产cmd.Run/Wait已完成）才形成其终结证明。无/坏报告、Go被强杀、超时、未知start或FAIL都不能授权profile/account删除，清理保守FAIL_CLEANUP并保留资源；不按名称找/杀PowerShell，也不把COM服务当fixture子进程。profile清理授权仍来自原token/provenance，Query成功不替代它。
 
 bin目录只接受预期的一个token文件或两个token/query文件；两份快照均在profile删除前核对，只删除精确已知文件与空目录，partial/未知文件照旧拒绝。新query DTO/闭集/env/双文件/退出屏障均有纯fake，Mac软件验证及跨编译不能充当PowerShell/COM原生结果。ARM仍仅编译两个包；本次不会创建、运行、停止、启用、删除任务或改变UAC、账号策略、系统权限、USB/设备。
+
+## 独立 timing-only 诊断
+
+`-TimingBinary C:\explicit\taskquery-timing.test.exe` 与 `-QueryBinary` 互斥。独立workflow `windows-query-timing.yml` 只在 `validation/windows-query-timing` 或显式dispatch运行；使用fresh普通profile先完成原token两case和profile归属绑定，然后只跑 `^TestNativeQueryTiming$`，不先调用生产Query、不在预热后补跑Query冒充3秒验收。新增闭集kind为timing-ordinary，env仅系统路径/TEMP/TMP加 `NB1_TASKQUERY_TIMING=1`、`NB1_TASKQUERY_EXPECT_SID`，前缀固定 `NB1_TASKQUERY_TIMING_RESULT `。
+
+Go诊断来自1a74b101+272f3674（后者先append样本再原位更新，partial/panic不能隐藏已经invoked的run）。它复用原nativeRunner固定request/script，记录Current/New/trust/bridge/parse毫秒及first/second各25秒context观察；生产Query函数、原3秒预算、脚本和权限均不修改。bridge总时间包含PS启动与COM等，不能伪称已拆成PS启动和COM单项。context超时后仍须实际Run/Wait返回，毫秒数可以超过25秒，不用硬上限替代退出证明；外围直接Go等待仅此mode为90秒，普通Query仍40秒。
+
+完整终态必须phase=complete、精确freshSID/固定taskpath、production_query_invoked=false、production_acceptance=false、两个按序first/second样本，且每个bridge_invoked/run_returned/private_ps_exit_proven=true、trust_checks=1。完整DIAGNOSTIC_ONLY还须两次都观察到Unknown/not_checked/get_task/0x80070002；这仅是较长预算下的诊断，不是生产QueryPASS。所有字段、有限Status、类型、重复/转义key和大小写冲突均严格验证（8KiB上限），source/arch/Go版本和独立binary hash由workflow绑定。
+
+DiagnosticsAttempted/Completed和退出proof独立于QueryCompleted。完整DIAGNOSTIC_FAILED/exit1若两个run/Wait证据齐全可清理，但整体仍FAIL；configuration/identity/constructor/runner/sample_identity/sample_run/sample_parse/report等早停、空/半样本、无/坏报告、Go被杀或超时一律不设proof、FAIL_CLEANUP保留，不查询或按名杀PowerShell。公共退出屏障检查所有已启动模式，诊断结果不能清掉常规Query失败。成功报告也只能是DIAGNOSTIC_ONLY，不能PASS/Absent/managed/TaskCRUD/USB。
+
+951 WOW64仅保留了query/deadline、Go test3.03秒及退出1，旧失败selected_status无法从artifact恢复；amd64原样selected_status及0.33秒已保存。后续harness对失败的有限selected_status（含kind/stage/可选HRESULT）做严格保留，并额外记录直接Go Process.Start与Wait时间；这些不是PS/COM分段计时，也不倒填旧run事实。所有新fake成功路径显式exit0，避免PS5 caller LASTEXITCODE为空误判；软件测试/交叉编译仍不构成Windows timing原生PASS。

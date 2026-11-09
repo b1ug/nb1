@@ -2,6 +2,7 @@ param(
     [switch]$Execute,
     [string]$Binary,
     [string]$QueryBinary,
+    [string]$TimingBinary,
     [string]$OutputDirectory,
     [switch]$LibraryOnly
 )
@@ -81,10 +82,14 @@ function Invoke-Nb1TokenLifecycle([hashtable]$State, $Report, [hashtable]$Ops) {
             }
         }
         if (-not $cleanupPassed) { $Report.status = 'FAIL_CLEANUP' }
-        elseif ($mainPassed) { $Report.status = 'PASS' }
+        elseif ($mainPassed) {
+            $Report.status = 'PASS'
+            if ($State.ContainsKey('TimingBinary') -and -not [string]::IsNullOrEmpty($State.TimingBinary)) { $Report.status = 'DIAGNOSTIC_ONLY' }
+        }
         $Report.creation = [ordered]@{ attempted = [bool]$State.CreationAttempted; returned = [bool]$State.CreationReturned; verified = [bool]$State.CreationVerified }
         $Report.children_exit_proven = [bool]$State.ChildrenExited
         if ($State.ContainsKey('QueryAttempted') -and $State.QueryAttempted) { $Report.query_bridge_exit_proven = [bool]($State.QueryCompleted -and $State.ChildrenExited) }
+        if ($State.ContainsKey('DiagnosticsAttempted') -and $State.DiagnosticsAttempted) { $Report.diagnostics_bridge_exit_proven = [bool]($State.DiagnosticsCompleted -and $State.ChildrenExited) }
         if ($State.ContainsKey('ProfileObservation')) { $Report.profile_observation = $State.ProfileObservation }
     }
     return $Report
@@ -355,10 +360,10 @@ function Assert-Nb1NativeReport($Value, [string]$Expected, [string]$SID) {
     } elseif ($Value.current.valid -or $Value.current.sid -cne '' -or $Value.current.task_path -cne '' -or $Value.current.session_id -ne 0 -or $Value.current.integrity_rid -ne 0 -or $Value.current.elevation_type -ne 0 -or $Value.current.admin_membership -cne '' -or (-not $Value.facts.domain_rid_500 -and $Value.facts.token_is_elevated -eq 0)) { throw 'administrator rejection lacks actual elevated/RID500 evidence and zero Context' }
 }
 
-function Read-Nb1QueryJson([string]$Json) {
+function Read-Nb1QueryJson([string]$Json, [int]$MaximumBytes = 2048) {
     Add-Type -AssemblyName System.Runtime.Serialization
     $bytes = [Text.Encoding]::UTF8.GetBytes($Json)
-    if ($bytes.Length -gt 2048) { throw 'query report exceeds its fixed JSON budget' }
+    if ($bytes.Length -gt $MaximumBytes) { throw 'query report exceeds its fixed JSON budget' }
     $reader = [Runtime.Serialization.Json.JsonReaderWriterFactory]::CreateJsonReader($bytes, [Xml.XmlDictionaryReaderQuotas]::Max)
     $stack = New-Object Collections.ArrayList
     $scan = @{ types = @{}; text = @{} }
@@ -372,12 +377,13 @@ function Read-Nb1QueryJson([string]$Json) {
                     $parent = $stack[$stack.Count - 1]
                     if ($parent.type -ceq 'object' -and -not $parent.keys.Add($key)) { throw 'duplicate or case-colliding query JSON key' }
                     $path = $key
-                    if ($parent.path -cne '') { $path = $parent.path + '.' + $key }
+                    if ($parent.type -ceq 'array') { $path = [string]$parent.next_index; $parent.next_index++ }
+                    if ($parent.path -cne '') { $path = $parent.path + '.' + $path }
                 }
                 $type = $reader.GetAttribute('type')
                 $scan.types[$path] = $type
                 $scan.text[$path] = ''
-                if (-not $reader.IsEmptyElement) { [void]$stack.Add(@{ path = $path; type = $type; keys = (New-Object 'Collections.Generic.HashSet[string]' ([StringComparer]::OrdinalIgnoreCase)) }) }
+                if (-not $reader.IsEmptyElement) { [void]$stack.Add(@{ path = $path; type = $type; next_index = 0; keys = (New-Object 'Collections.Generic.HashSet[string]' ([StringComparer]::OrdinalIgnoreCase)) }) }
             } elseif ($reader.NodeType -eq [Xml.XmlNodeType]::Text -and $stack.Count -gt 0) {
                 $path = $stack[$stack.Count - 1].path
                 $scan.text[$path] += $reader.Value
@@ -394,6 +400,15 @@ function Assert-Nb1QueryKeys($Value, [string[]]$Keys) {
     foreach ($key in $actual) { if ($Keys -cnotcontains $key) { throw 'query DTO key case or name is invalid' } }
 }
 
+function Get-Nb1QueryTimestamp($Scan, [string]$Path = 'selected_status.checked_at') {
+    $timestamp = $Scan.text[$Path]
+    if ($timestamp -cnotmatch '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,9})?Z$' -or $timestamp -cmatch '^0001-01-01T00:00:00(\.0{1,9})?Z$') { throw 'query checked_at is not a nonzero UTC RFC3339Nano timestamp' }
+    $probe = $timestamp -replace '(\.\d{7})\d{1,2}Z$', '${1}Z'
+    $date = [DateTimeOffset]::MinValue
+    if (-not [DateTimeOffset]::TryParseExact($probe, [string[]]@("yyyy-MM-dd'T'HH:mm:ss'Z'", "yyyy-MM-dd'T'HH:mm:ss.FFFFFFF'Z'"), [Globalization.CultureInfo]::InvariantCulture, [Globalization.DateTimeStyles]::AssumeUniversal, [ref]$date)) { throw 'query checked_at calendar value is invalid' }
+    return $timestamp
+}
+
 function Assert-Nb1QueryReport([string]$Json, [string]$SID) {
     $scan = Read-Nb1QueryJson $Json
     $value = $Json | ConvertFrom-Json
@@ -405,18 +420,71 @@ function Assert-Nb1QueryReport([string]$Json, [string]$SID) {
     $selected = $value.selected_status
     $taskPath = '\B1UG-nb1-' + $SID
     if ($value.status -cne 'PASS' -or $value.phase -cne 'missing_contract_observed' -or $value.current_sid -cne $SID -or $value.task_path -cne $taskPath -or $selected.task_path -cne $taskPath -or $selected.presence -cne 'unknown' -or $selected.ownership -cne 'not_checked' -or $selected.failure.kind -cne 'not_found_unverified' -or $selected.failure.stage -cne 'get_task' -or $selected.failure.hresult -cne '0x80070002') { throw 'query did not observe the exact unverified-missing contract' }
-    $timestamp = $scan.text['selected_status.checked_at']
-    if ($timestamp -cnotmatch '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,9})?Z$' -or $timestamp -cmatch '^0001-01-01T00:00:00(\.0{1,9})?Z$') { throw 'query checked_at is not a nonzero UTC RFC3339Nano timestamp' }
-    $probe = $timestamp -replace '(\.\d{7})\d{1,2}Z$', '${1}Z'
-    $date = [DateTimeOffset]::MinValue
-    if (-not [DateTimeOffset]::TryParseExact($probe, [string[]]@("yyyy-MM-dd'T'HH:mm:ss'Z'", "yyyy-MM-dd'T'HH:mm:ss.FFFFFFF'Z'"), [Globalization.CultureInfo]::InvariantCulture, [Globalization.DateTimeStyles]::AssumeUniversal, [ref]$date)) { throw 'query checked_at calendar value is invalid' }
     # PS7 may project ISO strings to DateTime; keep the original Go string/nanos.
-    $selected.checked_at = $timestamp
+    $selected.checked_at = Get-Nb1QueryTimestamp $scan
     return $value
+}
+
+function Assert-Nb1FiniteQueryStatus($Selected, $Scan, [string]$SID, [string]$Prefix) {
+    $keys = @('schema_version','checked_at','task_path','presence','ownership')
+    if ($Selected.presence -ceq 'present') { $keys += 'task' } else { $keys += 'failure' }
+    Assert-Nb1QueryKeys $Selected $keys
+    if (($Selected.schema_version -isnot [int] -and $Selected.schema_version -isnot [long]) -or $Selected.schema_version -ne 1) { throw 'selected Status schema is invalid' }
+    foreach ($name in @('checked_at','task_path','presence','ownership')) { if ($Scan.types[$Prefix + '.' + $name] -cne 'string') { throw 'selected Status string type is invalid' } }
+    if ($Selected.task_path -cne ('\B1UG-nb1-' + $SID) -or $Selected.ownership -cne 'not_checked') { throw 'selected Status identity/ownership is invalid' }
+    $Selected.checked_at = Get-Nb1QueryTimestamp $Scan ($Prefix + '.checked_at')
+    if ($Selected.presence -ceq 'present') {
+        Assert-Nb1QueryKeys $Selected.task @('enabled','scheduler_state','scheduler_state_name','last_task_result')
+        if ($Selected.task.enabled -isnot [bool] -or ($Selected.task.scheduler_state -isnot [int] -and $Selected.task.scheduler_state -isnot [long]) -or $Selected.task.scheduler_state -lt 0 -or $Selected.task.scheduler_state -gt 4 -or ($Selected.task.last_task_result -isnot [int] -and $Selected.task.last_task_result -isnot [long]) -or $Selected.task.last_task_result -lt -2147483648L -or $Selected.task.last_task_result -gt 2147483647L -or $Scan.types[$Prefix + '.task.scheduler_state_name'] -cne 'string') { throw 'selected task property type/range is invalid' }
+        $states = @('unknown','disabled','queued','ready','running')
+        if ($Selected.task.scheduler_state_name -cne $states[$Selected.task.scheduler_state]) { throw 'selected task state name is invalid' }
+    } else {
+        if ($Selected.presence -cne 'unknown') { throw 'unmodeled selected Status presence' }
+        $failureKeys = @('kind','stage')
+        if ($null -ne $Selected.failure.PSObject.Properties['hresult']) { $failureKeys += 'hresult' }
+        Assert-Nb1QueryKeys $Selected.failure $failureKeys
+        foreach ($name in @('kind','stage')) { if ($Scan.types[$Prefix + '.failure.' + $name] -cne 'string') { throw 'selected failure string type is invalid' } }
+        if ($Selected.failure.kind -cnotin @('identity','cancelled','trust','transport','protocol','native','not_found_unverified') -or $Selected.failure.stage -cnotin @('parent','bridge','bootstrap','input','identity','activate','connect','folder','get_task','properties','release')) { throw 'selected failure enum is invalid' }
+        if ($failureKeys.Count -eq 3 -and ($Scan.types[$Prefix + '.failure.hresult'] -cne 'string' -or $Selected.failure.hresult -cnotmatch '^0x[0-9A-F]{8}$')) { throw 'selected failure HRESULT is invalid' }
+    }
+}
+
+function Assert-Nb1TimingReport([string]$Json, [string]$SID) {
+    $scan = Read-Nb1QueryJson $Json 8192
+    $value = $Json | ConvertFrom-Json
+    $keys = @('schema_version','mode','status','phase','current_sid','task_path','goarch','go_version','source_revision','production_query_invoked','production_acceptance','identity_ms','constructor_ms','samples')
+    if ($value.status -ceq 'DIAGNOSTIC_FAILED') { $keys += 'error_kind' }
+    Assert-Nb1QueryKeys $value $keys
+    foreach ($name in @('mode','status','phase','current_sid','task_path','goarch','go_version','source_revision')) { if ($scan.types[$name] -cne 'string') { throw 'timing report string type is invalid' } }
+    foreach ($number in @($value.schema_version,$value.identity_ms,$value.constructor_ms)) { if (($number -isnot [int] -and $number -isnot [long]) -or $number -lt 0) { throw 'timing report integer type is invalid' } }
+    if ($value.schema_version -ne 1 -or $value.mode -cne 'DIAGNOSTIC_ONLY' -or $value.status -cnotin @('DIAGNOSTIC_ONLY','DIAGNOSTIC_FAILED') -or $value.phase -cne 'complete' -or $value.current_sid -cne $SID -or $value.task_path -cne ('\B1UG-nb1-' + $SID) -or $value.goarch -cnotin @('amd64','386','arm64') -or $value.go_version -cnotmatch '^[a-zA-Z0-9 .+/_-]{1,80}$' -or ($value.source_revision -cne 'not_embedded' -and $value.source_revision -cnotmatch '^[0-9a-f]{40}$')) { throw 'timing report is not an exact bound complete diagnostic' }
+    if ($value.production_query_invoked -isnot [bool] -or $value.production_acceptance -isnot [bool] -or $value.production_query_invoked -or $value.production_acceptance -or $value.samples -isnot [array] -or $value.samples.Count -ne 2) { throw 'diagnostic mode/sample contract is invalid' }
+    if ($value.status -ceq 'DIAGNOSTIC_FAILED' -and ($scan.types['error_kind'] -cne 'string' -or $value.error_kind -cne 'sample_contract_failed')) { throw 'complete diagnostic failure kind is invalid' }
+    $labels = @('first','second')
+    for ($i = 0; $i -lt 2; $i++) {
+        $sample = $value.samples[$i]; $prefix = 'samples.' + $i
+        Assert-Nb1QueryKeys $sample @('label','identity_ms','trust_check_ms','trust_checks','bridge_ms','parse_ms','bridge_invoked','run_returned','private_ps_exit_proven','response_received','error_kind','selected_status')
+        foreach ($number in @($sample.identity_ms,$sample.trust_check_ms,$sample.trust_checks,$sample.bridge_ms,$sample.parse_ms)) { if (($number -isnot [int] -and $number -isnot [long]) -or $number -lt 0) { throw 'timing sample integer type is invalid' } }
+        foreach ($name in @('bridge_invoked','run_returned','private_ps_exit_proven','response_received')) { if ($sample.$name -isnot [bool]) { throw 'timing sample boolean type is invalid' } }
+        if ($scan.types[$prefix + '.label'] -cne 'string' -or $sample.label -cne $labels[$i] -or -not $sample.bridge_invoked -or -not $sample.run_returned -or -not $sample.private_ps_exit_proven -or $sample.trust_checks -ne 1 -or $scan.types[$prefix + '.error_kind'] -cne 'string' -or $sample.error_kind -cnotin @('identity','deadline','cancelled','trust','transport','protocol','native','absence_unverified','unclassified')) { throw 'timing sample terminal/Wait proof is invalid' }
+        Assert-Nb1FiniteQueryStatus $sample.selected_status $scan $SID ($prefix + '.selected_status')
+        if ($value.status -ceq 'DIAGNOSTIC_ONLY') {
+            if (-not $sample.response_received -or $sample.error_kind -cne 'absence_unverified' -or $sample.selected_status.presence -cne 'unknown' -or $sample.selected_status.failure.kind -cne 'not_found_unverified' -or $sample.selected_status.failure.stage -cne 'get_task' -or $sample.selected_status.failure.hresult -cne '0x80070002') { throw 'diagnostic observation is not the exact unverified-missing sample' }
+        }
+    }
+    return $value
+}
+
+function Complete-Nb1DiagnosticsRecord($State, $Record, [int]$ExitCode, [string]$Json, [string]$SID) {
+    $Record.native = Assert-Nb1TimingReport $Json $SID
+    if (($Record.native.status -ceq 'DIAGNOSTIC_ONLY' -and $ExitCode -ne 0) -or ($Record.native.status -ceq 'DIAGNOSTIC_FAILED' -and $ExitCode -ne 1)) { throw 'timing report/exit status disagree' }
+    $State.DiagnosticsCompleted = $true # complete fixed-run/Wait evidence, never production Query acceptance
+    if ($Record.native.status -cne 'DIAGNOSTIC_ONLY') { throw 'timing diagnostic samples failed; production Query acceptance remains false' }
 }
 
 function Assert-Nb1QueryExitProof($State) {
     if ($State.ContainsKey('QueryAttempted') -and $State.QueryAttempted -and -not $State.QueryCompleted) { throw 'query bridge descendant exit is unproven; preserve profile/account/fixture' }
+    if ($State.ContainsKey('DiagnosticsAttempted') -and $State.DiagnosticsAttempted -and -not $State.DiagnosticsCompleted) { throw 'diagnostic bridge descendant exit is unproven; preserve profile/account/fixture' }
 }
 
 function Start-Nb1QueryAttempt($State) {
@@ -424,15 +492,28 @@ function Start-Nb1QueryAttempt($State) {
     $State.QueryAttempted = $true
 }
 
-function Get-Nb1StagedFiles($State) {
-    Write-Output @{ path = $State.StagedBinary; snapshot = $State.StagedSnapshot }
-    if ($State.ContainsKey('QueryBinary') -and -not [string]::IsNullOrEmpty($State.QueryBinary)) { Write-Output @{ path = $State.StagedQueryBinary; snapshot = $State.StagedQuerySnapshot } }
+function Start-Nb1DiagnosticsAttempt($State) {
+    $State.DiagnosticsCompleted = $false
+    $State.DiagnosticsAttempted = $true
 }
 
-function Get-Nb1NativeCaseSpec($State, [ValidateSet('token-admin','token-ordinary','query-ordinary')][string]$CaseKind) {
-    if ($CaseKind -cnotin @('token-admin','token-ordinary','query-ordinary')) { throw 'native case kind must match the fixed protocol exactly' }
+function Get-Nb1AuxiliaryBinary($State) {
+    if ($State.ContainsKey('QueryBinary') -and -not [string]::IsNullOrEmpty($State.QueryBinary) -and $State.ContainsKey('TimingBinary') -and -not [string]::IsNullOrEmpty($State.TimingBinary)) { throw 'query and timing modes are mutually exclusive' }
+    if ($State.ContainsKey('QueryBinary') -and -not [string]::IsNullOrEmpty($State.QueryBinary)) { return @{ path = $State.QueryBinary; source_key = 'QuerySourceSnapshot'; staged_path = $State.StagedQueryBinary; staged_key = 'StagedQuerySnapshot'; hash_key = 'QueryBinaryHash'; report_key = 'query_binary_sha256'; case_kind = 'query-ordinary' } }
+    if ($State.ContainsKey('TimingBinary') -and -not [string]::IsNullOrEmpty($State.TimingBinary)) { return @{ path = $State.TimingBinary; source_key = 'TimingSourceSnapshot'; staged_path = $State.StagedTimingBinary; staged_key = 'StagedTimingSnapshot'; hash_key = 'TimingBinaryHash'; report_key = 'timing_binary_sha256'; case_kind = 'timing-ordinary' } }
+    return $null
+}
+
+function Get-Nb1StagedFiles($State) {
+    Write-Output @{ path = $State.StagedBinary; snapshot = $State.StagedSnapshot }
+    $auxiliary = Get-Nb1AuxiliaryBinary $State
+    if ($null -ne $auxiliary) { Write-Output @{ path = $auxiliary.staged_path; snapshot = $State[$auxiliary.staged_key] } }
+}
+
+function Get-Nb1NativeCaseSpec($State, [ValidateSet('token-admin','token-ordinary','query-ordinary','timing-ordinary')][string]$CaseKind) {
+    if ($CaseKind -cnotin @('token-admin','token-ordinary','query-ordinary','timing-ordinary')) { throw 'native case kind must match the fixed protocol exactly' }
     $environment = [ordered]@{ SystemRoot = $State.WindowsDirectory; WINDIR = $State.WindowsDirectory; PATH = $State.SystemDirectory; TEMP = $State.TempDir; TMP = $State.TempDir }
-    $spec = @{ kind = $CaseKind; sid = $State.SID; executable = $State.StagedBinary; snapshot = $State['StagedSnapshot']; working_directory = $State.TempDir; credential = $State.Password; expected = 'ordinary'; arguments = '-test.run=^TestNativeCurrentOptIn$ -test.v -test.count=1'; prefix = 'NB1_TASKUSER_NATIVE_RESULT '; diagnostics = '^\s*context_native_windows_test\.go:\d+: |^(--- (PASS|FAIL|SKIP): TestNativeCurrentOptIn |(PASS|FAIL)$)'; environment = $environment }
+    $spec = @{ kind = $CaseKind; sid = $State.SID; executable = $State.StagedBinary; snapshot = $State['StagedSnapshot']; working_directory = $State.TempDir; credential = $State.Password; expected = 'ordinary'; arguments = '-test.run=^TestNativeCurrentOptIn$ -test.v -test.count=1'; prefix = 'NB1_TASKUSER_NATIVE_RESULT '; diagnostics = '^\s*context_native_windows_test\.go:\d+: |^(--- (PASS|FAIL|SKIP): TestNativeCurrentOptIn |(PASS|FAIL)$)'; environment = $environment; wait_ms = 40000 }
     if ($CaseKind -ceq 'query-ordinary') {
         if (-not $State.ContainsKey('QueryBinary') -or [string]::IsNullOrEmpty($State.QueryBinary)) { throw 'query binary was not explicitly configured' }
         $spec.executable = $State.StagedQueryBinary; $spec.snapshot = $State.StagedQuerySnapshot
@@ -440,6 +521,13 @@ function Get-Nb1NativeCaseSpec($State, [ValidateSet('token-admin','token-ordinar
         $spec.prefix = 'NB1_TASKQUERY_NATIVE_RESULT '; $spec.expected = 'missing-contract-observation'
         $spec.diagnostics = '^\s*query_native_windows_test\.go:\d+: |^(--- (PASS|FAIL|SKIP): TestNativeQueryOptIn |(PASS|FAIL)$)'
         $environment['NB1_TASKQUERY_NATIVE'] = '1'; $environment['NB1_TASKQUERY_EXPECT_SID'] = $State.SID
+    } elseif ($CaseKind -ceq 'timing-ordinary') {
+        if (-not $State.ContainsKey('TimingBinary') -or [string]::IsNullOrEmpty($State.TimingBinary)) { throw 'timing binary was not explicitly configured' }
+        $spec.executable = $State.StagedTimingBinary; $spec.snapshot = $State.StagedTimingSnapshot
+        $spec.arguments = '-test.run=^TestNativeQueryTiming$ -test.v -test.count=1'
+        $spec.prefix = 'NB1_TASKQUERY_TIMING_RESULT '; $spec.expected = 'diagnostic-only'; $spec.wait_ms = 90000
+        $spec.diagnostics = '^\s*query_timing_native_windows_test\.go:\d+: |^(--- (PASS|FAIL|SKIP): TestNativeQueryTiming |(PASS|FAIL)$)'
+        $environment['NB1_TASKQUERY_TIMING'] = '1'; $environment['NB1_TASKQUERY_EXPECT_SID'] = $State.SID
     } else {
         if ($CaseKind -ceq 'token-admin') {
             $spec.sid = $State.HostSID; $spec.executable = $State.Binary; $spec.snapshot = $State.SourceSnapshot
@@ -451,18 +539,28 @@ function Get-Nb1NativeCaseSpec($State, [ValidateSet('token-admin','token-ordinar
     return $spec
 }
 
-function Get-Nb1QueryFailureSummary([string]$Json) {
+function Get-Nb1QueryFailureSummary([string]$Json, [string]$SID) {
     try {
         $scan = Read-Nb1QueryJson $Json
         $value = $Json | ConvertFrom-Json
         $phases = @('configuration','identity','constructor','query','missing_contract','report')
         $kinds = @('expected_sid_required','current_identity_rejected','expected_identity_mismatch','constructor_nil','constructor_identity_mismatch','unexpected_query_success','missing_contract_mismatch','encode_report','report_size','deadline','cancelled','identity','trust','unsupported','transport','protocol','native','absence_unverified','unclassified')
-        if ($value.status -ceq 'FAIL' -and $scan.types['phase'] -ceq 'string' -and $phases -ccontains $value.phase -and $scan.types['error_kind'] -ceq 'string' -and $kinds -ccontains $value.error_kind) { return [ordered]@{ status = 'FAIL'; phase = $value.phase; error_kind = $value.error_kind } }
+        if ($value.status -ceq 'FAIL' -and $scan.types['phase'] -ceq 'string' -and $phases -ccontains $value.phase -and $scan.types['error_kind'] -ceq 'string' -and $kinds -ccontains $value.error_kind) {
+            $summary = [ordered]@{ status = 'FAIL'; phase = $value.phase; error_kind = $value.error_kind }
+            if ($null -ne $value.PSObject.Properties['selected_status']) {
+                try {
+                    $selected = $value.selected_status
+                    Assert-Nb1FiniteQueryStatus $selected $scan $SID 'selected_status'
+                    $summary['selected_status'] = $selected
+                } catch { $summary['selected_status_retention'] = 'rejected' }
+            }
+            return $summary
+        }
     } catch { }
     return [ordered]@{ status = 'FAIL'; phase = 'report'; error_kind = 'invalid_selected_report' }
 }
 
-function Invoke-Nb1NativeCase($State, $Report, [ValidateSet('token-admin','token-ordinary','query-ordinary')][string]$CaseKind) {
+function Invoke-Nb1NativeCase($State, $Report, [ValidateSet('token-admin','token-ordinary','query-ordinary','timing-ordinary')][string]$CaseKind) {
     $spec = Get-Nb1NativeCaseSpec $State $CaseKind
     Assert-Nb1Same $spec.snapshot (Get-Nb1Snapshot $spec.executable)
     $start = New-Object Diagnostics.ProcessStartInfo
@@ -481,20 +579,26 @@ function Invoke-Nb1NativeCase($State, $Report, [ValidateSet('token-admin','token
     }
     $process = New-Object Diagnostics.Process
     $process.StartInfo = $start
+    $timing = [ordered]@{ start_request_utc = [DateTime]::UtcNow.ToString('o'); start_return_utc = $null; start_ms = $null; wait_ms = $null; total_ms = $null; wait_returned = $false }
+    $clock = [Diagnostics.Stopwatch]::StartNew()
     $child = @{ Process = $process; Started = $false; Unknown = $true; Exited = $false; Expected = $spec.expected }
     [void]$State.Children.Add($child)
-    if ($CaseKind -ceq 'query-ordinary') { Start-Nb1QueryAttempt $State }
+    if ($CaseKind -ceq 'query-ordinary') { Start-Nb1QueryAttempt $State; $Report.query_process_timing = $timing }
+    if ($CaseKind -ceq 'timing-ordinary') { Start-Nb1DiagnosticsAttempt $State; $Report.diagnostics_process_timing = $timing }
     if (-not $process.Start()) { throw 'private test process did not start' }
+    $timing.start_return_utc = [DateTime]::UtcNow.ToString('o'); $timing.start_ms = $clock.ElapsedMilliseconds
     $child.Started = $true; $child.Unknown = $false
     [void]$process.Handle # retain the exact private process handle; never find/kill by text
     $stdout = $process.StandardOutput.ReadToEndAsync(); $stderr = $process.StandardError.ReadToEndAsync()
-    if (-not $process.WaitForExit(40000)) {
+    if (-not $process.WaitForExit($spec.wait_ms)) {
+        $timing.wait_ms = $clock.ElapsedMilliseconds - $timing.start_ms; $timing.total_ms = $clock.ElapsedMilliseconds
         $process.Kill()
         if (-not $process.WaitForExit(10000)) { throw 'private timed-out child exit remains unknown' }
         $child.Exited = $true
         throw 'private child exceeded observation budget; not token acceptance'
     }
     $process.WaitForExit(); $child.Exited = $true
+    $timing.wait_returned = $true; $timing.wait_ms = $clock.ElapsedMilliseconds - $timing.start_ms; $timing.total_ms = $clock.ElapsedMilliseconds
     $text = $stdout.GetAwaiter().GetResult(); $errorText = $stderr.GetAwaiter().GetResult()
     if ($text.Length -gt 131072 -or $errorText.Length -gt 131072) { throw 'private output exceeded evidence budget' }
     $lines = @($text -split '\r?\n' | Where-Object { $_.StartsWith($spec.prefix, [StringComparison]::Ordinal) })
@@ -505,15 +609,22 @@ function Invoke-Nb1NativeCase($State, $Report, [ValidateSet('token-admin','token
     $hash = [Security.Cryptography.SHA256]::Create()
     try { $stderrHash = ([BitConverter]::ToString($hash.ComputeHash([Text.Encoding]::UTF8.GetBytes($errorText)))).Replace('-', '').ToLowerInvariant() } finally { $hash.Dispose() }
     $record = [ordered]@{ expected = $spec.expected; exit_code = $process.ExitCode; environment_keys = @($environment.Keys); report_lines = $lines.Count; stderr_chars = $errorText.Length; stderr_sha256 = $stderrHash; native_diagnostics = $diagnostics; native = $null }
-    if ($CaseKind -ceq 'query-ordinary') {
+    if ($CaseKind -ceq 'timing-ordinary') {
         $record['binary_sha256'] = $spec.snapshot.sha256
+        $record['process_timing'] = $timing
+        $Report.timing_case = $record
+        if ($lines.Count -ne 1) { throw 'timing child did not emit exactly one terminal report' }
+        Complete-Nb1DiagnosticsRecord $State $record $process.ExitCode $json $spec.sid
+    } elseif ($CaseKind -ceq 'query-ordinary') {
+        $record['binary_sha256'] = $spec.snapshot.sha256
+        $record['process_timing'] = $timing
         $Report.query_case = $record
         if ($process.ExitCode -ne 0 -or $lines.Count -ne 1) {
-            $record['failure_summary'] = Get-Nb1QueryFailureSummary $json
+            $record['failure_summary'] = Get-Nb1QueryFailureSummary $json $spec.sid
             throw 'query child failed or did not emit exactly one selected report'
         }
         try { $record.native = Assert-Nb1QueryReport $json $spec.sid }
-        catch { $record['failure_summary'] = Get-Nb1QueryFailureSummary $json; throw }
+        catch { $record['failure_summary'] = Get-Nb1QueryFailureSummary $json $spec.sid; throw }
         $State.QueryCompleted = $true # exact PASS follows Query's cmd.Run/Wait; otherwise descendants remain unproven
     } else {
         if ($lines.Count -eq 1) { $record.native = $json | ConvertFrom-Json }
@@ -540,11 +651,12 @@ function New-Nb1NativeOps {
             if ($s.HostSID -notmatch '^S-1-5-21-\d+-\d+-\d+-\d+$') { throw 'ENVIRONMENT_UNAVAILABLE: hosted local administrator identity not established' }
             $s.SourceSnapshot = Get-Nb1Snapshot $s.Binary
             $s.BinaryHash = $s.SourceSnapshot.sha256
-            if (-not [string]::IsNullOrEmpty($s.QueryBinary)) {
-                if ($s.QueryBinary -ieq $s.Binary) { throw 'query binary must be independently built and fingerprinted' }
-                $s.QuerySourceSnapshot = Get-Nb1Snapshot $s.QueryBinary
-                $s.QueryBinaryHash = $s.QuerySourceSnapshot.sha256
-                $r.query_binary_sha256 = $s.QueryBinaryHash
+            $auxiliary = Get-Nb1AuxiliaryBinary $s
+            if ($null -ne $auxiliary) {
+                if ($auxiliary.path -ieq $s.Binary) { throw 'auxiliary binary must be independently built and fingerprinted' }
+                $s[$auxiliary.source_key] = Get-Nb1Snapshot $auxiliary.path
+                $s[$auxiliary.hash_key] = $s[$auxiliary.source_key].sha256
+                $r[$auxiliary.report_key] = $s[$auxiliary.hash_key]
             }
             $s.ProfilesRoot = [IO.Path]::GetFullPath([Nb1TokenFixture.Native]::ProfilesRoot())
             $s.ProfilesRootSnapshot = Get-Nb1Snapshot $s.ProfilesRoot -Directory
@@ -589,7 +701,8 @@ function New-Nb1NativeOps {
         StageFixture = {
             param($s,$r)
             Assert-Nb1Same $s.SourceSnapshot (Get-Nb1Snapshot $s.Binary)
-            if (-not [string]::IsNullOrEmpty($s.QueryBinary)) { Assert-Nb1Same $s.QuerySourceSnapshot (Get-Nb1Snapshot $s.QueryBinary) }
+            $auxiliary = Get-Nb1AuxiliaryBinary $s
+            if ($null -ne $auxiliary) { Assert-Nb1Same $s[$auxiliary.source_key] (Get-Nb1Snapshot $auxiliary.path) }
             Assert-Nb1Same $s.ProfilesRootSnapshot (Get-Nb1Snapshot $s.ProfilesRoot -Directory) -IdentityOnly
             Assert-Nb1Same $s.StageParentSnapshot (Get-Nb1Snapshot ([IO.Path]::GetDirectoryName($s.StageRoot)) -Directory) -IdentityOnly
             if ([Nb1TokenFixture.Native]::ExistsNoFollow($s.StageRoot)) { throw 'fixture path appeared before exclusive staging' }
@@ -600,10 +713,10 @@ function New-Nb1NativeOps {
             [IO.File]::Copy($s.Binary, $s.StagedBinary, $false)
             $s.StagedSnapshot = Get-Nb1Snapshot $s.StagedBinary
             if ($s.StagedSnapshot.sha256 -cne $s.BinaryHash) { throw 'staged test binary hash mismatch' }
-            if (-not [string]::IsNullOrEmpty($s.QueryBinary)) {
-                [IO.File]::Copy($s.QueryBinary, $s.StagedQueryBinary, $false)
-                $s.StagedQuerySnapshot = Get-Nb1Snapshot $s.StagedQueryBinary
-                if ($s.StagedQuerySnapshot.sha256 -cne $s.QueryBinaryHash) { throw 'staged query binary hash mismatch' }
+            if ($null -ne $auxiliary) {
+                [IO.File]::Copy($auxiliary.path, $auxiliary.staged_path, $false)
+                $s[$auxiliary.staged_key] = Get-Nb1Snapshot $auxiliary.staged_path
+                if ($s[$auxiliary.staged_key].sha256 -cne $s[$auxiliary.hash_key]) { throw 'staged auxiliary binary hash mismatch' }
             }
             $s.StageSnapshots = @{}
             foreach ($path in @($s.StageRoot, $s.BinDir, $s.TempDir)) { $s.StageSnapshots[$path] = Get-Nb1Snapshot $path -Directory }
@@ -621,7 +734,8 @@ function New-Nb1NativeOps {
             if ($null -eq $profile) { throw 'new user profile mapping was not established' }
             $s.ProfileSnapshot = $profile.snapshot
             $r.profile_observation = [ordered]@{ sid = $s.SID; path = $profile.path; root_id = $profile.snapshot.id; loaded = $profile.loaded }
-            if (-not [string]::IsNullOrEmpty($s.QueryBinary)) { Invoke-Nb1NativeCase $s $r 'query-ordinary' }
+            $auxiliary = Get-Nb1AuxiliaryBinary $s
+            if ($null -ne $auxiliary) { Invoke-Nb1NativeCase $s $r $auxiliary.case_kind }
         }
         ReapChildren = {
             param($s,$r)
@@ -687,8 +801,11 @@ if ($LibraryOnly) { return }
 $report = [ordered]@{ schema_version = 1; status = 'PREPARED_NOT_RUN'; hardware_access = $false; task_mutations = $false; policy_changes = $false; cases = @(); checks = @(); cleanup = @(); scope = 'Native own-process token classification and bounded handle observation only; no Task Scheduler or USB acceptance.' }
 if (-not $Execute) { $report | ConvertTo-Json -Depth 12; return }
 if (-not [string]::IsNullOrEmpty($QueryBinary)) { $report.scope = 'Own-process token fixture plus read-only current-user missing-contract observation; production remains Unknown/not_checked. No task CRUD or USB acceptance.' }
+if (-not [string]::IsNullOrEmpty($TimingBinary)) { $report.scope = 'DIAGNOSTIC_ONLY: fixed read-only bridge timing, not production Query acceptance. No task CRUD or USB.' }
+if (-not [string]::IsNullOrEmpty($QueryBinary) -and -not [string]::IsNullOrEmpty($TimingBinary)) { throw 'query and timing modes are mutually exclusive' }
 Assert-Nb1LocalAbsolutePath $Binary
 if (-not [string]::IsNullOrEmpty($QueryBinary)) { Assert-Nb1LocalAbsolutePath $QueryBinary }
+if (-not [string]::IsNullOrEmpty($TimingBinary)) { Assert-Nb1LocalAbsolutePath $TimingBinary }
 Assert-Nb1LocalAbsolutePath $OutputDirectory
 if ($env:GITHUB_ACTIONS -cne 'true' -or [Environment]::OSVersion.Platform -ne 'Win32NT') { throw 'ENVIRONMENT_UNAVAILABLE: execute is restricted to a disposable hosted Windows VM' }
 if (Test-Path -LiteralPath $OutputDirectory) { throw 'evidence directory already exists' }
@@ -700,11 +817,13 @@ $markerBytes = [Text.Encoding]::UTF8.GetBytes($marker)
 $sha = [Security.Cryptography.SHA256]::Create()
 try { $markerHash = ([BitConverter]::ToString($sha.ComputeHash($markerBytes))).Replace('-', '').ToLowerInvariant() } finally { $sha.Dispose() }
 $stageRoot = Join-Path ([Environment]::GetFolderPath('CommonApplicationData')) ('nb1-token-ci-' + $name)
-$state = @{ Name = $name; Marker = $marker; MarkerHash = $markerHash; SID = $null; HostSID = $null; Binary = [IO.Path]::GetFullPath($Binary); QueryBinary = $null; QueryAttempted = $false; QueryCompleted = $false; StageRoot = $stageRoot; BinDir = (Join-Path $stageRoot 'bin'); TempDir = (Join-Path $stageRoot 'tmp'); StagedBinary = (Join-Path $stageRoot 'bin\taskuser-native.test.exe'); StagedQueryBinary = (Join-Path $stageRoot 'bin\taskquery-native.test.exe'); Password = $null; Children = (New-Object Collections.ArrayList); CreationAttempted = $false; CreationVerified = $false; CreationReturned = $false; ChildrenExited = $false; StageVerified = $false; ProfileSnapshot = $null; ProfileAbsentBeforeLogon = $false; OrdinaryNativePassed = $false }
+$state = @{ Name = $name; Marker = $marker; MarkerHash = $markerHash; SID = $null; HostSID = $null; Binary = [IO.Path]::GetFullPath($Binary); QueryBinary = $null; QueryAttempted = $false; QueryCompleted = $false; TimingBinary = $null; DiagnosticsAttempted = $false; DiagnosticsCompleted = $false; StageRoot = $stageRoot; BinDir = (Join-Path $stageRoot 'bin'); TempDir = (Join-Path $stageRoot 'tmp'); StagedBinary = (Join-Path $stageRoot 'bin\taskuser-native.test.exe'); StagedQueryBinary = (Join-Path $stageRoot 'bin\taskquery-native.test.exe'); StagedTimingBinary = (Join-Path $stageRoot 'bin\taskquery-timing.test.exe'); Password = $null; Children = (New-Object Collections.ArrayList); CreationAttempted = $false; CreationVerified = $false; CreationReturned = $false; ChildrenExited = $false; StageVerified = $false; ProfileSnapshot = $null; ProfileAbsentBeforeLogon = $false; OrdinaryNativePassed = $false }
 if (-not [string]::IsNullOrEmpty($QueryBinary)) { $state.QueryBinary = [IO.Path]::GetFullPath($QueryBinary) }
+if (-not [string]::IsNullOrEmpty($TimingBinary)) { $state.TimingBinary = [IO.Path]::GetFullPath($TimingBinary) }
 try { $report = Invoke-Nb1TokenLifecycle $state $report (New-Nb1NativeOps) }
 finally { if ($null -ne $state.Password) { $state.Password.Dispose() } }
 $encoded = $report | ConvertTo-Json -Depth 16
 [IO.File]::WriteAllText((Join-Path $OutputDirectory 'results.json'), $encoded, (New-Object Text.UTF8Encoding($false)))
 Write-Output $encoded
-if ($report.status -cne 'PASS') { exit 1 }
+if ($report.status -cne 'PASS' -and -not ($report.status -ceq 'DIAGNOSTIC_ONLY' -and -not [string]::IsNullOrEmpty($TimingBinary))) { exit 1 }
+exit 0

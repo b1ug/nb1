@@ -170,6 +170,30 @@ foreach ($spec in $specs) {
         $results += [ordered]@{ case = $spec.name; status = 'FAIL'; expected_acceptance = $spec.accept; error_kind = 'query-dto-contract' }
     }
 }
+$failureCases = @('deadline-selected-status','native-hresult','present-selected-status','unknown-selected-field','foreign-selected-path','duplicate-failure-json')
+foreach ($failureCase in $failureCases) {
+    try {
+        $value = New-Nb1FakeQueryDTO
+        $value.status = 'FAIL'; $value.phase = 'query'; $value['error_kind'] = 'deadline'
+        $value.selected_status.failure = [ordered]@{ kind = 'cancelled'; stage = 'bridge' }
+        if ($failureCase -eq 'native-hresult') { $value.error_kind = 'native'; $value.selected_status.failure = [ordered]@{ kind = 'native'; stage = 'get_task'; hresult = '0x80070005' } }
+        if ($failureCase -eq 'present-selected-status') {
+            $value.error_kind = 'unexpected_query_success'; $value.selected_status.presence = 'present'; $value.selected_status.Remove('failure')
+            $value.selected_status['task'] = [ordered]@{ enabled = $false; scheduler_state = 3; scheduler_state_name = 'ready'; last_task_result = 0 }
+        }
+        if ($failureCase -eq 'unknown-selected-field') { $value.selected_status['xml'] = 'must-never-be-exported' }
+        if ($failureCase -eq 'foreign-selected-path') { $value.selected_status.task_path = '\other-user' }
+        $json = $value | ConvertTo-Json -Depth 12 -Compress
+        if ($failureCase -eq 'duplicate-failure-json') { $json = $json.Replace('"status":"FAIL"','"status":"FAIL","status":"FAIL"') }
+        $summary = Get-Nb1QueryFailureSummary $json $script:QueryFixtureSID
+        $hasSelected = $summary.Contains('selected_status')
+        if ($hasSelected -ne ($failureCase -in @('deadline-selected-status','native-hresult','present-selected-status'))) { throw 'failed query must preserve only its bounded exact selected Status' }
+        if ($summary.status -cne 'FAIL') { throw 'failure summary cannot become acceptance' }
+        if ($hasSelected -and $summary.selected_status.checked_at -cne $script:QueryFixtureTime) { throw 'failure checked_at must preserve original Go string' }
+        if (($summary | ConvertTo-Json -Depth 12 -Compress).Contains('must-never-be-exported')) { throw 'unknown fields cannot escape failure retention' }
+        $results += [ordered]@{ case = ('failure-retention-' + $failureCase); status = 'PASS'; expected_acceptance = $false }
+    } catch { $results += [ordered]@{ case = ('failure-retention-' + $failureCase); status = 'FAIL'; expected_acceptance = $false; error_kind = 'failure-retention-contract' } }
+}
 $failed = @($results | Where-Object { $_.status -cne 'PASS' }).Count
 $report = [ordered]@{
     schema_version = 1; status = 'PASS'; case_count = $results.Count

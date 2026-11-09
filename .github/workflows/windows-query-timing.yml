@@ -1,0 +1,122 @@
+name: Windows read-only query timing diagnostic
+
+on:
+  push:
+    branches: [validation/windows-query-timing]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  timing:
+    name: Windows query timing / ${{ matrix.arch }} / DIAGNOSTIC_ONLY
+    runs-on: windows-2022
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [amd64, '386']
+    env:
+      CGO_ENABLED: '0'
+      GOWORK: 'off'
+      GOTOOLCHAIN: local
+      GOARCH: ${{ matrix.arch }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@v7
+        with:
+          go-version: '1.27.x'
+          cache: false
+      - name: Pure lifecycle and strict timing DTO regressions
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          & .\ci\test-windows-token-native.ps1 | Tee-Object -FilePath (Join-Path $env:RUNNER_TEMP 'windows-token-fakes.json')
+          if ($LASTEXITCODE -ne 0) { throw 'lifecycle fakes failed' }
+          & .\ci\test-windows-query-timing.ps1 | Tee-Object -FilePath (Join-Path $env:RUNNER_TEMP 'windows-timing-fakes.json')
+          if ($LASTEXITCODE -ne 0) { throw 'timing DTO fakes failed' }
+          foreach ($file in @('windows-token-fakes.json','windows-timing-fakes.json')) {
+            $fakes = Get-Content -LiteralPath (Join-Path $env:RUNNER_TEMP $file) -Raw | ConvertFrom-Json
+            if ($fakes.status -cne 'PASS' -or $fakes.failed -ne 0 -or $fakes.case_count -le 0) { throw 'pure fake evidence is incomplete' }
+          }
+      - name: Build separate opt-in token and timing binaries
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $token = Join-Path $env:RUNNER_TEMP ('taskuser-native-' + $env:GOARCH + '.test.exe')
+          $timing = Join-Path $env:RUNNER_TEMP ('taskquery-timing-' + $env:GOARCH + '.test.exe')
+          & go test -c -o $token ./internal/service/taskuser
+          if ($LASTEXITCODE -ne 0) { throw 'token binary build failed' }
+          $tokenNames = @(& $token '-test.list=^TestNativeCurrentOptIn$')
+          if ($LASTEXITCODE -ne 0 -or $tokenNames -cnotcontains 'TestNativeCurrentOptIn') { throw 'token opt-in fixture missing' }
+          & go test -c -o $timing ./internal/service/taskquery
+          if ($LASTEXITCODE -ne 0) { throw 'timing binary build failed' }
+          $timingNames = @(& $timing '-test.list=^TestNativeQueryTiming$')
+          if ($LASTEXITCODE -ne 0 -or $timingNames -cnotcontains 'TestNativeQueryTiming') { throw 'timing opt-in fixture missing' }
+          $metadata = [ordered]@{
+            source = (& git rev-parse HEAD)
+            arch = $env:GOARCH
+            cgo_enabled = $env:CGO_ENABLED
+            gowork = $env:GOWORK
+            go_version = (& go version)
+            runtime_go_version = (& go env GOVERSION)
+            token_sha256 = (Get-FileHash -LiteralPath $token -Algorithm SHA256).Hash.ToLowerInvariant()
+            timing_sha256 = (Get-FileHash -LiteralPath $timing -Algorithm SHA256).Hash.ToLowerInvariant()
+            token_test_present = $true
+            timing_test_present = $true
+            production_query_invoked = $false
+            production_acceptance = $false
+            scope = 'DIAGNOSTIC_ONLY: first/second fixed read-only bridge measurements under 25s contexts; production 3s Query unchanged.'
+          }
+          $metadata | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $env:RUNNER_TEMP 'windows-timing-build.json') -Encoding UTF8
+      - name: Observe cold then warm fixed bridge in one fresh ordinary profile
+        shell: powershell
+        run: |
+          $token = Join-Path $env:RUNNER_TEMP ('taskuser-native-' + $env:GOARCH + '.test.exe')
+          $timing = Join-Path $env:RUNNER_TEMP ('taskquery-timing-' + $env:GOARCH + '.test.exe')
+          & .\ci\windows-token-native.ps1 -Execute -Binary $token -TimingBinary $timing -OutputDirectory (Join-Path $env:RUNNER_TEMP 'windows-query-timing-evidence')
+      - name: Require diagnostic terminal reports and exact cleanup
+        if: ${{ always() }}
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $report = Get-Content -LiteralPath (Join-Path $env:RUNNER_TEMP 'windows-query-timing-evidence\results.json') -Raw | ConvertFrom-Json
+          $build = Get-Content -LiteralPath (Join-Path $env:RUNNER_TEMP 'windows-timing-build.json') -Raw | ConvertFrom-Json
+          if ($report.status -cne 'DIAGNOSTIC_ONLY' -or $report.hardware_access -ne $false -or $report.task_mutations -ne $false -or $report.policy_changes -ne $false) { throw 'diagnostic scope/result is not exact' }
+          if ($null -ne $report.PSObject.Properties['query_case'] -or $null -ne $report.PSObject.Properties['query_bridge_exit_proven']) { throw 'timing mode must not invoke or accept production Query' }
+          if ($report.creation.attempted -ne $true -or $report.creation.returned -ne $true -or $report.creation.verified -ne $true -or $report.children_exit_proven -ne $true -or $report.diagnostics_bridge_exit_proven -ne $true) { throw 'diagnostic creation/exit proof is incomplete' }
+          if ($report.binary_sha256 -cne $build.token_sha256 -or $report.timing_binary_sha256 -cne $build.timing_sha256 -or $report.timing_case.binary_sha256 -cne $build.timing_sha256 -or $build.token_test_present -ne $true -or $build.timing_test_present -ne $true) { throw 'diagnostic binary fingerprints are incomplete' }
+          if ($null -eq $report.fixture_user.local_group_sids -or @($report.fixture_user.local_group_sids).Count -ne 1 -or $report.fixture_user.local_group_sids[0] -cne 'S-1-5-32-545' -or $report.profile_observation.sid -cne $report.fixture_user.sid) { throw 'fresh ordinary user group/profile binding is incomplete' }
+          if ($report.profile_observation.mapping_matches -ne $true -or $report.profile_observation.absent_before_logon -ne $true -or $report.profile_observation.ordinary_native_passed -ne $true) { throw 'profile provenance is incomplete' }
+          if (@($report.cases).Count -ne 2 -or @($report.cases | Where-Object { $_.exit_code -ne 0 -or $_.native.status -cne 'PASS' }).Count -ne 0) { throw 'both token cases must PASS' }
+          if (@($report.cases | Where-Object { $_.expected -ceq 'ordinary' }).Count -ne 1 -or @($report.cases | Where-Object { $_.expected -ceq 'administrator-rejected' }).Count -ne 1) { throw 'token cases are incomplete' }
+          if (@($report.cleanup).Count -ne 3 -or @($report.cleanup | Where-Object { $_.status -cne 'PASS' }).Count -ne 0) { throw 'all diagnostic cleanup must PASS' }
+          if ($report.timing_case.exit_code -ne 0 -or $report.timing_case.report_lines -ne 1) { throw 'complete diagnostic terminal report missing' }
+          . .\ci\windows-token-native.ps1 -LibraryOnly
+          $native = Assert-Nb1TimingReport ($report.timing_case.native | ConvertTo-Json -Depth 14 -Compress) $report.fixture_user.sid
+          if ($native.status -cne 'DIAGNOSTIC_ONLY' -or $native.goarch -cne $build.arch -or $native.go_version -cne $build.runtime_go_version -or ($native.source_revision -cne 'not_embedded' -and $native.source_revision -cne $build.source)) { throw 'diagnostic source/runtime metadata mismatch' }
+      - name: Compile Windows ARM64 only
+        if: ${{ matrix.arch == 'amd64' }}
+        shell: powershell
+        run: |
+          $env:GOARCH = 'arm64'
+          & go test -c -o (Join-Path $env:RUNNER_TEMP 'taskuser-timing-arm64-compile-only.test.exe') ./internal/service/taskuser
+          if ($LASTEXITCODE -ne 0) { throw 'ARM64 token compile failed' }
+          & go test -c -o (Join-Path $env:RUNNER_TEMP 'taskquery-timing-arm64-compile-only.test.exe') ./internal/service/taskquery
+          if ($LASTEXITCODE -ne 0) { throw 'ARM64 timing compile failed' }
+      - name: Upload selected diagnostic evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: windows-query-timing-${{ matrix.arch }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/windows-token-fakes.json
+            ${{ runner.temp }}/windows-timing-fakes.json
+            ${{ runner.temp }}/windows-timing-build.json
+            ${{ runner.temp }}/windows-query-timing-evidence/results.json
+          if-no-files-found: error
+          include-hidden-files: false
+          retention-days: 14

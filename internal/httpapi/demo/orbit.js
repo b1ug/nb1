@@ -15,6 +15,7 @@
   const clone = value => JSON.parse(JSON.stringify(value));
   const exact = (value, keys) => value !== null && typeof value === "object" && !Array.isArray(value) && same(Object.keys(value).sort(), keys.slice().sort());
   const hasOwn = (value, key) => Object.prototype.hasOwnProperty.call(value, key);
+  const actionArguments = ({kind, ...args}) => args;
   let phase = "idle", softwareSupported = false, devices = [];
   let lastPreview = null, pending = null, job = null, pollTimer = null;
   const exchanges = [];
@@ -229,7 +230,7 @@
   function showPreview(value) {
     lastPreview = value;
     const r = value.result;
-    $("call").textContent = `light.orbit(${JSON.stringify(r.action)})`;
+    $("call").textContent = `light.orbit(${JSON.stringify(actionArguments(r.action))})`;
     $("frames").textContent = String(r.total_frames);
     $("writes").textContent = String(r.planned_target_writes);
     $("duration").textContent = `${(r.nominal_duration_ms / 1000).toFixed(3)} 秒`;
@@ -242,7 +243,7 @@
     $("frames").textContent = $("writes").textContent = $("duration").textContent = "—";
     $("program").value = "";
     $("availability").textContent = "参数已改变，需要重新预览。";
-    try { $("call").textContent = `light.orbit(${JSON.stringify(inputAction())})`; } catch (_) { $("call").textContent = "light.orbit({…})"; }
+    try { $("call").textContent = `light.orbit(${JSON.stringify(actionArguments(inputAction()))})`; } catch (_) { $("call").textContent = "light.orbit({…})"; }
     render();
   }
   async function getPreview() {

@@ -21,7 +21,15 @@ PowerShell 路径来自 GetSystemDirectoryW，再追加固定 WindowsPowerShell\
 
 子进程读取自己的 SID 也只申请 TokenAccessLevels.Query，显式使用 WindowsIdentity.GetCurrent(Query)；不使用默认请求 MaximumAllowed 的无参重载。实际子进程 argv 回归保留此权限边界，Windows 原生取证另列。
 
-私有桥执行使用调用者期限与3秒中的较短者。同步 token/系统文件/ACL 检查在调用前后核对 context，但这些 OS 检查没有原生强制取消接口，不承诺它们有硬退出期限。stdout最多16KiB，stderr只计至4KiB后取消且不保留内容；输出超限立即请求终止私有桥。Go1.18的 CommandContext 只管这个固定子进程，不把取消/进程退出说成 COM 服务或任意后台操作被原子取消。这里没有控制任务的副作用。
+Query内使用调用者期限与15秒中的较短者；此前的New构造阶段不计入这段预算。同步 token/系统文件/ACL 检查在调用前后核对 context，但这些 OS 检查没有原生强制取消接口，不承诺它们有硬退出期限。stdout最多16KiB，stderr只计至4KiB后取消且不保留内容；输出超限立即请求终止私有桥。Go1.18的 CommandContext 只管这个固定子进程，不把取消/进程退出说成 COM 服务或任意后台操作被原子取消。这里没有控制任务的副作用。
+
+## 首次桥接预算候选：待正常 Query 原生复验
+
+原三秒预算的[普通用户正常 Query 验收](https://github.com/b1ug/nb1/actions/runs/42568948786)中，amd64通过，386/WOW64真实返回deadline，整体失败保留。不能将该失败解释为任务缺失，也不能因构造通过就推断PowerShell或COM已完成。
+
+随后独立[计时诊断 run42572206853](https://github.com/b1ug/nb1/actions/runs/42572206853)（源码`2916dbc`）在全新普通用户profile中先测原固定桥：386/WOW64第一样本10593ms、第二257ms；amd64为355ms、204ms，样本身份/重复trust检查为0–1ms。诊断不调用生产Query，结果只是DIAGNOSTIC_ONLY。这是有限样本，bridge耗时包含信任检查、PowerShell启动、固定脚本、COM及Wait，不能单独归因于启动或COM，也不是受控OS缓存冷/热实验。
+
+据此将默认有限预算调整为15秒；调用者更早的deadline仍优先。没有重试、Sysnative切换、权限、身份、固定目标或缺失语义变化。**本15秒候选尚待全新普通用户profile下的正常生产Query原生复验**；软件测试、交叉编译和预热后的成功不能代替首次调用验收，既有三秒失败与独立诊断收据继续保留。
 
 ## 验证范围
 

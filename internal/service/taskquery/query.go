@@ -13,9 +13,12 @@ const (
 	Present = "present"
 	// Absent is reserved until native GetTask missing-HRESULT contracts exist.
 	// This version deliberately returns Unknown for every failed GetTask.
-	Absent      = "absent"
-	Unknown     = "unknown"
-	queryBudget = 3 * time.Second
+	Absent  = "absent"
+	Unknown = "unknown"
+	// Native WOW64 diagnostics observed a first fixed-bridge call of 10.593s.
+	// Keep a finite budget that callers can shorten. This is not a hard deadline
+	// for synchronous OS checks, nor an attribution to PS startup or COM alone.
+	queryBudget = 15 * time.Second
 	maxOutput   = 16 * 1024
 )
 

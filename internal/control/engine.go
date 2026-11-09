@@ -74,9 +74,7 @@ func New(driver Driver, options Options) (*Engine, error) {
 	}
 	e := &Engine{driver: driver, options: options, workers: make(map[string]*worker), jobs: make(map[string]*record), stop: make(chan struct{}), done: make(chan struct{}), events: make(chan ConnectionEvent, connectionEventBufferSize)}
 	for _, serial := range options.Serials {
-		if serial == "" || len(serial) > 128 || strings.IndexFunc(serial, func(r rune) bool {
-			return !(r >= '0' && r <= '9' || r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' || r == '-' || r == '_')
-		}) >= 0 {
+		if !ValidDeviceSerial(serial) {
 			return nil, fmt.Errorf("%w: invalid device serial", ErrInvalid)
 		}
 		if _, exists := e.workers[serial]; exists {

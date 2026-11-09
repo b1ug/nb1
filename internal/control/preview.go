@@ -146,7 +146,7 @@ func WithDeviceSnapshot(result PreviewResult, serial string, snapshot *DeviceSta
 	}
 	result.Device.Connection = snapshot.Connection
 	result.Device.Capabilities = append([]string{}, snapshot.Capabilities...)
-	if snapshot.Serial != serial {
+	if snapshot.Serial != serial || snapshot.Connection == "" {
 		result.Device.Connection = ""
 		result.Device.Capabilities = []string{}
 		return result

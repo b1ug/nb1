@@ -57,6 +57,14 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]string{"status": "ok", "api_version": "v1"})
 		return
 	}
+	if r.URL.Path == "/v1/capabilities" {
+		h.capabilities(w, r)
+		return
+	}
+	if r.URL.Path == "/v1/programs/preview" {
+		h.preview(w, r)
+		return
+	}
 	if r.URL.Path == "/v1/instance" {
 		if !method(w, r, http.MethodGet) {
 			return

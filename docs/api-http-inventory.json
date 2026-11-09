@@ -13,19 +13,27 @@
       "commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
       "source_worktree": "validation/nb1-pattern-v2-public",
       "scope": "P1..P6, independent default lazy StoreV2 and four public fixed-reference execution operations; not installed"
+    },
+    "web_host": {
+      "commit": "56c4aef153c560c68845e89ebdaa15bc1323eeb2",
+      "source_worktree": "validation/nb1-web-pattern-host",
+      "scope": "Source supports closed basic/extended static bundle; old dist retained at this source; no install/USB claim"
     }
   },
   "summary": {
     "daily_method_path_count": 32,
-    "development_method_path_count": 41,
-    "development_added_method_paths": 9,
+    "development_method_path_count": 44,
+    "development_added_method_paths": 12,
     "export_query_variants": "counted within the corresponding GET route",
     "not_implemented": [
       "GET /v1/devices/{serial}/state",
       "POST /v1/devices/{serial}/set",
       "HTTP device USB open/close/raw report/flash upload endpoints",
       "Generic high sequence/compose/spin API"
-    ]
+    ],
+    "conditional_static_routes": 3,
+    "static_routes_including_demo_redirect": 10,
+    "current_legacy_bundle_serves_added_pattern_resources": false
   },
   "low_state_set_mapping": {
     "state": {
@@ -1309,7 +1317,8 @@
       "level": "embedded-web",
       "status": {
         "daily_1d89": "implemented",
-        "development_f8bb267": "same as daily"
+        "development_f8bb267": "same as daily",
+        "development_host_56c4aef": "existing canonical static path, payload selected by verified fixed bundle; not installed"
       },
       "input": {
         "body": "none",
@@ -1332,7 +1341,9 @@
       "tests": [
         "internal/httpapi/light_test.go"
       ],
-      "notes": []
+      "notes": [
+        "Host56c supports complete basic/extended profiles; six or nine public assets plus LICENSE, manifest separate; fixed dist determines UI content, not frontend source directory."
+      ]
     },
     {
       "id": "web-demo-index",
@@ -1341,7 +1352,8 @@
       "level": "embedded-web",
       "status": {
         "daily_1d89": "implemented",
-        "development_f8bb267": "same as daily"
+        "development_f8bb267": "same as daily",
+        "development_host_56c4aef": "existing canonical static path, payload selected by verified fixed bundle; not installed"
       },
       "input": {
         "body": "none",
@@ -1367,7 +1379,9 @@
       "tests": [
         "internal/httpapi/light_test.go"
       ],
-      "notes": []
+      "notes": [
+        "Host56c supports complete basic/extended profiles; six or nine public assets plus LICENSE, manifest separate; fixed dist determines UI content, not frontend source directory."
+      ]
     },
     {
       "id": "web-demo-demo-js",
@@ -1376,7 +1390,8 @@
       "level": "embedded-web",
       "status": {
         "daily_1d89": "implemented",
-        "development_f8bb267": "same as daily"
+        "development_f8bb267": "same as daily",
+        "development_host_56c4aef": "existing canonical static path, payload selected by verified fixed bundle; not installed"
       },
       "input": {
         "body": "none",
@@ -1402,7 +1417,9 @@
       "tests": [
         "internal/httpapi/light_test.go"
       ],
-      "notes": []
+      "notes": [
+        "Host56c supports complete basic/extended profiles; six or nine public assets plus LICENSE, manifest separate; fixed dist determines UI content, not frontend source directory."
+      ]
     },
     {
       "id": "web-demo-demo-css",
@@ -1411,7 +1428,8 @@
       "level": "embedded-web",
       "status": {
         "daily_1d89": "implemented",
-        "development_f8bb267": "same as daily"
+        "development_f8bb267": "same as daily",
+        "development_host_56c4aef": "existing canonical static path, payload selected by verified fixed bundle; not installed"
       },
       "input": {
         "body": "none",
@@ -1437,7 +1455,9 @@
       "tests": [
         "internal/httpapi/light_test.go"
       ],
-      "notes": []
+      "notes": [
+        "Host56c supports complete basic/extended profiles; six or nine public assets plus LICENSE, manifest separate; fixed dist determines UI content, not frontend source directory."
+      ]
     },
     {
       "id": "web-demo-orbit-html",
@@ -1446,7 +1466,8 @@
       "level": "embedded-web",
       "status": {
         "daily_1d89": "implemented",
-        "development_f8bb267": "same as daily"
+        "development_f8bb267": "same as daily",
+        "development_host_56c4aef": "existing canonical static path, payload selected by verified fixed bundle; not installed"
       },
       "input": {
         "body": "none",
@@ -1472,7 +1493,9 @@
       "tests": [
         "internal/httpapi/light_test.go"
       ],
-      "notes": []
+      "notes": [
+        "Host56c supports complete basic/extended profiles; six or nine public assets plus LICENSE, manifest separate; fixed dist determines UI content, not frontend source directory."
+      ]
     },
     {
       "id": "web-demo-orbit-js",
@@ -1481,7 +1504,8 @@
       "level": "embedded-web",
       "status": {
         "daily_1d89": "implemented",
-        "development_f8bb267": "same as daily"
+        "development_f8bb267": "same as daily",
+        "development_host_56c4aef": "existing canonical static path, payload selected by verified fixed bundle; not installed"
       },
       "input": {
         "body": "none",
@@ -1507,7 +1531,9 @@
       "tests": [
         "internal/httpapi/light_test.go"
       ],
-      "notes": []
+      "notes": [
+        "Host56c supports complete basic/extended profiles; six or nine public assets plus LICENSE, manifest separate; fixed dist determines UI content, not frontend source directory."
+      ]
     },
     {
       "id": "web-demo-orbit-css",
@@ -1516,7 +1542,8 @@
       "level": "embedded-web",
       "status": {
         "daily_1d89": "implemented",
-        "development_f8bb267": "same as daily"
+        "development_f8bb267": "same as daily",
+        "development_host_56c4aef": "existing canonical static path, payload selected by verified fixed bundle; not installed"
       },
       "input": {
         "body": "none",
@@ -1542,7 +1569,135 @@
       "tests": [
         "internal/httpapi/light_test.go"
       ],
-      "notes": []
+      "notes": [
+        "Host56c supports complete basic/extended profiles; six or nine public assets plus LICENSE, manifest separate; fixed dist determines UI content, not frontend source directory."
+      ]
+    },
+    {
+      "id": "web-demo-patterns-html",
+      "method": "GET",
+      "path": "/demo/patterns.html",
+      "level": "embedded-web",
+      "status": {
+        "daily_1d89": "absent",
+        "development_host_56c4aef": "conditional on verified extended embedded bundle; source56c legacy dist returns404; not installed"
+      },
+      "input": {
+        "body": "none",
+        "query": "none including empty ?"
+      },
+      "output": {
+        "status": [
+          200,
+          404
+        ],
+        "shape": "HTML if included, standard Error if valid legacy bundle omits asset"
+      },
+      "success_headers": [
+        "Content-Security-Policy: default-src none; script/style/connect self; base/frame/form none",
+        "Referrer-Policy: no-referrer"
+      ],
+      "io_and_execution": "Read verified embedded bytes only; no Store/Job/device/USB. A Web resource route is not a hardware control API.",
+      "receipt": "none",
+      "errors": [
+        "global",
+        "400 invalid_request",
+        "404 not_found (valid legacy bundle)",
+        "500 internal_error (invalid bundle/required asset failure)"
+      ],
+      "source": "internal/httpapi/light.go",
+      "tests": [
+        "internal/httpapi/light_test.go",
+        "internal/webui/embed_test.go"
+      ],
+      "notes": [
+        "Only complete extended profile adds all three Pattern assets and both v2 Pattern contracts; total dist including manifest <=256KiB.",
+        "Host support does not import new dist or install daemon; old complete bundle remains valid and returns404; required files/hash mismatch still500."
+      ]
+    },
+    {
+      "id": "web-demo-patterns-js",
+      "method": "GET",
+      "path": "/demo/patterns.js",
+      "level": "embedded-web",
+      "status": {
+        "daily_1d89": "absent",
+        "development_host_56c4aef": "conditional on verified extended embedded bundle; source56c legacy dist returns404; not installed"
+      },
+      "input": {
+        "body": "none",
+        "query": "none including empty ?"
+      },
+      "output": {
+        "status": [
+          200,
+          404
+        ],
+        "shape": "JavaScript if included, standard Error if valid legacy bundle omits asset"
+      },
+      "success_headers": [
+        "Content-Security-Policy: default-src none; script/style/connect self; base/frame/form none",
+        "Referrer-Policy: no-referrer"
+      ],
+      "io_and_execution": "Read verified embedded bytes only; no Store/Job/device/USB. A Web resource route is not a hardware control API.",
+      "receipt": "none",
+      "errors": [
+        "global",
+        "400 invalid_request",
+        "404 not_found (valid legacy bundle)",
+        "500 internal_error (invalid bundle/required asset failure)"
+      ],
+      "source": "internal/httpapi/light.go",
+      "tests": [
+        "internal/httpapi/light_test.go",
+        "internal/webui/embed_test.go"
+      ],
+      "notes": [
+        "Only complete extended profile adds all three Pattern assets and both v2 Pattern contracts; total dist including manifest <=256KiB.",
+        "Host support does not import new dist or install daemon; old complete bundle remains valid and returns404; required files/hash mismatch still500."
+      ]
+    },
+    {
+      "id": "web-demo-patterns-css",
+      "method": "GET",
+      "path": "/demo/patterns.css",
+      "level": "embedded-web",
+      "status": {
+        "daily_1d89": "absent",
+        "development_host_56c4aef": "conditional on verified extended embedded bundle; source56c legacy dist returns404; not installed"
+      },
+      "input": {
+        "body": "none",
+        "query": "none including empty ?"
+      },
+      "output": {
+        "status": [
+          200,
+          404
+        ],
+        "shape": "CSS if included, standard Error if valid legacy bundle omits asset"
+      },
+      "success_headers": [
+        "Content-Security-Policy: default-src none; script/style/connect self; base/frame/form none",
+        "Referrer-Policy: no-referrer"
+      ],
+      "io_and_execution": "Read verified embedded bytes only; no Store/Job/device/USB. A Web resource route is not a hardware control API.",
+      "receipt": "none",
+      "errors": [
+        "global",
+        "400 invalid_request",
+        "404 not_found (valid legacy bundle)",
+        "500 internal_error (invalid bundle/required asset failure)"
+      ],
+      "source": "internal/httpapi/light.go",
+      "tests": [
+        "internal/httpapi/light_test.go",
+        "internal/webui/embed_test.go"
+      ],
+      "notes": [
+        "Only complete extended profile adds all three Pattern assets and both v2 Pattern contracts; total dist including manifest <=256KiB.",
+        "Host support does not import new dist or install daemon; old complete bundle remains valid and returns404; required files/hash mismatch still500."
+      ]
     }
   ],
   "error_groups": {
@@ -1632,5 +1787,27 @@
     "creation": "valid write entering transaction may create directory even if later failure; absent library reads/pure preview do not create",
     "options": "WithPatternDirectoryV2, WithPatternStoreV2; typednil unconfigured, last option wins",
     "configuration_failure": "fresh v2 library operation503; pure preview and accepted receipt/query/cancel remain available"
+  },
+  "web_bundle_profiles": {
+    "host_source": "56c4aef153c560c68845e89ebdaa15bc1323eeb2",
+    "basic": {
+      "public_assets": 6,
+      "manifest_files_including_LICENSE": 7,
+      "api_contracts": 2
+    },
+    "extended": {
+      "public_assets": 9,
+      "manifest_files_including_LICENSE": 10,
+      "api_contracts": 4
+    },
+    "manifest_extra_file": true,
+    "current_bundle_at_host_source": "basic, Web fe32507, no new import",
+    "new_asset_paths": [
+      "/demo/patterns.html",
+      "/demo/patterns.js",
+      "/demo/patterns.css"
+    ],
+    "bundle_budget_bytes": 262144,
+    "no_hardware_capability_added": true
   }
 }

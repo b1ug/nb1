@@ -99,10 +99,10 @@ inventory=json.loads((HERE/'route-inventory.json').read_text())
 shape=lambda key:re.sub(r'\{[^}]+\}','{}',key)
 expected={r['method']+' '+r['path'] for r in inventory['routes']}
 assert {shape(k) for k in set(operations)-set(aliases)}=={shape(k) for k in expected}
-assert len(operations)==45 and len(expected)==41 and len(aliases)==4
+assert len(operations)==48 and len(expected)==44 and len(aliases)==4
 assert not any('/run' in p or '/query' in p or '/state' in p or '/set' in p for p in document['paths'])
 for key,operation in operations.items():
-    assert operation['x-availability']['development']['source_commit']=='f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae'
+    assert operation['x-availability']['development']['source_commit']==('56c4aef153c560c68845e89ebdaa15bc1323eeb2' if key.split(' ',1)[1].startswith('/demo') else 'f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae')
     if key.split(' ',1)[1].startswith('/v2/patterns'):
         assert operation['x-availability']['daily']['status']=='not_implemented'
         assert operation['x-no-execution'] is True
@@ -128,6 +128,22 @@ bad=copy.deepcopy(preview);bad['execution']['kind']='frame_program';check('P6 cr
 # full source/digest consistency belongs to P5/core/client runtime verification.
 bad=copy.deepcopy(preview);bad['execution_digest']='sha256:'+'0'*64
 check('P6 runtime-only digest mismatch','PatternRefPreviewV2',bad,True,'schema shape only; runtime/client must recompute and reject')
+resources=json.loads((HERE/'resource-observations.json').read_text())
+assert resources['host_source']=='56c4aef153c560c68845e89ebdaa15bc1323eeb2'
+assert len(resources['observations'])==3
+for row in resources['observations']:
+    assert row['method']=='GET' and row['path']=='/demo/'+row['asset']
+    asset=WORK/'internal/webui/dist'/row['asset']
+    if row['status']==404:
+        assert not asset.exists() and row['content_type']=='application/json; charset=utf-8'
+        check('conditional legacy resource404 '+row['path'],'Error',row['error'],source='direct actual host Recorder, no service')
+    else:
+        assert row['status']==200 and asset.is_file()
+        assert hashlib.sha256(asset.read_bytes()).hexdigest()==row['body_sha256'] and asset.stat().st_size==row['bytes']
+        assert row['headers']['Referrer-Policy']==['no-referrer'] and len(row['headers']['Content-Security-Policy'])==1
+        results.append(dict(name='conditional extended resource200 '+row['path'],schema='static embedded bytes',accepted=True,expected=True,source='actual Recorder bytes match fixed dist'))
+    op=operations['GET '+row['path']]
+    assert op['x-availability']['development']['status']=='conditional_on_embedded_bundle'
 report={'status':'PASS_OPENAPI_DOCUMENTATION_CHECK','openapi':document['openapi'],'jsonschema':importlib.metadata.version('jsonschema'),
         'paths':len(document['paths']),'operations':len(operations),'canonical_operations':len(expected),'id_alias_operations':aliases,
         'schemas':len(schemas),'local_refs_checked':len(refs),'examples_checked':len(results),'checks':results,

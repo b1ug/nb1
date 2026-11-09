@@ -417,7 +417,7 @@ jq -n --argjson pattern_ref "$ref" '{pattern_ref:$pattern_ref}' |
 
 ## 13. CLI与MCP入口对照
 
-本表既有CLI/MCP入口对应日常基线。日常安装仍是12工具；开发MCP `c37f7fc33d52cc25619b10a5bc477965bf544cc0` 已新增4工具，共16，尚未安装或注册宿主。独立本地CLI作者候选 `eee1eb952f01bab521d5514b74b60a5fa45d6e1d`（本册f8bb运行源码之外，未安装）另提供 `control patterns-v2 get ID`、`control patterns-v2 preview-draft FILE`、`control patterns-v2 save FILE`。它仅daemon模式，保留完整作者来源，save输出原Ref和publication_confirmed/publication_unknown；不播放、不准备票据，无policy/wait。独立CLI执行候选 `4eac5293bbad413e90ff19e6c8700628a1a4a8ee` 另已完成下面四命令；list/导入导出仍在后续片，不与旧 `control patterns` 混用。
+本表既有CLI/MCP入口对应日常基线。日常安装仍是12工具；开发MCP的16工具schema与真实stdio证据固定 `c37f7fc33d52cc25619b10a5bc477965bf544cc0`；另有错误头校验补片 `679bdfc735a2f011c4c1fbf4fabec80f406f8f18`，工具形状不变。两者均未安装或注册宿主，不把c37证据改称679实测。独立本地CLI作者候选 `eee1eb952f01bab521d5514b74b60a5fa45d6e1d`（本册f8bb运行源码之外，未安装）另提供 `control patterns-v2 get ID`、`control patterns-v2 preview-draft FILE`、`control patterns-v2 save FILE`。它仅daemon模式，保留完整作者来源，save输出原Ref和publication_confirmed/publication_unknown；不播放、不准备票据，无policy/wait。独立CLI执行候选 `4eac5293bbad413e90ff19e6c8700628a1a4a8ee` 另已完成下面四命令；list/导入导出仍在后续片，不与旧 `control patterns` 混用。
 
 | 目的 | CLI | MCP |
 | --- | --- | --- |
@@ -504,7 +504,7 @@ nb1 control patterns-v2 cancel "$SERIAL" orbit-red-blue --revision "$REVISION" -
 
 成功run的`structuredContent.kind`为`pattern_job`，`data`是完整`{pattern_ref,execution_digest,job_kind,job}`，外层保留`request_ticket`；接受不等于完成。query为`pattern_request`；cancel为`pattern_cancel`，其data含`pattern_job`（最后可信Envelope）与`cancel_attempted`。取消错误仍保留原票据及最后可信快照；`cancel_attempted`只说明是否尝试过唯一一次POST，不证明已熄灯。坏响应、断连、实例变化和回执过期不能触发换键补播；完整性错误不会被后续看似正确的响应掩盖。
 
-本片current/race各816测试节点通过、3项显式live跳过；真实stdio→P6 HTTP→临时StoreV2→内存fake Engine贯通，未访问USB。独立MCP模块沿用Go1.25下限，不能以root Go1.18兼容性替代。v2列表/读取完整Record/保存/导入导出MCP工具仍未提供；原list_patterns/get_pattern保持v1语义。
+c37片current/race各816测试节点通过、3项显式live跳过；真实stdio→P6 HTTP→临时StoreV2→内存fake Engine贯通，未访问USB。679仅增加Pattern错误响应头检查，独立软件验证另有归档；此处工具快照/stdio证据仍绑定c37。独立MCP模块沿用Go1.25下限，不能以root Go1.18兼容性替代。v2列表/读取完整Record/保存/导入导出MCP工具仍未提供；原list_patterns/get_pattern保持v1语义。
 
 ## 14. 完整HTTP索引与错误
 
@@ -512,6 +512,8 @@ nb1 control patterns-v2 cancel "$SERIAL" orbit-red-blue --revision "$REVISION" -
 
 路径中的`{id}`、`{jobId}`是占位变量名；同一位置表示同一个任务ID，不是两条不同路由。OpenAPI另显式列出GET普通ID为preview/import/preview-ref时的四个路径别名，不代表新增能力。
 
+
+Web宿主准备源码固定 `56c4aef153c560c68845e89ebdaa15bc1323eeb2`，保持两种完整、闭合的产物：基础含6个公开页面资源+LICENSE/2合同，扩展含9个公开页面资源+LICENSE/4合同，manifest均另计，总dist≤256KiB。GET /demo重定向另算一路。因此源码索引增加3个静态路径，不代表新增硬件动作；源码56c当前仍是旧Web fe32507产物，新的三个路径实际404。后续明确import完整新dist后才有200资源，日常daemon没有因此自动升级。详细边界见[Web工作台](web-debugger.zh-CN.md)。
 
 所有路径先经过 loopback Host/同源 Origin，返回 no-store、nosniff；未开放 CORS、公网鉴权或云控端点。下列错误引用同名分组，详见文末。
 
@@ -1251,9 +1253,57 @@ nb1 control patterns-v2 cancel "$SERIAL" orbit-red-blue --revision "$REVISION" -
 
 来源：[internal/httpapi/light.go](../internal/httpapi/light.go)；测试：[light_test.go](../internal/httpapi/light_test.go)。
 
+### GET /demo/patterns.html
+
+**版本：** 日常1d89没有此路径；host源码56c4aef已支持，尚未安装。单独升级host时仍嵌入旧bundle，此资源404。
+
+**输入：** 无body/query（包括空?），只GET。
+
+**成功：** 完整扩展bundle实际嵌入后200静态资源；合法旧bundle没有可选文件时404标准Error。缺必需文件、profile/摘要/锁不符仍500。
+
+**I/O / 执行：** 只读验证过的嵌入字节，不读取外部Web源码，不访问Store或设备，不创建Job；这不是新增硬件功能API。
+
+**票据：** 无。
+
+**成功头：** 原no-store/nosniff、CSP仅self的script/style/connect与no-referrer；Host/Origin保护不变，无CORS。
+
+来源：[light.go](../internal/httpapi/light.go)、[embed.go](../internal/webui/embed.go)；测试：[light_test.go](../internal/httpapi/light_test.go)、[embed_test.go](../internal/webui/embed_test.go)。
+
+### GET /demo/patterns.js
+
+**版本：** 日常1d89没有此路径；host源码56c4aef已支持，尚未安装。单独升级host时仍嵌入旧bundle，此资源404。
+
+**输入：** 无body/query（包括空?），只GET。
+
+**成功：** 完整扩展bundle实际嵌入后200静态资源；合法旧bundle没有可选文件时404标准Error。缺必需文件、profile/摘要/锁不符仍500。
+
+**I/O / 执行：** 只读验证过的嵌入字节，不读取外部Web源码，不访问Store或设备，不创建Job；这不是新增硬件功能API。
+
+**票据：** 无。
+
+**成功头：** 原no-store/nosniff、CSP仅self的script/style/connect与no-referrer；Host/Origin保护不变，无CORS。
+
+来源：[light.go](../internal/httpapi/light.go)、[embed.go](../internal/webui/embed.go)；测试：[light_test.go](../internal/httpapi/light_test.go)、[embed_test.go](../internal/webui/embed_test.go)。
+
+### GET /demo/patterns.css
+
+**版本：** 日常1d89没有此路径；host源码56c4aef已支持，尚未安装。单独升级host时仍嵌入旧bundle，此资源404。
+
+**输入：** 无body/query（包括空?），只GET。
+
+**成功：** 完整扩展bundle实际嵌入后200静态资源；合法旧bundle没有可选文件时404标准Error。缺必需文件、profile/摘要/锁不符仍500。
+
+**I/O / 执行：** 只读验证过的嵌入字节，不读取外部Web源码，不访问Store或设备，不创建Job；这不是新增硬件功能API。
+
+**票据：** 无。
+
+**成功头：** 原no-store/nosniff、CSP仅self的script/style/connect与no-referrer；Host/Origin保护不变，无CORS。
+
+来源：[light.go](../internal/httpapi/light.go)、[embed.go](../internal/webui/embed.go)；测试：[light_test.go](../internal/httpapi/light_test.go)、[embed_test.go](../internal/webui/embed_test.go)。
+
 ## 开发版 Pattern v2 的额外限制
 
-相对日常1d89，开发 f8bb267 新增9个规范method/path：P3的5个作者/存储操作与P6的4个固定引用预览/执行/查停操作。总库存41个规范操作；OpenAPI 为避免静态路径掩盖普通ID GET另列4个别名，共45个operation/40个path。这不是45套独立能力。
+相对日常1d89，P6 f8bb267与Web host56c4aef组合源码新增12个规范method/path：P3的5个作者/存储操作与P6的4个固定引用预览/执行/查停操作；另有3个条件Web资源。总库存44个规范操作（含3个条件Web资源）；OpenAPI 为避免静态路径掩盖普通ID GET另列4个别名，共48个operation/43个path。这不是45套独立能力。
 
 server 默认独立懒选 v2 库，Go handler 仍可不配库。纯作者preview零Store；引用preview需要Resolve来源；submit只在新key探库；query/cancel零Store/config。默认路径、flag/env、创建边界见第12节。P4/P5/P6已完成源码接线，未安装到日常daemon；新v2客户端能力仍按独立版本判断；CLI执行候选4e、作者eee和MCP16见第13节，均不等于日常已安装。
 
@@ -1340,7 +1390,7 @@ server 默认独立懒选 v2 库，Go handler 仍可不配库。纯作者preview
 - Strict JSON decoders reject unknown/duplicate/null/trailing fields; newer Action/Frame/Pattern codec additionally preserves nested numeric/Unicode grammar. Do not generalize every newest codec guarantee to all legacy routes.
 - New Light/Frame/Color/Pattern routes reject query including empty ? where code checks ForceQuery; several old root/job routes do not uniformly reject query/body. Prefer documented canonical paths; this inventory does not claim missing guards are implemented.
 - GET state is cached and may be stale while frame runs; latest sampled_at is evidence. Desired target, successful Job, readback and optical capture are different facts.
-- OpenAPI覆盖本册41个规范操作与4个GET别名；JSONSchema不能证明原始词法、来源SHA或实际设备效果。
+- OpenAPI覆盖本册44个规范操作（3个静态资源有bundle条件）与4个GET别名；JSONSchema不能证明原始词法、来源SHA或实际设备效果。
 
 本册依据固定源码、隔离软件测试、实际纯编译/Recorder样例与结构schema校验；未操作日常daemon、USB、摄像头或安装。完整结构化库存见 [low-http-inventory.json](api-http-inventory.json)，固定请求例子见 [low-http-examples.json](api-low-examples.json)。本稿不替代完整 SDK 签名；legacy CLI/SDK 可继续参考 [设备backend说明](../internal/devicebackend/README.md) 与 [SDK设备命令](https://github.com/b1ug/blink1-go/blob/b3f2586cc73073a7a0432889ea14a18c13247f46/device_cmd.go)。
 

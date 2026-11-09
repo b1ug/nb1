@@ -3060,14 +3060,14 @@
             "status": "implemented"
           },
           "development": {
-            "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
+            "source_commit": "56c4aef153c560c68845e89ebdaa15bc1323eeb2",
             "status": "implemented"
           },
           "deployment": "daily_source_available",
           "hardware_qualification": "not_established_by_openapi"
         },
         "x-no-request-body": true,
-        "description": "No query/body. Host/Origin guard applies; no USB action from GET. /demo/index.html is not registered.",
+        "description": "No query/body. Host/Origin guard applies; no USB action from GET. /demo/index.html is not registered. Development host source56c supports two closed bundle profiles; existing paths remain, but static payload depends on the fixed embedded dist, not external frontend files.",
         "responses": {
           "403": {
             "$ref": "#/components/responses/403"
@@ -3097,7 +3097,8 @@
           "source": "internal/httpapi/light.go",
           "tests": [
             "internal/httpapi/light_test.go"
-          ]
+          ],
+          "bundle_validator_source": "internal/webui/embed.go"
         }
       }
     },
@@ -3114,14 +3115,14 @@
             "status": "implemented"
           },
           "development": {
-            "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
+            "source_commit": "56c4aef153c560c68845e89ebdaa15bc1323eeb2",
             "status": "implemented"
           },
           "deployment": "daily_source_available",
           "hardware_qualification": "not_established_by_openapi"
         },
         "x-no-request-body": true,
-        "description": "No query/body. Host/Origin guard applies; no USB action from GET. /demo/index.html is not registered.",
+        "description": "No query/body. Host/Origin guard applies; no USB action from GET. /demo/index.html is not registered. Development host source56c supports two closed bundle profiles; existing paths remain, but static payload depends on the fixed embedded dist, not external frontend files.",
         "responses": {
           "403": {
             "$ref": "#/components/responses/403"
@@ -3163,7 +3164,8 @@
           "source": "internal/httpapi/light.go",
           "tests": [
             "internal/httpapi/light_test.go"
-          ]
+          ],
+          "bundle_validator_source": "internal/webui/embed.go"
         }
       }
     },
@@ -3180,14 +3182,14 @@
             "status": "implemented"
           },
           "development": {
-            "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
+            "source_commit": "56c4aef153c560c68845e89ebdaa15bc1323eeb2",
             "status": "implemented"
           },
           "deployment": "daily_source_available",
           "hardware_qualification": "not_established_by_openapi"
         },
         "x-no-request-body": true,
-        "description": "No query/body. Host/Origin guard applies; no USB action from GET. /demo/index.html is not registered.",
+        "description": "No query/body. Host/Origin guard applies; no USB action from GET. /demo/index.html is not registered. Development host source56c supports two closed bundle profiles; existing paths remain, but static payload depends on the fixed embedded dist, not external frontend files.",
         "responses": {
           "403": {
             "$ref": "#/components/responses/403"
@@ -3229,7 +3231,8 @@
           "source": "internal/httpapi/light.go",
           "tests": [
             "internal/httpapi/light_test.go"
-          ]
+          ],
+          "bundle_validator_source": "internal/webui/embed.go"
         }
       }
     },
@@ -3246,14 +3249,14 @@
             "status": "implemented"
           },
           "development": {
-            "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
+            "source_commit": "56c4aef153c560c68845e89ebdaa15bc1323eeb2",
             "status": "implemented"
           },
           "deployment": "daily_source_available",
           "hardware_qualification": "not_established_by_openapi"
         },
         "x-no-request-body": true,
-        "description": "No query/body. Host/Origin guard applies; no USB action from GET. /demo/index.html is not registered.",
+        "description": "No query/body. Host/Origin guard applies; no USB action from GET. /demo/index.html is not registered. Development host source56c supports two closed bundle profiles; existing paths remain, but static payload depends on the fixed embedded dist, not external frontend files.",
         "responses": {
           "403": {
             "$ref": "#/components/responses/403"
@@ -3295,7 +3298,8 @@
           "source": "internal/httpapi/light.go",
           "tests": [
             "internal/httpapi/light_test.go"
-          ]
+          ],
+          "bundle_validator_source": "internal/webui/embed.go"
         }
       }
     },
@@ -3312,14 +3316,14 @@
             "status": "implemented"
           },
           "development": {
-            "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
+            "source_commit": "56c4aef153c560c68845e89ebdaa15bc1323eeb2",
             "status": "implemented"
           },
           "deployment": "daily_source_available",
           "hardware_qualification": "not_established_by_openapi"
         },
         "x-no-request-body": true,
-        "description": "No query/body. Host/Origin guard applies; no USB action from GET. /demo/index.html is not registered.",
+        "description": "No query/body. Host/Origin guard applies; no USB action from GET. /demo/index.html is not registered. Development host source56c supports two closed bundle profiles; existing paths remain, but static payload depends on the fixed embedded dist, not external frontend files.",
         "responses": {
           "403": {
             "$ref": "#/components/responses/403"
@@ -3361,7 +3365,8 @@
           "source": "internal/httpapi/light.go",
           "tests": [
             "internal/httpapi/light_test.go"
-          ]
+          ],
+          "bundle_validator_source": "internal/webui/embed.go"
         }
       }
     },
@@ -3378,14 +3383,14 @@
             "status": "implemented"
           },
           "development": {
-            "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
+            "source_commit": "56c4aef153c560c68845e89ebdaa15bc1323eeb2",
             "status": "implemented"
           },
           "deployment": "daily_source_available",
           "hardware_qualification": "not_established_by_openapi"
         },
         "x-no-request-body": true,
-        "description": "No query/body. Host/Origin guard applies; no USB action from GET. /demo/index.html is not registered.",
+        "description": "No query/body. Host/Origin guard applies; no USB action from GET. /demo/index.html is not registered. Development host source56c supports two closed bundle profiles; existing paths remain, but static payload depends on the fixed embedded dist, not external frontend files.",
         "responses": {
           "403": {
             "$ref": "#/components/responses/403"
@@ -3427,7 +3432,8 @@
           "source": "internal/httpapi/light.go",
           "tests": [
             "internal/httpapi/light_test.go"
-          ]
+          ],
+          "bundle_validator_source": "internal/webui/embed.go"
         }
       }
     },
@@ -3444,14 +3450,14 @@
             "status": "implemented"
           },
           "development": {
-            "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
+            "source_commit": "56c4aef153c560c68845e89ebdaa15bc1323eeb2",
             "status": "implemented"
           },
           "deployment": "daily_source_available",
           "hardware_qualification": "not_established_by_openapi"
         },
         "x-no-request-body": true,
-        "description": "No query/body. Host/Origin guard applies; no USB action from GET. /demo/index.html is not registered.",
+        "description": "No query/body. Host/Origin guard applies; no USB action from GET. /demo/index.html is not registered. Development host source56c supports two closed bundle profiles; existing paths remain, but static payload depends on the fixed embedded dist, not external frontend files.",
         "responses": {
           "403": {
             "$ref": "#/components/responses/403"
@@ -3493,7 +3499,8 @@
           "source": "internal/httpapi/light.go",
           "tests": [
             "internal/httpapi/light_test.go"
-          ]
+          ],
+          "bundle_validator_source": "internal/webui/embed.go"
         }
       }
     },
@@ -4278,6 +4285,246 @@
         "x-max-body-bytes": 4096,
         "x-max-json-depth": 64,
         "description": "保持原Ref/票据/实例，query/cancel与accepted replay不依赖Store。取消202可仍cancelling/terminal；终态hold不补关灯。新Pattern支持replace/queue/reject，不改变旧light/raw Frame仅reject限制。"
+      }
+    },
+    "/demo/patterns.html": {
+      "get": {
+        "operationId": "debugger_demo_patterns_html",
+        "tags": [
+          "debugger-assets"
+        ],
+        "summary": "条件嵌入的高级Pattern调试资源",
+        "x-availability": {
+          "daily": {
+            "source_commit": "1d89eae92278f24a68fff1a34e3c1e696a962c3c",
+            "status": "not_implemented"
+          },
+          "development": {
+            "source_commit": "56c4aef153c560c68845e89ebdaa15bc1323eeb2",
+            "status": "conditional_on_embedded_bundle"
+          },
+          "deployment": "development_host_not_installed_new_dist_not_imported_at_source56c",
+          "hardware_qualification": "not_established_by_openapi"
+        },
+        "x-no-request-body": true,
+        "description": "GET-only同源嵌入资源，无query/body，无Store/Job/USB。合法旧bundle不包含此可选资源时404；完整扩展bundle实际嵌入后才200。单升级host不构成Web导入、安装或新硬件功能。缺必需资源/摘要失配仍500。/demo/index.html未注册；LICENSE/manifest无新增公开route。",
+        "responses": {
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "405": {
+            "$ref": "#/components/responses/405"
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          },
+          "200": {
+            "description": "Only if the verified complete extended bundle actually contains this asset; source56c alone still embeds the legacy bundle.",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "headers": {
+              "Content-Security-Policy": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Referrer-Policy": {
+                "schema": {
+                  "const": "no-referrer"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "x-api-level": "embedded-web",
+        "x-source-evidence": {
+          "source": "internal/httpapi/light.go",
+          "tests": [
+            "internal/httpapi/light_test.go",
+            "internal/webui/embed_test.go",
+            "tools/test_import_web_dist.py"
+          ],
+          "bundle_validator_source": "internal/webui/embed.go"
+        },
+        "x-bundle-condition": {
+          "profiles": "old:6 public page assets+LICENSE,2 API contracts; extended:9 public page assets+LICENSE,4 contracts; manifest additional",
+          "host_source": "56c4aef153c560c68845e89ebdaa15bc1323eeb2",
+          "embedded_source_at_host_commit": "fe32507cd80de36f3e9050036fbe1a469170d342",
+          "observed_at_host_source": "valid legacy bundle =>404 for this optional resource;200 only when a verified complete extended bundle is embedded",
+          "validation_failure": "missing required file, hash/lock/profile mismatch =>500, never concealed as404",
+          "total_dist_limit_bytes": 262144
+        }
+      }
+    },
+    "/demo/patterns.js": {
+      "get": {
+        "operationId": "debugger_demo_patterns_js",
+        "tags": [
+          "debugger-assets"
+        ],
+        "summary": "条件嵌入的高级Pattern调试资源",
+        "x-availability": {
+          "daily": {
+            "source_commit": "1d89eae92278f24a68fff1a34e3c1e696a962c3c",
+            "status": "not_implemented"
+          },
+          "development": {
+            "source_commit": "56c4aef153c560c68845e89ebdaa15bc1323eeb2",
+            "status": "conditional_on_embedded_bundle"
+          },
+          "deployment": "development_host_not_installed_new_dist_not_imported_at_source56c",
+          "hardware_qualification": "not_established_by_openapi"
+        },
+        "x-no-request-body": true,
+        "description": "GET-only同源嵌入资源，无query/body，无Store/Job/USB。合法旧bundle不包含此可选资源时404；完整扩展bundle实际嵌入后才200。单升级host不构成Web导入、安装或新硬件功能。缺必需资源/摘要失配仍500。/demo/index.html未注册；LICENSE/manifest无新增公开route。",
+        "responses": {
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "405": {
+            "$ref": "#/components/responses/405"
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          },
+          "200": {
+            "description": "Only if the verified complete extended bundle actually contains this asset; source56c alone still embeds the legacy bundle.",
+            "content": {
+              "text/javascript": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "headers": {
+              "Content-Security-Policy": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Referrer-Policy": {
+                "schema": {
+                  "const": "no-referrer"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "x-api-level": "embedded-web",
+        "x-source-evidence": {
+          "source": "internal/httpapi/light.go",
+          "tests": [
+            "internal/httpapi/light_test.go",
+            "internal/webui/embed_test.go",
+            "tools/test_import_web_dist.py"
+          ],
+          "bundle_validator_source": "internal/webui/embed.go"
+        },
+        "x-bundle-condition": {
+          "profiles": "old:6 public page assets+LICENSE,2 API contracts; extended:9 public page assets+LICENSE,4 contracts; manifest additional",
+          "host_source": "56c4aef153c560c68845e89ebdaa15bc1323eeb2",
+          "embedded_source_at_host_commit": "fe32507cd80de36f3e9050036fbe1a469170d342",
+          "observed_at_host_source": "valid legacy bundle =>404 for this optional resource;200 only when a verified complete extended bundle is embedded",
+          "validation_failure": "missing required file, hash/lock/profile mismatch =>500, never concealed as404",
+          "total_dist_limit_bytes": 262144
+        }
+      }
+    },
+    "/demo/patterns.css": {
+      "get": {
+        "operationId": "debugger_demo_patterns_css",
+        "tags": [
+          "debugger-assets"
+        ],
+        "summary": "条件嵌入的高级Pattern调试资源",
+        "x-availability": {
+          "daily": {
+            "source_commit": "1d89eae92278f24a68fff1a34e3c1e696a962c3c",
+            "status": "not_implemented"
+          },
+          "development": {
+            "source_commit": "56c4aef153c560c68845e89ebdaa15bc1323eeb2",
+            "status": "conditional_on_embedded_bundle"
+          },
+          "deployment": "development_host_not_installed_new_dist_not_imported_at_source56c",
+          "hardware_qualification": "not_established_by_openapi"
+        },
+        "x-no-request-body": true,
+        "description": "GET-only同源嵌入资源，无query/body，无Store/Job/USB。合法旧bundle不包含此可选资源时404；完整扩展bundle实际嵌入后才200。单升级host不构成Web导入、安装或新硬件功能。缺必需资源/摘要失配仍500。/demo/index.html未注册；LICENSE/manifest无新增公开route。",
+        "responses": {
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "405": {
+            "$ref": "#/components/responses/405"
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          },
+          "200": {
+            "description": "Only if the verified complete extended bundle actually contains this asset; source56c alone still embeds the legacy bundle.",
+            "content": {
+              "text/css": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "headers": {
+              "Content-Security-Policy": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Referrer-Policy": {
+                "schema": {
+                  "const": "no-referrer"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "x-api-level": "embedded-web",
+        "x-source-evidence": {
+          "source": "internal/httpapi/light.go",
+          "tests": [
+            "internal/httpapi/light_test.go",
+            "internal/webui/embed_test.go",
+            "tools/test_import_web_dist.py"
+          ],
+          "bundle_validator_source": "internal/webui/embed.go"
+        },
+        "x-bundle-condition": {
+          "profiles": "old:6 public page assets+LICENSE,2 API contracts; extended:9 public page assets+LICENSE,4 contracts; manifest additional",
+          "host_source": "56c4aef153c560c68845e89ebdaa15bc1323eeb2",
+          "embedded_source_at_host_commit": "fe32507cd80de36f3e9050036fbe1a469170d342",
+          "observed_at_host_source": "valid legacy bundle =>404 for this optional resource;200 only when a verified complete extended bundle is embedded",
+          "validation_failure": "missing required file, hash/lock/profile mismatch =>500, never concealed as404",
+          "total_dist_limit_bytes": 262144
+        }
       }
     }
   },
@@ -9467,20 +9714,24 @@
     "limits": [
       "No new USB/MK3/visual qualification",
       "JSON Schema does not verify canonical SHA/source compilation, lexical JSON or aggregate hardware timing",
-      "No daily daemon install or live service probe; new Pattern CLI/MCP/Web client integration is separate"
-    ]
+      "No daily daemon install or live service probe; new Pattern CLI/MCP/Web client integration is separate",
+      "Three new static Pattern resources are bundle-conditional; source56c keeps old dist, no daily installation or new USB API"
+    ],
+    "web_host_source": "56c4aef153c560c68845e89ebdaa15bc1323eeb2"
   },
   "x-specification-source": "https://spec.openapis.org/oas/v3.2.1.html",
   "x-source-baselines": {
     "daily": "1d89eae92278f24a68fff1a34e3c1e696a962c3c",
     "development": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
-    "inventory": "docs/api-http-inventory.json"
+    "inventory": "docs/api-http-inventory.json",
+    "web_host": "56c4aef153c560c68845e89ebdaa15bc1323eeb2",
+    "web_bundle_at_host_source": "fe32507cd80de36f3e9050036fbe1a469170d342"
   },
   "x-not-implemented": [
     "generic high sequence/compose/spin",
     "USB raw report/flash upload HTTP endpoints",
     "separate HTTP /state or /set routes",
-    "Pattern v2 Web host integration and CLI list/import/export are separate; independent execution CLI and MCP candidates are not installed"
+    "Pattern Web extended dist import/daily installation and CLI list/import/export remain separate; host code supports both profiles but source56c retains basic bundle"
   ],
   "x-runtime-validation": {
     "raw_json": [
@@ -9521,6 +9772,9 @@
       ],
       "scope": "daemon-only; effective defaultreject with explicit three policies; one execution POST, original receipt wait/recovery; cancel GET then at most one bound POST; no library preflight/history fallback"
     },
-    "mcp_installed_tools": 12
+    "mcp_installed_tools": 12,
+    "mcp_implementation_source": "679bdfc735a2f011c4c1fbf4fabec80f406f8f18",
+    "mcp_schema_stdio_evidence_source": "c37f7fc33d52cc25619b10a5bc477965bf544cc0",
+    "mcp_error_header_patch": "Rejects contradictory success metadata in Pattern error responses; tools schema shape unchanged; do not relabel c37 actual stdio evidence as679"
   }
 }

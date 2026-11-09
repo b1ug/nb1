@@ -1,6 +1,6 @@
 # API 文档样例与离线校验
 
-`docs/openapi.json` 保持 OpenAPI3.2.1 / JSON Schema2020-12，覆盖源码库存的41个method+canonical path；另加4个显式GET别名，使操作名`import`/`preview`/`preview-ref`仍能作为普通图案ID，避免OpenAPI静态path优先级掩盖模板GET。因此实际文档是40个path /45个operation /111个schema；别名用`x-alias-of`标识，不是新增能力。
+`docs/openapi.json` 保持 OpenAPI3.2.1 / JSON Schema2020-12，覆盖源码库存的44个method+canonical path（其中3个是bundle条件静态资源）；另加4个显式GET别名，使操作名`import`/`preview`/`preview-ref`仍能作为普通图案ID，避免OpenAPI静态path优先级掩盖模板GET。因此实际文档是43个path /48个operation /111个schema；别名用`x-alias-of`标识，不是新增能力。
 
 来源固定为日常源码`1d89eae92278f24a68fff1a34e3c1e696a962c3c`与开发源码`f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae`。每个操作的`x-availability`和`x-api-level`区分已存在接口、未安装开发接口与显式Store依赖。此处是源码/文档证据，不是新daemon探测、安装或硬件验收。
 
@@ -11,7 +11,7 @@
 
 - `generate.go` 从实际纯编译器产生八动作、4/8 Orbit、FrameProgram等输入/规范化结果；还通过`httpapi.New(nil)`和`httptest.NewRecorder`获取实际preview/capability响应。P6 引用预览额外使用纯 P1 生成的真实已验证 Record 与内存 exact Resolve；不创建Engine、文件Store、监听器、准入票据或真实Job。
 - `actual-samples.json` 有52项：原38项继续保留（32纯codec、5无Service handler、1合成FrameJob），增加8个P6身份/请求、4个无Service内存记录handler预览、2个合成Pattern Envelope。所有合成Job/Envelope只验证wire字段，不冒充接收、票据或执行结果。
-- `route-inventory.json` 是本次只读库存的冻结副本，检查器以method和路径模板形状核对41个canonical操作；`{id}`与既有`{jobId}`命名差异不改变URI语义。
+- `route-inventory.json` 是本次只读库存的冻结副本，检查器以method和路径模板形状核对44个canonical操作；`{id}`与既有`{jobId}`命名差异不改变URI语义。
 - P3请求/响应直接读取仓库原有`internal/httpapi/testdata/pattern-v2`，不由文档schema反向生成golden。
 
 ## 复现
@@ -34,4 +34,6 @@ python3 docs/contract-fixtures/check_openapi.py --report /tmp/nb1-openapi-check.
 
 合法未知source/recipe的已存记录使用Read schema；新导入使用Known/Write schema且仍需runtime完整验证。Store会排序并规范化合法导入输入；输入本身不必预先排序/逐字节canonical，存储与导出输出才要求精确canonical。
 
-P6 的POST原始报文限4096字节，Ref/票据均闭合ASCII；query四标量必须唯一，不接受body/空分隔段。schema只能描述结构/拼写，不能证明无重复键、请求窗口、Ref与完整来源、Envelope与实际回执一致。动态pattern_execution只报告service+resolver接线，不调用Store，也不保证库健康或设备执行。检查器包含四种合法接线状态及反例、P6请求缺失/越权字段、union错配与runtime-only摘要差异；当前离线结构检查115项。
+P6 的POST原始报文限4096字节，Ref/票据均闭合ASCII；query四标量必须唯一，不接受body/空分隔段。schema只能描述结构/拼写，不能证明无重复键、请求窗口、Ref与完整来源、Envelope与实际回执一致。动态pattern_execution只报告service+resolver接线，不调用Store，也不保证库健康或设备执行。检查器包含四种合法接线状态及反例、P6请求缺失/越权字段、union错配与runtime-only摘要差异；当前离线检查118项（含3个实际host条件资源观察）。
+
+Web host源码56c4aef支持两种完整bundle，但该源码仍固定旧Web fe32507产物；新增/demo/patterns.html/js/css各自404，只有明确import完整扩展dist才200。静态路由+3不增加硬件动作API，也不意味着日常已升级。generate.go额外写resource-observations.json：直接无Service Recorder探三路径，旧bundle验证标准404，新bundle时比对嵌入文件字节/安全headers；不创建listener/设备。工具schema和真实stdio证据仍绑定MCP c37，错误头补片679只作实现注记，不改写证据来源。

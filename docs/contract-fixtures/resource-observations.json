@@ -1,0 +1,84 @@
+{
+  "host_source": "56c4aef153c560c68845e89ebdaa15bc1323eeb2",
+  "observations": [
+    {
+      "asset": "patterns.html",
+      "body_sha256": "bc0979347d3224318130bc528f9e108a045bb0c6573fbaa6db1a367fdb9ae10a",
+      "bytes": 87,
+      "content_type": "application/json; charset=utf-8",
+      "error": {
+        "error": {
+          "code": "not_found",
+          "message": "demo resource is not included in this build"
+        }
+      },
+      "headers": {
+        "Cache-Control": [
+          "no-store"
+        ],
+        "Content-Type": [
+          "application/json; charset=utf-8"
+        ],
+        "X-Content-Type-Options": [
+          "nosniff"
+        ]
+      },
+      "method": "GET",
+      "path": "/demo/patterns.html",
+      "status": 404
+    },
+    {
+      "asset": "patterns.js",
+      "body_sha256": "bc0979347d3224318130bc528f9e108a045bb0c6573fbaa6db1a367fdb9ae10a",
+      "bytes": 87,
+      "content_type": "application/json; charset=utf-8",
+      "error": {
+        "error": {
+          "code": "not_found",
+          "message": "demo resource is not included in this build"
+        }
+      },
+      "headers": {
+        "Cache-Control": [
+          "no-store"
+        ],
+        "Content-Type": [
+          "application/json; charset=utf-8"
+        ],
+        "X-Content-Type-Options": [
+          "nosniff"
+        ]
+      },
+      "method": "GET",
+      "path": "/demo/patterns.js",
+      "status": 404
+    },
+    {
+      "asset": "patterns.css",
+      "body_sha256": "bc0979347d3224318130bc528f9e108a045bb0c6573fbaa6db1a367fdb9ae10a",
+      "bytes": 87,
+      "content_type": "application/json; charset=utf-8",
+      "error": {
+        "error": {
+          "code": "not_found",
+          "message": "demo resource is not included in this build"
+        }
+      },
+      "headers": {
+        "Cache-Control": [
+          "no-store"
+        ],
+        "Content-Type": [
+          "application/json; charset=utf-8"
+        ],
+        "X-Content-Type-Options": [
+          "nosniff"
+        ]
+      },
+      "method": "GET",
+      "path": "/demo/patterns.css",
+      "status": 404
+    }
+  ],
+  "scope": "direct Recorder, no service/Store/listener/device; status conditional on this binary embedded bundle"
+}

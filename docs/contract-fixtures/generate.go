@@ -7,6 +7,7 @@ package main
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -300,7 +301,46 @@ func generate() error {
 	if err := os.WriteFile(path, append(output, '\n'), 0644); err != nil {
 		return err
 	}
-	fmt.Printf("generated %d samples (38 prior + 14 P6; all Job/envelope snapshots explicitly synthetic) at %s\n", len(samples), path)
+	// Probe conditional static resources independently of JSON model samples.
+	// This works with either complete embedded profile: old bundle =>404,
+	// extended bundle =>200 bytes. Neither probe creates a job or listener.
+	resourceHandler := httpapi.New(nil)
+	var observations []map[string]interface{}
+	for _, asset := range []struct{ Path, File, Media string }{{"/demo/patterns.html", "patterns.html", "text/html; charset=utf-8"}, {"/demo/patterns.js", "patterns.js", "text/javascript; charset=utf-8"}, {"/demo/patterns.css", "patterns.css", "text/css; charset=utf-8"}} {
+		request := httptest.NewRequest(http.MethodGet, "http://127.0.0.1"+asset.Path, nil)
+		w := httptest.NewRecorder()
+		resourceHandler.ServeHTTP(w, request)
+		if w.Code != http.StatusOK && w.Code != http.StatusNotFound {
+			return fmt.Errorf("conditional Web probe %s returned%d: %s", asset.Path, w.Code, w.Body.String())
+		}
+		if w.Header().Get("Cache-Control") != "no-store" || w.Header().Get("X-Content-Type-Options") != "nosniff" {
+			return fmt.Errorf("conditional Web probe lost common headers")
+		}
+		for _, key := range []string{"Location", "X-NB1-Replayed", "X-NB1-Daemon-Instance-ID"} {
+			if len(w.Header().Values(key)) != 0 {
+				return fmt.Errorf("conditional Web probe has receipt metadata")
+			}
+		}
+		row := map[string]interface{}{"method": "GET", "path": asset.Path, "asset": asset.File, "status": w.Code, "content_type": w.Header().Get("Content-Type"), "bytes": w.Body.Len(), "body_sha256": fmt.Sprintf("%x", sha256.Sum256(w.Body.Bytes())), "headers": w.Header()}
+		if w.Code == http.StatusNotFound {
+			var problem httpapi.ErrorResponse
+			if err := json.Unmarshal(w.Body.Bytes(), &problem); err != nil || problem.Error.Code != "not_found" {
+				return fmt.Errorf("conditional Web404 is not standard Error")
+			}
+			row["error"] = problem
+		} else if w.Header().Get("Content-Type") != asset.Media || w.Header().Get("Content-Security-Policy") == "" || w.Header().Get("Referrer-Policy") != "no-referrer" {
+			return fmt.Errorf("conditional Web200 has invalid security/media headers")
+		}
+		observations = append(observations, row)
+	}
+	probeOutput, err := json.MarshalIndent(map[string]interface{}{"host_source": "56c4aef153c560c68845e89ebdaa15bc1323eeb2", "scope": "direct Recorder, no service/Store/listener/device; status conditional on this binary embedded bundle", "observations": observations}, "", "  ")
+	if err != nil {
+		return err
+	}
+	if err = os.WriteFile(filepath.Join(filepath.Dir(file), "resource-observations.json"), append(probeOutput, '\n'), 0644); err != nil {
+		return err
+	}
+	fmt.Printf("generated %d samples and3 conditional static observations at %s\n", len(samples), path)
 	return nil
 }
 

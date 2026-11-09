@@ -1,6 +1,6 @@
 # Windows 当前进程 token 原生 fixture
 
-当前状态：**实现与软件/静态验证，Windows 原生 NOT_RUN**。本工具只为隔离 GitHub Windows VM 提供两个 token 身份用例，不管理Task Scheduler、服务、USB、设备或机器安全策略。不得在开发机器执行 `-Execute`。
+当前状态：**run42564396412两ABI普通/管理员token用例原生PASS，整体FAIL_CLEANUP；本次owner兼容修复原生重跑NOT_RUN**。本工具只为隔离 GitHub Windows VM 提供两个 token 身份用例，不管理Task Scheduler、服务、USB、设备或机器安全策略。不得在开发机器执行 `-Execute`。
 
 需先整合 `taskuser.Current` 与 `TestNativeCurrentOptIn`（token守卫提交3f5d63d，显式opt-in fixture提交6ea176b，以及原生DWORD查询修复6331d4a），再由独立分支 `validation/windows-token-native` 触发 `.github/workflows/windows-token-native.yml`。该workflow不修改既有runtime-native矩阵，不代表当前Mac常驻版本已升级或Windows任务管理已完成。
 
@@ -29,8 +29,10 @@ run42562610395中账户创建/marker/SID归属及全部清理通过，groups阶�
 
 仅新建的fixture目录使用私有ACL：host精确SID与SYSTEM有FullControl，fresh SID只对binary目录ReadAndExecute、对私有tmp有Modify。文件/目录记录NTFS FileID、内容hash、owner和SDDL；遇reparse、替换、ACL变化、未知子文件或部分发布就保留并报清理失败。没有宽泛 `Remove-Item -Recurse`。
 
-清理顺序固定：所有私有children确实退出→重核fresh账户SID/marker→核全部fixture快照→按SID读取ProfileList及Win32_UserProfile、核OS返回profile根路径、owner必须为fresh SID、FileID/无reparse并等待Loaded=false→`DeleteProfileW(SID,NULL,NULL)`→删除精确已核的fixture文件和空目录→再重核SID/marker并删除该账户→验证account/profile/fixture缺失。profile内部交由OS的精确SID profile API处理，不自行递归遍历/删除或强卸载hive；任何已观察到的路径替换/reparse/未知映射均FAIL_CLEANUP保留，绝不猜路径扩权删除。profile根owner=fresh SID是此fixture的严格前提，尚未用Windows原生证据证明默认总成立；不满足即保留FAIL_CLEANUP，不能借软件fake称默认owner已实测。账户与profile的OS检查不是针对同一UID或管理员故意并发替换的原子事务。
+清理顺序固定：所有私有children确实退出→重核fresh账户SID/marker→核全部fixture快照→按SID读取ProfileList及Win32_UserProfile、核OS返回profile根路径、限定owner归属依据、FileID/无reparse并等待Loaded=false→`DeleteProfileW(SID,NULL,NULL)`→删除精确已核的fixture文件和空目录→再重核SID/marker并删除该账户→验证account/profile/fixture缺失。profile内部交由OS的精确SID profile API处理，不自行递归遍历/删除或强卸载hive；任何已观察到的路径替换/reparse/未知映射均FAIL_CLEANUP保留，绝不猜路径扩权删除。run42564396412两ABI观察到profile根owner实际为BUILTIN Administrators SID544；不能把owner==freshSID假设当OS保证。全部owner都须证明下列本次创建归属链，再仅接受freshSID或这个已实测的544 owner：账户创建成功+marker/SID归属、登录前profile注册表/CIM/路径都不存在、普通native完整PASS、HKLM/CIM精确freshSID与随机预期路径一致。根DACL另须freshSID有有效FullControl、无根deny及其他SID写权限（SYSTEM/Administrators/host管理员除外；仅继承到children的CREATOR OWNER可接受）。预存profile、partial创建、普通native未通过、未知start均不授权profile删除；首次看到合法映射的根就绑定FileID/owner/SDDL和原始安全描述符hash，此后改变即拒绝；未观察的SYSTEM或未知owner仍拒绝。不修改系统owner、ACL或profile内容来满足验收；新DACL兼容条件需独立原生重跑。账户与profile的OS检查不是针对同一UID或管理员故意并发替换的原子事务。
 
 workflow token仅contents:read、checkout不持久化凭据，不声明secrets；admin权限只用于本次fresh账户、最小Users组、私有fixture ACL与准确清理。主用例失败、原生collection失败、native报告缺失、句柄持续增长、环境不满足、任何清理失败都红。精选artifact只含构建source/二进制hash、纯fake报告、两个native精选JSON、固定Go test错误行和cleanup结果，不上传密码、环境值、完整groups、profile内容或二进制。
 
 依据：[ProcessStartInfo.Password](https://learn.microsoft.com/en-us/dotnet/api/system.diagnostics.processstartinfo.password?view=netframework-4.8.1)、[EnvironmentVariables](https://learn.microsoft.com/en-us/dotnet/api/system.diagnostics.processstartinfo.environmentvariables?view=netframework-4.8.1)、[CreateProcessWithLogonW](https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-createprocesswithlogonw)、[DeleteProfileW](https://learn.microsoft.com/en-us/windows/win32/api/userenv/nf-userenv-deleteprofilew)。这些API资料和软件fake/交叉编译都不替代Windows原生运行证据。普通用户、filtered/Entra token、任务权限与真实Task Scheduler生命周期仍应分别记录实际验收。
+
+profile DACL原始证据由OPEN_REPARSE_POINT句柄上的GetSecurityInfo读取，仅申请READ_CONTROL/READ_ATTRIBUTES及owner/group/DACL，不申请SACL或写ACL/owner权限。返回buffer限制64KiB，LocalFree和SafeHandle统一释放。RawSecurityDescriptor/RawAcl逐ACE检查，拒绝missing/NULL/空DACL、object/callback/opaque/audit/未知ACE和未建模flags/rights，不通过GetAccessRules投影来忽略未知语义。精选结果仅保存原始描述符SHA256和访问判定摘要，不上传完整ACL。

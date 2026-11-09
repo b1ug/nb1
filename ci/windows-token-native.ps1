@@ -111,6 +111,9 @@ namespace Nb1TokenFixture {
   static extern SafeFileHandle CreateFileW(string path,uint access,uint share,IntPtr security,uint creation,uint flags,IntPtr template);
   [DllImport("kernel32.dll", CharSet=CharSet.Unicode, SetLastError=true)] static extern bool CreateDirectoryW(string path,IntPtr security);
   [DllImport("kernel32.dll", SetLastError=true)] static extern bool GetFileInformationByHandle(SafeFileHandle handle,out Info info);
+  [DllImport("advapi32.dll")] static extern uint GetSecurityInfo(SafeFileHandle handle,int type,uint information,out IntPtr owner,out IntPtr group,out IntPtr dacl,out IntPtr sacl,out IntPtr descriptor);
+  [DllImport("advapi32.dll")] static extern uint GetSecurityDescriptorLength(IntPtr descriptor);
+  [DllImport("kernel32.dll")] static extern IntPtr LocalFree(IntPtr memory);
   [DllImport("userenv.dll", CharSet=CharSet.Unicode, SetLastError=true)] static extern bool GetProfilesDirectoryW(StringBuilder path,ref uint size);
   [DllImport("userenv.dll", CharSet=CharSet.Unicode, SetLastError=true)] static extern bool DeleteProfileW(string sid,string path,string computer);
   [DllImport("netapi32.dll", CharSet=CharSet.Unicode)] static extern int NetUserGetLocalGroups(string server,string user,uint level,uint flags,out IntPtr buffer,uint preferred,out uint read,out uint total);
@@ -130,6 +133,19 @@ namespace Nb1TokenFixture {
     if(handle.IsInvalid) throw new Win32Exception(Marshal.GetLastWin32Error(),"fixture metadata open failed");
     Info value; if(!GetFileInformationByHandle(handle,out value)) throw new Win32Exception(Marshal.GetLastWin32Error(),"fixture metadata query failed");
     return new string[]{value.Volume.ToString("x8")+":"+value.IndexHigh.ToString("x8")+value.IndexLow.ToString("x8"),value.Attributes.ToString(),(((ulong)value.SizeHigh<<32)|value.SizeLow).ToString(),value.Write.dwHighDateTime.ToString()+":"+value.Write.dwLowDateTime.ToString()};
+   }
+  }
+  public static byte[] SecurityDescriptor(string path) {
+   using(SafeFileHandle handle=CreateFileW(path,0x20080,7,IntPtr.Zero,3,0x02200000,IntPtr.Zero)) {
+    if(handle.IsInvalid) throw new Win32Exception(Marshal.GetLastWin32Error(),"profile raw security open failed");
+    IntPtr owner,group,dacl,sacl,descriptor=IntPtr.Zero;
+    try {
+     uint result=GetSecurityInfo(handle,1,7,out owner,out group,out dacl,out sacl,out descriptor);
+     if(result!=0) throw new Win32Exception((int)result,"profile raw security query failed");
+     uint length=GetSecurityDescriptorLength(descriptor);
+     if(length<20 || length>65536) throw new InvalidOperationException("profile raw security size is unknown");
+     byte[] bytes=new byte[length]; Marshal.Copy(descriptor,bytes,0,(int)length); return bytes;
+    } finally { if(descriptor!=IntPtr.Zero && LocalFree(descriptor)!=IntPtr.Zero) throw new InvalidOperationException("profile raw security release failed"); }
    }
   }
   public static string ProfilesRoot() {
@@ -212,6 +228,7 @@ function Get-Nb1Snapshot([string]$Path, [switch]$Directory) {
 
 function Assert-Nb1Same($Expected, $Actual, [switch]$IdentityOnly) {
     $fields = @('path','id','attributes','owner','sddl')
+    if ($Expected.Contains('raw_security_sha256')) { $fields += 'raw_security_sha256' }
     if (-not $IdentityOnly) { $fields += @('length','write','sha256') }
     foreach ($key in $fields) { if ($Expected[$key] -cne $Actual[$key]) { throw 'fixture identity/content/ACL changed; preserve it' } }
 }
@@ -229,6 +246,33 @@ function New-Nb1FixtureIdentity {
     $value = [ordered]@{ Name = ('nb1tok-' + [Guid]::NewGuid().ToString('N').Substring(0, 12)); Marker = ('nb1-token-' + [Guid]::NewGuid().ToString('N')) }
     Assert-Nb1FixtureIdentity $value.Name $value.Marker
     return $value
+}
+
+function Get-Nb1ProfileAccessFacts($Rules, [string]$SID, [string]$HostSID) {
+    $facts = [ordered]@{ fresh_sid_full_control = $false; unexpected_root_write = $false; root_deny = $false }
+    foreach ($rule in $Rules) {
+        if (([long]$rule.rights -band 0x500d0156) -ne 0 -and $rule.allow -and $rule.sid -cnotin @($SID, $HostSID, 'S-1-5-18', 'S-1-5-32-544') -and -not ($rule.inherit_only -and $rule.sid -ceq 'S-1-3-0')) { $facts.unexpected_root_write = $true }
+        if ($rule.inherit_only) { continue }
+        if (-not $rule.allow) { $facts.root_deny = $true; continue }
+        if ($rule.sid -ceq $SID -and ([long]$rule.rights -band 0x1f01ff) -eq 0x1f01ff) { $facts.fresh_sid_full_control = $true }
+    }
+    return $facts
+}
+
+function Convert-Nb1ProfileAce($Ace) {
+    if ($Ace.kind -cne 'CommonAce' -or $Ace.callback -or $Ace.opaque -ne 0 -or $Ace.type -notin @(0,1) -or ([long]$Ace.flags -band (-bnot 0x1f)) -ne 0 -or $Ace.rights -lt 0 -or $Ace.rights -gt 0xffffffffL -or ([long]$Ace.rights -band (-bnot 0xf01f01ffL)) -ne 0) { throw 'unknown profile DACL ACE semantics' }
+    return [ordered]@{ sid = $Ace.sid; allow = ($Ace.type -eq 0); rights = [long]$Ace.rights; inherit_only = (($Ace.flags -band 8) -ne 0) }
+}
+
+function Assert-Nb1RawDacl([bool]$Present, $Dacl) {
+    if (-not $Present -or $null -eq $Dacl -or $Dacl.Count -eq 0 -or $Dacl.Count -gt 64) { throw 'profile raw DACL is missing or unknown' }
+}
+
+function Assert-Nb1ProfileOwner($State, $Snapshot, $Access) {
+    if (-not $State.CreationReturned -or -not $State.CreationVerified -or -not $State.ProfileAbsentBeforeLogon -or -not $State.OrdinaryNativePassed -or -not $State.ProfileObservation.mapping_matches -or -not $Access.fresh_sid_full_control -or $Access.unexpected_root_write -or $Access.root_deny) { throw 'fresh profile provenance/access is not established' }
+    if ($Snapshot.owner -ceq $State.SID) { return 'fresh-sid' }
+    if ($Snapshot.owner -cne 'S-1-5-32-544') { throw 'fresh profile owner is not established' }
+    return 'builtin-administrators-with-provenance-and-dacl'
 }
 
 function Set-Nb1PrivateDirectory([string]$Path, [string]$HostSID, [string]$UserSID, [Security.AccessControl.FileSystemRights]$UserRights) {
@@ -264,7 +308,26 @@ function Get-Nb1Profile($State) {
         $snapshot = Get-Nb1Snapshot $path -Directory
         $State.ProfileObservation.root_owner = $snapshot.owner
         $State.ProfileObservation.root_id = $snapshot.id
-        if ($snapshot.owner -cne $State.SID) { throw 'fresh profile root owner differs from the created SID' }
+        [byte[]]$raw = [Nb1TokenFixture.Native]::SecurityDescriptor($path)
+        Assert-Nb1Same $snapshot (Get-Nb1Snapshot $path -Directory) -IdentityOnly
+        $hash = [Security.Cryptography.SHA256]::Create()
+        try { $snapshot['raw_security_sha256'] = ([BitConverter]::ToString($hash.ComputeHash($raw))).Replace('-', '').ToLowerInvariant() } finally { $hash.Dispose() }
+        $State.ProfileObservation['raw_security_sha256'] = $snapshot.raw_security_sha256
+        if ($null -eq $State.ProfileSnapshot) { $State.ProfileSnapshot = $snapshot }
+        Assert-Nb1Same $State.ProfileSnapshot $snapshot -IdentityOnly
+        $security = [Security.AccessControl.RawSecurityDescriptor]::new($raw, 0)
+        if ($security.Owner.Value -cne $snapshot.owner) { throw 'profile raw owner is unknown' }
+        Assert-Nb1RawDacl (($security.ControlFlags -band [Security.AccessControl.ControlFlags]::DiscretionaryAclPresent) -ne 0) $security.DiscretionaryAcl
+        $rules = @()
+        foreach ($ace in $security.DiscretionaryAcl) {
+            if ($ace -isnot [Security.AccessControl.CommonAce]) { throw 'unknown profile DACL ACE type' }
+            $rules += Convert-Nb1ProfileAce @{ kind = 'CommonAce'; callback = $ace.IsCallback; opaque = $ace.OpaqueLength; type = [int]$ace.AceType; flags = [int]$ace.AceFlags; rights = ([long]$ace.AccessMask -band 0xffffffffL); sid = $ace.SecurityIdentifier.Value }
+        }
+        $access = Get-Nb1ProfileAccessFacts $rules $State.SID $State.HostSID
+        $State.ProfileObservation['access'] = $access
+        $State.ProfileObservation['absent_before_logon'] = [bool]$State.ProfileAbsentBeforeLogon
+        $State.ProfileObservation['ordinary_native_passed'] = [bool]$State.OrdinaryNativePassed
+        $State.ProfileObservation['owner_basis'] = Assert-Nb1ProfileOwner $State $snapshot $access
         return [ordered]@{ path = $path; loaded = [bool]$profile[0].Loaded; snapshot = $snapshot }
     } finally {
         if ($null -ne $key) { $key.Dispose() }
@@ -410,7 +473,10 @@ function New-Nb1NativeOps {
             param($s,$r)
             Assert-Nb1Same $s.StagedSnapshot (Get-Nb1Snapshot $s.StagedBinary)
             if ($null -ne (Get-Nb1Profile $s)) { throw 'new user already has a profile before fixture logon' }
+            if ([Nb1TokenFixture.Native]::ExistsNoFollow($s.ExpectedProfile)) { throw 'unmapped profile path exists before fixture logon' }
+            $s.ProfileAbsentBeforeLogon = $true
             Invoke-Nb1NativeCase $s $r 'ordinary' $s.SID $s.StagedBinary $s.TempDir $s.Password
+            $s.OrdinaryNativePassed = $true
             $profile = Get-Nb1Profile $s
             if ($null -eq $profile) { throw 'new user profile mapping was not established' }
             $s.ProfileSnapshot = $profile.snapshot
@@ -488,7 +554,7 @@ $markerBytes = [Text.Encoding]::UTF8.GetBytes($marker)
 $sha = [Security.Cryptography.SHA256]::Create()
 try { $markerHash = ([BitConverter]::ToString($sha.ComputeHash($markerBytes))).Replace('-', '').ToLowerInvariant() } finally { $sha.Dispose() }
 $stageRoot = Join-Path ([Environment]::GetFolderPath('CommonApplicationData')) ('nb1-token-ci-' + $name)
-$state = @{ Name = $name; Marker = $marker; MarkerHash = $markerHash; SID = $null; HostSID = $null; Binary = [IO.Path]::GetFullPath($Binary); StageRoot = $stageRoot; BinDir = (Join-Path $stageRoot 'bin'); TempDir = (Join-Path $stageRoot 'tmp'); StagedBinary = (Join-Path $stageRoot 'bin\taskuser-native.test.exe'); Password = $null; Children = (New-Object Collections.ArrayList); CreationAttempted = $false; CreationVerified = $false; CreationReturned = $false; ChildrenExited = $false; StageVerified = $false; ProfileSnapshot = $null }
+$state = @{ Name = $name; Marker = $marker; MarkerHash = $markerHash; SID = $null; HostSID = $null; Binary = [IO.Path]::GetFullPath($Binary); StageRoot = $stageRoot; BinDir = (Join-Path $stageRoot 'bin'); TempDir = (Join-Path $stageRoot 'tmp'); StagedBinary = (Join-Path $stageRoot 'bin\taskuser-native.test.exe'); Password = $null; Children = (New-Object Collections.ArrayList); CreationAttempted = $false; CreationVerified = $false; CreationReturned = $false; ChildrenExited = $false; StageVerified = $false; ProfileSnapshot = $null; ProfileAbsentBeforeLogon = $false; OrdinaryNativePassed = $false }
 try { $report = Invoke-Nb1TokenLifecycle $state $report (New-Nb1NativeOps) }
 finally { if ($null -ne $state.Password) { $state.Password.Dispose() } }
 $encoded = $report | ConvertTo-Json -Depth 16

@@ -329,6 +329,78 @@ foreach ($groupCase in $groupCases) {
     } catch { $results += @{ case = ('local-group-' + $groupCase); status = 'FAIL'; error = $_.Exception.Message } }
 }
 
+$profileCases = @('fresh-owner', 'admin-owner-proven', 'unknown-owner', 'system-owner-unobserved', 'preexisting-profile', 'native-not-passed', 'unverified-creation', 'mapping-mismatch', 'fresh-readonly', 'unknown-write', 'unknown-generic-write', 'root-deny', 'inherit-only-owner', 'fresh-owner-preexisting', 'fresh-owner-native-failed', 'fresh-owner-partial-create', 'fresh-owner-unsafe-acl')
+foreach ($profileCase in $profileCases) {
+    try {
+        $sid = 'S-1-5-21-11-22-33-1001'
+        $state = @{ SID = $sid; HostSID = 'S-1-5-21-11-22-33-500'; CreationReturned = $true; CreationVerified = $true; ProfileAbsentBeforeLogon = $true; OrdinaryNativePassed = $true; ProfileObservation = @{ mapping_matches = $true } }
+        $snapshot = @{ owner = 'S-1-5-32-544' }
+        $rules = @(@{ sid = $sid; allow = $true; rights = 0x1f01ff; inherit_only = $false })
+        if ($profileCase -eq 'fresh-owner') { $snapshot.owner = $sid }
+        if ($profileCase.StartsWith('fresh-owner-', [StringComparison]::Ordinal)) { $snapshot.owner = $sid }
+        if ($profileCase -eq 'fresh-owner-preexisting') { $state.ProfileAbsentBeforeLogon = $false }
+        if ($profileCase -eq 'fresh-owner-native-failed') { $state.OrdinaryNativePassed = $false }
+        if ($profileCase -eq 'fresh-owner-partial-create') { $state.CreationReturned = $false }
+        if ($profileCase -eq 'fresh-owner-unsafe-acl') { $rules += @{ sid = 'S-1-5-32-545'; allow = $true; rights = 2; inherit_only = $false } }
+        if ($profileCase -eq 'unknown-owner') { $snapshot.owner = 'S-1-5-21-11-22-33-1002' }
+        if ($profileCase -eq 'system-owner-unobserved') { $snapshot.owner = 'S-1-5-18' }
+        if ($profileCase -eq 'preexisting-profile') { $state.ProfileAbsentBeforeLogon = $false }
+        if ($profileCase -eq 'native-not-passed') { $state.OrdinaryNativePassed = $false }
+        if ($profileCase -eq 'unverified-creation') { $state.CreationVerified = $false }
+        if ($profileCase -eq 'mapping-mismatch') { $state.ProfileObservation.mapping_matches = $false }
+        if ($profileCase -eq 'fresh-readonly') { $rules[0].rights = 0x1200a9 }
+        if ($profileCase -eq 'unknown-write') { $rules += @{ sid = 'S-1-5-32-545'; allow = $true; rights = 2; inherit_only = $false } }
+        if ($profileCase -eq 'unknown-generic-write') { $rules += @{ sid = 'S-1-5-32-545'; allow = $true; rights = 0x40000000; inherit_only = $true } }
+        if ($profileCase -eq 'root-deny') { $rules += @{ sid = $sid; allow = $false; rights = 1; inherit_only = $false } }
+        if ($profileCase -eq 'inherit-only-owner') { $rules += @{ sid = 'S-1-3-0'; allow = $true; rights = 0x1f01ff; inherit_only = $true } }
+        $access = Get-Nb1ProfileAccessFacts $rules $sid $state.HostSID
+        $rejected = $false
+        try { $basis = Assert-Nb1ProfileOwner $state $snapshot $access } catch { $rejected = $true }
+        Assert-Nb1Fake ($rejected -eq ($profileCase -notin @('fresh-owner','admin-owner-proven','inherit-only-owner'))) 'profile owner compatibility must require exact provenance and safe DACL'
+        $results += @{ case = ('profile-owner-' + $profileCase); status = 'PASS'; rejected = $rejected; scope = 'Injected profile metadata/ACE facts only' }
+    } catch { $results += @{ case = ('profile-owner-' + $profileCase); status = 'FAIL'; error = $_.Exception.Message } }
+}
+
+$aceCases = @('allowed-common', 'denied-common', 'object-ace', 'callback-ace', 'opaque-ace', 'audit-ace', 'unknown-flags', 'unknown-rights', 'negative-rights', 'overlong-rights')
+foreach ($aceCase in $aceCases) {
+    try {
+        $ace = @{ kind = 'CommonAce'; callback = $false; opaque = 0; type = 0; flags = 3; rights = 0x1f01ff; sid = 'S-1-5-21-11-22-33-1001' }
+        if ($aceCase -eq 'denied-common') { $ace.type = 1 }
+        if ($aceCase -eq 'object-ace') { $ace.kind = 'ObjectAce' }
+        if ($aceCase -eq 'callback-ace') { $ace.callback = $true }
+        if ($aceCase -eq 'opaque-ace') { $ace.opaque = 4 }
+        if ($aceCase -eq 'audit-ace') { $ace.type = 2 }
+        if ($aceCase -eq 'unknown-flags') { $ace.flags = 32 }
+        if ($aceCase -eq 'unknown-rights') { $ace.rights = 0x02000000 }
+        if ($aceCase -eq 'negative-rights') { $ace.rights = -1 }
+        if ($aceCase -eq 'overlong-rights') { $ace.rights = 0x100000000L }
+        $rejected = $false
+        try { $normalized = Convert-Nb1ProfileAce $ace } catch { $rejected = $true }
+        Assert-Nb1Fake ($rejected -eq ($aceCase -notin @('allowed-common','denied-common'))) 'unknown raw ACE semantics must never be projected away'
+        $results += @{ case = ('raw-ace-' + $aceCase); status = 'PASS'; rejected = $rejected; scope = 'Injected raw ACE facts only' }
+    } catch { $results += @{ case = ('raw-ace-' + $aceCase); status = 'FAIL'; error = $_.Exception.Message } }
+}
+$daclCases = @('present', 'absent', 'null', 'empty', 'overlong')
+foreach ($daclCase in $daclCases) {
+    $present = $true; $dacl = @(1)
+    if ($daclCase -eq 'absent') { $present = $false }
+    if ($daclCase -eq 'null') { $dacl = $null }
+    if ($daclCase -eq 'empty') { $dacl = @() }
+    if ($daclCase -eq 'overlong') { $dacl = @(1..65) }
+    $rejected = $false
+    try { Assert-Nb1RawDacl $present $dacl } catch { $rejected = $true }
+    $results += @{ case = ('raw-dacl-' + $daclCase); status = $(if ($rejected -eq ($daclCase -ne 'present')) { 'PASS' } else { 'FAIL' }); scope = 'Injected DACL header only' }
+}
+$snapshotCases = @('unchanged', 'path', 'id', 'attributes', 'owner', 'sddl', 'raw_security_sha256')
+foreach ($snapshotCase in $snapshotCases) {
+    $expected = @{ path = 'C:\fixture'; id = 'file-id-1'; attributes = '16'; owner = 'fresh'; sddl = 'same-acl'; raw_security_sha256 = 'same-raw-hash' }
+    $actual = $expected.Clone()
+    if ($snapshotCase -ne 'unchanged') { $actual[$snapshotCase] = 'changed-value' }
+    $rejected = $false
+    try { Assert-Nb1Same $expected $actual -IdentityOnly } catch { $rejected = $true }
+    $results += @{ case = ('snapshot-' + $snapshotCase); status = $(if ($rejected -eq ($snapshotCase -ne 'unchanged')) { 'PASS' } else { 'FAIL' }); scope = 'Injected filesystem metadata only' }
+}
+
 $failed = @($results | Where-Object { $_.status -ne 'PASS' })
 $summary = [ordered]@{
     schema_version = 1
@@ -340,6 +412,10 @@ $summary = [ordered]@{
     path_case_count = $pathCases.Count
     identity_case_count = $identityCases.Count + 1
     local_group_case_count = $groupCases.Count
+    profile_owner_case_count = $profileCases.Count
+    raw_ace_case_count = $aceCases.Count
+    raw_dacl_case_count = $daclCases.Count
+    snapshot_case_count = $snapshotCases.Count
     passed = $results.Count - $failed.Count
     failed = $failed.Count
     results = $results

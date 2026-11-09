@@ -67,6 +67,18 @@ func newControlCommand() *cobra.Command {
 		}
 		requestFlag := cmd.Flags().Changed("request-id")
 		instanceFlag := cmd.Flags().Changed("expected-daemon-instance-id")
+		if isLightCommand(cmd) && cmd.Name() == "cancel" {
+			if options.mode != "daemon" {
+				return fmt.Errorf("light cancel requires --mode daemon; it never opens USB")
+			}
+			if !requestFlag || !instanceFlag || options.requestID == "" || options.expectedInstance == "" {
+				return fmt.Errorf("light cancel requires nonempty --request-id and --expected-daemon-instance-id")
+			}
+			if cmd.Flags().Changed("policy") {
+				return fmt.Errorf("light cancel does not accept --policy")
+			}
+			return nil
+		}
 		if options.mode == "direct" && (requestFlag || instanceFlag || cmd.Name() == "prepare" || cmd.Name() == "request") {
 			return fmt.Errorf("request receipts belong to the daemon; direct mode cannot prepare, query or submit a request binding")
 		}

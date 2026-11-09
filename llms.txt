@@ -16,6 +16,8 @@ MCP 播放前用 list_devices({prepare_request:true}) 取得并保存原票据�
 
 CLI 默认 daemon：control light preview FILE / run SERIAL FILE；direct 预览纯本地，direct run 复用同一 Engine 和设备锁。v2 daemon 恢复使用 control light request SERIAL FILE --request-id ID --expected-daemon-instance-id INSTANCE，可加 --job-id 和 --wait；只查询，不创建或重播任务。
 
+v2 取消使用 control light cancel SERIAL FILE 加同一对原票据，可选 --job-id / --wait，仅 daemon。先核对原动作与回执，再至多一次带原实例条件的取消 POST 和原回执确认；已终态/取消中不再发 POST。不重试，cancelling 不代表清理已完成；已完成的 hold 任务不会因此熄灯。
+
 ## 读取资料
 
 - [Agent 使用指南](docs/agent-guide.zh-CN.md)：高级动作、MCP/CLI 工作流、恢复及验证边界。

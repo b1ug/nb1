@@ -113,6 +113,18 @@ nb1 control light request "$SELECTED_SERIAL" orbit.action.json \
 
 已确认 Job ID 时可加 `--job-id "$JOB_ID"`。FILE 必须仍是原 v2 Action；命令只 GET 原回执，不 prepare、播放、取消或改用历史查询。run --wait 与 request --wait 会固定已确认的身份、创建/开始时间，拒绝程序变化、进度回退和状态倒退；错误时保留原票据与最后可信 Job。取消需明确操作已知任务，不能把等待超时当成取消。
 
+需要取消这份 v2 请求时，CLI 同样用原 Action 文件和原票据绑定目标，不必手写 HTTP 请求：
+
+```sh
+nb1 control light cancel "$SELECTED_SERIAL" orbit.action.json \
+  --request-id "$REQUEST_ID" \
+  --expected-daemon-instance-id "$DAEMON_INSTANCE_ID" --wait
+```
+
+可选 `--job-id "$JOB_ID"` 进一步绑定已确认的 ID；没有 ID 时先从原回执解析。该命令仅 daemon 模式，先 GET 核对原动作及 Job，再至多一次带原 daemon 实例条件的取消 POST；服务端校验实例后才取消，随后通过原回执确认。`cancel_attempted` 仅表示尝试了取消请求；`already_terminal` 表示此前已终态、没有再发取消 POST。已取消中的任务也只查询。坏响应或超时保留原票据和最后可信 Job，不重试、不换键；`--wait` 后续只查原回执。明确的传输/服务故障可据此恢复，身份、程序或进度错误不会被后续“正常”响应覆盖。`cancel_error` 保留首次取消错误，`cancel_confirmed` 仅表示可信终态为 cancelled；自然完成的 succeeded 不等于取消成功。
+
+取消可能先返回 cancelling；等 cancelled 才代表执行器确认清理，清理失败则是 failed。任务若已成功并 hold，取消不会清除保留颜色；需要熄灯时另发经过授权的 off 动作。原 `control cancel ID` 的旧 Program 行为保持不变。
+
 ## 已存 Pattern
 
 现有库继续保存 v1 Program/Effect；全部 `control patterns` 命令仅 daemon 模式。import 不亮灯，export 不覆盖已有文件或自动建父目录。命令细节见[Pattern CLI 合同](patterns-cli.md)。

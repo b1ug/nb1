@@ -25,6 +25,10 @@ type frameSubmitRequest struct {
 	ExpectedDaemonInstanceID string          `json:"expected_daemon_instance_id"`
 }
 
+type frameCancelRequest struct {
+	ExpectedDaemonInstanceID *string `json:"expected_daemon_instance_id,omitempty"`
+}
+
 type framePreviewDevice struct {
 	Serial     string `json:"serial"`
 	Connection string `json:"connection"`
@@ -99,19 +103,34 @@ func (h *handler) serveFrames(w http.ResponseWriter, r *http.Request) bool {
 		if !method(w, r, want) || !lightNoQuery(w, r) {
 			return true
 		}
+		var cancelInput frameCancelRequest
 		if want == http.MethodGet {
 			if !frameNoBody(w, r) {
 				return true
 			}
 		} else if r.ContentLength != 0 || len(r.TransferEncoding) != 0 {
-			var empty struct{}
-			if !decodeJSON(w, r, &empty) {
+			if !decodeJSON(w, r, &cancelInput) {
 				return true
 			}
 		}
 		service, ok := h.frameService(w)
 		if !ok {
 			return true
+		}
+		boundInstance := ""
+		if want == http.MethodPost && cancelInput.ExpectedDaemonInstanceID != nil {
+			expected := *cancelInput.ExpectedDaemonInstanceID
+			if !validFrameCancelInstance(expected) {
+				writeError(w, http.StatusBadRequest, "invalid_request", "expected_daemon_instance_id must identify a daemon instance")
+				return true
+			}
+			// The handler retains this same service; Engine's instance identity
+			// is immutable for its lifetime. Check before any cancellation call.
+			boundInstance = service.Instance().DaemonInstanceID
+			if boundInstance != expected {
+				serviceError(w, control.ErrInstanceChanged)
+				return true
+			}
 		}
 		var job control.FrameJob
 		var err error
@@ -126,10 +145,25 @@ func (h *handler) serveFrames(w http.ResponseWriter, r *http.Request) bool {
 			serviceError(w, err)
 			return true
 		}
+		if boundInstance != "" {
+			w.Header().Set("X-NB1-Daemon-Instance-ID", boundInstance)
+		}
 		writeJSON(w, code, job)
 		return true
 	}
 	return false
+}
+
+func validFrameCancelInstance(value string) bool {
+	if len(value) != 39 || !strings.HasPrefix(value, "daemon_") {
+		return false
+	}
+	for _, c := range value[7:] {
+		if !(c >= '0' && c <= '9' || c >= 'a' && c <= 'f') {
+			return false
+		}
+	}
+	return true
 }
 
 func (h *handler) previewFrames(w http.ResponseWriter, r *http.Request) {

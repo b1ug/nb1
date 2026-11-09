@@ -213,7 +213,9 @@ func (c *Client) LookupLightV2Request(ctx context.Context, serial string, data [
 		}
 	}
 	if err == nil {
-		err = validateLightV2Job(job, serial, expected.Result, jobID)
+		if validationErr := validateLightV2Job(job, serial, expected.Result, jobID); validationErr != nil {
+			err = lightDecodeError(http.StatusOK, validationErr.Error())
+		}
 	}
 	if err != nil {
 		return control.FrameJob{}, &ReceiptError{Err: err, Receipt: receipt, OutcomeUnknown: true}

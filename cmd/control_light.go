@@ -119,6 +119,7 @@ func newControlLightCommand(options *controlFlags) *cobra.Command {
 	run.Long = "Run accepts a strict contract/action file. Its effective policy is always reject, independent of the legacy commands' replace default; an explicit non-reject policy is refused. Daemon mode prepares one complete request ticket if none was supplied, submits once, and prints the ticket even when an outcome is unknown. --wait polls that original receipt and never cancels or resubmits on timeout. Direct mode waits within this process and reuses the existing ownership and shutdown cleanup."
 	parent.AddCommand(run)
 	parent.AddCommand(newLightV2RequestCommand(options))
+	parent.AddCommand(newLightV2CancelCommand(options))
 	return parent
 }
 

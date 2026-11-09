@@ -35,6 +35,8 @@ CLI 按文件中的明确合同分派。`control light preview FILE` 支持纯 `
 
 v2 daemon 丢失接受响应时，用 `control light request SERIAL FILE --request-id ... --expected-daemon-instance-id ...` 查询原票据；可选 `--job-id` 和 `--wait`。该命令只 GET，不 prepare、播放或取消；保留原 Action 文件，不能改参数后声称在恢复同一次请求。具体例子见[Agent 指南](../../docs/agent-guide.zh-CN.md)。
 
+明确要取消 v2 任务时，用 `control light cancel SERIAL FILE` 加同一对原票据，可选 `--job-id` / `--wait`；仅 daemon 模式。它先核对原动作和回执，再至多发送一次带原实例条件的取消 POST，并查询原回执确认；不重试。已经终态或取消中的任务不再发 POST。`cancelling` 还不是清理完成，取消已完成的 hold 任务也不会熄灯。`--wait` 可仅用原回执 GET 恢复传输不确定；身份/进度错误不会被遮盖，原错误留在 cancel_error。
+
 ## 已存图案
 
 - `list_patterns` 只返回摘要；`get_pattern({id})` 返回完整冻结记录。library.path 仅供展示，不能据此读取本地文件。

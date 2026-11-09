@@ -35,6 +35,7 @@ GOWORK=off go build -o ../../../bin/nb1-mcp .
 | `run_light` | 必填 serial、contract、action 及完整原票据。policy 可省略但只允许 reject。先一次只读目标预览，再至多一次执行 POST。 |
 | `get_job` | 原 `{id}`，或互斥的 `{serial,request_id,expected_daemon_instance_id}`。后者只查询原回执，不提交任务；任务历史与回执均有界且不跨 daemon 重启保存。 |
 | `cancel_job` | `id`。请求取消；可能返回 `cancelling`，此时还不能认为硬件已停止。 |
+| `list_patterns` | 仅空对象 `{}`；一次 `GET /v1/patterns`，返回 `pattern_list`、`accepted:false` 和库信息/有界摘要；不读本机路径、不准备票据、不播放。 |
 
 输入仅接受声明的字段。`color` 为原始 `#RRGGBB`，不隐式应用 Gamma；`led` 为0（全部）、1或2。原始 `program` 的 `fade_ms` 在0–600000之间且必须是10的倍数；`hold_ms` 在0–3600000之间。程序有1–1024步，repeat为0或省略时运行一次，最大10000次；每步的淡入、保持及10ms固件更新余量计入24小时名义上限，原生 I/O 仍有额外开销。`on_finish` 默认为 `off`，也可指定 `hold`。能力与实际支持型号以 daemon 结果为准，不据协议模拟声称 mk3 已经实测。
 
@@ -68,9 +69,21 @@ GOWORK=off go build -o ../../../bin/nb1-mcp .
 
 本增量仅在独立模块的官方 SDK 内存/stdio和本地 HTTP fixture 验证。工具是否已安装仍以实际 tools/list 为准，MCP进程不接管设备，模块不导入nb1核心或USB库。
 
+## Pattern 只读目录候选
+
+本轮仅增加 `list_patterns`，由原十工具变为十一工具；不是安装或推广声明。首先通过宿主的 `tools/list` 发现实际工具。`preview_program` / `run_program` 的原 Program/Effect 输入保持不变，本轮未把 `pattern_ref` 扩展到 MCP 执行入口。
+
+`list_patterns({})` 只接受空对象，省略 arguments 按 MCP 规则视为空对象。`id`、`path`、`limit`、`serial`、请求票据或任何其他字段都会在 HTTP 前拒绝。它只向已配置的 loopback daemon 发送一次 `GET /v1/patterns`，没有请求体、查询参数或后备路径；不访问设备、创建 Job、导入图案、改写文件、申请权限或自动重试。
+
+成功返回 `kind:"pattern_list"`、`accepted:false`，data 保留服务端的 `schema_version:1`、`contract:"nb1-pattern-library/v1"`、`library` 和按 ASCII ID 排序的 `patterns` 摘要。library 必须为 ready/create-only、最多128条/1MiB，并声明现有记录与编译契约；绝对路径仅供显示，适配器不打开它。记录摘要验证 ID/标题/revision 形状、顺序唯一性、结束行为、能力与有限时间/步骤范围，但没有原始 Record 或 Program，所以不能重新计算 revision、验证来源展开或授予执行许可。
+
+Pattern 沿用旧 Program 的限制：最多1024个定义步骤、repeat最多10000，总执行步数可能超过1024，但须满足每步至少10ms和总名义24小时限制。不要把新 light Action 的总执行步数1024上限套到旧保存内容。`source.effect.pulse` 仍是原对称呼吸，新 Action pulse 的语义没有迁移进 Pattern。
+
+成功及失败响应都要求唯一 JSON Content-Type、有效UTF-8和无损Unicode转义，拒绝重复/未知字段、null、缺失字段、非整数或越界数据。服务不存在、未启用、损坏、busy或503保持明确错误，不伪装为空列表，不生成未知Job。服务合法返回 ready 和 `patterns:[]` 才代表空库（底层尚未创建目录也可以是合法空库）。
+
 ## 可读颜色输入候选
 
-颜色增量保留原七工具形状，构成此前八工具集合；本开发候选再添加 `preview_light` / `run_light`，共十工具。实际安装版本必须先用 tools/list 确认，不据此宣称已推广。运行时先 tools/list；新daemon路由 `POST /v1/colors/resolve`，请求仅 `{"color":...}`，无serial/policy/ticket。
+颜色增量保留原七工具形状，构成此前八工具集合；此前候选再添加 `preview_light` / `run_light`，成为十工具；本轮另增加只读 `list_patterns`，共十一工具。实际安装版本必须先用 tools/list 确认，不据此宣称已推广。运行时先 tools/list；新daemon路由 `POST /v1/colors/resolve`，请求仅 `{"color":...}`，无serial/policy/ticket。
 
 ```json
 {"color":"lime"}

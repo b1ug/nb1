@@ -26,6 +26,10 @@
     },
     {
       "name": "jobs"
+    },
+    {
+      "name": "patterns",
+      "description": "daemon本机create-only库；固定revision复用，不自动重播"
     }
   ],
   "paths": {
@@ -152,7 +156,7 @@
           "jobs"
         ],
         "summary": "提交精确程序或有限高层效果",
-        "description": "job不随HTTP连接结束而取消。无自动USB回退、无Flash/设备模式写入。可选二元组启用同实例有限去重；首次与重放均202并返回原Job当前状态，失败/取消任务不重执行。无键调用保留每次新任务行为。 program/effect互斥，steady/pulse先编译到普通Program再走同一队列、回执与清理；返回Job.program展开结果。",
+        "description": "job不随HTTP连接结束而取消。无自动USB回退、无Flash/设备模式写入。可选二元组启用同实例有限去重；首次与重放均202并返回原Job当前状态，失败/取消任务不重执行。无键调用保留每次新任务行为。 program/effect互斥，steady/pulse先编译到普通Program再走同一队列、回执与清理；返回Job.program展开结果。 新pattern_ref分支仅reject和完整原票据，解析冻结Program后进入相同执行器。引用失效不代表原票据没有执行；请查询原回执，不换票据补发。",
         "x-max-body-bytes": 1048576,
         "requestBody": {
           "required": true,
@@ -542,7 +546,7 @@
       "post": {
         "operationId": "previewProgram",
         "summary": "权威软件编译预览，不执行设备操作",
-        "description": "无查询参数。严格JSON，与提交共用编译器；可选serial只读已配置设备快照。不是Job提交、不返回202、不创建票据、不改变设备占用或灯光。旧daemon不支持时客户端明确报告，不能回退USB或把MCP结构dry_run当编译。",
+        "description": "无查询参数。严格JSON，与提交共用编译器；可选serial只读已配置设备快照。不是Job提交、不返回202、不创建票据、不改变设备占用或灯光。旧daemon不支持时客户端明确报告，不能回退USB或把MCP结构dry_run当编译。 新增固定pattern_ref；不同响应类型见200；旧program/effect分支不变。",
         "requestBody": {
           "required": true,
           "content": {
@@ -567,7 +571,14 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PreviewResult"
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/PreviewResult"
+                    },
+                    {
+                      "$ref": "#/components/schemas/PatternPreview"
+                    }
+                  ]
                 }
               }
             }
@@ -589,6 +600,15 @@
           },
           "503": {
             "$ref": "#/components/responses/503"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "501": {
+            "$ref": "#/components/responses/501"
           }
         }
       }
@@ -850,6 +870,193 @@
           }
         }
       }
+    },
+    "/v1/patterns": {
+      "get": {
+        "tags": [
+          "patterns"
+        ],
+        "parameters": [
+          {
+            "name": "format",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "const": "snapshot"
+            },
+            "description": "仅一次format=snapshot；未知、重复和空查询参数拒绝。省略返回目录/记录。"
+          }
+        ],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "405": {
+            "$ref": "#/components/responses/405"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "501": {
+            "$ref": "#/components/responses/501"
+          },
+          "503": {
+            "$ref": "#/components/responses/503"
+          },
+          "200": {
+            "description": "目录或精确冻结包，依format选择",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/PatternList"
+                    },
+                    {
+                      "$ref": "#/components/schemas/PatternSnapshot"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "operationId": "listPatterns",
+        "summary": "读取同一daemon图案库，或导出全库冻结快照",
+        "description": "无请求体；读取缺失库不创建目录。默认PatternList，format=snapshot返回规范PatternSnapshot。",
+        "x-no-request-body": true
+      }
+    },
+    "/v1/patterns/{id}": {
+      "get": {
+        "tags": [
+          "patterns"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$"
+            }
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "const": "snapshot"
+            },
+            "description": "仅一次format=snapshot；未知、重复和空查询参数拒绝。省略返回目录/记录。"
+          }
+        ],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "405": {
+            "$ref": "#/components/responses/405"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "501": {
+            "$ref": "#/components/responses/501"
+          },
+          "503": {
+            "$ref": "#/components/responses/503"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "200": {
+            "description": "单条记录或单条冻结包，依format选择",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/PatternRecord"
+                    },
+                    {
+                      "$ref": "#/components/schemas/PatternSnapshot"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "operationId": "getPattern",
+        "summary": "读取或导出指定ID，保留内容revision"
+      }
+    },
+    "/v1/patterns/import": {
+      "post": {
+        "operationId": "importPatterns",
+        "tags": [
+          "patterns"
+        ],
+        "summary": "手动整包create-only导入；不播放",
+        "description": "原始JSON字节最大1MiB；完整验证后原子发布。相同内容幂等、冲突整包失败。pattern_commit_uncertain或响应丢失时读取ID/revision核对，不能说未保存或盲目回滚。无query、设备serial或执行票据。",
+        "x-max-body-bytes": 1048576,
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PatternImportPackage"
+              }
+            }
+          }
+        },
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "405": {
+            "$ref": "#/components/responses/405"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "413": {
+            "$ref": "#/components/responses/413"
+          },
+          "415": {
+            "$ref": "#/components/responses/415"
+          },
+          "501": {
+            "$ref": "#/components/responses/501"
+          },
+          "503": {
+            "$ref": "#/components/responses/503"
+          },
+          "200": {
+            "description": "本次导入记录与created/existing、总条数",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PatternImportResult"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1063,9 +1270,12 @@
           },
           "effect": {
             "$ref": "#/components/schemas/Effect"
+          },
+          "pattern_ref": {
+            "$ref": "#/components/schemas/PatternRef"
           }
         },
-        "description": "最大1MiB，program/effect必须且仅有一个；effect由同一权威编译器产生普通Program后才准入。两回执字段同时省略或同时非空。去重比较规范化Program/policy，因此效果与完全相同raw Program共享同key同job；所有shape/编译失败均不创建任务或replace旧工作。",
+        "description": "最大1MiB，program/effect必须且仅有一个；effect由同一权威编译器产生普通Program后才准入。两回执字段同时省略或同时非空。去重比较规范化Program/policy，因此效果与完全相同raw Program共享同key同job；所有shape/编译失败均不创建任务或replace旧工作。 新增pattern_ref与program/effect严格三选一；仅该分支必须显式reject及完整原票据。按冻结Program/policy/serial去重，不另建图案去重表；库后来不可读不影响原Job/回执查询。",
         "examples": [
           {
             "program": {
@@ -1104,12 +1314,67 @@
           {
             "required": [
               "program"
-            ]
+            ],
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "effect"
+                  ]
+                },
+                {
+                  "required": [
+                    "pattern_ref"
+                  ]
+                }
+              ]
+            }
           },
           {
             "required": [
               "effect"
-            ]
+            ],
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "program"
+                  ]
+                },
+                {
+                  "required": [
+                    "pattern_ref"
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "required": [
+              "pattern_ref",
+              "policy",
+              "request_id",
+              "expected_daemon_instance_id"
+            ],
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "program"
+                  ]
+                },
+                {
+                  "required": [
+                    "effect"
+                  ]
+                }
+              ]
+            },
+            "properties": {
+              "policy": {
+                "const": "reject"
+              }
+            }
           }
         ]
       },
@@ -1301,7 +1566,17 @@
                   "request_expired",
                   "idempotency_capacity",
                   "request_not_found",
-                  "idempotency_unsupported"
+                  "idempotency_unsupported",
+                  "invalid_pattern_request",
+                  "pattern_package_too_large",
+                  "pattern_library_limit",
+                  "pattern_not_found",
+                  "pattern_revision_conflict",
+                  "pattern_conflict",
+                  "pattern_library_busy",
+                  "pattern_library_unsupported",
+                  "pattern_library_unavailable",
+                  "pattern_commit_uncertain"
                 ]
               },
               "message": {
@@ -1580,6 +1855,9 @@
             "minLength": 1,
             "maxLength": 128,
             "pattern": "^[A-Za-z0-9_-]+$"
+          },
+          "pattern_ref": {
+            "$ref": "#/components/schemas/PatternRef"
           }
         },
         "oneOf": [
@@ -1588,8 +1866,17 @@
               "program"
             ],
             "not": {
-              "required": [
-                "effect"
+              "anyOf": [
+                {
+                  "required": [
+                    "effect"
+                  ]
+                },
+                {
+                  "required": [
+                    "pattern_ref"
+                  ]
+                }
               ]
             }
           },
@@ -1598,13 +1885,41 @@
               "effect"
             ],
             "not": {
-              "required": [
-                "program"
+              "anyOf": [
+                {
+                  "required": [
+                    "program"
+                  ]
+                },
+                {
+                  "required": [
+                    "pattern_ref"
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "required": [
+              "pattern_ref"
+            ],
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "program"
+                  ]
+                },
+                {
+                  "required": [
+                    "effect"
+                  ]
+                }
               ]
             }
           }
         ],
-        "description": "纯软件编译，program/effect恰好一种；serial仅查询已有缓存快照。不接收policy、回执或pattern_ref；不创建Job、不开USB、不prepare回执。"
+        "description": "program/effect/pattern_ref恰好一种，serial可选只读目标快照；新引用返回PatternPreview，旧输入返回原PreviewResult。没有policy、票据、Job或USB写入。"
       },
       "PreviewValidation": {
         "type": "object",
@@ -1888,7 +2203,7 @@
           },
           "pattern_library": {
             "type": "boolean",
-            "description": "本版false；是daemon的软件能力声明，不授予新工具或写权限。"
+            "description": "仅当前配置的Store本次可读取时为true，supported_inputs追加pattern_ref。目录存在与后续写入/设备准入分别判断。"
           },
           "hardware_pattern_upload": {
             "type": "boolean",
@@ -3028,6 +3343,414 @@
           "result",
           "preview"
         ]
+      },
+      "PatternRef": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$"
+          },
+          "revision": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          }
+        },
+        "required": [
+          "id",
+          "revision"
+        ],
+        "description": "明确ID与完整内容revision；没有latest。引用不代替执行票据。"
+      },
+      "PatternSource": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "program": {
+            "$ref": "#/components/schemas/Program"
+          },
+          "effect": {
+            "$ref": "#/components/schemas/Effect"
+          }
+        },
+        "required": [],
+        "oneOf": [
+          {
+            "required": [
+              "program"
+            ],
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "effect"
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "required": [
+              "effect"
+            ],
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "program"
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "description": "规范来源；effect保留旧对称pulse语义，未增加source.action。"
+      },
+      "PatternRecord": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "source": {
+            "$ref": "#/components/schemas/PatternSource"
+          },
+          "compiled_program": {
+            "$ref": "#/components/schemas/Program"
+          },
+          "compile_contract": {
+            "const": "nb1-program-effect/v1"
+          },
+          "revision": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "source",
+          "compiled_program",
+          "compile_contract",
+          "revision"
+        ],
+        "description": "必须通过nb1-pattern-record/v1域、LF和规范内容的SHA256校验，并确认source展开与compiled_program一致；JSON Schema本身不计算哈希。"
+      },
+      "PatternAuthoringRecord": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "program": {
+            "$ref": "#/components/schemas/ProgramRequest"
+          },
+          "effect": {
+            "$ref": "#/components/schemas/Effect"
+          }
+        },
+        "required": [
+          "id",
+          "title"
+        ],
+        "oneOf": [
+          {
+            "required": [
+              "program"
+            ],
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "effect"
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "required": [
+              "effect"
+            ],
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "program"
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "PatternAuthoringPackage": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "schema_version": {
+            "const": 1,
+            "type": "integer"
+          },
+          "patterns": {
+            "type": "array",
+            "maxItems": 128,
+            "items": {
+              "$ref": "#/components/schemas/PatternAuthoringRecord"
+            }
+          }
+        },
+        "required": [
+          "schema_version",
+          "patterns"
+        ],
+        "description": "整包/合并后的规范快照均最多1MiB；ID不可重复。导入不播放。"
+      },
+      "PatternSnapshot": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "schema_version": {
+            "const": 1,
+            "type": "integer"
+          },
+          "kind": {
+            "const": "nb1-pattern-snapshot"
+          },
+          "records": {
+            "type": "array",
+            "maxItems": 128,
+            "items": {
+              "$ref": "#/components/schemas/PatternRecord"
+            }
+          }
+        },
+        "required": [
+          "schema_version",
+          "kind",
+          "records"
+        ],
+        "description": "冻结包：每条需内容与编译校验；完整规范编码最多1MiB，不是硬件PatternSet。"
+      },
+      "PatternImportPackage": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/PatternAuthoringPackage"
+          },
+          {
+            "$ref": "#/components/schemas/PatternSnapshot"
+          }
+        ]
+      },
+      "PatternLibraryInfo": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "path": {
+            "type": "string",
+            "minLength": 1,
+            "description": "daemon用户选择的绝对路径，仅展示；客户端不打开此路径。"
+          },
+          "state": {
+            "const": "ready"
+          },
+          "create_only": {
+            "const": true
+          },
+          "max_records": {
+            "const": 128
+          },
+          "max_package_bytes": {
+            "const": 1048576
+          },
+          "record_contract": {
+            "const": "nb1-pattern-record/v1"
+          },
+          "compile_contract": {
+            "const": "nb1-program-effect/v1"
+          },
+          "snapshot_kind": {
+            "const": "nb1-pattern-snapshot"
+          }
+        },
+        "required": [
+          "path",
+          "state",
+          "create_only",
+          "max_records",
+          "max_package_bytes",
+          "record_contract",
+          "compile_contract",
+          "snapshot_kind"
+        ]
+      },
+      "PatternSummary": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "revision": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          },
+          "compile_contract": {
+            "const": "nb1-program-effect/v1"
+          },
+          "total_steps": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10240000
+          },
+          "nominal_duration_ms": {
+            "type": "integer",
+            "minimum": 10,
+            "maximum": 86400000
+          },
+          "on_finish": {
+            "enum": [
+              "off",
+              "hold"
+            ]
+          },
+          "required_capabilities": {
+            "type": "array",
+            "minItems": 3,
+            "maxItems": 4,
+            "uniqueItems": true,
+            "items": {
+              "enum": [
+                "set",
+                "program",
+                "raw-rgb",
+                "hold"
+              ]
+            }
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "revision",
+          "compile_contract",
+          "total_steps",
+          "nominal_duration_ms",
+          "on_finish",
+          "required_capabilities"
+        ],
+        "description": "只含目录摘要，不能据此重算内容hash。duration至少total_steps×10ms；capabilities按set/program/raw-rgb及可选hold排序。"
+      },
+      "PatternList": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "schema_version": {
+            "type": "integer",
+            "const": 1
+          },
+          "contract": {
+            "const": "nb1-pattern-library/v1"
+          },
+          "library": {
+            "$ref": "#/components/schemas/PatternLibraryInfo"
+          },
+          "patterns": {
+            "type": "array",
+            "maxItems": 128,
+            "items": {
+              "$ref": "#/components/schemas/PatternSummary"
+            }
+          }
+        },
+        "required": [
+          "schema_version",
+          "contract",
+          "library",
+          "patterns"
+        ],
+        "description": "按ASCII ID严格排序且唯一。缺失库返回空列表且不创建目录；损坏/不可用库返回错误，不伪装为空。"
+      },
+      "PatternImportResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "records": {
+            "type": "array",
+            "maxItems": 128,
+            "items": {
+              "$ref": "#/components/schemas/PatternRecord"
+            }
+          },
+          "created": {
+            "type": "array",
+            "maxItems": 128,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$"
+            }
+          },
+          "existing": {
+            "type": "array",
+            "maxItems": 128,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 128
+          }
+        },
+        "required": [
+          "records",
+          "created",
+          "existing",
+          "total"
+        ],
+        "description": "created/existing互斥且覆盖本次records；同ID同内容幂等，不覆盖不同内容。"
+      },
+      "PatternPreview": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "pattern_ref": {
+            "$ref": "#/components/schemas/PatternRef"
+          },
+          "preview": {
+            "$ref": "#/components/schemas/PreviewResult"
+          }
+        },
+        "required": [
+          "pattern_ref",
+          "preview"
+        ],
+        "description": "保存的冻结Program经共同预览校验；preview.input_kind恒为program。无Job/票据/USB操作。"
       }
     },
     "responses": {
@@ -3164,7 +3887,8 @@
       "Native synchronous I/O may exceed shutdown waiting deadlines",
       "Request-receipt transport/CLI checks use fake services; this extension has no new USB hardware acceptance claim",
       "High-level effect compiler/API/CLI checks use fake backends; new effect hardware acceptance is recorded separately"
-    ]
+    ],
+    "pattern_scope": "Local development document. New routes/software tests qualified; current resident9e does not expose this candidate library."
   },
   "x-specification-source": "https://spec.openapis.org/oas/v3.2.1.html"
 }

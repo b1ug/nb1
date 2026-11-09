@@ -107,7 +107,7 @@ func TestStdioSixLegacyToolsAndOptionalReceipts(t *testing.T) {
 	defer srv.Close()
 	session := connectStdio(t, srv.URL)
 	tools, err := session.ListTools(context.Background(), nil)
-	if err != nil || len(tools.Tools) != 10 {
+	if err != nil || len(tools.Tools) != 11 {
 		t.Fatalf("six legacy tools plus preview and color expected: %+v %v", tools, err)
 	}
 	for _, tool := range tools.Tools {

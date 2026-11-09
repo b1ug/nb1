@@ -16,7 +16,7 @@ import (
 	"github.com/b1ug/nb1/internal/jsoninput"
 )
 
-const MaxBodyBytes = 1 << 20
+const MaxBodyBytes = control.MaxRequestBytes
 
 type SubmitRequest struct {
 	Program                  *control.Program `json:"program,omitempty"`

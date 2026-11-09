@@ -221,14 +221,14 @@ func (e *Engine) Job(id string) (Job, error) {
 }
 
 func Normalize(p Program) (Program, error) {
-	if len(p.Steps) == 0 || len(p.Steps) > 1024 {
+	if len(p.Steps) == 0 || len(p.Steps) > MaxProgramSteps {
 		return Program{}, fmt.Errorf("%w: program requires 1–1024 steps", ErrInvalid)
 	}
 	p = cloneProgram(p)
 	if p.Repeat == 0 {
 		p.Repeat = 1
 	}
-	if p.Repeat < 1 || p.Repeat > 10000 {
+	if p.Repeat < 1 || p.Repeat > MaxProgramRepeat {
 		return Program{}, fmt.Errorf("%w: repeat must be 1–10000", ErrInvalid)
 	}
 	if p.OnFinish == "" {
@@ -240,7 +240,7 @@ func Normalize(p Program) (Program, error) {
 	var total int64
 	for i := range p.Steps {
 		s := &p.Steps[i]
-		if s.LED < 0 || s.LED > 2 || s.FadeMS < 0 || s.FadeMS > 600000 || s.FadeMS%10 != 0 || s.HoldMS < 0 || s.HoldMS > 3600000 {
+		if s.LED < 0 || s.LED > 2 || s.FadeMS < 0 || s.FadeMS > MaxFadeMS || s.FadeMS%FadeQuantumMS != 0 || s.HoldMS < 0 || s.HoldMS > MaxHoldMS {
 			return Program{}, fmt.Errorf("%w: step %d requires led 0–2, fade_ms 0–600000 in 10ms units and hold_ms 0–3600000", ErrInvalid, i)
 		}
 		if len(s.Color) != 7 || s.Color[0] != '#' {
@@ -250,9 +250,9 @@ func Normalize(p Program) (Program, error) {
 			return Program{}, fmt.Errorf("%w: step %d color must be #RRGGBB", ErrInvalid, i)
 		}
 		s.Color = strings.ToLower(s.Color)
-		total += int64(s.FadeMS) + int64(s.HoldMS) + 10 // firmware update tick
+		total += int64(s.FadeMS) + int64(s.HoldMS) + StepOverheadMS // firmware update tick
 	}
-	if total*int64(p.Repeat) > int64(24*time.Hour/time.Millisecond) {
+	if total*int64(p.Repeat) > MaxNominalDurationMS {
 		return Program{}, fmt.Errorf("%w: program duration exceeds 24 hours", ErrInvalid)
 	}
 	return p, nil
@@ -557,7 +557,7 @@ func (w *worker) execute(r *record) {
 			e.mu.Unlock()
 			// The mk2 applies even zero-time fades at its next 10ms LED update.
 			// Allow that update before freezing a completed output.
-			wait := time.Duration(step.FadeMS+step.HoldMS)*time.Millisecond + 10*time.Millisecond
+			wait := time.Duration(step.FadeMS+step.HoldMS)*time.Millisecond + time.Duration(StepOverheadMS)*time.Millisecond
 			if wait > 0 {
 				cancelled, runErr = w.wait(r, wait)
 			}

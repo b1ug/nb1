@@ -47,10 +47,10 @@ func CompileEffect(effect Effect) (Program, error) {
 		if effect.OnFinish != nil {
 			finish = *effect.OnFinish
 		}
-		if cycles < 1 || cycles > 10000 {
+		if cycles < 1 || cycles > MaxProgramRepeat {
 			return Program{}, fmt.Errorf("%w: pulse cycles must be 1–10000", ErrInvalid)
 		}
-		if period < 60 || period > 1200000 || period%10 != 0 {
+		if period < MinPulsePeriodMS || period > MaxPulsePeriodMS || period%FadeQuantumMS != 0 {
 			return Program{}, fmt.Errorf("%w: pulse period_ms must be 60–1200000 in 10ms units", ErrInvalid)
 		}
 		if finish != "off" && finish != "hold" {

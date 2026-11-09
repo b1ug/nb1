@@ -1,6 +1,8 @@
 # 高级 Pattern 创作客户端
 
-本片为本地 CLI 的后续接线提供三个 HTTP 客户端方法：`GetPatternV2`、`PreviewPatternDraftV2`、`SavePatternV2`。它不新增 CLI 命令、MCP 工具或运行任务，不接受本地存储路径，也不访问 USB。
+三个 HTTP 客户端方法为 `GetPatternV2`、`PreviewPatternDraftV2`、`SavePatternV2`。CLI 以 `nb1 control patterns-v2 get ID`、`preview-draft FILE`、`save FILE` 接入独立实验 v2 库。它们不播放、不准备执行票据、不新增 MCP 工具，不接受服务器返回的本地路径，也不访问 USB。旧 `control patterns` 仍使用 v1 格式。
+
+`preview-draft` 输入为 `{id,title,source}`；`save` 还要求精确 `expected_revision`，应取自同一份作者预览结果，不能凭 ID 猜测。保存错误 JSON 保留 `pattern_ref` 与 `publication_unknown`；只有完整确认才标记 `publication_confirmed:true`。这三个命令仅使用 daemon 模式，不接受 policy、wait 或执行票据参数。
 
 作者预览与保存复用 `patternsv2.PreviewDraft/PrepareSave` 做本地纯验证，HTTP 仍发送调用者的原始 JSON 字节一次。预览响应必须对应原始完整 Record 与 PreviewFacts；保存必须确认同一记录、唯一 Location，以及 HTTP 201/created 或 200/existing 的一致性。响应中的软件可用性只表示接口接线，不证明设备、库健康或灯光效果。
 

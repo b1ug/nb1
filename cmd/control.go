@@ -45,6 +45,14 @@ func newControlCommand() *cobra.Command {
 		if options.policy != "replace" && options.policy != "queue" && options.policy != "reject" {
 			return fmt.Errorf("--policy must be replace, queue or reject")
 		}
+		if isPatternV2Command(cmd) {
+			if options.mode != "daemon" {
+				return fmt.Errorf("experimental Pattern v2 library commands require --mode daemon")
+			}
+			if cmd.Flags().Changed("policy") || cmd.Flags().Changed("wait") || cmd.Flags().Changed("request-id") || cmd.Flags().Changed("expected-daemon-instance-id") {
+				return fmt.Errorf("Pattern v2 authoring commands do not accept policy, wait or execution receipt flags")
+			}
+		}
 		if isPatternCommand(cmd) {
 			if options.mode != "daemon" {
 				return fmt.Errorf("Pattern library commands require --mode daemon; no direct fallback")
@@ -107,7 +115,7 @@ func newControlCommand() *cobra.Command {
 		}
 		return nil
 	}
-	command.AddCommand(newControlCapabilitiesCommand(options), newControlPreviewCommand(options), newControlColorCommand(options), newControlLightCommand(options), newControlPatternsCommand(options))
+	command.AddCommand(newControlCapabilitiesCommand(options), newControlPreviewCommand(options), newControlColorCommand(options), newControlLightCommand(options), newControlPatternsCommand(options), newControlPatternsV2Command(options))
 	command.AddCommand(&cobra.Command{Use: "prepare", Short: "Prepare an optional daemon request binding without submitting a job", Args: cobra.NoArgs, RunE: func(cmd *cobra.Command, _ []string) error {
 		client, ctx, done, err := options.client(cmd.Context())
 		if err != nil {

@@ -48,6 +48,8 @@ jobs:
           cache: true
       - name: Check artifact validation helpers
         run: python3 -B -m unittest discover -s ci -p test_build_artifact.py -v
+      - name: Check offline Homebrew draft renderer without installation
+        run: python3 -B -m unittest discover -s packaging/homebrew -p test_render_formula.py -v
       - name: Build native CLI from public module versions
         env:
           NB1_CANDIDATE_BINARY: ${{ runner.temp }}/nb1-candidate-build/nb1${{ matrix.extension }}

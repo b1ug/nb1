@@ -1,4 +1,8 @@
-# 本地图案库 CLI（候选）
+# 本地图案库 CLI：v1 与高级 v2（候选）
+
+本文按格式与候选版本分开：日常 `control patterns` 是v1，开发 `control patterns-v2` 是保留高级来源的独立库；不能交叉当作自动升级。开发CLI尚未安装到日常1d89。
+
+## 兼容 v1：control patterns
 
 图案库由 daemon 的 `--pattern-dir` / `NB1_PATTERN_DIR` 管理，默认位置属于运行 daemon 的账号。CLI 只访问本机 daemon；不会打开其返回的路径、隐式启用 direct、创建第二份库或回退到 USB。
 
@@ -26,3 +30,33 @@ run 的有效 policy 固定为 reject，显式 replace/queue 被拒绝。没有�
 --wait 只查询该票据下同一个已接受 Job，核对同一 Program，不再解析图案库，不重发、不自动取消。查询失败时仍输出原票据与最后一个确认的 Job，并标记 outcome_unknown。即使当前库丢失、损坏或引用不存在，也不能据此断言旧请求没有执行。
 
 这一增量未修改旧 light、Program、Effect 或 MCP 工具的行为。状态以实际安装版本为准；本候选没有自动部署或修改客户端配置。
+
+## 高级 v2：control patterns-v2
+
+作者候选eee1eb9已实现get/preview-draft/save；执行候选 `4eac5293bbad413e90ff19e6c8700628a1a4a8ee` 已实现固定Ref preview/run/request/cancel。共七命令，daemon-only，未安装到日常服务；HTTP对应P3/P6，旧v1命令与格式不变。
+
+v2库由 `--pattern-v2-dir` / `NB1_PATTERN_V2_DIR` 独立选择，默认daemon账号 `UserConfigDir()/nb1/patterns-v2`，不随自定义旧--pattern-dir改变。构造、纯作者preview与缺失库读取不创建目录；有效保存/导入进入写事务时才可能创建，后续失败也可能留目录。既有库读取可能创建锁文件。CLI不会读取daemon返回的本地路径。
+
+```text
+nb1 control patterns-v2 get ID
+nb1 control patterns-v2 preview-draft FILE
+nb1 control patterns-v2 save FILE
+nb1 control patterns-v2 preview ID --revision SHA [--serial SERIAL]
+nb1 control patterns-v2 run SERIAL ID --revision SHA [--policy reject|queue|replace] [--request-id KEY --expected-daemon-instance-id INSTANCE] [--wait]
+nb1 control patterns-v2 request SERIAL ID --revision SHA --request-id KEY --expected-daemon-instance-id INSTANCE [--job-id ID] [--execution-digest SHA] [--wait]
+nb1 control patterns-v2 cancel SERIAL ID --revision SHA --request-id KEY --expected-daemon-instance-id INSTANCE [--job-id ID] [--execution-digest SHA] [--wait]
+```
+
+preview-draft只收作者 `{id,title,source}`，save再加确认本次完整候选的expected_revision；它不是覆盖权限或当前库版本。保存返回publication_confirmed/publication_unknown与原Ref，不准备票据、不播放；来源、recipe、冻结Program/Frame一同保留。合法unknown记录仍只读，不自动编译替换。
+
+运行使用完整固定revision，不猜latest，不把execution_digest当作作者revision。record_contract固定 `nb1-pattern-record/experimental-v2`，在请求与输出中保留。run的有效默认是reject，显式三policy均可，不修改旧CLI父命令replace默认或旧v1/light仅reject限制。无票据只Prepare一次；有完整原票据零Prepare。与旧v1不同，新run不先Get/preview库，而是单执行POST交给core先查原回执，仅新key再验证来源。
+
+request/cancel和accepted replay不依赖库。输出保留原pattern_ref、request_ticket、执行摘要、typed Job/FrameJob；job字段是带来源的PatternJobEnvelope，不能用旧裸Job/history查询这些任务。accepted表示原任务已确认接受，不是完成；cancel_attempted表示是否尝试过唯一取消POST。
+
+--wait只读原回执，强绑定Ref/实例/request_id/Job ID/摘要、完整冻结执行与单调进度/生命周期；timeout不取消、不重发。已验证终态先于随后context结束，明确failed/cancelled可非零退出但outcome_unknown=false；后端optional错误文案为空不妨碍认定failed终态。
+
+取消先GET绑定，terminal/cancelling零POST，其余最多一次含confirmed_job_id的POST；终态hold不会补关灯。坏响应或丢失保留最后可信before状态、原票据与unknown，即使--wait也不再自动GET来覆盖错误。用户之后可显式request原票据；不因404/410/重启或库失败换新票据补播。
+
+CLI仅对明确status/code白名单认定本次准入拒绝；普通404、未知code/错status、3xx、5xx/501、过期、实例变化和传输/完整性失败都保持unknown。确切白名单与源码见[内部客户端执行说明](../internal/daemonclient/README.pattern-execution-v2.zh-CN.md)，完整HTTP合同见[API手册](api-reference.zh-CN.md)。CLI list/import/export尚未提供，不能用旧v1导入命令写入v2库。
+
+此候选软件验证覆盖Program与Frame、库消失后的原回执恢复、单POST、取消与等待；只用临时库、私有loopback和内存驱动，没有新的USB/视觉验收。开发MCP16与日常12仍分别以各自会话tools/list和部署版本为准。

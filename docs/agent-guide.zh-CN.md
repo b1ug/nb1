@@ -147,4 +147,4 @@ MK3 未实机验收，软件兼容与物理效果分别验证。轻量动森风�
 
 本机日常1d89的12工具继续可用；开发c37f7fc新增preview_pattern、run_pattern、get_pattern_request、cancel_pattern_request，共16。先以实际会话tools/list确认，完整输入/输出与独立日常快照见[mcp-tools.schema.json](mcp-tools.schema.json)与[mcp-tools.daily-1d89.schema.json](mcp-tools.daily-1d89.schema.json)。
 
-使用完整PatternRef（record_contract/id/revision），不猜latest。run必须显式policy和原票据，一次POST，无隐式preview、Prepare、重试或旧Program回退；daemon保持高级来源。原票据query/cancel不依赖库；cancel先GET绑定再至多一次POST，已终态/cancelling不再POST，坏响应保留原票据和最后可信快照。没有MCP v2存储读写工具。CLI作者候选支持patterns-v2 get/preview-draft/save；CLI运行和新Web仍在接线。
+使用完整PatternRef（record_contract/id/revision），不猜latest。run必须显式policy和原票据，一次POST，无隐式preview、Prepare、重试或旧Program回退；daemon保持高级来源。原票据query/cancel不依赖库；cancel先GET绑定再至多一次POST，已终态/cancelling不再POST，坏响应保留原票据和最后可信快照。没有MCP v2存储读写工具。CLI作者候选支持patterns-v2 get/preview-draft/save，独立执行候选 `4eac5293bbad413e90ff19e6c8700628a1a4a8ee` 已新增固定Ref preview/run/request/cancel，均daemon-only且未安装。新run有效默认reject，显式三policy；无票据Prepare一次，有原票据零Prepare，单POST无库preflight。wait只读原回执，取消先GET再最多一次确认POST，坏响应不自动GET掩盖。CLI list/import/export与新Web仍在后续片，细节见[分版CLI合同](patterns-cli.md)。

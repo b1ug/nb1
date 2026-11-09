@@ -13,7 +13,7 @@
 | High level · light v1 | `set`、`off`、`fade`、`blink`、`breathe`、`pulse`、`alternate`、`rainbow` | 八动作已经实现，HTTP/CLI/MCP/Web 共用核心编译器 | 动作命名最终定稿、更多艺术动作与组合语法 |
 | High level · Orbit v2 | `orbit`，4/8 段成对长渐变；颜色、相位、周期、轮数、结束规则 | 日常版本已可用；Web、CLI、MCP 各有有限 Mac/MK2 验证 | 不是稳定视觉标准；不保证任意参数完全无闪烁 |
 | 记忆 · Pattern v1 | 电脑端保存 Program/旧 Effect、导入导出、精确 revision 引用 | 已接 Web、HTTP、CLI、MCP | 不能直接保存新的 FrameProgram/Orbit 来源 |
-| 记忆 · Pattern v2 | 同时保存原始高级来源、规范动作、recipe、冻结执行体与内容摘要 | 开发源码已完成 codec、独立 Store、严格创作、来源身份准入、验证 resolver，以及 HTTP 固定引用预览/运行/原票据查停；尚未安装到日常服务 | MCP四个新工具已完成软件验证，尚未安装；继续CLI执行、Web接入与真机升级，CLI作者候选见第13节 |
+| 记忆 · Pattern v2 | 同时保存原始高级来源、规范动作、recipe、冻结执行体与内容摘要 | 开发源码已完成codec/Store/创作/来源准入/P5/P6；MCP四工具与CLI作者/执行七命令均通过软件验证，尚未安装到日常服务 | Web接入、CLI list/import/export与安装后的实物验证 |
 
 日常运行来源是 `1d89eae92278f24a68fff1a34e3c1e696a962c3c`；本手册还覆盖开发源码 `f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae` 的 P1–P6 图案功能与独立 v2 库配置。后者尚未安装，不能把开发源码能力当成正在运行的 daemon 能力。日常硬件为 MK2 / FW204；这不证明 MK3 或 Windows/Linux 实物 USB 已验收。
 
@@ -273,7 +273,7 @@ Frame 执行能力单列于 `GET /v1/frame-capabilities`；普通 v1 capabilitie
 | Program | GET /v1/devices/{serial}/requests/{request_id}?expected_daemon_instance_id=原实例 | GET /v1/jobs/{jobId} | POST /v1/jobs/{jobId}/cancel |
 | Frame/Orbit v2 | GET /v1/devices/{serial}/frame-requests/{request_id}?expected_daemon_instance_id=原实例 | GET /v1/frame-jobs/{jobId} | POST /v1/frame-jobs/{jobId}/cancel |
 
-帧取消可在JSON中带 expected_daemon_instance_id，服务先检查实例再取消。CLI高级v2取消还先核对原Action/票据；当前Web和MCP的ID取消不能误称为同等完整绑定。
+帧取消可在JSON中带 expected_daemon_instance_id，服务先检查实例再取消。CLI高级v2取消还先核对原Action/票据；旧Web和通用MCP cancel_job的ID取消不能误称为同等完整绑定。新Pattern v2 CLI/MCP取消使用原Ref/票据，见第12–13节。
 
 同一实例内，原serial+键+相同规范内容在有界保留期内重放原任务，不再创建新任务；不同内容冲突。它不保证每条USB指令恰好一次，不跨重启保存，也不保证已接受任务一定成功。
 
@@ -319,7 +319,7 @@ Program用completed_steps/total_steps；Frame用completed_frames/total_frames及
 
 ### 返回对象字段速查
 
-HTTP接受/查询返回的是Job本身；CLI结果通常放在job字段，MCP放在structuredContent.data。不要混用外壳。
+旧Program/light/Frame HTTP接受或查询返回Job本身；Pattern v2返回包含原Ref/执行摘要的PatternJobEnvelope。CLI结果通常放在job字段，MCP放在structuredContent.data；须按合同区分内外壳。
 
 | 对象 | 字段 | 含义 |
 | --- | --- | --- |
@@ -353,7 +353,7 @@ HTTP接受/查询返回的是Job本身；CLI结果通常放在job字段，MCP放
 | queue | 已实现，有界队列 | 不接受 | 已实现，必须显式传入 |
 | reject | 已实现 | 必须显式使用，或由高级CLI/MCP明确选用 | 已实现，必须显式传入 |
 
-这是当前真实状态，不是三套执行器。每设备仍只有一个worker，Program与Frame共享所有权。现有高级入口的策略限制尚未统一；不能在文档里先声称High/Low所有功能完全对等。
+这是当前真实状态，不是三套执行器。每设备仍只有一个worker，Program与Frame共享所有权。现有高级入口的策略限制尚未统一；不能在文档里先声称High/Low所有功能完全对等。 新Pattern HTTP与开发MCP run_pattern的policy必须显式传；新CLI patterns-v2 run的有效默认是reject，显式接受replace/queue/reject，不修改旧CLI父命令的replace默认。
 
 ## 12. 记忆与Pattern
 
@@ -398,7 +398,7 @@ P4 严格 typed 身份/摘要与原子准入、P5 完整来源 resolver、P6 公
 
 `pattern_execution.available` 只报告 PatternService 与 resolver 接线，检查状态零 Store 调用。true reason=`pattern_service_configured`；false reason=`pattern_service_unsupported`、`pattern_library_unconfigured` 或 `pattern_library_configuration_error`。true 不证明库健康、设备支持或本次准入成功；false 不阻断原回执恢复。Frame hold 的新 Pattern 准入额外要求缓存 hold，不能推广成旧 Frame helper 已做同样检查。
 
-P6 新 POST 原始报文限4096字节，单个 application/json，无 query，严格 UTF8/duplicate/unknown/null，全部身份标量为闭合 ASCII；GET 四参数必须唯一、非空、无未知或空分隔段且无 body。revision/摘要语法不是来源验证，JSON Schema 无法证明哈希和票据绑定。当前日常1d89没有 P3/P6 新路由；本册f8bb HTTP基线不含这些客户端。另有独立本地CLI作者候选 `eee1eb952f01bab521d5514b74b60a5fa45d6e1d` 提供get/preview-draft/save（第13节）；执行/查停、list/导入导出与Web仍分片推进，现有12个 MCP 工具不会因 HTTP 增加而自动扩展。
+P6 新 POST 原始报文限4096字节，单个 application/json，无 query，严格 UTF8/duplicate/unknown/null，全部身份标量为闭合 ASCII；GET 四参数必须唯一、非空、无未知或空分隔段且无 body。revision/摘要语法不是来源验证，JSON Schema 无法证明哈希和票据绑定。当前日常1d89没有 P3/P6 新路由；本册f8bb HTTP基线不含这些客户端。CLI作者候选 `eee1eb952f01bab521d5514b74b60a5fa45d6e1d` 已有get/preview-draft/save；执行候选 `4eac5293bbad413e90ff19e6c8700628a1a4a8ee` 又新增preview/run/request/cancel（第13节），均未安装。list/导入导出与Web仍分片推进；MCP日常12和开发16单独记录，HTTP能力不会自动扩展已安装工具。
 
 固定引用预览可从实际 GET 记录提取 Ref；以下是安装新开发版之后的只读示例，`PATTERN_ID` 必须是已保存记录。它不会播放：
 
@@ -417,7 +417,7 @@ jq -n --argjson pattern_ref "$ref" '{pattern_ref:$pattern_ref}' |
 
 ## 13. CLI与MCP入口对照
 
-本表既有CLI/MCP入口对应日常基线。日常安装仍是12工具；开发MCP `c37f7fc33d52cc25619b10a5bc477965bf544cc0` 已新增4工具，共16，尚未安装或注册宿主。独立本地CLI作者候选 `eee1eb952f01bab521d5514b74b60a5fa45d6e1d`（本册f8bb运行源码之外，未安装）另提供 `control patterns-v2 get ID`、`control patterns-v2 preview-draft FILE`、`control patterns-v2 save FILE`。它仅daemon模式，保留完整作者来源，save输出原Ref和publication_confirmed/publication_unknown；不播放、不准备票据，无policy/wait。新v2运行/查停、list/导入导出仍在后续片，不与旧 `control patterns` 混用。
+本表既有CLI/MCP入口对应日常基线。日常安装仍是12工具；开发MCP `c37f7fc33d52cc25619b10a5bc477965bf544cc0` 已新增4工具，共16，尚未安装或注册宿主。独立本地CLI作者候选 `eee1eb952f01bab521d5514b74b60a5fa45d6e1d`（本册f8bb运行源码之外，未安装）另提供 `control patterns-v2 get ID`、`control patterns-v2 preview-draft FILE`、`control patterns-v2 save FILE`。它仅daemon模式，保留完整作者来源，save输出原Ref和publication_confirmed/publication_unknown；不播放、不准备票据，无policy/wait。独立CLI执行候选 `4eac5293bbad413e90ff19e6c8700628a1a4a8ee` 另已完成下面四命令；list/导入导出仍在后续片，不与旧 `control patterns` 混用。
 
 | 目的 | CLI | MCP |
 | --- | --- | --- |
@@ -452,6 +452,42 @@ MCP是**真实stdio协议服务**，经HTTP调用daemon，不执行CLI子进程�
 ```
 
 run_light必须有serial、原票据，仅reject。get_job按ID前缀区分旧/帧任务；只有票据时Frame必须显式job_kind:frame。MCP不自行展开动画，也不自动重发运行请求。
+
+### 开发CLI：高级Pattern七命令（未安装）
+
+作者三个命令get/preview-draft/save不变，执行源码固定 `4eac5293bbad413e90ff19e6c8700628a1a4a8ee`。它沿P6 HTTP执行，未部署到日常daemon，不以软件测试宣称新实物验收。
+
+| 命令 | 字段、作用与边界 |
+| --- | --- |
+| `patterns-v2 get ID` | 完整已存Record；合法unknown仍只读。 |
+| `patterns-v2 preview-draft FILE` | `{id,title,source}`作者纯预览，不保存、不发票据。 |
+| `patterns-v2 save FILE` | 作者请求加expected_revision；输出原Ref和publication_confirmed/publication_unknown，不播放。 |
+| `patterns-v2 preview ID --revision SHA [--serial SERIAL]` | 固定已存Ref预览；可选设备只读缓存，回显serial/connection，无票据/Job。 |
+| `patterns-v2 run SERIAL ID --revision SHA` | 有效默认reject；显式--policy replace/queue/reject均可。无票据Prepare一次，有原二元组则零Prepare；单执行POST，无隐式库Get/preview。 |
+| `patterns-v2 request SERIAL ID --revision SHA --request-id KEY --expected-daemon-instance-id INSTANCE` | 只读原回执；可加--job-id / --execution-digest约束已知身份，绝不读库或换票据。 |
+| `patterns-v2 cancel SERIAL ID --revision SHA --request-id KEY --expected-daemon-instance-id INSTANCE` | 先GET原回执，terminal/cancelling零POST；其它最多一次带confirmed_job_id的取消。可加原Job/摘要约束。 |
+
+SHA为真实记录的完整sha256:64位小写hex，不隐式选latest；record_contract固定实验v2并完整保留在输出。全部只走daemon，--mode direct拒绝。preview/作者命令不接受policy/wait/票据；request/cancel不接受policy且必须提供原票据。未实现CLI list/import/export，不猜旧patterns命令会自动处理v2格式。
+
+run/request/cancel支持--wait，只查询原Pattern回执，逐次核对完整typed Program/Frame、Ref、digest、Job ID、创建/启动时间、进度和生命周期；timeout不cancel、不重发、不用历史猜结果。已验证terminal先结束等待，随后caller context结束不把已知终态改成unknown。run/request等待到failed/cancelled可非零退出，仍输出可信终态且outcome_unknown=false；failed的optional错误文案为空也合法。
+
+输出保留pattern_ref、request_ticket、accepted、outcome_unknown、daemon_instance_id、replayed及job。job是PatternJobEnvelope，内含原typed Job/FrameJob；accepted表示原任务已确认接受，不是完成。取消另外输出cancel_attempted，表示是否尝试过唯一POST，不能据此推断已送达或清理完成。
+
+取消响应丢失、坏body/headers或身份退回时，保留原票据和最后可信before快照，立即返回错误；即使--wait也不自动用随后好GET掩盖坏响应。用户可之后明确request原票据。终态hold再次取消不自动关灯。
+
+只有明确status+code组合可认定本次准入拒绝：400 invalid_pattern_request/invalid_request；404 pattern_not_found；409 busy/queue_full/idempotency_conflict/pattern_revision_conflict/pattern_library_busy；429 idempotency_capacity。普通404、未知code/错status、3xx、5xx/501、过期、实例变化与传输/解析失败都保留unknown，不授权生成新票据重试。查回执或已开始取消的错误不证明原任务未运行。
+
+下例变量必须来自真实设备与保存记录；只展示命令，不由文档执行：
+
+```sh
+nb1 control patterns-v2 get orbit-red-blue
+nb1 control patterns-v2 preview orbit-red-blue --revision "$REVISION" --serial "$SERIAL"
+nb1 control patterns-v2 run "$SERIAL" orbit-red-blue --revision "$REVISION" --policy reject --wait
+nb1 control patterns-v2 request "$SERIAL" orbit-red-blue --revision "$REVISION" --request-id "$REQUEST_ID" --expected-daemon-instance-id "$INSTANCE"
+nb1 control patterns-v2 cancel "$SERIAL" orbit-red-blue --revision "$REVISION" --request-id "$REQUEST_ID" --expected-daemon-instance-id "$INSTANCE" --job-id "$JOB_ID" --execution-digest "$EXECUTION_DIGEST" --wait
+```
+
+客户端只复算返回的闭合执行体摘要与回执绑定，不在run前重建作者source；完整来源/recipe/revision验证仍由daemon P5+core负责。current/Go1.18七包各1818节点/411顶层、race四包1423/320通过；原回执GET同步caller停止场景重复20次通过。新增测试只用临时库、私有loopback与内存驱动，没有日常服务/用户库/USB。详见[图案CLI分版说明](patterns-cli.md)、[内部执行客户端说明](../internal/daemonclient/README.pattern-execution-v2.zh-CN.md)。
 
 ### 开发MCP：高级Pattern四工具（未安装）
 
@@ -1219,7 +1255,7 @@ run_light必须有serial、原票据，仅reject。get_job按ID前缀区分旧/�
 
 相对日常1d89，开发 f8bb267 新增9个规范method/path：P3的5个作者/存储操作与P6的4个固定引用预览/执行/查停操作。总库存41个规范操作；OpenAPI 为避免静态路径掩盖普通ID GET另列4个别名，共45个operation/40个path。这不是45套独立能力。
 
-server 默认独立懒选 v2 库，Go handler 仍可不配库。纯作者preview零Store；引用preview需要Resolve来源；submit只在新key探库；query/cancel零Store/config。默认路径、flag/env、创建边界见第12节。P4/P5/P6已完成源码接线，未安装到日常daemon；新v2执行客户端能力不由HTTP文档自动获得；独立CLI作者候选eee见第13节。
+server 默认独立懒选 v2 库，Go handler 仍可不配库。纯作者preview零Store；引用preview需要Resolve来源；submit只在新key探库；query/cancel零Store/config。默认路径、flag/env、创建边界见第12节。P4/P5/P6已完成源码接线，未安装到日常daemon；新v2客户端能力仍按独立版本判断；CLI执行候选4e、作者eee和MCP16见第13节，均不等于日常已安装。
 
 保存重新构造来源候选并核对expected_revision，之后一次create-only Import；不匹配409且Store零调用。unknown完整合法记录可读/导出但不能新导入或执行；库含unknown使写操作read_only，已知单条仍可验证执行。publication uncertain只读核对原ID/完整记录，不自动重发。新submit失败不得替换旧活动任务，已接受原回执独立于后续库状态。
 
@@ -1315,7 +1351,7 @@ server 默认独立懒选 v2 库，Go handler 仍可不配库。纯作者preview
 
 需要继续完善的地方也很明确：
 
-1. P4来源身份准入、P5验证resolver、P6 HTTP已完成；MCP四个新工具与CLI作者片另已有候选；继续接新v2运行/查停的CLI和Web，再在明确安装版本后验证。保存成功、已接受任务和实体效果仍分别判断。
+1. P4来源身份准入、P5验证resolver、P6 HTTP已完成；MCP四个新工具与CLI七命令均有独立软件候选；继续Web、CLI list/import/export及安装后的验证。保存成功、已接受任务和实体效果仍分别判断。
 2. 保持艺术动作可区分：blink是亮灭，breathe是对称起伏，pulse是attack/decay/rest，alternate是换位，rainbow是色相循环，orbit是两点相位/明暗流动。
 3. 评审高级入口与低层入口的策略差异、pulse名义周期多出的30ms、hold的最后输出语义。当前文档如实写差异，未来只能通过明确新版本调整。
 4. 新命名、组合/序列、用户palette、自动恢复和同步属于后续能力，不能让AI猜一个看似自然的词就执行。

@@ -9480,7 +9480,7 @@
     "generic high sequence/compose/spin",
     "USB raw report/flash upload HTTP endpoints",
     "separate HTTP /state or /set routes",
-    "Pattern v2 execution CLI/MCP/Web clients absent from f8bb source baseline; separate local CLI authoring candidate listed in x-related-local-candidates"
+    "Pattern v2 Web host integration and CLI list/import/export are separate; independent execution CLI and MCP candidates are not installed"
   ],
   "x-runtime-validation": {
     "raw_json": [
@@ -9508,7 +9508,19 @@
       ],
       "scope": "daemon only, authoring not execution; no prepare/policy/wait, save retains original Ref and publication confirmation/uncertainty"
     },
-    "mcp_documented_tools": 12,
-    "mcp_scope": "daily/f8bb schema only; pending new candidate not documented as installed"
+    "mcp_documented_tools": 16,
+    "mcp_scope": "daily1d89 installed12; separate development candidate c37f7fc33d52cc25619b10a5bc477965bf544cc0 has16 tools, not installed or globally registered; source schemas kept separately",
+    "cli_pattern_v2_execution": {
+      "source_commit": "4eac5293bbad413e90ff19e6c8700628a1a4a8ee",
+      "status": "implemented_local_candidate_not_installed_outside_http_f8bb_baseline",
+      "commands": [
+        "control patterns-v2 preview ID --revision SHA",
+        "control patterns-v2 run SERIAL ID --revision SHA",
+        "control patterns-v2 request SERIAL ID --revision SHA --request-id KEY --expected-daemon-instance-id INSTANCE",
+        "control patterns-v2 cancel SERIAL ID --revision SHA --request-id KEY --expected-daemon-instance-id INSTANCE"
+      ],
+      "scope": "daemon-only; effective defaultreject with explicit three policies; one execution POST, original receipt wait/recovery; cancel GET then at most one bound POST; no library preflight/history fallback"
+    },
+    "mcp_installed_tools": 12
   }
 }

@@ -33,7 +33,45 @@ GOWORK=off CGO_ENABLED=1 go test -race ./internal/service/taskquery
 GOWORK=off CGO_ENABLED=0 go vet ./internal/service/taskquery
 ```
 
-未来只有在已证明为普通当前用户的 Windows 环境中显式设置 `NB1_TASKQUERY_NATIVE=1`，才运行 TestNativeCurrentTaskQueryOptIn。它只记录选定状态；即使观察到0x80070002也不宣称缺失合同已经开放。Hosted Windows默认管理员/UAC关闭不能替代该环境。本提交没有执行这项原生测试、注册任务或操作USB。
+## 显式原生只读测试协议
+
+Windows-only 的 `TestNativeQueryOptIn` 默认跳过，不设置 opt-in 时连 token、
+系统路径/ACL 或 PowerShell 也不查询。外部验收环境须先准备独立普通交互用户，
+并从该环境独立取得其当前 SID；测试不会创建账号、任务、profile 或修改权限。
+该新用户的固定任务 `\B1UG-nb1-<SID>` 必须尚未注册。不要用默认管理员、
+UAC 关闭的 hosted runner 身份替代普通用户环境。
+
+```powershell
+$env:NB1_TASKQUERY_NATIVE = '1'
+$env:NB1_TASKQUERY_EXPECT_SID = '<外部验收环境独立确认的当前普通用户SID>'
+go test -run '^TestNativeQueryOptIn$' -count=1 -v ./internal/service/taskquery
+```
+
+测试必须先由生产 `taskuser.Current()` 返回 Valid 身份，精确匹配 expected SID
+和固定任务路径，再调用生产 `New()` 完成身份/系统 PowerShell 信任检查，并以
+5 秒调用者 context 执行 `Query()`（产品内部桥预算仍为较短的 3 秒）。不接受
+任意任务路径、用户名、远程目标、提权或备用桥；不创建/运行/停止/删除任务，
+不读取任务 XML、action、命令、环境或用户列表。
+
+每次显式执行只输出一条前缀为 `NB1_TASKQUERY_NATIVE_RESULT ` 的有限 JSON，
+top-level 字段为 `schema_version`、`status`（PASS/FAIL）、`phase`，以及已验证后
+才填入的 `current_sid`、`task_path`、`error_kind` 和原样的 `selected_status`。
+`selected_status` 使用现有公开 `Status`，仅含时间、固定路径、presence、
+ownership、有限 Scheduler 属性或 failure；没有原始 PowerShell 输出或异常。
+任意 expected-SID 输入不会复制进报告。JSON 超过 2 KiB 或编码失败本身是 FAIL。
+
+唯一 PASS 是 `phase=missing_contract_observed`：Query 同时返回
+`ErrAbsenceUnverified`，`presence=unknown`、`ownership=not_checked`、无 task，
+并且 `failure.kind=not_found_unverified`、`stage=get_task`、
+`hresult=0x80070002`。这只记录“普通用户缺失合同已观察”；产品仍返回 Unknown，
+不会开放 Absent 或证明任务归属/管理、daemon PID、HTTP 或 USB 正常。任务已存在、
+其他 HRESULT、Current/构造/信任、启动、超时、解析等任何失败均使测试 FAIL；
+错误只记固定枚举，不输出 raw error。
+
+测试二进制可先在普通用户外部 fixture 下执行，协议同样需要显式两个环境变量和
+`-test.run '^TestNativeQueryOptIn$' -test.v`。进程创建、等待退出及 profile/账号清理
+属于外部验收工具的职责，测试不会扩展该工具或替它背书。Mac 软件检查及 Windows
+跨编译不是原生 PowerShell/COM 证据。本次新增协议尚未在 Windows 执行。
 
 ## 官方依据
 

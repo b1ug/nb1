@@ -67,3 +67,38 @@ execution_digest = sha256("nb1-pattern-execution/experimental-v1\n" + canonical(
 测试覆盖这些独立 golden、作者写法与 HSV、原八动作、Orbit 4/8 段、带正确 SHA 的冻结篡改、只读未知 recipe/source、重复/null/Unicode/词法/限额、可变数据隔离与并发读取。旧 v1 快照依然通过旧 codec 逐字节往返；新的 v2 不读取或迁移旧格式。
 
 测试通过只证明纯数据边界。Store 发布、原子 Pattern 来源回执、worker 执行、用户 API、实机观感和 MK3 支持均不在本片。
+
+## 严格作者输入与保存候选
+
+新增两个接受**原始 JSON 字节**的纯入口，供后续 HTTP/CLI 等适配层复用：
+
+```go
+candidate, err := patternsv2.PreviewDraft(rawPreviewJSON)
+record := candidate.Record()
+verification := candidate.Support()
+digest := candidate.ExecutionDigest()
+facts := candidate.Preview()
+
+save, err := patternsv2.PrepareSave(rawSaveJSON)
+confirmed := save.Candidate().Record()
+snapshot := save.SnapshotJSON()
+// 后续适配层才可显式把 snapshot 交给 create-only StoreV2.Import。
+```
+
+预览恰好接受 `{id,title,source}`；保存恰好接受这三项加必填的 `expected_revision`。source 恰好是 `{kind,contract,action}`，沿用已知高级 Action 契约，不接受用户提供的 compiled、裸 Program/FrameProgram、路径、设备、运行参数或 daemon ID。`PreviewDraft` 会拒绝保存专用字段，不隐式切换为保存。
+
+入口复用本包严格 token/Unicode/number parser，再调用既有 `NewRecord`、`InspectRecord`、`control.Preview/PreviewFrameProgram`。原八动作与实验 Orbit 4/8 段的语义、Source/Compiled/Record/Snapshot 格式及 SHA 域都不变。名字 `Draft` 指作者输入，`Candidate` 指已经冻结但尚未发布的内容；`PrepareSave` 指核对作者确认并生成存储输入。没有新增公开的可变 Draft struct，避免普通 `json.Unmarshal` 被误当成安全入口。
+
+strictness 针对收到的原始 JSON。适配层不能先反序列化、修改或重新序列化再调用：普通 Go JSON 解码器会替换孤立 surrogate，而提前 canonical 会把非法时间/次数词法 `1.0` 变成 `1`。标题与 Action 全树中的孤立 surrogate、无效 UTF-8、重复键（含转义后重复）、未知字段、null、尾部值和原有限额仍严格拒绝。合法 surrogate pair 与字面 U+FFFD 正常接受。HSV 合法小数不会受整数时间策略误伤。
+
+预算顺序沿用现有 parser：先在构树前检查整个输入不超过 1 MiB；Action 级的 65536 字节限制在有界解析及原数字词法重编码后，由 `NewRecord` 的既有 `prepareSource` 检查。不能把这描述为“每字段在任何分配之前限制为 65536 字节”；解析与重编码可能先产生有界分配，JSON HTML 转义也可能扩张。此入口没有另建计数器或更改冻结 parser/canonical 语义。
+
+保存必须重新从原作者内容构造同一 Record，再验证 `expected_revision` 是 `sha256:` 加 64 位小写 hex 且匹配 candidate.Revision。语法不合法返回 `ErrInvalid`；合法但不匹配返回独立 `ErrRevisionConflict`；未知作者契约返回 `ErrUnsupported`。任何错误不返回部分候选或 snapshot。改 ID、标题或颜色写法即使规范执行相同也需要重新确认。这个 expected 值不是当前库版本，不授权覆盖，也不绑定 daemon 生命周期。
+
+`SaveCandidate.SnapshotJSON()` 只返回现有契约的单记录 canonical 快照，**不代表已持久化**。是否重名、是否可写与最终发布结果仍由后续唯一的 create-only Store 事务决定。候选类型的私有字段和复制访问器保证调用方无法通过改 Record、嵌套程序、统计指针、输入切片或快照字节来改变其内部冻结内容。
+
+`PreviewFacts` 只包含数量、名义时长和要求的能力，不重复程序。`program` 仅有 `total_steps`；`frame_program` 仅有帧数、写入数、周期及 initial/tail 名义开销；可选数字用指针区分“不适用”和有意义的零。统计来源是既有纯预览，时间基础为 `host-nominal-excludes-native-io`。来源验证通过不代表设备、worker、Pattern admission 或视觉质量通过；本包不返回设备能力承诺，不查文件或路径，不构造运行任务，也没有 HTTP、CLI 或 daemon 接线。
+
+`hold` 仍需等待末帧 fade，其名义 tail 不必为零：默认 3000ms Orbit，4 段有 20ms tail，8 段因 375ms interval 的 fade 量化到 380ms，tail 为 25ms。`planned_target_writes` 统计冻结程序的 initial/frame 目标，不包含执行器额外的 off 清理或 Read。native I/O、读取与清理耗时不属于这些名义统计，也不是实测承诺。
+
+`testdata/authoring` 逐字节复制自此前 `artifacts/pattern-v2-http-plan` 的请求与两份 preview 响应夹具；它们由 d71 的纯 codec 产生，早于本实现。测试仅核对这个纯切片负责的 Record、verification、digest、preview 与单记录 Snapshot；夹具中的 HTTP 外壳和运行不可用声明仍是独立提案，并不表示已实现相应路由。

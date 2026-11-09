@@ -269,6 +269,10 @@ HTTP样例见 [with-receipt.request.json](../examples/runtime/with-receipt.reque
 
 读取或任务清理已确认故障时，执行器会先对外发布离线状态、终结排队任务并拒绝新的控制提交，再等待旧句柄关闭；关闭期间仍保留设备锁，不承诺底层 Close 在固定时间内返回。
 
+### 命令完成后通知灯
+
+[Python 标准库示例](../examples/command-notify/README.zh-CN.md)可在构建、测试或 Agent 命令结束后短时显示成功/失败颜色，使用同一有限 Program 结束熄灯。默认只预览；显式 `--execute` 并提供新报告路径才执行。示例包装 `control prepare` 与带实例回执的 `control run --wait`，不另建 HTTP 或 USB 路径；未知结果保留原绑定，不自动重提。子命令退出码与通知结果分别记录。
+
 ## 8. 所有权与服务退出
 
 daemon、新直控和现有CLI使用同一用户、同一目录的操作系统文件锁。默认目录来自 `os.UserConfigDir()/nb1/device-locks`；可用 `NB1_LOCK_DIR` 或新命令的 `--lock-dir` 显式指定。所有合作进程必须一致。Unix目录须私有，锁文件会保留在磁盘；不要删除锁文件来“解锁”，真正的锁由打开的文件描述符持有，进程结束时释放。

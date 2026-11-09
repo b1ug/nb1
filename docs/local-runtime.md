@@ -6,7 +6,7 @@
 
 本版把设备所有权与执行逻辑集中在同一个本地执行器：daemon 常驻持有选定设备，HTTP、CLI 和独立 MCP 适配器提交程序；每台设备由一个 worker 串行操作。`control --mode direct` 在 CLI 进程内运行同一个执行器。MCP 接入参见[独立适配器说明](../adapters/mcp/README.md)，其协议软件与实物验证状态分别记录。
 
-这是工作区的本地候选版本，相关新代码尚未发布；既有 PR 保留待审状态，没有自动合并或修改远程 PR。本机已经在 macOS 27.2 arm64、blink(1) mk2、固件204上验证直控、HTTP设色、设备占用、取消、退出和读回。mk3没有真机验证；Windows/Linux 的 stub 编译结果不代表原生 USB I/O 通过。普通server/control命令不会安装系统服务，也不写设备 Flash 或模式内容；新增macOS用户服务管理须显式调用 `service install/uninstall`，开发阶段仅验证其模拟路径，未在本机安装。
+这是工作区的本地候选版本，相关新代码尚未发布；既有 PR 保留待审状态，没有自动合并或修改远程 PR。本机已经在 macOS 27.2 arm64、blink(1) mk2、固件204上验证直控、HTTP设色、设备占用、取消、退出和读回。mk3没有真机验证；Windows/Linux 的 stub 编译结果不代表原生 USB I/O 通过。普通server/control命令不会安装系统服务，也不写设备 Flash 或模式内容；新增macOS用户服务管理须显式调用 `service install/start/stop/uninstall`，开发阶段仅验证其模拟路径，未在本机安装。
 
 ## 1. 构建与启动
 
@@ -45,7 +45,7 @@ HTTP响应、`api_version: v1`、设备 `online` 和 `observed` 新鲜度分别�
 
 ### macOS用户级持久启动候选
 
-`service render` 继续只生成配置。新增的 `service install/status/uninstall` 只针对当前普通用户的固定LaunchAgent：install先只读核对launchd归属，再写托管plist；**即使不加 `--start`，下次图形登录也可能自动加载**。加 `--start` 才会立即bootstrap，卸载已注册项须显式 `--stop`。`service status --config-only` 完全不调用launchctl；普通status区分磁盘安装与launchd注册，不把注册当作进程、HTTP或设备就绪。
+`service render` 继续只生成配置。新增的 `service install/start/stop/status/uninstall` 只针对当前普通用户的固定LaunchAgent：install先只读核对launchd归属，再写托管plist；**即使不加 `--start`，下次图形登录也可能自动加载**。安装加 `--start` 或对已安装配置执行 `service start` 才会立即bootstrap；相同配置已注册时不重启。`service stop` 只注销已核对归属的注册项并保留plist，**不等于禁用下次图形登录加载**；注册消失不表示进程退出或USB清理已完成。卸载已注册项须显式 `--stop`。`service status --config-only` 完全不调用launchctl；普通status区分磁盘安装与launchd注册，不把注册当作进程、HTTP或设备就绪。
 
 这部分仅在隔离临时目录与fake launchctl中开发验证，尚未在本机安装或验证注销/重启生命周期。未知plist、归属不明、查询失败、停止不确定或配置被修改时均保留文件；原地升级替换尚未实现。完整用法和边界见[用户级启动配置与管理](../internal/service/README.zh-CN.md)。Linux/Windows仍只提供render及人工部署说明。
 

@@ -265,7 +265,7 @@ func TestUserUnknownOrModifiedPlistsAreNeverAdopted(t *testing.T) {
 					}
 				}
 			}
-			for _, operation := range []string{"status", "install", "uninstall"} {
+			for _, operation := range []string{"status", "install", "uninstall", "start", "stop"} {
 				var status UserStatus
 				var err error
 				switch operation {
@@ -275,6 +275,10 @@ func TestUserUnknownOrModifiedPlistsAreNeverAdopted(t *testing.T) {
 					status, err = m.Install(context.Background(), config, true)
 				case "uninstall":
 					status, err = m.Uninstall(context.Background(), true)
+				case "start":
+					status, err = m.Start(context.Background())
+				case "stop":
+					status, err = m.Stop(context.Background())
 				}
 				if err == nil || status.ConfigState != "conflict" {
 					t.Fatalf("%s adopted %s plist: %+v %v", operation, variant, status, err)
@@ -295,7 +299,7 @@ func TestUserQueryFailuresPreserveFilesAndDoNotMutateLaunchd(t *testing.T) {
 		t.Run(failure, func(t *testing.T) {
 			m, runner, config := fixtureManager(t)
 			original := putManaged(t, m, config)
-			for _, operation := range []string{"install", "uninstall"} {
+			for _, operation := range []string{"install", "uninstall", "start", "stop"} {
 				step := fakeCall{args: []string{"print", m.target()}, result: CommandResult{ExitCode: 1}}
 				switch failure {
 				case "domain_missing":
@@ -311,10 +315,15 @@ func TestUserQueryFailuresPreserveFilesAndDoNotMutateLaunchd(t *testing.T) {
 				}
 				var status UserStatus
 				var err error
-				if operation == "install" {
+				switch operation {
+				case "install":
 					status, err = m.Install(context.Background(), config, true)
-				} else {
+				case "uninstall":
 					status, err = m.Uninstall(context.Background(), true)
+				case "start":
+					status, err = m.Start(context.Background())
+				case "stop":
+					status, err = m.Stop(context.Background())
 				}
 				if err == nil || status.Registration != "unknown" {
 					t.Fatalf("%s treated query failure as absent: %+v %v", operation, status, err)
@@ -347,12 +356,14 @@ func TestUserUnverifiedRuntimeIdentityProhibitsBootout(t *testing.T) {
 				result.Truncated = true
 			}
 			result.Output = output
-			runner.steps = []fakeCall{{args: []string{"print", m.target()}, result: result}}
-			status, err := m.Uninstall(context.Background(), true)
-			if err == nil || status.Registration != "registered" || status.RegistrationOwned {
-				t.Fatalf("unverified runtime stopped: %+v %v", status, err)
+			for _, operation := range []func(context.Context) (UserStatus, error){m.Start, m.Stop, func(ctx context.Context) (UserStatus, error) { return m.Uninstall(ctx, true) }} {
+				runner.steps = []fakeCall{{args: []string{"print", m.target()}, result: result}}
+				status, err := operation(context.Background())
+				if err == nil || status.Registration != "registered" || status.RegistrationOwned || len(status.Actions) != 0 {
+					t.Fatalf("unverified runtime accepted: %+v %v", status, err)
+				}
+				assertContent(t, m.plistPath(), original)
 			}
-			assertContent(t, m.plistPath(), original)
 		})
 	}
 }
@@ -587,5 +598,254 @@ func TestUserStatusDoesNotPersistLaunchctlEnvironment(t *testing.T) {
 	status, err = m.Status(context.Background(), true)
 	if err != nil || status.Registration != "not_checked" || status.RegistrationOwned {
 		t.Fatalf("config-only claimed runtime confirmation: %+v %v", status, err)
+	}
+}
+
+func TestUserStandaloneStartStopPreserveConfigurationAndRegistrationMeaning(t *testing.T) {
+	m, runner, config := fixtureManager(t)
+	original := putManaged(t, m, config)
+	before, _ := os.Stat(m.plistPath())
+	runner.steps = append(absentCalls(m), fakeCall{args: []string{"bootstrap", m.domain(), m.plistPath()}}, registeredCall(m, config))
+	status, err := m.Start(context.Background())
+	if err != nil || !status.RegistrationOwned || !reflect.DeepEqual(status.Actions, []string{"bootstrap_requested"}) {
+		t.Fatalf("standalone start: %+v %v", status, err)
+	}
+	runner.steps = []fakeCall{registeredCall(m, config)}
+	status, err = m.Start(context.Background())
+	if err != nil || len(status.Actions) != 0 || !status.RegistrationOwned {
+		t.Fatalf("matching registration restarted: %+v %v", status, err)
+	}
+	// A successful bootout may leave the job registered briefly. Poll the same
+	// target, then confirm the reachable GUI domain when it disappears.
+	runner.steps = []fakeCall{registeredCall(m, config), {args: []string{"bootout", m.target()}}, registeredCall(m, config)}
+	runner.steps = append(runner.steps, absentCalls(m)...)
+	status, err = m.Stop(context.Background())
+	if err != nil || status.ConfigState != "managed" || status.Registration != "absent" || status.RegistrationOwned || status.AutoLoadAtLogin == nil || !*status.AutoLoadAtLogin || !reflect.DeepEqual(status.Actions, []string{"bootout_requested"}) {
+		t.Fatalf("standalone stop: %+v %v", status, err)
+	}
+	assertContent(t, m.plistPath(), original)
+	after, _ := os.Stat(m.plistPath())
+	if !os.SameFile(before, after) {
+		t.Fatal("start/stop replaced plist inode")
+	}
+	var output bytes.Buffer
+	if err := WriteUserStatus(&output, status); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(output.String(), "stop保留plist，不等于禁用下次图形登录加载") || !strings.Contains(output.String(), "注册已消失不等于进程退出") {
+		t.Fatalf("stop overstated lifecycle completion: %s", output.String())
+	}
+	runner.steps = absentCalls(m)
+	status, err = m.Stop(context.Background())
+	if err != nil || len(status.Actions) != 0 || status.ConfigState != "managed" || !*status.AutoLoadAtLogin {
+		t.Fatalf("already absent registration: %+v %v", status, err)
+	}
+	assertContent(t, m.plistPath(), original)
+}
+
+func TestUserStandaloneControlsNeverAdoptMissingConfiguration(t *testing.T) {
+	for _, operation := range []string{"start", "stop"} {
+		for _, registered := range []bool{false, true} {
+			t.Run(fmt.Sprintf("%s/registered=%t", operation, registered), func(t *testing.T) {
+				m, runner, config := fixtureManager(t)
+				if registered {
+					runner.steps = []fakeCall{registeredCall(m, config)}
+				} else {
+					runner.steps = absentCalls(m)
+				}
+				var status UserStatus
+				var err error
+				if operation == "start" {
+					status, err = m.Start(context.Background())
+				} else {
+					status, err = m.Stop(context.Background())
+				}
+				if (operation == "start" || registered) && err == nil {
+					t.Fatalf("%s adopted missing configuration: %+v", operation, status)
+				}
+				if len(status.Actions) != 0 || status.RegistrationOwned || status.ConfigState != "absent" {
+					t.Fatalf("%s changed unknown service: %+v %v", operation, status, err)
+				}
+				if _, err := os.Lstat(m.plistPath()); !errors.Is(err, os.ErrNotExist) {
+					t.Fatalf("%s created plist: %v", operation, err)
+				}
+			})
+		}
+	}
+}
+
+func TestUserStandaloneStartRechecksExecutableWithoutExecuting(t *testing.T) {
+	for _, variant := range []string{"missing", "directory", "not_executable", "new_symlink"} {
+		t.Run(variant, func(t *testing.T) {
+			m, runner, config := fixtureManager(t)
+			original := putManaged(t, m, config)
+			switch variant {
+			case "missing", "directory", "new_symlink":
+				if err := os.Remove(config.Binary); err != nil {
+					t.Fatal(err)
+				}
+				if variant == "directory" {
+					if err := os.Mkdir(config.Binary, 0700); err != nil {
+						t.Fatal(err)
+					}
+				} else if variant == "new_symlink" {
+					target := filepath.Join(m.home, "different program")
+					if err := os.WriteFile(target, []byte("must never run"), 0700); err != nil {
+						t.Fatal(err)
+					}
+					if err := os.Symlink(target, config.Binary); err != nil {
+						t.Fatal(err)
+					}
+				}
+			case "not_executable":
+				if err := os.Chmod(config.Binary, 0600); err != nil {
+					t.Fatal(err)
+				}
+			}
+			runner.steps = absentCalls(m)
+			status, err := m.Start(context.Background())
+			if err == nil || len(status.Actions) != 0 || status.Registration != "absent" {
+				t.Fatalf("changed binary loaded: %+v %v", status, err)
+			}
+			assertContent(t, m.plistPath(), original)
+		})
+	}
+}
+
+func TestUserLifecycleControlsRecheckFileObservedDuringQuery(t *testing.T) {
+	for _, operation := range []string{"start", "stop", "install"} {
+		for _, registered := range []bool{false, true} {
+			for _, mutation := range []string{"same_inode_edit", "same_inode_managed_change", "identical_inode_replacement", "removed"} {
+				t.Run(fmt.Sprintf("%s/registered=%t/%s", operation, registered, mutation), func(t *testing.T) {
+					m, runner, config := fixtureManager(t)
+					original := putManaged(t, m, config)
+					mutate := func() {
+						changed := []byte("foreign edit")
+						if mutation == "same_inode_managed_change" {
+							updated := config
+							updated.Listen = "127.0.0.1:8932"
+							changed, _ = managedContent(managedDefinition{Version: 1, Label: Label, UID: m.uid, Config: updated})
+						}
+						var err error
+						switch mutation {
+						case "identical_inode_replacement":
+							temporary := m.plistPath() + ".replacement"
+							if err = os.WriteFile(temporary, original, 0600); err == nil {
+								err = os.Rename(temporary, m.plistPath())
+							}
+						case "removed":
+							err = os.Remove(m.plistPath())
+						default:
+							err = os.WriteFile(m.plistPath(), changed, 0600)
+						}
+						if err != nil {
+							t.Fatal(err)
+						}
+					}
+					if registered {
+						runner.steps = []fakeCall{registeredCall(m, config)}
+					} else {
+						runner.steps = absentCalls(m)
+					}
+					runner.steps[0].check = mutate
+					var status UserStatus
+					var err error
+					if operation == "start" {
+						status, err = m.Start(context.Background())
+					} else if operation == "stop" {
+						status, err = m.Stop(context.Background())
+					} else {
+						status, err = m.Install(context.Background(), config, false)
+					}
+					if err == nil || len(status.Actions) != 0 {
+						t.Fatalf("%s acted after file change: %+v %v", operation, status, err)
+					}
+				})
+			}
+		}
+	}
+}
+
+func TestUserStandaloneStopCancellationPreservesUncertainRegistration(t *testing.T) {
+	m, runner, config := fixtureManager(t)
+	original := putManaged(t, m, config)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	pending := registeredCall(m, config)
+	pending.check = cancel
+	runner.steps = []fakeCall{registeredCall(m, config), {args: []string{"bootout", m.target()}}, pending}
+	status, err := m.Stop(ctx)
+	if err == nil || !strings.Contains(err.Error(), "等待注销超时") || status.Registration != "registered" || !reflect.DeepEqual(status.Actions, []string{"bootout_requested"}) {
+		t.Fatalf("unconfirmed unregister reported complete: %+v %v", status, err)
+	}
+	assertContent(t, m.plistPath(), original)
+}
+
+func TestUserStandaloneControlsShareManagementLock(t *testing.T) {
+	m, runner, config := fixtureManager(t)
+	original := putManaged(t, m, config)
+	lease, err := m.managementLease()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer lease.Close()
+	for _, operation := range []func(context.Context) (UserStatus, error){m.Start, m.Stop} {
+		status, err := operation(context.Background())
+		if !errors.Is(err, ownership.ErrBusy) || status.ConfigState != "not_checked" || status.AutoLoadAtLogin != nil || len(runner.calls) != 0 {
+			t.Fatalf("parallel control passed management lock: %+v %v", status, err)
+		}
+	}
+	assertContent(t, m.plistPath(), original)
+}
+
+func TestUserStandaloneControlFailuresRetainConfigurationWithoutRollback(t *testing.T) {
+	for _, variant := range []string{"bootstrap_error", "bootstrap_query_error", "bootstrap_file_changed", "bootout_error", "bootout_query_error", "bootout_file_changed", "bootout_identity_changed"} {
+		t.Run(variant, func(t *testing.T) {
+			m, runner, config := fixtureManager(t)
+			wantContent := putManaged(t, m, config)
+			start := strings.HasPrefix(variant, "bootstrap")
+			var action string
+			var invoke func(context.Context) (UserStatus, error)
+			if start {
+				action, invoke = "bootstrap_requested", m.Start
+				runner.steps = absentCalls(m)
+				runner.steps = append(runner.steps, fakeCall{args: []string{"bootstrap", m.domain(), m.plistPath()}})
+			} else {
+				action, invoke = "bootout_requested", m.Stop
+				runner.steps = []fakeCall{registeredCall(m, config), {args: []string{"bootout", m.target()}}}
+			}
+			last := &runner.steps[len(runner.steps)-1]
+			switch {
+			case strings.HasSuffix(variant, "_query_error"):
+				runner.steps = append(runner.steps, fakeCall{args: []string{"print", m.target()}, err: context.DeadlineExceeded})
+			case strings.HasSuffix(variant, "_file_changed"):
+				wantContent = []byte("changed during native request")
+				last.check = func() {
+					if err := os.WriteFile(m.plistPath(), wantContent, 0600); err != nil {
+						t.Fatal(err)
+					}
+				}
+				if start {
+					runner.steps = append(runner.steps, registeredCall(m, config))
+				} else {
+					runner.steps = append(runner.steps, absentCalls(m)...)
+				}
+			case strings.HasSuffix(variant, "_identity_changed"):
+				foreign := config
+				foreign.Binary = "/foreign/program"
+				runner.steps = append(runner.steps, registeredCall(m, foreign))
+			default:
+				last.result = CommandResult{ExitCode: 5, Output: "PRIVATE_SECRET"}
+			}
+			status, err := invoke(context.Background())
+			if err == nil || !reflect.DeepEqual(status.Actions, []string{action}) || status.AutoLoadAtLogin == nil || !*status.AutoLoadAtLogin {
+				t.Fatalf("uncertain control result: %+v %v", status, err)
+			}
+			encoded, _ := json.Marshal(status)
+			if bytes.Contains(encoded, []byte("PRIVATE_SECRET")) || strings.Contains(err.Error(), "PRIVATE_SECRET") {
+				t.Fatal("launchctl diagnostic output leaked")
+			}
+			assertContent(t, m.plistPath(), wantContent)
+		})
 	}
 }

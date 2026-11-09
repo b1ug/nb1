@@ -1,6 +1,6 @@
 # 用户级常驻启动配置
 
-`nb1 service render` 只生成可审阅的启动配置，不安装、启用、注册、启动或停止服务。macOS候选另有 `install/status/uninstall` 管理当前用户的托管LaunchAgent；这些是显式操作，不会随普通CLI启动自动执行。daemon本身仍以前台 `nb1 server` 运行，由操作系统用户级管理器保持运行。
+`nb1 service render` 只生成可审阅的启动配置，不安装、启用、注册、启动或停止服务。macOS候选另有 `install/start/stop/status/uninstall` 管理当前用户的托管LaunchAgent；这些是显式操作，不会随普通CLI启动自动执行。daemon本身仍以前台 `nb1 server` 运行，由操作系统用户级管理器保持运行。
 
 | 平台 | 输出文件 | 运行方式 |
 | --- | --- | --- |
@@ -45,7 +45,7 @@ daemon与CLI直控必须使用同一账号、同一所有权目录，才能识�
 
 需要自定义时，为daemon与直控CLI都传同一 `--lock-dir`，并核对现有 `NB1_LOCK_DIR` 环境覆盖。更换账号、改变目录或删除仍在使用的锁文件，可能绕过协作锁；不要用这些方式处理“设备忙”。此锁约束本套工具，其他未采用相同协议的软件仍可能直接访问USB。
 
-## macOS：候选用户级安装、状态与卸载
+## macOS：候选用户级安装、启动、停止、状态与卸载
 
 先用上面的 `service render` 生成并检查配置。render仍可在任意平台运行，只输出审阅文件：
 
@@ -65,15 +65,26 @@ nb1 service status --json
 
 `status --config-only` 完全不调用launchctl，也不创建目录或锁，只报告磁盘文件；其 `registration: not_checked` 不能表示服务已运行或已经注销。普通 `status` 只读查询固定的 `gui/<当前UID>/org.b1ug.nb1`，分别返回 `config_state` 与 `registration`。`registration: registered` 仅表示launchd注册，不承诺进程正在运行、HTTP可用或USB在线。`nb1 doctor` 可另查API版本和已有设备快照；doctor显示的是当前CLI构建，不核对daemon二进制或实例身份。
 
-需要本次立即加载时必须显式加 `--start`：
+需要安装后本次立即加载时显式加 `--start`；已有托管配置可单独 `start`：
 
 ```bash
 nb1 service install --binary /absolute/path/to/nb1 --devices 20005601 --start
+# 已安装配置的单独启动，不需要重填配置参数
+nb1 service start --json
 nb1 service status --json
 nb1 doctor --serial 20005601 --json
 ```
 
-立即加载前应正常停止占用同一监听端口或设备的手工daemon；安装器不会代停、替换或强杀它。服务先绑定端口，再尝试硬件所有权，注册成功也可能因端口占用、配置或设备问题而尚未提供API。`KeepAlive` 会保持已加载服务，不应把单纯 `kill` 当作永久停用。相同托管配置已注册时，重复install不会重启或kickstart进程。
+立即加载前应正常停止占用同一监听端口或设备的手工daemon；安装器不会代停、替换或强杀它。服务先绑定端口，再尝试硬件所有权，注册成功也可能因端口占用、配置或设备问题而尚未提供API。`KeepAlive` 会保持已加载服务，不应把单纯 `kill` 当作永久停用。相同托管配置已注册时，重复install或start不会重启或kickstart进程，即使注册项当前没有运行进程。`start`只加载已有完整托管plist，不创建或接管配置；加载前复核完整内容、inode、当前用户身份和可查询的GUI域，并检查原绝对二进制仍为可执行普通文件、路径未改成符号链接。检查失败就拒绝bootstrap。
+
+单独停止本次注册、保留配置：
+
+```bash
+nb1 service stop --json
+nb1 service status --config-only --json
+```
+
+`stop`和 `uninstall --stop` 共用相同归属守卫、超时与bootout实现，仅对核对过的固定service-target请求注销。`stop`保留原plist内容和inode；**stop不等于禁用下次图形登录加载**，不会写持久disabled状态。注册已经消失且GUI域可查询时幂等返回，既不请求bootout，也不宣称进程退出或USB清理完成。无托管plist的同名注册项、查询错误和检查期间配置变化均拒绝动作。
 
 卸载默认先查注册状态。已注销的完整托管plist可直接删除；仍注册的服务须显式 `--stop`：
 
@@ -84,7 +95,7 @@ nb1 service uninstall --stop --json
 
 `--stop` 只有在磁盘托管标记完整、UID/label一致、当前注册项的顶层path/program精确匹配这份配置时，才会对单个固定service-target调用 `bootout`，随后确认注册项消失再删除plist。不会对整个域操作，不使用 `kickstart -k`、`kill`、`enable/disable` 或可能无限等待的 `bootout --wait`。查询异常、格式无法识别、停止结果不明、文件被修改时均保留配置并返回错误；没有受控plist的孤立注册项也不会被接管。
 
-托管标记直接嵌在plist中，只含版本、固定label、当前UID与明确指定的配置，不采集任意环境变量。读取时必须与完整重渲染内容一致；旧版render文件、人工编辑后的配置和未知来源plist一律拒绝覆盖/删除。临时文件写全并同步后才以不覆盖目标的方式发布，最终文件为0600；目录与文件必须属于当前用户，拒绝符号链接或其他用户可写路径。独立管理锁在 `~/Library/Application Support/nb1/service-management`，不使用设备锁目录，也不删除持久锁文件。停止前与删除前均重新比较最初文件的完整内容和inode，已观察到替换或同inode改写就拒绝操作。管理锁只协调本工具的进程；这些检查与最后的Remove并非原子事务，不承诺防住同UID不合作进程故意卡在检查与操作之间的竞态。
+托管标记直接嵌在plist中，只含版本、固定label、当前UID与明确指定的配置，不采集任意环境变量。读取时必须与完整重渲染内容一致；旧版render文件、人工编辑后的配置和未知来源plist一律拒绝覆盖/删除。临时文件写全并同步后才以不覆盖目标的方式发布，最终文件为0600；目录与文件必须属于当前用户，拒绝符号链接或其他用户可写路径。独立管理锁在 `~/Library/Application Support/nb1/service-management`，不使用设备锁目录，也不删除持久锁文件。启动前、停止前与删除前均重新比较查询之前文件的完整内容和inode，已观察到替换或同inode改写就拒绝操作。管理锁只协调本工具的进程；这些检查与最后的Remove并非原子事务，不承诺防住同UID不合作进程故意卡在检查与操作之间的竞态。
 
 当前不做原地升级替换：相同配置幂等，二进制路径、设备或监听等配置变化时先审阅并正常卸载再安装。旧的人工安装项需要先人工核对来源并正常卸载，候选不会擅自接管。这里没有系统级LaunchDaemon、SMAppService、登录前常驻保证或自动日志轮转；默认plist仍不指定stdout/stderr文件。Linux/Windows的自动管理明确返回unsupported，仍保留跨平台render和下方人工部署说明。
 
@@ -141,7 +152,7 @@ Unregister-ScheduledTask -TaskName $taskName -Confirm:$false
 
 macOS和Linux管理器先请求进程退出，配置给20秒退出预算；当前daemon自身有10秒清理等待。若原生I/O阻塞或管理器最终强杀进程，不能保证最后的熄灯和自主播放停止已完成。Windows任务停止也不是等价的优雅关闭协议。退出后应检查新设备读回，不能把“进程已停止”当作“灯已完成清理”。
 
-当前测试覆盖XML参数往返、systemd转义、PowerShell编码和字符串、无效输入先于文件创建、已有文件不被替换。macOS管理候选另以临时home和fake launchctl覆盖安装、幂等、外部同名项、归属核对、未知/修改文件、符号链接、查询异常、bootstrap/bootout不确定结果及卸载保留。另有仅在Windows运行的实际子进程argv往返测试。这些检查不等于已在三平台安装服务或验证重启、注销、USB权限及真机生命周期；本机当前daemon不会被这些测试停止。
+当前测试覆盖XML参数往返、systemd转义、PowerShell编码和字符串、无效输入先于文件创建、已有文件不被替换。macOS管理候选另以临时home和fake launchctl覆盖安装与独立start/stop、幂等、不重启、外部同名项、归属核对、未知/修改文件、同内容inode替换、符号链接、二进制检查、管理锁、查询异常、取消、bootstrap/bootout不确定结果及配置保留。另有仅在Windows运行的实际子进程argv往返测试。这些检查不等于已在三平台安装服务或验证重启、注销、USB权限及真机生命周期；本机当前daemon不会被这些测试停止。
 
 ## 官方依据
 

@@ -117,7 +117,7 @@ func (m *UserManager) initialStatus() UserStatus {
 	return UserStatus{SchemaVersion: 1, Label: Label, Target: m.target(), PlistPath: m.plistPath(), ConfigState: "not_checked", Registration: "not_checked", Actions: []string{}, Notes: []string{
 		"配置写入LaunchAgents后，即使本次不启动，下次图形登录也可能自动加载。",
 		"registered只表示launchd注册；不表示进程已运行、HTTP可用或USB设备在线，API/设备快照另用nb1 doctor检查。",
-		"launchctl print不是稳定机器API；归属字段无法严格核对时拒绝停止和卸载。",
+		"launchctl print不是稳定机器API；归属字段无法严格核对时拒绝启动、停止和卸载。",
 	}}
 }
 
@@ -126,12 +126,18 @@ func (m *UserManager) initialStatus() UserStatus {
 func (m *UserManager) Status(ctx context.Context, configOnly bool) (UserStatus, error) {
 	ctx, cancel := context.WithTimeout(ctx, operationBudget)
 	defer cancel()
+	status, _, err := m.inspect(ctx, configOnly)
+	return status, err
+}
+
+// inspect retains the exact file read before querying launchd so lifecycle
+// actions can reject changes made while the query was in progress.
+func (m *UserManager) inspect(ctx context.Context, configOnly bool) (UserStatus, *managedFile, error) {
 	status := m.initialStatus()
 	file, err := m.readManaged()
 	if err != nil {
 		status.ConfigState = "conflict"
-		status.AutoLoadAtLogin = nil
-		return status, err
+		return status, nil, err
 	}
 	if file != nil {
 		status.ConfigState, status.AutoLoadAtLogin = "managed", boolValue(true)
@@ -142,8 +148,55 @@ func (m *UserManager) Status(ctx context.Context, configOnly bool) (UserStatus, 
 	}
 	if !configOnly {
 		if err := m.registration(ctx, &status); err != nil {
-			return status, err
+			return status, file, err
 		}
+	}
+	return status, file, nil
+}
+
+// Start loads only a complete, existing managed configuration. A matching
+// registration is already started for this command's purpose; never restart it.
+func (m *UserManager) Start(ctx context.Context) (UserStatus, error) {
+	ctx, cancel := context.WithTimeout(ctx, operationBudget)
+	defer cancel()
+	status := m.initialStatus()
+	lease, err := m.managementLease()
+	if err != nil {
+		return status, err
+	}
+	defer lease.Close()
+	status, file, err := m.inspect(ctx, false)
+	if err != nil {
+		return status, err
+	}
+	if file == nil {
+		return status, fmt.Errorf("没有已核对的托管配置；请先service install，不会创建配置或接管同名注册项")
+	}
+	if err := m.bootstrap(ctx, &status, file); err != nil {
+		return status, err
+	}
+	return status, nil
+}
+
+// Stop removes only the verified registration and deliberately retains the
+// plist. This does not disable automatic loading at the next GUI login.
+func (m *UserManager) Stop(ctx context.Context) (UserStatus, error) {
+	ctx, cancel := context.WithTimeout(ctx, operationBudget)
+	defer cancel()
+	status := m.initialStatus()
+	lease, err := m.managementLease()
+	if err != nil {
+		return status, err
+	}
+	defer lease.Close()
+	status, file, err := m.inspect(ctx, false)
+	status.Notes = append(status.Notes, "stop保留plist，不等于禁用下次图形登录加载；需要移除配置请用service uninstall。",
+		"注册已消失不等于进程退出、原生I/O、设备所有权释放或最后熄灯已完成；按需另行检查。")
+	if err != nil {
+		return status, err
+	}
+	if err := m.bootout(ctx, &status, file); err != nil {
+		return status, err
 	}
 	return status, nil
 }
@@ -162,11 +215,8 @@ func (m *UserManager) Install(ctx context.Context, config Config, start bool) (U
 		return status, err
 	}
 	// Retain an explicit absolute executable and verify it without executing it.
-	info, err := os.Stat(config.Binary)
-	if err != nil || !info.Mode().IsRegular() || info.Mode().Perm()&0111 == 0 {
-		return status, fmt.Errorf("--binary 必须指向已存在、可执行的普通文件；不会自动下载或执行它")
-	}
-	config.Binary, err = filepath.EvalSymlinks(config.Binary)
+	var err error
+	config.Binary, err = executablePath(config.Binary)
 	if err != nil {
 		return status, err
 	}
@@ -182,23 +232,21 @@ func (m *UserManager) Install(ctx context.Context, config Config, start bool) (U
 	defer lease.Close()
 	// Even files-only installation must reject a foreign same-label service:
 	// writing LaunchAgents would otherwise create a future login collision.
-	status, err = m.Status(ctx, false)
+	status, current, err := m.inspect(ctx, false)
 	if err != nil {
 		return status, err
 	}
-	current, err := m.readManaged()
-	if err != nil {
+	if err := m.unchanged(current); err != nil {
 		return status, err
 	}
 	if current != nil && !bytes.Equal(current.content, content) {
 		return status, fmt.Errorf("已有托管配置与请求不同；不会覆盖或升级，请先审阅并正常卸载旧配置")
 	}
 	if status.Registration != "absent" {
-		if status.Registration == "registered" && status.RegistrationOwned && current != nil {
-			status.Notes = append(status.Notes, "同一托管配置已注册；未重启、kickstart或替换进程。")
-			return status, nil
-		}
-		return status, fmt.Errorf("launchd中已有未确认归属的同名项；不会bootstrap、替换或停止它")
+		// The shared helper only accepts a matching registration here and
+		// returns without requesting bootstrap, including files-only installs.
+		err := m.bootstrap(ctx, &status, current)
+		return status, err
 	}
 	if current == nil {
 		if err := m.directory(filepath.Dir(m.plistPath()), true); err != nil {
@@ -218,22 +266,115 @@ func (m *UserManager) Install(ctx context.Context, config Config, start bool) (U
 	if !start {
 		return status, nil
 	}
-	if err := m.unchanged(current); err != nil {
+	if err := m.bootstrap(ctx, &status, current); err != nil {
 		return status, err
+	}
+	return status, nil
+}
+
+// executablePath inspects an explicit binary without executing it.
+func executablePath(binary string) (string, error) {
+	info, err := os.Stat(binary)
+	if err != nil || !info.Mode().IsRegular() || info.Mode().Perm()&0111 == 0 {
+		return "", fmt.Errorf("--binary 必须指向已存在、可执行的普通文件；不会自动下载或执行它")
+	}
+	return filepath.EvalSymlinks(binary)
+}
+
+// currentUser rechecks credentials at the live action boundary. Production
+// construction also rejects root and switched identities before any operation.
+func (m *UserManager) currentUser() error {
+	if os.Getuid() != m.uid || os.Geteuid() != m.uid {
+		return fmt.Errorf("当前用户身份已改变；拒绝启动或停止用户服务")
+	}
+	return nil
+}
+
+// bootstrap is shared by install --start and start. The caller holds the
+// management lease and supplies the file snapshot from before the query.
+func (m *UserManager) bootstrap(ctx context.Context, status *UserStatus, file *managedFile) error {
+	if err := m.unchanged(file); err != nil {
+		return err
+	}
+	if err := m.currentUser(); err != nil {
+		return err
+	}
+	if status.Registration == "registered" && status.RegistrationOwned && file != nil {
+		status.Notes = append(status.Notes, "同一托管配置已注册；未重启、kickstart或替换进程。")
+		return nil
+	}
+	if status.Registration != "absent" || file == nil {
+		return fmt.Errorf("launchd中已有未确认归属的同名项或注册状态未知；不会bootstrap、替换或停止它")
+	}
+	binary, err := executablePath(file.definition.Config.Binary)
+	if err != nil {
+		return err
+	}
+	if binary != file.definition.Config.Binary {
+		return fmt.Errorf("托管二进制路径已变为符号链接；拒绝加载，请重新核对配置")
+	}
+	if err := m.unchanged(file); err != nil {
+		return err
 	}
 	status.Actions = append(status.Actions, "bootstrap_requested")
 	result, err := m.runner.Run(ctx, "bootstrap", m.domain(), m.plistPath())
 	if err != nil || result.ExitCode != 0 {
 		status.Registration = "unknown"
-		return status, fmt.Errorf("bootstrap未确认成功；配置保留，下次登录仍可能加载。请运行service status核对；不会自动回滚、重试或bootout")
+		return fmt.Errorf("bootstrap未确认成功；配置保留，下次登录仍可能加载。请运行service status核对；不会自动回滚、重试或bootout")
 	}
-	if err := m.registration(ctx, &status); err != nil {
-		return status, err
+	if err := m.registration(ctx, status); err != nil {
+		return err
+	}
+	if err := m.unchanged(file); err != nil {
+		return err
 	}
 	if !status.RegistrationOwned {
-		return status, fmt.Errorf("bootstrap返回后无法确认注册项归属；配置保留，请查看service status，不会自动bootout")
+		return fmt.Errorf("bootstrap返回后无法确认注册项归属；配置保留，请查看service status，不会自动bootout")
 	}
-	return status, nil
+	return nil
+}
+
+// bootout is shared by stop and uninstall --stop. It observes registration,
+// never process exit or hardware cleanup, and never removes the plist.
+func (m *UserManager) bootout(ctx context.Context, status *UserStatus, original *managedFile) error {
+	if err := m.unchanged(original); err != nil {
+		return err
+	}
+	if err := m.currentUser(); err != nil {
+		return err
+	}
+	if status.Registration == "absent" {
+		return nil
+	}
+	if status.Registration != "registered" || !status.RegistrationOwned || original == nil {
+		return fmt.Errorf("同名注册项归属不明确；不会停止或删除配置")
+	}
+	status.Actions = append(status.Actions, "bootout_requested")
+	result, err := m.runner.Run(ctx, "bootout", m.target())
+	if err != nil || result.ExitCode != 0 {
+		status.Registration, status.RegistrationOwned = "unknown", false
+		return fmt.Errorf("bootout未确认成功；配置保留，请重新运行service status；不会强杀或删除文件")
+	}
+	// Do not use --wait, which current launchctl help says may wait forever.
+	for {
+		if err := m.registration(ctx, status); err != nil {
+			return err
+		}
+		if err := m.unchanged(original); err != nil {
+			return err
+		}
+		if status.Registration == "absent" {
+			return nil
+		}
+		if !status.RegistrationOwned {
+			return fmt.Errorf("停止后注册项归属改变；配置保留")
+		}
+		select {
+		case <-ctx.Done():
+			return fmt.Errorf("等待注销超时；配置保留，不能保证进程或硬件清理完成")
+		case <-time.After(100 * time.Millisecond):
+		}
+	}
 }
 
 // Uninstall always queries launchd first. stop authorizes bootout only after
@@ -248,12 +389,7 @@ func (m *UserManager) Uninstall(ctx context.Context, stop bool) (UserStatus, err
 		return status, err
 	}
 	defer lease.Close()
-	original, err := m.readManaged()
-	if err != nil {
-		status.ConfigState, status.AutoLoadAtLogin = "conflict", nil
-		return status, err
-	}
-	status, err = m.Status(ctx, false)
+	status, original, err := m.inspect(ctx, false)
 	if err != nil {
 		return status, err
 	}
@@ -264,33 +400,8 @@ func (m *UserManager) Uninstall(ctx context.Context, stop bool) (UserStatus, err
 		if !stop {
 			return status, fmt.Errorf("服务仍已注册；需要显式service uninstall --stop才会请求停止并卸载")
 		}
-		// launchctl queries may take time. Recheck complete contents and inode
-		// immediately before acting on the registration they described.
-		if err := m.unchanged(original); err != nil {
+		if err := m.bootout(ctx, &status, original); err != nil {
 			return status, err
-		}
-		status.Actions = append(status.Actions, "bootout_requested")
-		result, err := m.runner.Run(ctx, "bootout", m.target())
-		if err != nil || result.ExitCode != 0 {
-			status.Registration = "unknown"
-			return status, fmt.Errorf("bootout未确认成功；配置保留，请重新运行service status；不会强杀或删除文件")
-		}
-		// Do not use --wait, which current launchctl help says may wait forever.
-		for {
-			if err := m.registration(ctx, &status); err != nil {
-				return status, err
-			}
-			if status.Registration == "absent" {
-				break
-			}
-			if !status.RegistrationOwned {
-				return status, fmt.Errorf("停止后注册项归属改变；配置保留")
-			}
-			select {
-			case <-ctx.Done():
-				return status, fmt.Errorf("等待注销超时；配置保留，不能保证进程或硬件清理完成")
-			case <-time.After(100 * time.Millisecond):
-			}
 		}
 	}
 	if status.Registration != "absent" {
@@ -343,7 +454,7 @@ func (m *UserManager) registration(ctx context.Context, status *UserStatus) erro
 	status.Registration, status.RegistrationOwned = "unknown", false
 	result, err := m.runner.Run(ctx, "print", m.target())
 	if err != nil {
-		return fmt.Errorf("无法查询launchd；归属未知，不会停止或删除配置")
+		return fmt.Errorf("无法查询launchd；归属未知，不会启动、停止或删除配置")
 	}
 	if result.ExitCode == 0 {
 		status.Registration = "registered"
@@ -362,7 +473,7 @@ func (m *UserManager) registration(ctx context.Context, status *UserStatus) erro
 			return nil
 		}
 	}
-	return fmt.Errorf("launchd查询失败或GUI登录域不可用；注册状态未知，不会停止或删除配置")
+	return fmt.Errorf("launchd查询失败或GUI登录域不可用；注册状态未知，不会启动、停止或删除配置")
 }
 
 // print is explicitly a human diagnostic format. Recognize only a narrow

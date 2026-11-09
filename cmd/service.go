@@ -11,7 +11,7 @@ import (
 func newServiceCommand() *cobra.Command {
 	command := &cobra.Command{
 		Use: "service", Short: "Render startup configurations or manage the current macOS user's agent",
-		Long: "service render generates reviewable launchd, systemd-user or Windows logon-task configuration without installation. macOS install/status/uninstall manage only the current ordinary user's fixed org.b1ug.nb1 LaunchAgent. Installing its plist may enable automatic loading at the next GUI login; --start is required to bootstrap immediately. No sudo or system-wide service management.",
+		Long: "service render generates reviewable launchd, systemd-user or Windows logon-task configuration without installation. macOS install/start/stop/status/uninstall manage only the current ordinary user's fixed org.b1ug.nb1 LaunchAgent. Installing its plist may enable automatic loading at the next GUI login; install --start or service start explicitly bootstraps immediately; service stop retains the plist and its possible next-login loading. No sudo or system-wide service management.",
 	}
 	var config service.Config
 	var output string
@@ -46,7 +46,7 @@ func newServiceCommand() *cobra.Command {
 	_ = render.MarkFlagRequired("binary")
 	_ = render.MarkFlagRequired("devices")
 	command.AddCommand(render)
-	command.AddCommand(newServiceInstallCommand(), newServiceStatusCommand(), newServiceUninstallCommand())
+	command.AddCommand(newServiceInstallCommand(), newServiceStartCommand(), newServiceStopCommand(), newServiceStatusCommand(), newServiceUninstallCommand())
 	return command
 }
 
@@ -72,6 +72,38 @@ func newServiceInstallCommand() *cobra.Command {
 	command.Flags().BoolVar(&asJSON, "json", false, "输出schema_version=1的配置/注册状态")
 	_ = command.MarkFlagRequired("binary")
 	_ = command.MarkFlagRequired("devices")
+	return command
+}
+
+func newServiceStartCommand() *cobra.Command {
+	var asJSON bool
+	command := &cobra.Command{
+		Use: "start", Short: "macOS：加载已有且归属已核对的托管用户配置",
+		Long: "只启动已安装的完整托管plist；加载前重新核对当前用户、GUI域、文件内容与inode及二进制。未知同名项、查询失败或配置变化时拒绝启动。相同配置已注册则幂等返回，不重启或kickstart；注册不表示进程、HTTP或USB已就绪。",
+		Args: cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			return runUserService(cmd, asJSON, func(ctx context.Context, manager *service.UserManager) (service.UserStatus, error) {
+				return manager.Start(ctx)
+			})
+		},
+	}
+	command.Flags().BoolVar(&asJSON, "json", false, "输出schema_version=1的配置/注册状态")
+	return command
+}
+
+func newServiceStopCommand() *cobra.Command {
+	var asJSON bool
+	command := &cobra.Command{
+		Use: "stop", Short: "macOS：停止已核对归属的注册项，保留plist",
+		Long: "只对完整托管plist及当前注册path/program均已核对的单个service-target请求bootout。保留plist，stop不等于禁用下次图形登录加载。未知归属、查询失败或配置变化时拒绝动作；注册消失不代表进程退出或USB清理完成。不强杀、不删除锁、不调用enable/disable。",
+		Args: cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			return runUserService(cmd, asJSON, func(ctx context.Context, manager *service.UserManager) (service.UserStatus, error) {
+				return manager.Stop(ctx)
+			})
+		},
+	}
+	command.Flags().BoolVar(&asJSON, "json", false, "输出schema_version=1的配置/注册状态")
 	return command
 }
 

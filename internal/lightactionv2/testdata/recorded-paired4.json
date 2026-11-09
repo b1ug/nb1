@@ -1,0 +1,43 @@
+{
+  "mode": "paired",
+  "initial": [
+    "#990000",
+    "#000099"
+  ],
+  "frames": [
+    {
+      "colors": [
+        "#800080",
+        "#1a001a"
+      ],
+      "fade_ms": 750,
+      "interval_ms": 750
+    },
+    {
+      "colors": [
+        "#000099",
+        "#990000"
+      ],
+      "fade_ms": 750,
+      "interval_ms": 750
+    },
+    {
+      "colors": [
+        "#1a001a",
+        "#800080"
+      ],
+      "fade_ms": 750,
+      "interval_ms": 750
+    },
+    {
+      "colors": [
+        "#990000",
+        "#000099"
+      ],
+      "fade_ms": 750,
+      "interval_ms": 750
+    }
+  ],
+  "repeat": 3,
+  "gap_ms": 10
+}

@@ -1,0 +1,101 @@
+name: Pattern StoreV2 Windows native
+
+on:
+  push:
+    branches: [ci/pattern-v2-windows-20261110]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pattern-store-v2-windows-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  windows386:
+    name: Windows 386 StoreV2 private NTFS
+    runs-on: windows-2022
+    timeout-minutes: 10
+    env:
+      GOWORK: "off"
+      CGO_ENABLED: "0"
+      GOOS: windows
+      GOARCH: "386"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: "1.27.x"
+          architecture: x64
+          cache: false
+      - uses: msys2/setup-msys2@ec48f7c5447b3140e2b088413ae3a55687bccb6e # v2
+        with:
+          msystem: MINGW32
+          update: false
+          path-type: inherit
+      - name: Observe inherited MSYS temporary-directory security
+        shell: msys2 {0}
+        run: |
+          set -euo pipefail
+          go version > pattern-windows-toolchain.txt
+          go env GOHOSTARCH GOOS GOARCH CGO_ENABLED >> pattern-windows-toolchain.txt
+          git rev-parse HEAD > pattern-windows-source.txt
+          go test -mod=readonly -json -count=1 -timeout=1m -run '^TestWindowsStoreTempParentDiagnostics$' ./internal/patternstore > pattern-windows-inherited.jsonl
+      - name: Create a private disposable temporary directory
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $root = Join-Path $env:RUNNER_TEMP ('nb1-pattern-v2-private-' + $env:GITHUB_RUN_ID)
+          if (Test-Path -LiteralPath $root) { throw 'Temporary qualification directory already exists.' }
+          $sid = [System.Security.Principal.WindowsIdentity]::GetCurrent().User
+          $acl = [System.Security.AccessControl.DirectorySecurity]::new()
+          $acl.SetOwner($sid)
+          $acl.SetAccessRuleProtection($true, $false)
+          $inherit = [System.Security.AccessControl.InheritanceFlags]::ContainerInherit -bor [System.Security.AccessControl.InheritanceFlags]::ObjectInherit
+          foreach ($principal in @($sid.Value, 'S-1-5-18', 'S-1-5-32-544')) {
+            $rule = [System.Security.AccessControl.FileSystemAccessRule]::new([System.Security.Principal.SecurityIdentifier]::new($principal), [System.Security.AccessControl.FileSystemRights]::FullControl, $inherit, [System.Security.AccessControl.PropagationFlags]::None, [System.Security.AccessControl.AccessControlType]::Allow)
+            $acl.AddAccessRule($rule)
+          }
+          # This newly allocated directory is empty until its restricted ACL
+          # and current-user owner have been applied and checked.
+          New-Item -ItemType Directory -Path $root | Out-Null
+          Set-Acl -LiteralPath $root -AclObject $acl
+          $actual = Get-Acl -LiteralPath $root
+          if (-not $actual.AreAccessRulesProtected) { throw 'Temporary ACL is not protected.' }
+          if ($actual.GetOwner([System.Security.Principal.SecurityIdentifier]).Value -ne $sid.Value) { throw 'Temporary owner mismatch.' }
+          "NB1_PATTERN_PRIVATE_TEMP=$root" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+      - name: Execute store tests under the private temporary directory
+        shell: msys2 {0}
+        run: |
+          set -euo pipefail
+          export TEMP="$NB1_PATTERN_PRIVATE_TEMP"
+          export TMP="$NB1_PATTERN_PRIVATE_TEMP"
+          go test -mod=readonly -json -count=1 -timeout=3m ./internal/patternstore ./internal/patternsv2 ./internal/patterns > pattern-windows-private.jsonl
+          go vet -mod=readonly ./internal/patternstore ./internal/patternsv2 ./internal/patterns
+      - name: Preserve qualification records
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: pattern-store-v2-windows386-${{ github.sha }}-a${{ github.run_attempt }}
+          path: |
+            pattern-windows-toolchain.txt
+            pattern-windows-source.txt
+            pattern-windows-inherited.jsonl
+            pattern-windows-private.jsonl
+          if-no-files-found: error
+          retention-days: 14
+      - name: Remove the empty qualification directory
+        if: always()
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if (-not $env:NB1_PATTERN_PRIVATE_TEMP) { exit 0 }
+          $expected = Join-Path $env:RUNNER_TEMP ('nb1-pattern-v2-private-' + $env:GITHUB_RUN_ID)
+          if ($env:NB1_PATTERN_PRIVATE_TEMP -ne $expected) { throw 'Temporary cleanup path mismatch.' }
+          if (Test-Path -LiteralPath $expected) {
+            if (@(Get-ChildItem -LiteralPath $expected -Force).Count -ne 0) { throw 'Temporary fixture is not empty; preserved for inspection.' }
+            Remove-Item -LiteralPath $expected
+          }

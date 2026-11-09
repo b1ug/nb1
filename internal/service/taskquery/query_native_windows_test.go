@@ -92,7 +92,9 @@ func TestNativeQueryOptIn(t *testing.T) {
 	}
 
 	report.Phase = "query"
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	// Leave the product's fixed query budget in control. This fixture performs
+	// one cold-profile Query, with no diagnostic prewarm or retry.
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
 	selected, err := reader.Query(ctx)
 	report.SelectedStatus = &selected

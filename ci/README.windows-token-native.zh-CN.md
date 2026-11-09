@@ -62,3 +62,9 @@ Go诊断来自1a74b101+272f3674（后者先append样本再原位更新，partial
 DiagnosticsAttempted/Completed和退出proof独立于QueryCompleted。完整DIAGNOSTIC_FAILED/exit1若两个run/Wait证据齐全可清理，但整体仍FAIL；configuration/identity/constructor/runner/sample_identity/sample_run/sample_parse/report等早停、空/半样本、无/坏报告、Go被杀或超时一律不设proof、FAIL_CLEANUP保留，不查询或按名杀PowerShell。公共退出屏障检查所有已启动模式，诊断结果不能清掉常规Query失败。成功报告也只能是DIAGNOSTIC_ONLY，不能PASS/Absent/managed/TaskCRUD/USB。
 
 951 WOW64仅保留了query/deadline、Go test3.03秒及退出1，旧失败selected_status无法从artifact恢复；amd64原样selected_status及0.33秒已保存。后续harness对失败的有限selected_status（含kind/stage/可选HRESULT）做严格保留，并额外记录直接Go Process.Start与Wait时间；这些不是PS/COM分段计时，也不倒填旧run事实。所有新fake成功路径显式exit0，避免PS5 caller LASTEXITCODE为空误判；软件测试/交叉编译仍不构成Windows timing原生PASS。
+
+## 首次桥接耗时后的生产复验
+
+隔离2916 / [run42572206853](https://github.com/b1ug/nb1/actions/runs/42572206853) 的首次/第二次bridge记录为amd64 355/204ms、WOW64 10593/257ms，Current/New/trust约0–1ms。两ABI都完成相同Unknown缺失观察和精确退出清理；它仍只是诊断，不是生产3秒Query通过，也不分辨PS启动或COM各自成本。
+
+据此准备固定15秒生产查询预算的最小修复后复验。常规 `TestNativeQueryOptIn` 的caller期限改为20秒，使生产15秒预算先到期；外围直接Go等待仍为40秒。这三个期限各有边界，不是同步OS调用的硬退出保证。每次常规fixture仍是fresh普通账户第一次单次Query，不先运行timing、不预热、不重试、不扩大权限。旧951失败与2916诊断保持原始身份，只有新的正常Query结果可以计入修复验收。

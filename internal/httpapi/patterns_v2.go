@@ -49,8 +49,9 @@ func WithPatternStoreV2(store PatternStoreV2) Option {
 }
 
 // WithPatternDirectoryV2 selects an independent v2 library without filesystem
-// I/O. Empty selects UserConfigDir()/nb1/patterns-v2. Only a successful save or
-// import creates the directory; invalid configuration disables this library
+// I/O. Empty selects UserConfigDir()/nb1/patterns-v2. Only a valid save or import
+// entering its write transaction may create the directory; failed publication
+// does not promise to remove that directory. Invalid configuration disables this library
 // while pure preview and ordinary device operations remain available.
 func WithPatternDirectoryV2(dir string) Option {
 	return func(h *handler) {

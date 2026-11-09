@@ -31,14 +31,46 @@ GOWORK=off go build -o ../../../bin/nb1-mcp .
 | `run_program` | `serial` 和互斥的 `program` / `effect`，可选 `policy`、`dry_run` 及齐全的请求二元组。原始程序或高层效果均由同一 daemon 设备执行器管理。 |
 | `preview_program` | 互斥的 `program` / `effect`，可选 `serial`。由 daemon 权威编译并返回 `kind:"program_preview"`、`accepted:false`；不创建 Job/回执、不打开 USB。可选设备检查只使用缓存快照，不保证随后能执行。 |
 | `resolve_color` | 新候选只读工具，必填 color：名字/hex3/hex6字符串、rgb8或hsv对象；HTTP归一化为 canonical_color 和 raw RGB，不发现设备或创建Job。 |
+| `preview_light` | `contract:nb1-light-action/v1`、一个严格的 `action`，可选 `serial`。仅一次只读编译 POST；返回 `light_preview`、`accepted:false`。 |
+| `run_light` | 必填 serial、contract、action 及完整原票据。policy 可省略但只允许 reject。先一次只读目标预览，再至多一次执行 POST。 |
 | `get_job` | 原 `{id}`，或互斥的 `{serial,request_id,expected_daemon_instance_id}`。后者只查询原回执，不提交任务；任务历史与回执均有界且不跨 daemon 重启保存。 |
 | `cancel_job` | `id`。请求取消；可能返回 `cancelling`，此时还不能认为硬件已停止。 |
 
 输入仅接受声明的字段。`color` 为原始 `#RRGGBB`，不隐式应用 Gamma；`led` 为0（全部）、1或2。原始 `program` 的 `fade_ms` 在0–600000之间且必须是10的倍数；`hold_ms` 在0–3600000之间。程序有1–1024步，repeat为0或省略时运行一次，最大10000次；每步的淡入、保持及10ms固件更新余量计入24小时名义上限，原生 I/O 仍有额外开销。`on_finish` 默认为 `off`，也可指定 `hold`。能力与实际支持型号以 daemon 结果为准，不据协议模拟声称 mk3 已经实测。
 
+## 统一 light 作者动作
+
+新工具使用显式 `contract:"nb1-light-action/v1"`。支持 `set/off/fade/blink/breathe/pulse/alternate/rainbow`，每种动作只接受自己的字段。`preview_light` 不接受票据、policy 或 dry_run；`run_light` 必须携带已准备的完整原票据，不接受 dry_run。
+
+```json
+{
+  "contract": "nb1-light-action/v1",
+  "action": {"kind":"breathe","color":"lime","period_ms":2000,"cycles":2},
+  "serial": "20005601"
+}
+```
+
+此例为 `preview_light`：仅一次 `POST /v1/light/preview`。省略 serial 只编译，提供 serial 只检查缓存能力。返回 `kind:"light_preview"`、`accepted:false`，data 保持 HTTP 的 `{result,preview}`：版本化规范动作、规范 Program、名义时长、总步骤以及目标验证。不会创建 Job、准备票据、查询设备列表、打开 USB 或自动重试。
+
+运行时调用 `run_light`，在上述字段上添加从 `list_devices({prepare_request:true})` 保存的原 `request_id` 与 `expected_daemon_instance_id`。policy 缺省为 reject，也只允许 reject。适配器按顺序做：
+
+1. 一次只读的目标 light 预览，验证合同、规范结构、原 serial、kind、非颜色参数与明确 hex 输入，要求目标为 supported。
+2. 至多一次 `POST /v1/devices/{serial}/light`，使用未经重写的作者 Action、原票据及 reject。
+3. 检查唯一实例/重放响应头、原设备、规范 Job.Program 与权威预览完全相同，以及 total/completed 步数范围。接受 Job 不等于完成。
+
+不会自动准备、替换或刷新票据，不会用旧 jobs/direct 入口回退。预览失败就不发送执行 POST。任何被保留的旧票据可能涉及之前的尝试：本次没有发送执行 POST，不等于之前一定没有 Job。提交结果未知时返回原票据并保留 outcome_unknown，通过原 `get_job` 回执查询核对，不换键重发。
+
+颜色仍由 daemon 权威归一化：复用 resolve_color 的字符串/rgb8/hsv 输入 schema，保留原 arguments 的数字词法。明确的 Hex3/Hex6 可独立绑定；CSS名字和HSV转换不在适配器中复制，也不宣称远端认证或独立重算。编译曲线只在 nb1 核心实现；适配器做结构、版本、参数、算术和响应一致性验证。
+
+新 light 输入限65536字节。成功和失败的 HTTP 响应都要求恰好一个合法的 JSON `Content-Type`（可带 charset），并检查 UTF-8、重复字段、null、尾随数据及非配对 Unicode 转义；合法配对和普通转义仍接受。错误响应还要求封闭的 `{error:{code,message}}` 结构。损坏响应返回 `invalid_daemon_response`，不会从其中挑选一个错误码来断言已拒绝。标准 JSON 的404/501表示只读路由不支持；纯文本或损坏的404/501仍属于无效响应，不会触发旧接口回退。
+
+`breathe` 是固定 cosine16 对称呼吸；新 `pulse` 默认60ms渐亮、240ms衰减和700ms停顿，名义周期另含3步的30ms开销。旧 `run_program.effect.kind=pulse` 的对称渐变语义完全保留。新作者动作执行总步数最多1024、总名义时长最多24小时；曲线、默认和精确时序见 [light 作者契约](../../internal/lightaction/README.zh-CN.md)。
+
+本增量仅在独立模块的官方 SDK 内存/stdio和本地 HTTP fixture 验证。工具是否已安装仍以实际 tools/list 为准，MCP进程不接管设备，模块不导入nb1核心或USB库。
+
 ## 可读颜色输入候选
 
-原七工具形状不变；新增 `resolve_color` 后本候选共八工具，尚未推广到现有daemon。运行时先 tools/list；新daemon路由 `POST /v1/colors/resolve`，请求仅 `{"color":...}`，无serial/policy/ticket。
+颜色增量保留原七工具形状，构成此前八工具集合；本开发候选再添加 `preview_light` / `run_light`，共十工具。实际安装版本必须先用 tools/list 确认，不据此宣称已推广。运行时先 tools/list；新daemon路由 `POST /v1/colors/resolve`，请求仅 `{"color":...}`，无serial/policy/ticket。
 
 ```json
 {"color":"lime"}
@@ -100,7 +132,7 @@ MCP仅校验字段、枚举和基本范围，并将RGB规范为小写；省略�
 
 ## 权威软件预览与能力目录
 
-`preview_program` 与原六工具构成原七工具；新增颜色归一化工具后当前候选为八工具。预览仍是只读、幂等提示工具；原有 `dry_run` 语义不变。需要让 daemon 检查完整编译、总时长和结束行为时使用新工具：
+`preview_program` 与原六工具构成原七工具；新增颜色归一化工具时为八工具，本增量增加两项版本化 light 工具后为十工具。预览仍是只读、幂等提示工具；原有 `dry_run` 语义不变。需要让 daemon 检查完整编译、总时长和结束行为时使用新工具：
 
 ```json
 {

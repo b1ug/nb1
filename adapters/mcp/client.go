@@ -13,6 +13,7 @@ import (
 	"net/url"
 	"strings"
 	"time"
+	"unicode/utf8"
 )
 
 const defaultEndpoint = "http://127.0.0.1:8931"
@@ -114,6 +115,30 @@ func (d *daemon) requestMode(ctx context.Context, method, path, kind string, inp
 	if len(data) > maxResponseBytes {
 		return errorOutput("invalid_daemon_response", "daemon response exceeds 2 MiB", response.StatusCode, uncertainPost)
 	}
+	if kind == "light_job" || kind == "light_preview" {
+		// Validate the raw representation before either the success or error
+		// branch can discard duplicate fields, nulls or malformed text. The
+		// existing eight tools deliberately retain their response contracts.
+		contentTypes := response.Header.Values("Content-Type")
+		if len(contentTypes) != 1 {
+			return errorOutput("invalid_daemon_response", "light responses require exactly one Content-Type", response.StatusCode, uncertainPost)
+		}
+		media, _, mediaErr := mime.ParseMediaType(contentTypes[0])
+		if mediaErr != nil || media != "application/json" || !utf8.Valid(data) {
+			return errorOutput("invalid_daemon_response", "light responses require valid UTF-8 application/json", response.StatusCode, uncertainPost)
+		}
+		if err := validateRawArguments(data); err != nil {
+			return errorOutput("invalid_daemon_response", err.Error(), response.StatusCode, uncertainPost)
+		}
+		if err := validateLightUnicodeEscapes(data); err != nil {
+			return errorOutput("invalid_daemon_response", err.Error(), response.StatusCode, uncertainPost)
+		}
+		if response.StatusCode < 200 || response.StatusCode >= 300 {
+			if err := validateLightErrorResponse(data); err != nil {
+				return errorOutput("invalid_daemon_response", err.Error(), response.StatusCode, uncertainPost)
+			}
+		}
+	}
 	if response.StatusCode < 200 || response.StatusCode >= 300 {
 		if software && (response.StatusCode == http.StatusNotFound || response.StatusCode == http.StatusNotImplemented) {
 			return errorOutput("unsupported", "daemon does not support the requested read-only software route; no job was submitted", response.StatusCode, false)
@@ -143,6 +168,9 @@ func (d *daemon) requestMode(ctx context.Context, method, path, kind string, inp
 			return errorOutput("invalid_daemon_response", err.Error(), response.StatusCode, false)
 		}
 		return output{Kind: kind, Data: value, Accepted: false}
+	}
+	if kind == "light_job" {
+		kind = "job"
 	}
 	var value any
 	decoder := json.NewDecoder(bytes.NewReader(data))

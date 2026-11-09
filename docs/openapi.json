@@ -675,6 +675,181 @@
           }
         }
       }
+    },
+    "/v1/light/preview": {
+      "post": {
+        "operationId": "previewLight",
+        "summary": "Compile an explicit versioned light action without playing it",
+        "description": "No query parameters, including empty query; 65536-byte UTF-8 request maximum. Without serial, no service methods are called. With serial, check one cached device snapshot only. No discovery, Job, receipt preparation or USB operation.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LightPreviewRequest"
+              },
+              "example": {
+                "contract": "nb1-light-action/v1",
+                "action": {
+                  "kind": "breathe",
+                  "color": "lime",
+                  "period_ms": 2000,
+                  "cycles": 2,
+                  "on_finish": "off"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "405": {
+            "$ref": "#/components/responses/405"
+          },
+          "413": {
+            "$ref": "#/components/responses/413"
+          },
+          "415": {
+            "$ref": "#/components/responses/415"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          },
+          "503": {
+            "$ref": "#/components/responses/503"
+          },
+          "200": {
+            "description": "Canonical action plus the same finite Program in both result and preview; not an admission or physical execution proof",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LightPreviewResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/devices/{serial}/light": {
+      "parameters": [
+        {
+          "name": "serial",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{1,128}$"
+          }
+        }
+      ],
+      "post": {
+        "operationId": "submitLight",
+        "summary": "Submit the daemon-compiled light action with an explicit receipt",
+        "description": "No query parameters; 65536-byte request maximum. Policy is reject only. The daemon compiles the original Action and uses the existing receipt, Job, ownership and cancellation path. Preserve the original binding on uncertainty; do not silently retry, re-key or change the instance.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LightSubmitRequest"
+              },
+              "example": {
+                "contract": "nb1-light-action/v1",
+                "action": {
+                  "kind": "breathe",
+                  "color": "lime",
+                  "period_ms": 2000,
+                  "cycles": 2,
+                  "on_finish": "off"
+                },
+                "policy": "reject",
+                "request_id": "req_60000_0123456789abcdef0123456789abcdef",
+                "expected_daemon_instance_id": "daemon_0123456789abcdef0123456789abcdef"
+              }
+            }
+          }
+        },
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "405": {
+            "$ref": "#/components/responses/405"
+          },
+          "413": {
+            "$ref": "#/components/responses/413"
+          },
+          "415": {
+            "$ref": "#/components/responses/415"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          },
+          "503": {
+            "$ref": "#/components/responses/503"
+          },
+          "202": {
+            "description": "New or replayed original Job. All three binding headers are present; no legacy unbound fallback.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Job"
+                }
+              }
+            },
+            "headers": {
+              "Location": {
+                "description": "Original receipt query path with the expected daemon instance.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-NB1-Replayed": {
+                "description": "Always true or false; true returns the original Job rather than another execution.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "true",
+                    "false"
+                  ]
+                }
+              },
+              "X-NB1-Daemon-Instance-ID": {
+                "description": "Always confirms the exact requested daemon instance.",
+                "schema": {
+                  "type": "string",
+                  "pattern": "^daemon_[0-9a-f]{32}$",
+                  "description": "原daemon实例绑定；实例改变时旧结果仍可能未知，不可自动换绑。"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "410": {
+            "$ref": "#/components/responses/410"
+          },
+          "429": {
+            "$ref": "#/components/responses/429"
+          },
+          "501": {
+            "$ref": "#/components/responses/501"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1922,6 +2097,936 @@
               }
             }
           }
+        ]
+      },
+      "LightActionSet": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "set"
+          },
+          "on_finish": {
+            "type": "string",
+            "enum": [
+              "off",
+              "hold"
+            ],
+            "default": "hold"
+          },
+          "led": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2,
+            "default": 0
+          },
+          "color": {
+            "$ref": "#/components/schemas/ColorInput",
+            "description": "This light action accepts color notation directly; the daemon resolves it using nb1-color-input/v1."
+          }
+        },
+        "required": [
+          "kind",
+          "color"
+        ],
+        "description": "Raw RGB; finite action. Server also enforces the aggregate 24h nominal budget. Integer fields require ordinary integer JSON lexemes, not 1.0, exponents or negative zero."
+      },
+      "NormalizedLightActionSet": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "set"
+          },
+          "on_finish": {
+            "type": "string",
+            "enum": [
+              "off",
+              "hold"
+            ]
+          },
+          "led": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2
+          },
+          "color": {
+            "type": "string",
+            "pattern": "^#[0-9a-f]{6}$"
+          }
+        },
+        "required": [
+          "kind",
+          "on_finish",
+          "led",
+          "color"
+        ],
+        "description": "Raw RGB; finite action. Server also enforces the aggregate 24h nominal budget. Integer fields require ordinary integer JSON lexemes, not 1.0, exponents or negative zero."
+      },
+      "LightActionOff": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "off"
+          },
+          "on_finish": {
+            "type": "string",
+            "enum": [
+              "off",
+              "hold"
+            ],
+            "default": "hold"
+          },
+          "led": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2,
+            "default": 0
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "description": "Raw RGB; finite action. Server also enforces the aggregate 24h nominal budget. Integer fields require ordinary integer JSON lexemes, not 1.0, exponents or negative zero."
+      },
+      "NormalizedLightActionOff": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "off"
+          },
+          "on_finish": {
+            "type": "string",
+            "enum": [
+              "off",
+              "hold"
+            ]
+          },
+          "led": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2
+          }
+        },
+        "required": [
+          "kind",
+          "on_finish",
+          "led"
+        ],
+        "description": "Raw RGB; finite action. Server also enforces the aggregate 24h nominal budget. Integer fields require ordinary integer JSON lexemes, not 1.0, exponents or negative zero."
+      },
+      "LightActionFade": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "fade"
+          },
+          "on_finish": {
+            "type": "string",
+            "enum": [
+              "off",
+              "hold"
+            ],
+            "default": "hold"
+          },
+          "led": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2,
+            "default": 0
+          },
+          "color": {
+            "$ref": "#/components/schemas/ColorInput",
+            "description": "This light action accepts color notation directly; the daemon resolves it using nb1-color-input/v1."
+          },
+          "duration_ms": {
+            "type": "integer",
+            "minimum": 10,
+            "maximum": 600000,
+            "multipleOf": 10
+          }
+        },
+        "required": [
+          "kind",
+          "color",
+          "duration_ms"
+        ],
+        "description": "Raw RGB; finite action. Server also enforces the aggregate 24h nominal budget. Integer fields require ordinary integer JSON lexemes, not 1.0, exponents or negative zero."
+      },
+      "NormalizedLightActionFade": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "fade"
+          },
+          "on_finish": {
+            "type": "string",
+            "enum": [
+              "off",
+              "hold"
+            ]
+          },
+          "led": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2
+          },
+          "color": {
+            "type": "string",
+            "pattern": "^#[0-9a-f]{6}$"
+          },
+          "duration_ms": {
+            "type": "integer",
+            "minimum": 10,
+            "maximum": 600000,
+            "multipleOf": 10
+          }
+        },
+        "required": [
+          "kind",
+          "on_finish",
+          "led",
+          "color",
+          "duration_ms"
+        ],
+        "description": "Raw RGB; finite action. Server also enforces the aggregate 24h nominal budget. Integer fields require ordinary integer JSON lexemes, not 1.0, exponents or negative zero."
+      },
+      "LightActionBlink": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "blink"
+          },
+          "on_finish": {
+            "type": "string",
+            "enum": [
+              "off",
+              "hold"
+            ],
+            "default": "off"
+          },
+          "led": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2,
+            "default": 0
+          },
+          "color": {
+            "$ref": "#/components/schemas/ColorInput",
+            "description": "This light action accepts color notation directly; the daemon resolves it using nb1-color-input/v1."
+          },
+          "cycles": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 512,
+            "default": 1
+          },
+          "on_ms": {
+            "type": "integer",
+            "minimum": 10,
+            "maximum": 3600000,
+            "default": 250
+          },
+          "off_ms": {
+            "type": "integer",
+            "minimum": 10,
+            "maximum": 3600000,
+            "default": 250
+          }
+        },
+        "required": [
+          "kind",
+          "color"
+        ],
+        "description": "Raw RGB; finite action. Server also enforces the aggregate 24h nominal budget. Integer fields require ordinary integer JSON lexemes, not 1.0, exponents or negative zero."
+      },
+      "NormalizedLightActionBlink": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "blink"
+          },
+          "on_finish": {
+            "type": "string",
+            "enum": [
+              "off",
+              "hold"
+            ]
+          },
+          "led": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2
+          },
+          "color": {
+            "type": "string",
+            "pattern": "^#[0-9a-f]{6}$"
+          },
+          "cycles": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 512
+          },
+          "on_ms": {
+            "type": "integer",
+            "minimum": 10,
+            "maximum": 3600000
+          },
+          "off_ms": {
+            "type": "integer",
+            "minimum": 10,
+            "maximum": 3600000
+          }
+        },
+        "required": [
+          "kind",
+          "on_finish",
+          "led",
+          "color",
+          "cycles",
+          "on_ms",
+          "off_ms"
+        ],
+        "description": "Raw RGB; finite action. Server also enforces the aggregate 24h nominal budget. Integer fields require ordinary integer JSON lexemes, not 1.0, exponents or negative zero."
+      },
+      "LightActionBreathe": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "breathe"
+          },
+          "on_finish": {
+            "type": "string",
+            "enum": [
+              "off",
+              "hold"
+            ],
+            "default": "off"
+          },
+          "led": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2,
+            "default": 0
+          },
+          "color": {
+            "$ref": "#/components/schemas/ColorInput",
+            "description": "This light action accepts color notation directly; the daemon resolves it using nb1-color-input/v1."
+          },
+          "cycles": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 60,
+            "default": 1
+          },
+          "period_ms": {
+            "type": "integer",
+            "minimum": 330,
+            "maximum": 1200000,
+            "default": 2000
+          }
+        },
+        "required": [
+          "kind",
+          "color"
+        ],
+        "description": "Raw RGB; finite action. Server also enforces the aggregate 24h nominal budget. Integer fields require ordinary integer JSON lexemes, not 1.0, exponents or negative zero. period_ms includes the executor's step allowances; native I/O adds elapsed time."
+      },
+      "NormalizedLightActionBreathe": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "breathe"
+          },
+          "on_finish": {
+            "type": "string",
+            "enum": [
+              "off",
+              "hold"
+            ]
+          },
+          "led": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2
+          },
+          "color": {
+            "type": "string",
+            "pattern": "^#[0-9a-f]{6}$"
+          },
+          "cycles": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 60
+          },
+          "period_ms": {
+            "type": "integer",
+            "minimum": 330,
+            "maximum": 1200000
+          }
+        },
+        "required": [
+          "kind",
+          "on_finish",
+          "led",
+          "color",
+          "cycles",
+          "period_ms"
+        ],
+        "description": "Raw RGB; finite action. Server also enforces the aggregate 24h nominal budget. Integer fields require ordinary integer JSON lexemes, not 1.0, exponents or negative zero. period_ms includes the executor's step allowances; native I/O adds elapsed time."
+      },
+      "LightActionPulse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "pulse"
+          },
+          "on_finish": {
+            "type": "string",
+            "enum": [
+              "off",
+              "hold"
+            ],
+            "default": "off"
+          },
+          "led": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2,
+            "default": 0
+          },
+          "color": {
+            "$ref": "#/components/schemas/ColorInput",
+            "description": "This light action accepts color notation directly; the daemon resolves it using nb1-color-input/v1."
+          },
+          "cycles": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 341,
+            "default": 1
+          },
+          "attack_ms": {
+            "type": "integer",
+            "minimum": 10,
+            "maximum": 600000,
+            "default": 60,
+            "multipleOf": 10
+          },
+          "decay_ms": {
+            "type": "integer",
+            "minimum": 10,
+            "maximum": 600000,
+            "default": 240,
+            "multipleOf": 10
+          },
+          "rest_ms": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 3600000,
+            "default": 700
+          }
+        },
+        "required": [
+          "kind",
+          "color"
+        ],
+        "description": "Raw RGB; finite action. Server also enforces the aggregate 24h nominal budget. Integer fields require ordinary integer JSON lexemes, not 1.0, exponents or negative zero. Fast attack/decay/rest; nominal cycle is attack_ms + decay_ms + rest_ms + 30ms. This is distinct from legacy Effect pulse."
+      },
+      "NormalizedLightActionPulse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "pulse"
+          },
+          "on_finish": {
+            "type": "string",
+            "enum": [
+              "off",
+              "hold"
+            ]
+          },
+          "led": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2
+          },
+          "color": {
+            "type": "string",
+            "pattern": "^#[0-9a-f]{6}$"
+          },
+          "cycles": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 341
+          },
+          "attack_ms": {
+            "type": "integer",
+            "minimum": 10,
+            "maximum": 600000,
+            "multipleOf": 10
+          },
+          "decay_ms": {
+            "type": "integer",
+            "minimum": 10,
+            "maximum": 600000,
+            "multipleOf": 10
+          },
+          "rest_ms": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 3600000
+          }
+        },
+        "required": [
+          "kind",
+          "on_finish",
+          "led",
+          "color",
+          "cycles",
+          "attack_ms",
+          "decay_ms",
+          "rest_ms"
+        ],
+        "description": "Raw RGB; finite action. Server also enforces the aggregate 24h nominal budget. Integer fields require ordinary integer JSON lexemes, not 1.0, exponents or negative zero. Fast attack/decay/rest; nominal cycle is attack_ms + decay_ms + rest_ms + 30ms. This is distinct from legacy Effect pulse."
+      },
+      "LightActionAlternate": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "alternate"
+          },
+          "on_finish": {
+            "type": "string",
+            "enum": [
+              "off",
+              "hold"
+            ],
+            "default": "off"
+          },
+          "cycles": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 256,
+            "default": 1
+          },
+          "colors": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 2,
+            "items": {
+              "$ref": "#/components/schemas/ColorInput"
+            },
+            "default": [
+              "#ff0000",
+              "#0000ff"
+            ]
+          },
+          "leds": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 2,
+            "enum": [
+              [
+                1,
+                2
+              ],
+              [
+                2,
+                1
+              ]
+            ],
+            "default": [
+              1,
+              2
+            ]
+          },
+          "period_ms": {
+            "type": "integer",
+            "minimum": 40,
+            "maximum": 1200000,
+            "default": 2000
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "description": "Raw RGB; finite action. Server also enforces the aggregate 24h nominal budget. Integer fields require ordinary integer JSON lexemes, not 1.0, exponents or negative zero. period_ms includes the executor's step allowances; native I/O adds elapsed time."
+      },
+      "NormalizedLightActionAlternate": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "alternate"
+          },
+          "on_finish": {
+            "type": "string",
+            "enum": [
+              "off",
+              "hold"
+            ]
+          },
+          "cycles": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 256
+          },
+          "colors": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 2,
+            "items": {
+              "type": "string",
+              "pattern": "^#[0-9a-f]{6}$"
+            }
+          },
+          "leds": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 2,
+            "enum": [
+              [
+                1,
+                2
+              ],
+              [
+                2,
+                1
+              ]
+            ]
+          },
+          "period_ms": {
+            "type": "integer",
+            "minimum": 40,
+            "maximum": 1200000
+          }
+        },
+        "required": [
+          "kind",
+          "on_finish",
+          "cycles",
+          "colors",
+          "leds",
+          "period_ms"
+        ],
+        "description": "Raw RGB; finite action. Server also enforces the aggregate 24h nominal budget. Integer fields require ordinary integer JSON lexemes, not 1.0, exponents or negative zero. period_ms includes the executor's step allowances; native I/O adds elapsed time."
+      },
+      "LightActionRainbow": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "rainbow"
+          },
+          "on_finish": {
+            "type": "string",
+            "enum": [
+              "off",
+              "hold"
+            ],
+            "default": "off"
+          },
+          "led": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2,
+            "default": 0
+          },
+          "cycles": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 146,
+            "default": 1
+          },
+          "period_ms": {
+            "type": "integer",
+            "minimum": 130,
+            "maximum": 1200000,
+            "default": 3000
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "description": "Raw RGB; finite action. Server also enforces the aggregate 24h nominal budget. Integer fields require ordinary integer JSON lexemes, not 1.0, exponents or negative zero. period_ms includes the executor's step allowances; native I/O adds elapsed time."
+      },
+      "NormalizedLightActionRainbow": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "rainbow"
+          },
+          "on_finish": {
+            "type": "string",
+            "enum": [
+              "off",
+              "hold"
+            ]
+          },
+          "led": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2
+          },
+          "cycles": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 146
+          },
+          "period_ms": {
+            "type": "integer",
+            "minimum": 130,
+            "maximum": 1200000
+          }
+        },
+        "required": [
+          "kind",
+          "on_finish",
+          "led",
+          "cycles",
+          "period_ms"
+        ],
+        "description": "Raw RGB; finite action. Server also enforces the aggregate 24h nominal budget. Integer fields require ordinary integer JSON lexemes, not 1.0, exponents or negative zero. period_ms includes the executor's step allowances; native I/O adds elapsed time."
+      },
+      "LightAction": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/LightActionSet"
+          },
+          {
+            "$ref": "#/components/schemas/LightActionOff"
+          },
+          {
+            "$ref": "#/components/schemas/LightActionFade"
+          },
+          {
+            "$ref": "#/components/schemas/LightActionBlink"
+          },
+          {
+            "$ref": "#/components/schemas/LightActionBreathe"
+          },
+          {
+            "$ref": "#/components/schemas/LightActionPulse"
+          },
+          {
+            "$ref": "#/components/schemas/LightActionAlternate"
+          },
+          {
+            "$ref": "#/components/schemas/LightActionRainbow"
+          }
+        ]
+      },
+      "NormalizedLightAction": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/NormalizedLightActionSet"
+          },
+          {
+            "$ref": "#/components/schemas/NormalizedLightActionOff"
+          },
+          {
+            "$ref": "#/components/schemas/NormalizedLightActionFade"
+          },
+          {
+            "$ref": "#/components/schemas/NormalizedLightActionBlink"
+          },
+          {
+            "$ref": "#/components/schemas/NormalizedLightActionBreathe"
+          },
+          {
+            "$ref": "#/components/schemas/NormalizedLightActionPulse"
+          },
+          {
+            "$ref": "#/components/schemas/NormalizedLightActionAlternate"
+          },
+          {
+            "$ref": "#/components/schemas/NormalizedLightActionRainbow"
+          }
+        ]
+      },
+      "LightRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "contract": {
+            "type": "string",
+            "const": "nb1-light-action/v1"
+          },
+          "action": {
+            "$ref": "#/components/schemas/LightAction"
+          }
+        },
+        "required": [
+          "contract",
+          "action"
+        ]
+      },
+      "LightPreviewRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "contract": {
+            "type": "string",
+            "const": "nb1-light-action/v1"
+          },
+          "action": {
+            "$ref": "#/components/schemas/LightAction"
+          },
+          "serial": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{1,128}$"
+          }
+        },
+        "required": [
+          "contract",
+          "action"
+        ]
+      },
+      "LightSubmitRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "contract": {
+            "type": "string",
+            "const": "nb1-light-action/v1"
+          },
+          "action": {
+            "$ref": "#/components/schemas/LightAction"
+          },
+          "policy": {
+            "type": "string",
+            "const": "reject"
+          },
+          "request_id": {
+            "type": "string",
+            "pattern": "^req_[1-9][0-9]{0,18}_[0-9a-f]{32}$",
+            "description": "服务端request_id_prefix追加128bit小写hex nonce。截止点是daemon单调uptime毫秒；服务端另查int64溢出、过期及最大60000ms准入窗口。"
+          },
+          "expected_daemon_instance_id": {
+            "type": "string",
+            "pattern": "^daemon_[0-9a-f]{32}$",
+            "description": "原daemon实例绑定；实例改变时旧结果仍可能未知，不可自动换绑。"
+          }
+        },
+        "required": [
+          "contract",
+          "action",
+          "policy",
+          "request_id",
+          "expected_daemon_instance_id"
+        ]
+      },
+      "LightCompilation": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "schema_version": {
+            "type": "integer",
+            "const": 1
+          },
+          "contract": {
+            "type": "string",
+            "const": "nb1-light-action/v1"
+          },
+          "program_compile_contract": {
+            "type": "string",
+            "const": "nb1-program-effect/v1"
+          },
+          "action": {
+            "$ref": "#/components/schemas/NormalizedLightAction"
+          },
+          "program": {
+            "$ref": "#/components/schemas/Program"
+          },
+          "nominal_duration_ms": {
+            "type": "integer",
+            "minimum": 10,
+            "maximum": 86400000
+          },
+          "total_steps": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1024
+          },
+          "required_capabilities": {
+            "type": "array",
+            "minItems": 3,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "enum": [
+                "set",
+                "program",
+                "raw-rgb",
+                "hold"
+              ]
+            }
+          }
+        },
+        "required": [
+          "schema_version",
+          "contract",
+          "program_compile_contract",
+          "action",
+          "program",
+          "nominal_duration_ms",
+          "total_steps",
+          "required_capabilities"
+        ]
+      },
+      "LightPreviewResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "result": {
+            "$ref": "#/components/schemas/LightCompilation"
+          },
+          "preview": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PreviewResult"
+              },
+              {
+                "properties": {
+                  "input_kind": {
+                    "const": "program"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "required": [
+          "result",
+          "preview"
         ]
       }
     },

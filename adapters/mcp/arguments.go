@@ -27,13 +27,16 @@ func rawArgumentsGuard(next mcp.MethodHandler) mcp.MethodHandler {
 			return next(ctx, method, request)
 		}
 		switch params.Name {
-		case "list_devices", "get_device_state", "set_device_state", "run_program", "preview_program", "resolve_color", "get_job", "cancel_job":
+		case "list_devices", "get_device_state", "set_device_state", "run_program", "preview_program", "resolve_color", "preview_light", "run_light", "get_job", "cancel_job":
 		default:
 			return next(ctx, method, request)
 		}
 		err := validateRawArguments(params.Arguments)
 		if params.Name == "resolve_color" && len(params.Arguments) > maxColorRequestBytes {
 			err = fmt.Errorf("color arguments exceed 4096 bytes")
+		}
+		if (params.Name == "preview_light" || params.Name == "run_light") && len(params.Arguments) > maxLightArgumentBytes {
+			err = fmt.Errorf("light arguments exceed 65536 bytes")
 		}
 		if err != nil {
 			out := errorOutput("invalid_request", "tool arguments: "+err.Error(), 0, false)

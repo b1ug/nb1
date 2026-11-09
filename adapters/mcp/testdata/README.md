@@ -1,0 +1,1 @@
+Fixtures copied from the pure Go HTTP/core light preview proof used for commit 9e891f6. They are test data, not a second color/effect compiler. The MCP module imports no parent module. Tests add only target snapshot metadata and deliberate response corruptions.

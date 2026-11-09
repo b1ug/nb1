@@ -182,6 +182,8 @@ func decodeSoftwareWire(data []byte, target any) error {
 
 func validateSoftwareResponse(data []byte, kind string, input any) (any, error) {
 	switch kind {
+	case "light_preview":
+		return validateLightPreview(data, input)
 	case "color_resolution":
 		return validateColorResponse(data, input)
 	case "capabilities":

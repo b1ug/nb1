@@ -1,0 +1,10 @@
+{
+  "contract": "nb1-light-action/v1",
+  "action": {
+    "kind": "rainbow",
+    "led": 0,
+    "period_ms": 3000,
+    "cycles": 2,
+    "on_finish": "off"
+  }
+}

@@ -1,19 +1,30 @@
 # nb1 blink(1) 本地控制
 
-> 以本机 daemon 管理 blink(1)，CLI、HTTP 和实际 stdio MCP 共用 Program、Effect、Job 与每设备执行器。此文件是文档索引，不授予操作权限。
+> MCP、HTTP 与默认 daemon 模式 CLI 共用 nb1 核心编译器、Job 和每设备执行器；MCP 直接访问 HTTP，不调用 CLI。此索引不授予设备或系统权限。
 
-当前新控制接口只收原始六位 #RRGGBB，不隐式 Gamma。高层 steady/pulse 编译成精确 Program；命名 Pattern 库仍在规划；新颜色候选提供独立 resolve_color / POST /v1/colors/resolve，把名字、hex3、RGB8/HSV转换成六位hex再进入旧执行接口。MCP 使用官方 SDK 直接访问 HTTP，不调用 CLI。原七工具不变，新候选共八工具；以 tools/list 发现实际部署能力；预览不执行，202 不代表完成，写入超时不盲目重试。运行时 schema/能力和实际部署版本优先。此文件遵循 llms.txt 提案，不能保证任意 Agent 自动发现或正确使用。
+先检查当前 tools/list 与实际 daemon。当前安装的 MCP 为八工具；新客户端候选才增加 preview_light / run_light 成为十工具，尚未安装。Demo/HTTP 已实现八种 versioned light 动作，但不能据此假定当前 MCP 或 CLI 已提供新入口。
+
+新动作使用 contract=nb1-light-action/v1 和 action，包含 set/off/fade/blink/breathe/pulse/alternate/rainbow；核心把它们编译为原 Program。新 pulse 为快起/衰减/间隔；旧 run_program.effect.pulse 仍是 period_ms 对称呼吸，绝不按名字混发。旧 Program/Effect/set 仍收 raw Hex6；新 Action 复用已实现的 ColorInput，不隐藏 Gamma。新 light 实际提交仅 reject 且需要原请求票据；202 不是完成，未知写入结果先查原票据，不能自动补发。
 
 ## 使用
 
-- [颜色输入 v1](docs/color-input.zh-CN.md): 固定色表、单位、精确舍入与独立新路由；候选尚未部署。
+- [Agent 使用指南](docs/agent-guide.zh-CN.md): 运行时发现、版本选择、预览、提交、原票据和取消；区分已安装能力与候选入口。
+- [项目 skill](skills/blink1-control/SKILL.md): 项目内操作规则；未全局安装，不自动注册 MCP。
+- [light 动作契约 v1](internal/lightaction/README.zh-CN.md): 八种动作、参数、有限预算、名义时间及旧 pulse 兼容边界。
+- [颜色输入 v1](docs/color-input.zh-CN.md): 已实现的独立颜色解析；旧执行字段仍为 Hex6。
+- [MCP 文档](adapters/mcp/README.md): 实际 stdio 协议、工具 schema、错误和请求票据；先以运行时发现确认可用工具。
+- [CLI / HTTP 指南](docs/local-runtime.md): 旧 Program/Effect 与原有设备控制路径。
+- [OpenAPI](docs/openapi.json): 候选机器可读 HTTP 描述，现已加入新 light 路由；旧公开文档未包含这些路由，调用前仍须确认实际 daemon 与工具版本。
 
-- [Agent 使用指南](docs/agent-guide.zh-CN.md): 发现、预览、执行、观察、取消与未知结果。
-- [项目 skill](skills/blink1-control/SKILL.md): 项目内操作规则，未全局安装。
-- [MCP 文档](adapters/mcp/README.md): 七工具、stdio、schema、请求票据与错误。
-- [CLI / HTTP 指南](docs/local-runtime.md): 当前命令、Program/Effect 语义与兼容边界。
-- [OpenAPI](docs/openapi.json): 机器可读 HTTP 描述；本地文件，不是已实现的网络路由。
+## 有限 Action 文件示例
 
-## Optional
+- [对称呼吸](examples/runtime/light-breathe.action.json): 完整 contract/action 信封，绿色两周期，结束熄灭。
+- [短脉冲](examples/runtime/light-pulse.action.json): 完整信封，绿色三次快起/衰减/间隔；不是旧 Effect pulse。
+- [两灯红蓝交换](examples/runtime/light-alternate.action.json): 三周期，未宣称同时更新或顺逆旋转。
+- [彩虹](examples/runtime/light-rainbow.action.json): 两周期固定颜色路径，结束熄灭。
 
-- [最小权限边界](docs/security-boundaries.zh-CN.md): 普通用户、loopback、设备所有权与权限范围。
+## 边界
+
+- [最小权限](docs/security-boundaries.zh-CN.md): 普通用户、loopback、设备所有权与权限范围。
+
+Pattern 持久化候选尚未接入上述入口；spin/frame/compose/sequence 仍非已实现动作，mk3 未实机验收。llms.txt 是可读索引，不能保证任何 Agent 自动发现、理解或执行正确。

@@ -26,7 +26,7 @@ import (
 var serverCmd = newServerCommand()
 
 func newServerCommand() *cobra.Command {
-	var listen, lockDir, patternDir string
+	var listen, lockDir, patternDir, patternV2Dir string
 	var serials []string
 	var shutdownTimeout time.Duration
 	command := &cobra.Command{
@@ -75,13 +75,15 @@ func newServerCommand() *cobra.Command {
 			}
 			ctx, stop := signal.NotifyContext(cmd.Context(), os.Interrupt, syscall.SIGTERM)
 			defer stop()
-			return serveRuntime(ctx, listener, engine, cmd.OutOrStdout(), shutdownTimeout, httpapi.WithPatternDirectory(patternDir))
+			return serveRuntime(ctx, listener, engine, cmd.OutOrStdout(), shutdownTimeout,
+				httpapi.WithPatternDirectory(patternDir), httpapi.WithPatternDirectoryV2(patternV2Dir))
 		},
 	}
 	command.Flags().StringVar(&listen, "listen", "127.0.0.1:8931", "loopback host:port (port 0 chooses a free port)")
 	command.Flags().StringSliceVar(&serials, "devices", nil, "comma-separated device serial numbers")
 	command.Flags().StringVar(&lockDir, "lock-dir", os.Getenv("NB1_LOCK_DIR"), "shared ownership directory (NB1_LOCK_DIR or persistent per-user config)")
 	command.Flags().StringVar(&patternDir, "pattern-dir", os.Getenv("NB1_PATTERN_DIR"), "Pattern library directory (NB1_PATTERN_DIR or current user's config/nb1/patterns; created only by import)")
+	command.Flags().StringVar(&patternV2Dir, "pattern-v2-dir", os.Getenv("NB1_PATTERN_V2_DIR"), "experimental v2 Pattern library directory (NB1_PATTERN_V2_DIR or current user's config/nb1/patterns-v2; independent of --pattern-dir, created only by save/import)")
 	command.Flags().DurationVar(&shutdownTimeout, "shutdown-timeout", 10*time.Second, "maximum time to await graceful cleanup; does not cancel blocked native I/O")
 	command.Flags().Uint32("port", 8931, "compatibility flag for a loopback port; cannot be combined with --listen")
 	command.Flags().String("base", "", "reserved legacy base URL; the v1 API uses the root endpoint")

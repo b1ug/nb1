@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"reflect"
 	"strings"
 
 	"github.com/b1ug/nb1/internal/patternstore"
@@ -29,7 +30,47 @@ type PatternStoreV2 interface {
 // no store calls, path selection, default-directory lookup or v1 fallback.
 // In particular, a pure preview never calls even Path on this store.
 func WithPatternStoreV2(store PatternStoreV2) Option {
-	return func(h *handler) { h.patternsV2 = store }
+	return func(h *handler) {
+		h.patternsV2, h.patternErrV2 = nil, nil
+		if store == nil {
+			return
+		}
+		// An interface holding a nil store must behave like an absent store.
+		// Do not call any store method to inspect configuration.
+		value := reflect.ValueOf(store)
+		switch value.Kind() {
+		case reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Ptr, reflect.Slice:
+			if value.IsNil() {
+				return
+			}
+		}
+		h.patternsV2 = store
+	}
+}
+
+// WithPatternDirectoryV2 selects an independent v2 library without filesystem
+// I/O. Empty selects UserConfigDir()/nb1/patterns-v2. Only a successful save or
+// import creates the directory; invalid configuration disables this library
+// while pure preview and ordinary device operations remain available.
+func WithPatternDirectoryV2(dir string) Option {
+	return func(h *handler) {
+		h.patternsV2, h.patternErrV2 = nil, nil
+		selected := dir
+		var err error
+		if selected == "" {
+			selected, err = patternstore.DefaultV2Dir()
+		}
+		if err == nil {
+			var store *patternstore.StoreV2
+			store, err = patternstore.NewV2(selected)
+			if err == nil {
+				h.patternsV2 = store
+			}
+		}
+		if err != nil {
+			h.patternErrV2 = fmt.Errorf("Pattern v2 directory %q: %w", selected, err)
+		}
+	}
 }
 
 type patternIdentityV2 struct {
@@ -198,6 +239,10 @@ func patternBodyV2(w http.ResponseWriter, r *http.Request) ([]byte, bool) {
 }
 
 func (h *handler) patternAvailableV2(w http.ResponseWriter) bool {
+	if h.patternErrV2 != nil {
+		writeError(w, http.StatusServiceUnavailable, "pattern_library_unavailable", h.patternErrV2.Error())
+		return false
+	}
 	if h.patternsV2 == nil {
 		writeError(w, http.StatusNotImplemented, "pattern_library_unsupported", "Pattern v2 storage is not configured; pure preview remains available")
 		return false

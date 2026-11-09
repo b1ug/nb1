@@ -41,6 +41,7 @@ func TestServerPatternDirectoryFlagPrecedenceWithoutStartingRuntime(t *testing.T
 
 func TestRuntimeForwardsPatternOptionWithoutCreatingDirectory(t *testing.T) {
 	dir := filepath.Join(t.TempDir(), "library")
+	v2Dir := filepath.Join(t.TempDir(), "library-v2")
 	backend := &lifecycleBackend{set: make(chan struct{})}
 	engine, err := control.New(lifecycleDriver{backend}, control.Options{Serials: []string{"test-device"}, PollInterval: 10 * time.Millisecond})
 	if err != nil {
@@ -55,7 +56,8 @@ func TestRuntimeForwardsPatternOptionWithoutCreatingDirectory(t *testing.T) {
 	output := runtimeOutput{line: make(chan []byte, 64)}
 	done := make(chan error, 1)
 	go func() {
-		done <- serveRuntime(ctx, listener, engine, output, 2*time.Second, httpapi.WithPatternDirectory(dir))
+		done <- serveRuntime(ctx, listener, engine, output, 2*time.Second,
+			httpapi.WithPatternDirectory(dir), httpapi.WithPatternDirectoryV2(v2Dir))
 	}()
 	var started struct {
 		URL string `json:"url"`
@@ -81,6 +83,22 @@ func TestRuntimeForwardsPatternOptionWithoutCreatingDirectory(t *testing.T) {
 	if _, err = os.Stat(dir); !os.IsNotExist(err) {
 		t.Fatalf("runtime startup/read created library: %v", err)
 	}
+	response, err = http.Get(started.URL + "/v2/patterns")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var v2List struct {
+		Library  struct{ Path string }
+		Patterns []json.RawMessage
+	}
+	err = json.NewDecoder(response.Body).Decode(&v2List)
+	response.Body.Close()
+	if response.StatusCode != 200 || err != nil || v2List.Library.Path != v2Dir || len(v2List.Patterns) != 0 {
+		t.Fatal(response.StatusCode, v2List, err)
+	}
+	if _, err = os.Stat(v2Dir); !os.IsNotExist(err) {
+		t.Fatalf("runtime startup/read created v2 library: %v", err)
+	}
 	cancel()
 	select {
 	case err = <-done:
@@ -89,6 +107,43 @@ func TestRuntimeForwardsPatternOptionWithoutCreatingDirectory(t *testing.T) {
 		}
 	case <-time.After(3 * time.Second):
 		t.Fatal("fixture runtime did not stop")
+	}
+}
+
+func TestServerPatternV2DirectoryIsIndependentAndFlagOverridesEnvironment(t *testing.T) {
+	base := t.TempDir()
+	legacy := filepath.Join(base, "legacy-env")
+	v2Env := filepath.Join(base, "v2-env")
+	v2Explicit := filepath.Join(base, "v2-explicit")
+	t.Setenv("NB1_PATTERN_DIR", legacy)
+	t.Setenv("NB1_PATTERN_V2_DIR", v2Env)
+	command := newServerCommand()
+	value, err := command.Flags().GetString("pattern-v2-dir")
+	if err != nil || value != v2Env {
+		t.Fatal(value, err)
+	}
+	if err = command.ParseFlags([]string{"--pattern-v2-dir", v2Explicit}); err != nil {
+		t.Fatal(err)
+	}
+	value, err = command.Flags().GetString("pattern-v2-dir")
+	if err != nil || value != v2Explicit {
+		t.Fatal(value, err)
+	}
+	oldValue, err := command.Flags().GetString("pattern-dir")
+	if err != nil || oldValue != legacy {
+		t.Fatal("v2 override changed legacy configuration", oldValue, err)
+	}
+	for _, path := range []string{legacy, v2Env, v2Explicit} {
+		if _, err = os.Stat(path); !os.IsNotExist(err) {
+			t.Fatalf("flag parsing touched a library: %v", err)
+		}
+	}
+	// The legacy override does not become an implicit v2 override.
+	t.Setenv("NB1_PATTERN_V2_DIR", "")
+	other := newServerCommand()
+	value, err = other.Flags().GetString("pattern-v2-dir")
+	if err != nil || value != "" {
+		t.Fatal("v2 inherited a legacy directory", value, err)
 	}
 }
 

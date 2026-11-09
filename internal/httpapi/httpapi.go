@@ -37,11 +37,12 @@ type ErrorResponse struct {
 }
 
 type handler struct {
-	service     control.Service
-	patterns    PatternStore
-	patternPath string
-	patternErr  error
-	patternsV2  PatternStoreV2
+	service      control.Service
+	patterns     PatternStore
+	patternPath  string
+	patternErr   error
+	patternsV2   PatternStoreV2
+	patternErrV2 error
 }
 
 func New(service control.Service, options ...Option) http.Handler {

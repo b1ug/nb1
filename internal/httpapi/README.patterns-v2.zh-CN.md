@@ -4,7 +4,15 @@
 
 ## 启用方式与目录隔离
 
-库只通过显式 `WithPatternStoreV2(store)` 注入：
+daemon 默认启用独立的实验 v2 库，路径为当前服务账号的 `UserConfigDir()/nb1/patterns-v2`。`--pattern-v2-dir` 覆盖 `NB1_PATTERN_V2_DIR`，两者都没有设置时使用该默认路径。旧 `--pattern-dir` / `NB1_PATTERN_DIR` 只控制 v1 库，不能间接改变 v2 位置。
+
+```sh
+nb1 server --devices 20005601 --pattern-v2-dir /absolute/private/patterns-v2
+```
+
+启动、路径配置、读取不存在的库和纯预览都不创建目录。首次成功保存或导入时才由原 StoreV2 事务创建私有目录；没有扫描、迁移、自动播放或恢复。错误配置只使需要 v2 库的请求返回 503 `pattern_library_unavailable`，不会阻断纯预览或旧灯光控制。默认路径计算失败也不回退到工作目录或临时目录。
+
+嵌入 HTTP handler 时，可选择 `WithPatternDirectoryV2(absoluteDirectory)`（空字符串选择上述默认路径），或显式注入 Store：
 
 ```go
 store, err := patternstore.NewV2(explicitAbsoluteDirectory)
@@ -14,7 +22,7 @@ if err != nil {
 handler := httpapi.New(service, httpapi.WithPatternStoreV2(store))
 ```
 
-选路径、验证配置及部署由调用方负责。构造 handler 不调用 Store（连 Path 也不调用），不自动计算默认目录、不使用旧 `--pattern-dir`/`NB1_PATTERN_DIR`、不扫描/迁移/合并 v1 库。本片没有新 CLI flag/env、DirectoryV2 option 或日常服务配置。P2 的 `DefaultV2Dir` 仍只是纯路径计算，不被此入口自动调用。
+`httpapi.New(service)` 本身仍不自动选择任何库；daemon 显式传入两个独立的 Directory option。`WithPatternStoreV2` 不调用 Store（连 Path 也不调用），`WithPatternDirectoryV2` 只计算路径并构造 Store，不读写文件。option 按顺序生效；后一个 Store/Directory 选择清除前一个 v2 配置错误，nil 或 typed-nil Store 都表示未配置。
 
 未注入存储时，纯 preview 仍可用；有效的 save/import/list/get/export 返回 **501 `pattern_library_unsupported`**，消息明确说明 v2 storage 未配置且 preview 可用。这不代表该平台的文件系统失败。实际注入 Store 的平台错误按其现有错误分类返回。
 

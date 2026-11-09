@@ -4,7 +4,7 @@
 
 原生枚举何时生效取决于整合后的 SDK/GID 版本。本改动没有更新依赖 pin，需要与 SDK 的 `FindDevices(27b8,01ed)` 调用及 GID 原生精确过滤一起整合。此处只做 fake/构建验证，不证明输入监控授权弹窗已经消失，也不把枚举范围当成后台未就绪的唯一原因。
 
-本版把设备所有权与执行逻辑集中在同一个本地执行器：daemon 常驻持有选定设备，HTTP、CLI 和独立 MCP 适配器提交程序；每台设备由一个 worker 串行操作。`control --mode direct` 在 CLI 进程内运行同一个执行器。MCP 接入参见[独立适配器说明](../adapters/mcp/README.md)，其协议软件与实物验证状态分别记录。
+本版把设备所有权与执行逻辑集中在同一个本地执行器：daemon 常驻持有选定设备，HTTP、CLI 和独立 MCP 适配器提交程序；每台设备由一个 worker 串行操作。`control --mode direct` 在 CLI 进程内运行同一个执行器。MCP 接入参见[独立适配器说明](../adapters/mcp/README.md)，其协议软件与实物验证状态分别记录。权限与接口范围见[最小权限与控制边界](security-boundaries.zh-CN.md)。
 
 这是工作区的本地候选版本，相关新代码尚未发布；既有 PR 保留待审状态，没有自动合并或修改远程 PR。本机已经在 macOS 27.2 arm64、blink(1) mk2、固件204上验证直控、HTTP设色、设备占用、取消、退出和读回。mk3没有真机验证；Windows/Linux 的 stub 编译结果不代表原生 USB I/O 通过。普通server/control命令不会安装系统服务，也不写设备 Flash 或模式内容；新增macOS用户服务管理须显式调用 `service install/start/stop/uninstall`，开发阶段仅验证其模拟路径，未在本机安装。
 

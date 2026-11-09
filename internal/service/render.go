@@ -175,7 +175,7 @@ func renderSystemd(c Config) []byte {
 	}
 	// The ':' executable prefix disables environment expansion for argv;
 	// percent specifiers still need escaping independently.
-	return []byte("[Unit]\nDescription=nb1 local blink(1) control daemon\n\n[Service]\nType=simple\nExecStart=:" + strings.Join(args, " ") + "\nRestart=on-failure\nRestartSec=5s\nKillSignal=SIGTERM\nTimeoutStopSec=20s\nUMask=0077\n\n[Install]\nWantedBy=default.target\n")
+	return []byte("[Unit]\nDescription=nb1 local blink(1) control daemon\n\n[Service]\nType=simple\nExecStart=:" + strings.Join(args, " ") + "\nRestart=on-failure\nRestartSec=5s\nKillSignal=SIGTERM\nTimeoutStopSec=20s\nUMask=0077\nNoNewPrivileges=yes\n\n[Install]\nWantedBy=default.target\n")
 }
 
 func powershellLiteral(value string) string {

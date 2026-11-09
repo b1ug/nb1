@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "patterns": [
+    {
+      "id": "short-pulse",
+      "title": "短脉冲（冻结 Program）",
+      "program": {
+        "steps": [
+          {"led": 0, "color": "#000000", "fade_ms": 0, "hold_ms": 0},
+          {"led": 0, "color": "#00ff00", "fade_ms": 60, "hold_ms": 0},
+          {"led": 0, "color": "#000000", "fade_ms": 240, "hold_ms": 700}
+        ],
+        "repeat": 3,
+        "on_finish": "off"
+      }
+    }
+  ]
+}

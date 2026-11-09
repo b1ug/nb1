@@ -2984,12 +2984,50 @@
             "minimum": 40,
             "maximum": 1200000,
             "default": 2000
+          },
+          "transition": {
+            "type": "string",
+            "enum": [
+              "cut",
+              "linear",
+              "sine",
+              "orbit"
+            ],
+            "description": "可选。省略保持旧cut与旧规范输出；显式cut保持字段。linear/sine/orbit为32相位66步有限闭环，orbit颜色与亮度错1/4周期，不宣称真实空间方向。"
           }
         },
         "required": [
           "kind"
         ],
-        "description": "Raw RGB; finite action. Server also enforces the aggregate 24h nominal budget. Integer fields require ordinary integer JSON lexemes, not 1.0, exponents or negative zero. period_ms includes the executor's step allowances; native I/O adds elapsed time."
+        "description": "Raw RGB; finite action. Server also enforces the aggregate 24h nominal budget. Integer fields require ordinary integer JSON lexemes, not 1.0, exponents or negative zero. period_ms includes the executor's step allowances; native I/O adds elapsed time. New non-cut transitions use 66 sequential steps per cycle and at most 15 cycles; frame targets are compiled in Go, not the browser or MCP.",
+        "allOf": [
+          {
+            "if": {
+              "required": [
+                "transition"
+              ],
+              "properties": {
+                "transition": {
+                  "enum": [
+                    "linear",
+                    "sine",
+                    "orbit"
+                  ]
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "period_ms": {
+                  "minimum": 1300
+                },
+                "cycles": {
+                  "maximum": 15
+                }
+              }
+            }
+          }
+        ]
       },
       "NormalizedLightActionAlternate": {
         "type": "object",
@@ -3039,6 +3077,16 @@
             "type": "integer",
             "minimum": 40,
             "maximum": 1200000
+          },
+          "transition": {
+            "type": "string",
+            "enum": [
+              "cut",
+              "linear",
+              "sine",
+              "orbit"
+            ],
+            "description": "可选。省略保持旧cut与旧规范输出；显式cut保持字段。linear/sine/orbit为32相位66步有限闭环，orbit颜色与亮度错1/4周期，不宣称真实空间方向。"
           }
         },
         "required": [
@@ -3049,7 +3097,35 @@
           "leds",
           "period_ms"
         ],
-        "description": "Raw RGB; finite action. Server also enforces the aggregate 24h nominal budget. Integer fields require ordinary integer JSON lexemes, not 1.0, exponents or negative zero. period_ms includes the executor's step allowances; native I/O adds elapsed time."
+        "description": "Raw RGB; finite action. Server also enforces the aggregate 24h nominal budget. Integer fields require ordinary integer JSON lexemes, not 1.0, exponents or negative zero. period_ms includes the executor's step allowances; native I/O adds elapsed time. New non-cut transitions use 66 sequential steps per cycle and at most 15 cycles; frame targets are compiled in Go, not the browser or MCP.",
+        "allOf": [
+          {
+            "if": {
+              "required": [
+                "transition"
+              ],
+              "properties": {
+                "transition": {
+                  "enum": [
+                    "linear",
+                    "sine",
+                    "orbit"
+                  ]
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "period_ms": {
+                  "minimum": 1300
+                },
+                "cycles": {
+                  "maximum": 15
+                }
+              }
+            }
+          }
+        ]
       },
       "LightActionRainbow": {
         "type": "object",
@@ -3888,7 +3964,8 @@
       "Request-receipt transport/CLI checks use fake services; this extension has no new USB hardware acceptance claim",
       "High-level effect compiler/API/CLI checks use fake backends; new effect hardware acceptance is recorded separately"
     ],
-    "pattern_scope": "Local development document. New routes/software tests qualified; current resident9e does not expose this candidate library."
+    "pattern_scope": "Local development document. New routes/software tests qualified; current resident9e does not expose this candidate library.",
+    "flow_transition_scope": "Optional alternate.transition extension; exact old result bytes preserved when omitted. OpenAPI has structural/numeric bounds; server remains authoritative for lexical, aggregate and compiled waveform validation."
   },
   "x-specification-source": "https://spec.openapis.org/oas/v3.2.1.html"
 }

@@ -56,6 +56,7 @@ type lightActionWire struct {
 	DecayMS    *int              `json:"decay_ms,omitempty"`
 	RestMS     *int              `json:"rest_ms,omitempty"`
 	Cycles     *int              `json:"cycles,omitempty"`
+	Transition string            `json:"transition,omitempty"`
 	OnFinish   string            `json:"on_finish,omitempty"`
 }
 type lightResult struct {
@@ -110,12 +111,20 @@ func lightActionSchema() map[string]any {
 			p["attack_ms"], p["decay_ms"], p["rest_ms"] = attack, decay, integer(0, 3600000, 700)
 		case "alternate":
 			p["period_ms"] = integer(40, 1200000, 2000)
+			p["transition"] = map[string]any{"type": "string", "enum": []string{"cut", "linear", "sine", "orbit"}, "description": "Omitted or cut keeps the original four steps. Continuous modes use 66 sequential steps per cycle; they do not imply simultaneous LED writes or physical rotation."}
 			p["colors"] = map[string]any{"type": "array", "minItems": 2, "maxItems": 2, "items": color, "default": []string{"red", "blue"}}
 			p["leds"] = map[string]any{"type": "array", "minItems": 2, "maxItems": 2, "uniqueItems": true, "items": map[string]any{"type": "integer", "enum": []int{1, 2}}, "default": []int{1, 2}}
 		case "rainbow":
 			p["period_ms"] = integer(130, 1200000, 3000)
 		}
-		variants = append(variants, objectSchema(p, required...))
+		variant := objectSchema(p, required...)
+		if kind == "alternate" {
+			variant["allOf"] = []any{map[string]any{
+				"if":   map[string]any{"required": []string{"transition"}, "properties": map[string]any{"transition": map[string]any{"enum": []string{"linear", "sine", "orbit"}}}},
+				"then": map[string]any{"properties": map[string]any{"period_ms": integer(1300, 1200000, 2000), "cycles": integer(1, 15, 1)}},
+			}}
+		}
+		variants = append(variants, variant)
 	}
 	return map[string]any{"oneOf": variants, "description": "One action in the unified light namespace. breathe is a symmetric cosine16 envelope; new pulse is fast attack, decay, rest. All actions are finite; daemon enforces <=1024 executed steps/24h. Legacy run_program.effect.pulse is unchanged."}
 }
@@ -141,7 +150,11 @@ func lightPreviewOutputSchema() map[string]any {
 		}
 		required := make([]string, 0, len(props))
 		for key := range props {
-			required = append(required, key)
+			// An omitted transition remains omitted in the normalized legacy
+			// action. Explicit cut is retained and checked against the input.
+			if key != "transition" {
+				required = append(required, key)
+			}
 		}
 		sort.Strings(required)
 		variant["required"] = required
@@ -324,7 +337,7 @@ func normalizedLightStructure(raw json.RawMessage) (lightActionWire, error) {
 	case "pulse":
 		names = append(names, "attack_ms", "decay_ms", "rest_ms")
 	case "alternate":
-		names = append(names, "period_ms", "colors", "leds")
+		names = append(names, "period_ms", "colors", "leds", "transition")
 	}
 	var fields map[string]json.RawMessage
 	if err := json.Unmarshal(raw, &fields); err != nil {
@@ -388,7 +401,20 @@ func normalizedLightStructure(raw json.RawMessage) (lightActionWire, error) {
 			a.RestMS, err = lightNumber(a.RestMS, 700, 0, 3600000, 1)
 		}
 	case "alternate":
-		a.PeriodMS, err = lightNumber(a.PeriodMS, 2000, 40, 1200000, 1)
+		minimum := 40
+		if _, explicit := fields["transition"]; explicit {
+			switch a.Transition {
+			case "cut":
+			case "linear", "sine", "orbit":
+				minimum = 1300
+				if *a.Cycles > 15 {
+					return a, errors.New("continuous alternate permits at most 15 cycles (990 steps)")
+				}
+			default:
+				return a, errors.New("transition must be cut, linear, sine or orbit")
+			}
+		}
+		a.PeriodMS, err = lightNumber(a.PeriodMS, 2000, minimum, 1200000, 1)
 		if a.LEDs == nil {
 			a.LEDs = []int{1, 2}
 		}
@@ -478,6 +504,9 @@ func validateLightProgramShape(r lightResult) error {
 		count, nominal = 3, int64(*a.AttackMS)+int64(*a.DecayMS)+int64(*a.RestMS)+30
 	case "alternate":
 		count, nominal = 4, int64(*a.PeriodMS)
+		if isLightFlow(a) {
+			count = 66
+		}
 	case "rainbow":
 		count, nominal = 7, int64(*a.PeriodMS)
 	}
@@ -525,6 +554,9 @@ func validateLightProgramShape(r lightResult) error {
 			return errors.New("light pulse phase timing changed")
 		}
 	case "alternate":
+		if isLightFlow(a) {
+			return validateLightFlowShape(a, p)
+		}
 		half := *a.PeriodMS / 2
 		if !timing(0, 0, 0) || !timing(1, 0, half-20) || !timing(2, 0, 0) || !timing(3, 0, *a.PeriodMS-half-20) {
 			return errors.New("light alternate phase timing changed")

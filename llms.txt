@@ -1,30 +1,32 @@
 # nb1 blink(1) 本地控制
 
-> MCP、HTTP 与默认 daemon 模式 CLI 共用 nb1 核心编译器、Job 和每设备执行器；MCP 直接访问 HTTP，不调用 CLI。此索引不授予设备或系统权限。
+> MCP、HTTP与默认daemon模式CLI共用核心编译器、Job和设备执行器。MCP通过官方SDK实现真实stdio协议，直接请求HTTP，不调用CLI。本文不授予额外设备或系统权限。
 
-先检查当前 tools/list 与实际 daemon。当前安装的 MCP 为八工具；新客户端候选才增加 preview_light / run_light 成为十工具，尚未安装。Demo/HTTP 已实现八种 versioned light 动作，但不能据此假定当前 MCP 或 CLI 已提供新入口。
+先读实际tools/list、schema与CLI帮助，再选择入口。本树是整合候选：十一MCP工具包含只读list_patterns；安装与部署另行验收。交接时已安装267仍为八工具，临时驻留526提供Web/HTTP；这些记录不能代替运行时发现。
 
-新动作使用 contract=nb1-light-action/v1 和 action，包含 set/off/fade/blink/breathe/pulse/alternate/rainbow；核心把它们编译为原 Program。新 pulse 为快起/衰减/间隔；旧 run_program.effect.pulse 仍是 period_ms 对称呼吸，绝不按名字混发。旧 Program/Effect/set 仍收 raw Hex6；新 Action 复用已实现的 ColorInput，不隐藏 Gamma。新 light 实际提交仅 reject 且需要原请求票据；202 不是完成，未知写入结果先查原票据，不能自动补发。
+light使用contract=nb1-light-action/v1与action，支持set/off/fade/blink/breathe/pulse/alternate/rainbow。alternate可选cut/linear/sine/orbit；MCP只有实际schema声明transition后才发送它。新pulse为快起/衰减/停顿，旧Effect pulse仍是period_ms对称呼吸。所有颜色为raw RGB，不暗加Gamma。
 
-## 使用
+Pattern CLI提供import/list/get/export/preview/run；精确revision不可省略。MCP的list_patterns只读summary，没有Pattern导入、预览或执行工具。新Action先预览，再把result.program作为Program放入作者包；不支持source.action，也不保存可编辑的Action来源。
 
-- [Agent 使用指南](docs/agent-guide.zh-CN.md): 运行时发现、版本选择、预览、提交、原票据和取消；区分已安装能力与候选入口。
-- [项目 skill](skills/blink1-control/SKILL.md): 项目内操作规则；未全局安装，不自动注册 MCP。
-- [light 动作契约 v1](internal/lightaction/README.zh-CN.md): 八种动作、参数、有限预算、名义时间及旧 pulse 兼容边界。
-- [颜色输入 v1](docs/color-input.zh-CN.md): 已实现的独立颜色解析；旧执行字段仍为 Hex6。
-- [MCP 文档](adapters/mcp/README.md): 实际 stdio 协议、工具 schema、错误和请求票据；先以运行时发现确认可用工具。
-- [CLI / HTTP 指南](docs/local-runtime.md): 旧 Program/Effect 与原有设备控制路径。
-- [OpenAPI](docs/openapi.json): 候选机器可读 HTTP 描述，现已加入新 light 路由；旧公开文档未包含这些路由，调用前仍须确认实际 daemon 与工具版本。
+## 使用入口
 
-## 有限 Action 文件示例
+- [Agent使用指南](docs/agent-guide.zh-CN.md)：发现版本、选择语义、原票据与未知结果。
+- [Pattern完整流程](docs/pattern-workflow.zh-CN.md)：CLI导入、导出、精确引用预览/执行，以及MCP只读边界。
+- [项目Skill](skills/blink1-control/SKILL.md)：项目内指南；未全局安装、不自动注册MCP。
+- [light动作契约](internal/lightaction/README.zh-CN.md)：颜色、曲线、66步过渡、时间预算与兼容规则。
+- [Pattern CLI合同](docs/patterns-cli.md)：现有命令和结果字段。
+- [MCP合同](adapters/mcp/README.md)：真实stdio、工具schema和错误；仍以运行时发现为准。
+- [颜色输入](docs/color-input.zh-CN.md)：名字/Hex3/Hex6/RGB8/HSV；旧Program/Effect执行字段仍是Hex6。
+- [HTTP OpenAPI](docs/openapi.json)：机器可读合同，不表示相应客户端已经安装。
 
-- [对称呼吸](examples/runtime/light-breathe.action.json): 完整 contract/action 信封，绿色两周期，结束熄灭。
-- [短脉冲](examples/runtime/light-pulse.action.json): 完整信封，绿色三次快起/衰减/间隔；不是旧 Effect pulse。
-- [两灯红蓝交换](examples/runtime/light-alternate.action.json): 三周期，未宣称同时更新或顺逆旋转。
-- [彩虹](examples/runtime/light-rainbow.action.json): 两周期固定颜色路径，结束熄灭。
+## 有限示例
 
-## 边界
+- [呼吸](examples/runtime/light-breathe.action.json)、[短脉冲](examples/runtime/light-pulse.action.json)、[直接红蓝交替](examples/runtime/light-alternate.action.json)、[彩虹](examples/runtime/light-rainbow.action.json)。
+- [环绕相位](examples/runtime/flow-orbit.action.json)：3000ms×2周期、132步、完成熄灭；不是可证明方向的真实旋转。
+- [短脉冲Pattern作者包](examples/runtime/pattern-short-pulse.authoring.json)：保存三步Program并有限重复，不含设备、假票据或source.action。
 
-- [最小权限](docs/security-boundaries.zh-CN.md): 普通用户、loopback、设备所有权与权限范围。
+## 操作边界
 
-Pattern 持久化候选尚未接入上述入口；spin/frame/compose/sequence 仍非已实现动作，mk3 未实机验收。llms.txt 是可读索引，不能保证任何 Agent 自动发现、理解或执行正确。
+新light及Pattern执行均使用reject和原票据；202是接受而非完成。执行结果未知时查原票据，不能换键重发。导入的publication_unknown是文件发布不确定，与执行的outcome_unknown分开；导入不亮灯。所有Pattern库命令拒绝direct，不猜测另一份本地库。
+
+[最小权限](docs/security-boundaries.zh-CN.md)仍适用。sequence/spin/frame/compose、自动重放和硬件Flash不是已实现能力；mk3未实机验收。llms.txt提供可读索引，不保证Agent自动读取或理解。

@@ -1,0 +1,12 @@
+{
+  "contract": "nb1-light-action/v1",
+  "action": {
+    "kind": "alternate",
+    "transition": "orbit",
+    "colors": ["red", "blue"],
+    "leds": [1, 2],
+    "period_ms": 3000,
+    "cycles": 2,
+    "on_finish": "off"
+  }
+}

@@ -69,6 +69,28 @@ GOWORK=off go build -o ../../../bin/nb1-mcp .
 
 本增量仅在独立模块的官方 SDK 内存/stdio和本地 HTTP fixture 验证。工具是否已安装仍以实际 tools/list 为准，MCP进程不接管设备，模块不导入nb1核心或USB库。
 
+### alternate 的连续过渡候选
+
+本整合候选继续使用同一 `preview_light` / `run_light`，没有增加工具。
+仅 `action.kind:"alternate"` 接受可选的
+`transition:"cut"|"linear"|"sine"|"orbit"`。省略时规范动作仍不插入该字段，
+使用旧的4步/周期；显式 `cut` 保留字段，也使用旧4步。其他动作拒绝此字段。
+
+```json
+{"contract":"nb1-light-action/v1","action":{"kind":"alternate","transition":"orbit","colors":["red","blue"],"period_ms":3000,"cycles":2},"serial":"20005601"}
+```
+
+`linear/sine/orbit` 使用66步/周期：起始两次写入和32组顺序更新的双灯目标。
+周期为1300–1200000ms，最多15次（990步），仍受总执行1024步和24小时名义预算约束。
+省略/`cut` 保持旧40ms最小周期。两灯写入有先后，不表示原子更新或真实三维旋转。
+
+适配器验证版本、规范颜色参数、LED顺序、周期/次数/步数、闭环和64个顺序时段的
+`fade/hold+10ms` 分配；linear/sine还核对首尾与半周期颜色锚点。
+orbit的亮度/混色曲线与中间RGB由daemon权威编译，适配器不复制三角/正弦表，
+也不声称独立校验完整数学曲线。执行响应的完整Program仍须与该次权威预览完全一致。
+原票据、至多一次执行POST、未知结果查询和严格JSON规则均保持不变。
+本候选通过软件测试不等于已安装；先读取实际工具schema，旧客户端不能接收此字段。
+
 ## Pattern 只读目录候选
 
 本轮仅增加 `list_patterns`，由原十工具变为十一工具；不是安装或推广声明。首先通过宿主的 `tools/list` 发现实际工具。`preview_program` / `run_program` 的原 Program/Effect 输入保持不变，本轮未把 `pattern_ref` 扩展到 MCP 执行入口。

@@ -49,6 +49,9 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusForbidden, "local_only", "use a loopback host and a same-origin or non-browser client")
 		return
 	}
+	if h.serveLight(w, r) {
+		return
+	}
 	parts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
 	if r.URL.Path == "/healthz" {
 		if !method(w, r, http.MethodGet) {

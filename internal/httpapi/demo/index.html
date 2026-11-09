@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>nb1 · 本地实灯工作台</title>
+  <link rel="stylesheet" href="/demo/demo.css">
+  <script defer src="/demo/demo.js"></script>
+</head>
+<body>
+  <main>
+    <header class="masthead">
+      <div><p class="eyebrow">NB1 / LOCAL LIGHT LAB</p><h1>把想法，变成灯光。</h1><p class="intro">基础控制与艺术动作，共用一个 <code>light</code> 入口。编译、调度和设备控制都在本机 nb1 内完成。</p></div>
+      <span class="local-badge">● 仅本机 · 同源连接</span>
+    </header>
+
+    <section class="device-bar" aria-labelledby="device-heading">
+      <div><h2 id="device-heading">01 / 选择设备</h2><p id="device-help">读取本地服务已配置的设备，不会自动播放。</p></div>
+      <div class="device-controls"><label class="sr-only" for="device-select">设备序列号</label><select id="device-select"><option value="">正在读取设备…</option></select><button id="connect" class="secondary" disabled>连接所选设备</button><button id="refresh" class="text-button">刷新</button></div>
+    </section>
+
+    <div class="workspace">
+      <section class="panel composer" aria-labelledby="compose-heading">
+        <div class="section-title"><h2 id="compose-heading">02 / 选择动作</h2><span id="kind-label" class="tag">基础 · set</span></div>
+        <div class="action-grid" role="group" aria-label="灯光动作">
+          <button type="button" data-action="set" class="action selected" aria-pressed="true"><span>●</span>常亮<small>set</small></button>
+          <button type="button" data-action="fade" class="action" aria-pressed="false"><span>◐</span>渐变<small>fade</small></button>
+          <button type="button" data-action="off" class="action" aria-pressed="false"><span>○</span>熄灭<small>off</small></button>
+          <button type="button" data-action="blink" class="action" aria-pressed="false"><span>✦</span>闪烁<small>blink</small></button>
+          <button type="button" data-action="breathe" class="action" aria-pressed="false"><span>∿</span>呼吸<small>breathe</small></button>
+          <button type="button" data-action="pulse" class="action" aria-pressed="false"><span>⌁</span>脉冲<small>pulse</small></button>
+          <button type="button" data-action="alternate" class="action" aria-pressed="false"><span>⇄</span>红蓝交替<small>alternate</small></button>
+          <button type="button" data-action="rainbow" class="action" aria-pressed="false"><span>◒</span>彩虹<small>rainbow</small></button>
+          <button type="button" data-action="program" class="action" aria-pressed="false"><span>≡</span>精确序列<small>run</small></button>
+        </div>
+
+        <p id="action-description" class="description">保持指定颜色，直到你再次操作或明确熄灭。</p>
+        <form id="parameters" novalidate>
+          <div id="single-color-row" class="field-row"><label for="color">颜色 <small>CSS 名称 / #RGB / #RRGGBB</small></label><input id="color" value="#00a060" maxlength="64" autocomplete="off" spellcheck="false"></div>
+          <div id="alternate-row" class="field-row" hidden><label for="color-one">两个颜色</label><div class="two-fields"><input id="color-one" value="red" maxlength="64" aria-label="第一种颜色"><input id="color-two" value="blue" maxlength="64" aria-label="第二种颜色"></div></div>
+          <div id="led-row" class="field-row"><label for="led">输出位置</label><select id="led"><option value="0">两颗 LED</option><option value="1">LED 1</option><option value="2">LED 2</option></select></div>
+          <div id="duration-row" class="field-row" hidden><label for="duration">渐变时间 <small>ms</small></label><input id="duration" type="number" min="10" max="10000" step="10" value="800"></div>
+          <div id="period-row" class="field-row" hidden><label for="period">一个周期 <small>ms</small></label><input id="period" type="number" min="400" max="10000" step="10" value="2000"></div>
+          <div id="blink-row" class="field-row" hidden><label for="on-ms">亮 / 灭时间 <small>ms</small></label><div class="two-fields"><input id="on-ms" type="number" min="200" max="5000" step="10" value="350" aria-label="亮灯毫秒"><input id="off-ms" type="number" min="200" max="5000" step="10" value="350" aria-label="熄灭毫秒"></div></div>
+          <div id="pulse-row" class="field-row" hidden><label for="attack">起 / 落 / 停顿 <small>ms</small></label><div class="three-fields"><input id="attack" type="number" min="10" max="5000" step="10" value="60" aria-label="快速亮起毫秒"><input id="decay" type="number" min="10" max="5000" step="10" value="240" aria-label="衰减毫秒"><input id="rest" type="number" min="0" max="5000" step="10" value="700" aria-label="静默毫秒"></div></div>
+          <div id="cycles-row" class="field-row" hidden><label for="cycles">循环次数 <small>有限播放</small></label><input id="cycles" type="number" min="1" max="10" step="1" value="3"></div>
+          <div id="finish-row" class="field-row" hidden><label for="finish">完成之后</label><select id="finish"><option value="off">熄灭</option><option value="hold">保留最后一帧</option></select></div>
+          <div id="program-row" hidden><label for="program">原始 Program <small>由同一执行器校验与调度</small></label><textarea id="program" rows="11" spellcheck="false">{
+  "steps": [
+    {"led": 0, "color": "#ff0000", "fade_ms": 100, "hold_ms": 450},
+    {"led": 0, "color": "#0000ff", "fade_ms": 100, "hold_ms": 450}
+  ],
+  "repeat": 2,
+  "on_finish": "off"
+}</textarea></div>
+        </form>
+
+        <div class="execution-controls"><button id="preview" class="secondary">仅编译预览</button><button id="play" class="primary" disabled>播放到设备 →</button></div>
+        <p class="footnote">预览不会亮灯。播放采用 reject 策略，不抢占其他任务。页面关闭后，有限任务仍由本机服务完成。</p>
+      </section>
+
+      <aside class="panel monitor" aria-labelledby="monitor-heading">
+        <div class="section-title"><h2 id="monitor-heading">03 / 真实设备状态</h2><span id="connection" class="tag">未连接</span></div>
+        <div class="light-body" aria-label="设备 RGB 读回示意"><div class="led" id="led-one"><span>LED 1</span></div><div class="led" id="led-two"><span>LED 2</span></div></div>
+        <div class="rgb-values"><code id="rgb-one">—</code><code id="rgb-two">—</code></div>
+        <p id="sample-time" class="muted centered">等待设备数据</p>
+        <p class="footnote centered">这里显示 USB RGB 读回；不是摄像头画面或光学校准。</p>
+        <dl class="device-facts"><div><dt>设备</dt><dd id="serial">—</dd></div><div><dt>产品 / 固件</dt><dd id="product">—</dd></div><div><dt>当前任务</dt><dd id="job-status">尚未提交</dd></div><div><dt>步骤进度</dt><dd id="job-progress">—</dd></div><div><dt>任务编号</dt><dd><code id="job-id">—</code></dd></div></dl>
+        <div class="progress-track" aria-label="任务进度"><div id="job-progress-bar"></div></div>
+        <button id="stop" class="danger" disabled>停止本次任务，并熄灭</button>
+        <button id="recover" class="text-button" hidden>查询原请求回执</button>
+        <p class="footnote">只取消本页已确认的任务。结果未知时先查原回执，不自动重发。</p>
+      </aside>
+    </div>
+
+    <div id="notice" class="notice" role="status" aria-live="polite">正在连接本地 nb1 服务…</div>
+
+    <section class="panel inspector" aria-labelledby="inspect-heading">
+      <div class="section-title"><h2 id="inspect-heading">04 / 看懂这次调用</h2><span id="compile-summary" class="muted">尚未编译</span></div>
+      <p><code id="surface-call">light.set({ color: "#00a060", led: 0 })</code></p>
+      <div class="trace-grid"><div><h3>实际 HTTP 请求</h3><pre id="request-json">点击「仅编译预览」查看请求。</pre></div><div><h3>nb1 核心编译结果</h3><pre id="compiled-json">动作会在 Go 核心中展开为规范 Program。</pre></div></div>
+      <details><summary>查看本次 Job / 回执状态</summary><pre id="job-json">尚未提交。</pre></details>
+      <p class="footnote">breathe 是对称呼吸；这里的 pulse 是快速亮起、缓慢衰减、再停顿的新动作。旧 Effect v1 pulse 语义保留。两颗 LED 的 alternate 是交替；它不能区分顺时针和逆时针。</p>
+    </section>
+    <footer>本页静态资源随 nb1 打包。无云端、外部脚本或浏览器存储。<span id="contract">nb1-light-action/v1</span></footer>
+  </main>
+</body>
+</html>

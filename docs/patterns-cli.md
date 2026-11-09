@@ -59,6 +59,12 @@ request/cancel和accepted replay不依赖库。输出保留原pattern_ref、requ
 
 取消先GET绑定，terminal/cancelling零POST，其余最多一次含confirmed_job_id的POST；终态hold不会补关灯。坏响应或丢失保留最后可信before状态、原票据与unknown，即使--wait也不再自动GET来覆盖错误。用户之后可显式request原票据；不因404/410/重启或库失败换新票据补播。
 
-CLI仅对明确status/code白名单认定本次准入拒绝；普通404、未知code/错status、3xx、5xx/501、过期、实例变化和传输/完整性失败都保持unknown。确切白名单与源码见[内部客户端执行说明](../internal/daemonclient/README.pattern-execution-v2.zh-CN.md)，完整HTTP合同见[API手册](api-reference.zh-CN.md)。CLI list/import/export尚未提供，不能用旧v1导入命令写入v2库。
+CLI仅对明确status/code白名单认定本次准入拒绝；普通404、未知code/错status、3xx、5xx/501、过期、实例变化和传输/完整性失败都保持unknown。确切白名单与源码见[内部客户端执行说明](../internal/daemonclient/README.pattern-execution-v2.zh-CN.md)，完整HTTP合同见[API手册](api-reference.zh-CN.md)。96a的CLI list/import/export尚未提供，不能用旧v1导入命令写入v2库。
 
 此候选软件验证覆盖Program与Frame、库消失后的原回执恢复、单POST、取消与等待；只用临时库、私有loopback和内存驱动，没有新的USB/视觉验收。开发MCP16与历史12仍分别以各自会话tools/list和部署版本为准。
+
+## 后续候选：高级列表（尚未推广）
+
+开发源码另已接入 `nb1 control patterns-v2 list`，作为第八个命令；独立资格来源9ba82af。它只GET一次 `/v2/patterns`，返回有界且排序的摘要，保留未知来源/recipe为只读条目，不逐项Get、预览或准备票据，不播放。
+
+路径仅供展示，无论服务端使用POSIX、Windows盘符或完整UNC，都不按客户端OS访问文件。列表只能核对广告元数据；完整来源和revision/digest的复验仍用 `get ID`。详细合同与软件范围见[列表候选说明](../internal/daemonclient/README.pattern-list-v2.zh-CN.md)。它没有随文档更新安装到96a；snapshot导入/导出仍是后续片。

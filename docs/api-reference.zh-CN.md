@@ -489,7 +489,9 @@ run_light必须有serial、原票据，仅reject。get_job按ID前缀区分旧/�
 | `patterns-v2 request SERIAL ID --revision SHA --request-id KEY --expected-daemon-instance-id INSTANCE` | 只读原回执；可加--job-id / --execution-digest约束已知身份，绝不读库或换票据。 |
 | `patterns-v2 cancel SERIAL ID --revision SHA --request-id KEY --expected-daemon-instance-id INSTANCE` | 先GET原回执，terminal/cancelling零POST；其它最多一次带confirmed_job_id的取消。可加原Job/摘要约束。 |
 
-SHA为真实记录的完整sha256:64位小写hex，不隐式选latest；record_contract固定实验v2并完整保留在输出。全部只走daemon，--mode direct拒绝。preview/作者命令不接受policy/wait/票据；request/cancel不接受policy且必须提供原票据。未实现CLI list/import/export，不猜旧patterns命令会自动处理v2格式。
+SHA为真实记录的完整sha256:64位小写hex，不隐式选latest；record_contract固定实验v2并完整保留在输出。全部只走daemon，--mode direct拒绝。preview/作者命令不接受policy/wait/票据；request/cancel不接受policy且必须提供原票据。已安装96a未提供CLI list/import/export，不猜旧patterns命令会自动处理v2格式。
+
+后续开发候选新增第八个 `control patterns-v2 list`（独立资格来源9ba82af，尚未推广）：只发一次GET列出高级库摘要，不逐项取Record、不预览/prepare/播放，也不打开返回路径。合法未知来源/配方照常显示，POSIX/Windows盘符/完整UNC按服务端路径语法解释。列表的verification是服务端广告；缺少完整Record时不能独立复算来源、revision和执行摘要，完整复验仍用get。current/Go1.18/race各两包783节点、167顶层通过；[列表候选的明确边界](../internal/daemonclient/README.pattern-list-v2.zh-CN.md)。快照导入导出CLI仍待补，当前本机命令仍按96a七项核对。
 
 run/request/cancel支持--wait，受本次命令`--timeout`约束（默认30s，Prepare/POST/等待共用）；长图案应显式加长或稍后用原票据request恢复。等待只查询原Pattern回执，逐次核对完整typed Program/Frame、Ref、digest、Job ID、创建/启动时间、进度和生命周期；timeout不cancel、不重发、不用历史猜结果。已验证terminal先结束等待，随后caller context结束不把已知终态改成unknown。run/request等待到failed/cancelled可非零退出，仍输出可信终态且outcome_unknown=false；failed的optional错误文案为空也合法。
 

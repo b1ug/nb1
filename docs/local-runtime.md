@@ -339,3 +339,9 @@ CLI 默认通过 daemon：`nb1 control capabilities`、`nb1 control preview --ef
 MCP 使用新的只读 `preview_program`，可选 `list_devices` 的 `include_capabilities:true` 读取目录。原六工具与原 `dry_run` 行为保留：Effect 的旧 dry_run 只校验结构，不访问 daemon，也不能证明完整编译成功。新预览成功是 HTTP200 和 `program_preview`，不是接受 Job；即使 HTTP 超时也没有任务被该接口提交，不自动重试。
 
 这是命名 Pattern 持久化之前的共同编译基础。软件库、历史持久化、重启恢复与设备 RAM/Flash 各自独立，不因增加预览接口而开放。
+
+## 后续开发候选的诊断开关
+
+本机已安装的96a没有 `--transport-trace`。后续开发源码（独立资格来源d5dd2d8）提供显式 `server --transport-trace`：默认关闭，仅向daemon日志写有界attempt诊断，不新增HTTP/MCP接口或USB调用，不改变原重试策略。开启前正常交接设备所有权，不能让两个daemon同时持有同一设备。
+
+新日志可关联原Job、Pattern ID/revision与真实step/frame/target位置；无法取得typed原生码时省略，不用0或general error文字猜原因。内存环/队列固定，日志最多8MiB；坏日志消费者不阻硬件清理。时钟/拷贝/短锁仍消耗时间，trace本身可能影响Frame余量；摘要仅尽力，缺失不能当零丢弃或无重试。详见[诊断实现与限制](../internal/transporttrace/README.zh-CN.md)。本片已软件验证，尚无启用trace的实体设备资格。

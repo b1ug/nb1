@@ -63,7 +63,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusForbidden, "local_only", "use a loopback host and a same-origin or non-browser client")
 		return
 	}
-	if h.serveLight(w, r) {
+	if h.serveFrames(w, r) || h.serveLightV2(w, r) || h.serveLight(w, r) {
 		return
 	}
 	if h.servePatterns(w, r) {

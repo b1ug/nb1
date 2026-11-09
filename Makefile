@@ -66,7 +66,6 @@ default:
 run:
 	$(GORUN) . v
 preview:
-	./$(BINARY) v
 	python3 ci/check-build-artifact.py preview --binary ./$(BINARY)
 clean:
 	rm -f $(BINARY)*

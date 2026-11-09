@@ -1,6 +1,6 @@
 # 用户级常驻启动配置
 
-`nb1 service render` 只生成可审阅的启动配置，不安装、启用、注册、启动或停止服务。macOS候选另有 `install/start/stop/status/uninstall` 管理当前用户的托管LaunchAgent；这些是显式操作，不会随普通CLI启动自动执行。daemon本身仍以前台 `nb1 server` 运行，由操作系统用户级管理器保持运行。
+`nb1 service render` 只生成可审阅的启动配置，不安装、启用、注册、启动或停止服务。macOS/Linux候选另有 `install/start/stop/status/uninstall`，按运行平台管理当前普通用户的固定LaunchAgent或systemd用户unit；这些是显式操作，不会随普通CLI启动自动执行。daemon本身仍以前台 `nb1 server` 运行，由操作系统用户级管理器保持运行。
 
 | 平台 | 输出文件 | 运行方式 |
 | --- | --- | --- |
@@ -53,7 +53,7 @@ daemon与CLI直控必须使用同一账号、同一所有权目录，才能识�
 plutil -lint org.b1ug.nb1.plist
 ```
 
-确认二进制位置和目标设备后，可以在当前普通用户的图形登录会话中显式安装。以下命令会修改真实用户配置；本轮开发验证仅在临时目录和模拟launchctl中执行，没有替本机安装、启动或卸载服务。
+确认二进制位置和目标设备后，可以在当前普通用户的图形登录会话中显式安装。以下命令会修改真实用户配置。macOS候选已在当前Mac与选定mk2完成临时安装、独立start/stop、幂等不重启、退出读黑及恢复原daemon的19项原生检查；临时配置已移除。该结论不覆盖注销/登录/重启或其他平台。
 
 ```bash
 nb1 service install --binary /absolute/path/to/nb1 --devices 20005601
@@ -97,9 +97,34 @@ nb1 service uninstall --stop --json
 
 托管标记直接嵌在plist中，只含版本、固定label、当前UID与明确指定的配置，不采集任意环境变量。读取时必须与完整重渲染内容一致；旧版render文件、人工编辑后的配置和未知来源plist一律拒绝覆盖/删除。临时文件写全并同步后才以不覆盖目标的方式发布，最终文件为0600；目录与文件必须属于当前用户，拒绝符号链接或其他用户可写路径。独立管理锁在 `~/Library/Application Support/nb1/service-management`，不使用设备锁目录，也不删除持久锁文件。启动前、停止前与删除前均重新比较查询之前文件的完整内容和inode，已观察到替换或同inode改写就拒绝操作。管理锁只协调本工具的进程；这些检查与最后的Remove并非原子事务，不承诺防住同UID不合作进程故意卡在检查与操作之间的竞态。
 
-当前不做原地升级替换：相同配置幂等，二进制路径、设备或监听等配置变化时先审阅并正常卸载再安装。旧的人工安装项需要先人工核对来源并正常卸载，候选不会擅自接管。这里没有系统级LaunchDaemon、SMAppService、登录前常驻保证或自动日志轮转；默认plist仍不指定stdout/stderr文件。Linux/Windows的自动管理明确返回unsupported，仍保留跨平台render和下方人工部署说明。
+当前不做原地升级替换：相同配置幂等，二进制路径、设备或监听等配置变化时先审阅并正常卸载再安装。旧的人工安装项需要先人工核对来源并正常卸载，候选不会擅自接管。这里没有系统级LaunchDaemon、SMAppService、登录前常驻保证或自动日志轮转；默认plist仍不指定stdout/stderr文件。Linux候选管理见下节；Windows等其他平台自动管理明确返回unsupported，不启动管理器或自动提权，仍保留跨平台render和人工部署说明。
 
-## Linux：人工安装、状态与卸载
+## Linux：候选用户管理与人工部署
+
+Linux上的同名CLI命令使用独立systemd用户管理器，固定管理当前普通用户的 `nb1.service`，不调用launchctl、不提供切换UID或管理平台的flag。只有 `render --platform` 可跨平台生成配置；管理操作始终选择实际运行平台。需要可用的用户systemd manager和受信任的系统systemctl；root、sudo、身份切换或不可查询的用户manager均返回实际错误，不会自动提权、配置Polkit或开启linger。
+
+```bash
+nb1 service install --binary /absolute/path/to/nb1 --devices 20005601
+nb1 service status --config-only --json
+nb1 service status --json
+nb1 service start --json
+nb1 service stop --json
+nb1 service uninstall --json
+# 仍活动的unit须明确允许先停止
+nb1 service uninstall --stop --json
+```
+
+`install` 写入 `os.UserConfigDir()/systemd/user/nb1.service`（Linux通常为 `$XDG_CONFIG_HOME` 或 `~/.config` 下），并创建本工具的 `default.target.wants/nb1.service` 持久启用链接，核对与刷新用户manager；**默认不立即start，但下次用户manager启动或登录可能自动加载**。加 `--start` 才请求本次立即启动。`start` 只立即启动已有配置，不顺便启用登录加载；已active时幂等返回，不restart。`stop` 保留unit和持久启用链接，不等于禁用自启，也不证明设备已经熄灭。卸载已加载但inactive的托管unit不要求 `--stop`；仍活动时必须显式允许停止。
+
+Linux JSON保留独立的 `schema_version: 1` 状态结构，不把systemd字段改成macOS注册字段。磁盘 `config_state`、本工具的 `enable_link_state` / `managed_enabled_for_login`、manager的 `registration` / `properties.load_state`、`active_state` / `sub_state` 与更广的 `unit_file_state` 分别报告。`managed_enabled_for_login: false` 只表示本工具固定链接不存在，不排除其他来源的启用；null表示未检查或无法确认。`registration_owned: false` 也可能表示未查询或无法确认安全边界，不能一律当作外部服务。**loaded、active和归属核对都不等于HTTP可用或USB在线**，请另用doctor检查已有快照。
+
+`status --config-only` 只读磁盘，不调用systemctl、不创建目录或锁；此时 `registration: not_checked`、`properties: null` 不能推断unit已停止或不存在。其他操作保守核对完整文件、inode、当前用户、FragmentPath、持久启用链接、无未知drop-in/transient或reload pending，并要求已加载配置的 `NoNewPrivileges=yes`。未知同名unit、覆盖、文件改写或查询失败均拒绝接管；结果不明时不会自动重试、强杀或回滚，部分文件动作按输出的Actions与状态检查。NoNewPrivileges只限制获得新权限，不代表完整沙箱；不会自动安装udev规则或放宽USB权限，详见[最小权限边界](../../docs/security-boundaries.zh-CN.md)。
+
+此CLI接线目前只经过fake工厂、独立manager模拟及跨平台编译验证，真实Linux用户manager的CI生命周期与Linux原生USB尚待分别验收；不要把软件检查当作实测结论。
+
+### 人工部署render文件
+
+以下是人工管理的替代方式。render文件没有候选管理器要求的完整托管标记；人工安装项不会被自动接管，不能直接改用 `service install` 覆盖。
 
 ```bash
 unit_dir="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user"
@@ -152,7 +177,7 @@ Unregister-ScheduledTask -TaskName $taskName -Confirm:$false
 
 macOS和Linux管理器先请求进程退出，配置给20秒退出预算；当前daemon自身有10秒清理等待。若原生I/O阻塞或管理器最终强杀进程，不能保证最后的熄灯和自主播放停止已完成。Windows任务停止也不是等价的优雅关闭协议。退出后应检查新设备读回，不能把“进程已停止”当作“灯已完成清理”。
 
-当前测试覆盖XML参数往返、systemd转义、PowerShell编码和字符串、无效输入先于文件创建、已有文件不被替换。macOS管理候选另以临时home和fake launchctl覆盖安装与独立start/stop、幂等、不重启、外部同名项、归属核对、未知/修改文件、同内容inode替换、符号链接、二进制检查、管理锁、查询异常、取消、bootstrap/bootout不确定结果及配置保留。另有仅在Windows运行的实际子进程argv往返测试。这些检查不等于已在三平台安装服务或验证重启、注销、USB权限及真机生命周期；本机当前daemon不会被这些测试停止。
+当前测试覆盖XML参数往返、systemd转义、PowerShell编码和字符串、无效输入先于文件创建、已有文件不被替换。macOS管理候选另以临时home和fake launchctl覆盖安装与独立start/stop、幂等、不重启、外部同名项、归属核对、未知/修改文件、同内容inode替换、符号链接、二进制检查、管理锁、查询异常、取消、bootstrap/bootout不确定结果及配置保留。Linux独立manager另有临时配置与fake systemctl测试；CLI用fake工厂验证按当前平台选择、动作参数、错误状态保留和unsupported不构造管理器，未执行真实systemctl。另有仅在Windows运行的实际子进程argv往返测试。这些检查不等于已在三平台安装服务或验证重启、注销、USB权限及真机生命周期；本机当前daemon不会被这些测试停止。
 
 ## 官方依据
 

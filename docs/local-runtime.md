@@ -6,7 +6,7 @@
 
 本版把设备所有权与执行逻辑集中在同一个本地执行器：daemon 常驻持有选定设备，HTTP、CLI 和独立 MCP 适配器提交程序；每台设备由一个 worker 串行操作。`control --mode direct` 在 CLI 进程内运行同一个执行器。MCP 接入参见[独立适配器说明](../adapters/mcp/README.md)，其协议软件与实物验证状态分别记录。权限与接口范围见[最小权限与控制边界](security-boundaries.zh-CN.md)。
 
-这是工作区的本地候选版本，相关新代码尚未发布；既有 PR 保留待审状态，没有自动合并或修改远程 PR。本机已经在 macOS 27.2 arm64、blink(1) mk2、固件204上验证直控、HTTP设色、设备占用、取消、退出和读回。mk3没有真机验证；Windows/Linux 的 stub 编译结果不代表原生 USB I/O 通过。普通server/control命令不会安装系统服务，也不写设备 Flash 或模式内容；新增macOS用户服务管理须显式调用 `service install/start/stop/uninstall`，开发阶段仅验证其模拟路径，未在本机安装。
+这是工作区的本地候选版本，相关新代码尚未发布；既有 PR 保留待审状态，没有自动合并或修改远程 PR。本机已经在 macOS 27.2 arm64、blink(1) mk2、固件204上验证直控、HTTP设色、设备占用、取消、退出和读回。mk3没有真机验证；Windows/Linux 的 stub 编译结果不代表原生 USB I/O 通过。普通server/control命令不会安装系统服务，也不写设备 Flash 或模式内容；macOS/Linux候选用户服务管理须显式调用 `service install/start/stop/uninstall`；macOS当前机临时生命周期已验收并恢复原daemon，Linux仍待真实用户manager与原生USB验收。
 
 ## 1. 构建与启动
 
@@ -47,7 +47,13 @@ HTTP响应、`api_version: v1`、设备 `online` 和 `observed` 新鲜度分别�
 
 `service render` 继续只生成配置。新增的 `service install/start/stop/status/uninstall` 只针对当前普通用户的固定LaunchAgent：install先只读核对launchd归属，再写托管plist；**即使不加 `--start`，下次图形登录也可能自动加载**。安装加 `--start` 或对已安装配置执行 `service start` 才会立即bootstrap；相同配置已注册时不重启。`service stop` 只注销已核对归属的注册项并保留plist，**不等于禁用下次图形登录加载**；注册消失不表示进程退出或USB清理已完成。卸载已注册项须显式 `--stop`。`service status --config-only` 完全不调用launchctl；普通status区分磁盘安装与launchd注册，不把注册当作进程、HTTP或设备就绪。
 
-这部分仅在隔离临时目录与fake launchctl中开发验证，尚未在本机安装或验证注销/重启生命周期。未知plist、归属不明、查询失败、停止不确定或配置被修改时均保留文件；原地升级替换尚未实现。完整用法和边界见[用户级启动配置与管理](../internal/service/README.zh-CN.md)。Linux/Windows仍只提供render及人工部署说明。
+macOS部分除fake launchctl回归外，已在当前Mac/选定mk2完成临时安装、独立start/stop、保留配置、幂等不重启、真实退出后的direct读黑及恢复原daemon的19项检查，临时配置已清理；没有验证注销/登录/重启生命周期。未知plist、归属不明、查询失败、停止不确定或配置被修改时均保留文件；原地升级替换尚未实现。完整用法和边界见[用户级启动配置与管理](../internal/service/README.zh-CN.md)。Linux候选现已接入相同CLI，使用独立systemd用户管理器；仅有模拟与构建证据，真实Linux user-manager CI与原生USB待验收。Windows等其他平台仍只提供render及人工部署说明。
+
+### Linux用户级持久启动候选
+
+Linux上的 `service install/start/stop/status/uninstall` 仅管理当前普通用户的固定 `nb1.service`，不接收任意UID或跨平台管理目标、不自动提权。install默认创建受控unit和 `default.target.wants` 持久启用链接，并刷新用户manager；不加 `--start` 就不立即启动，但下次登录或用户manager启动可能加载。start只立即启动，stop保留unit和登录启用；active unit卸载须加 `--stop`，loaded但inactive可直接卸载。
+
+`status --config-only` 不调用systemctl。Linux JSON原样报告独立状态结构，分别列出磁盘配置、启用链接、loaded、active、manager看到的unit_file_state及归属；这些都不证明HTTP可用或USB在线。未知来源、drop-in/覆盖、配置变化、查询或控制结果不明时保守拒绝，不改用sudo或系统服务。实现和CLI只完成模拟/构建验证，真实Linux用户manager CI及Linux原生USB仍需分别验收。用法与人工部署替代方式见[用户级服务说明](../internal/service/README.zh-CN.md)。
 
 ## 2. 查看设备与设色
 

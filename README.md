@@ -2,4 +2,4 @@
 
 new blink(1) cli tool
 
-用户启动配置与macOS托管服务的 `install/start/stop/status/uninstall` 用法见[用户级服务说明](internal/service/README.zh-CN.md)。
+用户启动配置与macOS/Linux托管服务候选的 `install/start/stop/status/uninstall` 用法见[用户级服务说明](internal/service/README.zh-CN.md)。

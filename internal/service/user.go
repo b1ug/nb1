@@ -1,0 +1,519 @@
+package service
+
+import (
+	"bytes"
+	"context"
+	"encoding/base64"
+	"encoding/json"
+	"encoding/xml"
+	"errors"
+	"fmt"
+	"io"
+	"os"
+	"path/filepath"
+	"runtime"
+	"strconv"
+	"strings"
+	"time"
+
+	"github.com/b1ug/nb1/internal/ownership"
+)
+
+var ErrUserServiceUnsupported = errors.New("自动用户服务管理目前只支持macOS；其他平台仍可使用 service render，不会调用launchctl")
+
+const (
+	managedMarker   = "<!-- nb1-managed-user-service-v1:"
+	maxManagedSize  = 128 << 10
+	operationBudget = 10 * time.Second
+)
+
+// CommandResult is an internal adapter result. Output may contain launchd
+// diagnostic data, so it must never be copied wholesale to reports or logs.
+type CommandResult struct {
+	Output    string
+	ExitCode  int
+	Truncated bool
+}
+
+type Runner interface {
+	Run(context.Context, ...string) (CommandResult, error)
+}
+
+type UserManager struct {
+	home   string
+	uid    int
+	runner Runner
+}
+
+// UserStatus distinguishes a known on-disk configuration from launchd
+// registration. Registered does not mean running, HTTP-ready or USB-online.
+type UserStatus struct {
+	SchemaVersion     int      `json:"schema_version"`
+	Label             string   `json:"label"`
+	Target            string   `json:"target"`
+	PlistPath         string   `json:"plist_path"`
+	ConfigState       string   `json:"config_state"`
+	Registration      string   `json:"registration"`
+	RegistrationOwned bool     `json:"registration_owned"`
+	AutoLoadAtLogin   *bool    `json:"auto_load_at_login"`
+	Config            *Config  `json:"config"`
+	Actions           []string `json:"actions"`
+	Notes             []string `json:"notes"`
+}
+
+type managedDefinition struct {
+	Version int    `json:"version"`
+	Label   string `json:"label"`
+	UID     int    `json:"uid"`
+	Config  Config `json:"config"`
+}
+
+type managedFile struct {
+	definition managedDefinition
+	content    []byte
+	info       os.FileInfo
+}
+
+// NewUserManager only addresses this ordinary user's fixed GUI LaunchAgent.
+// No arbitrary labels, UIDs, launchctl paths or installation directories are
+// accepted by the CLI. Construction performs no writes or launchctl calls.
+func NewUserManager() (*UserManager, error) {
+	if runtime.GOOS != "darwin" {
+		return nil, ErrUserServiceUnsupported
+	}
+	uid := os.Geteuid()
+	if uid <= 0 || os.Getuid() != uid {
+		return nil, fmt.Errorf("请以当前普通用户运行用户服务管理；不支持sudo、root或身份切换")
+	}
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return nil, err
+	}
+	return newUserManager(home, uid, launchctlRunner{})
+}
+
+func newUserManager(home string, uid int, runner Runner) (*UserManager, error) {
+	if !filepath.IsAbs(home) || runner == nil || uid < 0 {
+		return nil, fmt.Errorf("invalid user service context")
+	}
+	canonical, err := filepath.EvalSymlinks(home)
+	if err != nil {
+		return nil, fmt.Errorf("inspect user home: %w", err)
+	}
+	m := &UserManager{home: canonical, uid: uid, runner: runner}
+	if err := m.directory(canonical, false); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func (m *UserManager) target() string { return "gui/" + strconv.Itoa(m.uid) + "/" + Label }
+func (m *UserManager) domain() string { return "gui/" + strconv.Itoa(m.uid) }
+func (m *UserManager) plistPath() string {
+	return filepath.Join(m.home, "Library", "LaunchAgents", Label+".plist")
+}
+
+func (m *UserManager) initialStatus() UserStatus {
+	return UserStatus{SchemaVersion: 1, Label: Label, Target: m.target(), PlistPath: m.plistPath(), ConfigState: "not_checked", Registration: "not_checked", Actions: []string{}, Notes: []string{
+		"配置写入LaunchAgents后，即使本次不启动，下次图形登录也可能自动加载。",
+		"registered只表示launchd注册；不表示进程已运行、HTTP可用或USB设备在线，API/设备快照另用nb1 doctor检查。",
+		"launchctl print不是稳定机器API；归属字段无法严格核对时拒绝停止和卸载。",
+	}}
+}
+
+// Status with configOnly performs filesystem reads only. It creates no
+// directories or lock files and never calls launchctl in that mode.
+func (m *UserManager) Status(ctx context.Context, configOnly bool) (UserStatus, error) {
+	ctx, cancel := context.WithTimeout(ctx, operationBudget)
+	defer cancel()
+	status := m.initialStatus()
+	file, err := m.readManaged()
+	if err != nil {
+		status.ConfigState = "conflict"
+		status.AutoLoadAtLogin = nil
+		return status, err
+	}
+	if file != nil {
+		status.ConfigState, status.AutoLoadAtLogin = "managed", boolValue(true)
+		config := file.definition.Config
+		status.Config = &config
+	} else {
+		status.ConfigState, status.AutoLoadAtLogin = "absent", boolValue(false)
+	}
+	if !configOnly {
+		if err := m.registration(ctx, &status); err != nil {
+			return status, err
+		}
+	}
+	return status, nil
+}
+
+// Install never replaces a file, including a changed configuration previously
+// installed by this tool. start is the explicit live bootstrap boundary.
+func (m *UserManager) Install(ctx context.Context, config Config, start bool) (UserStatus, error) {
+	ctx, cancel := context.WithTimeout(ctx, operationBudget)
+	defer cancel()
+	status := m.initialStatus()
+	config.Platform = "darwin"
+	if config.Listen == "" {
+		config.Listen = "127.0.0.1:8931"
+	}
+	if err := validate(config); err != nil {
+		return status, err
+	}
+	// Retain an explicit absolute executable and verify it without executing it.
+	info, err := os.Stat(config.Binary)
+	if err != nil || !info.Mode().IsRegular() || info.Mode().Perm()&0111 == 0 {
+		return status, fmt.Errorf("--binary 必须指向已存在、可执行的普通文件；不会自动下载或执行它")
+	}
+	config.Binary, err = filepath.EvalSymlinks(config.Binary)
+	if err != nil {
+		return status, err
+	}
+	definition := managedDefinition{Version: 1, Label: Label, UID: m.uid, Config: config}
+	content, err := managedContent(definition)
+	if err != nil {
+		return status, err
+	}
+	lease, err := m.managementLease()
+	if err != nil {
+		return status, err
+	}
+	defer lease.Close()
+	// Even files-only installation must reject a foreign same-label service:
+	// writing LaunchAgents would otherwise create a future login collision.
+	status, err = m.Status(ctx, false)
+	if err != nil {
+		return status, err
+	}
+	current, err := m.readManaged()
+	if err != nil {
+		return status, err
+	}
+	if current != nil && !bytes.Equal(current.content, content) {
+		return status, fmt.Errorf("已有托管配置与请求不同；不会覆盖或升级，请先审阅并正常卸载旧配置")
+	}
+	if status.Registration != "absent" {
+		if status.Registration == "registered" && status.RegistrationOwned && current != nil {
+			status.Notes = append(status.Notes, "同一托管配置已注册；未重启、kickstart或替换进程。")
+			return status, nil
+		}
+		return status, fmt.Errorf("launchd中已有未确认归属的同名项；不会bootstrap、替换或停止它")
+	}
+	if current == nil {
+		if err := m.directory(filepath.Dir(m.plistPath()), true); err != nil {
+			return status, err
+		}
+		if err := createManaged(m.plistPath(), content); err != nil {
+			status.ConfigState, status.AutoLoadAtLogin = "conflict", nil
+			return status, fmt.Errorf("配置创建未完成；未请求启动，已有或部分文件保留供检查，不会覆盖或删除: %w", err)
+		}
+		status.Actions = append(status.Actions, "plist_created")
+		status.ConfigState, status.Config, status.AutoLoadAtLogin = "managed", &config, boolValue(true)
+		current, err = m.readManaged()
+		if err != nil {
+			return status, err
+		}
+	}
+	if !start {
+		return status, nil
+	}
+	if err := m.unchanged(current); err != nil {
+		return status, err
+	}
+	status.Actions = append(status.Actions, "bootstrap_requested")
+	result, err := m.runner.Run(ctx, "bootstrap", m.domain(), m.plistPath())
+	if err != nil || result.ExitCode != 0 {
+		status.Registration = "unknown"
+		return status, fmt.Errorf("bootstrap未确认成功；配置保留，下次登录仍可能加载。请运行service status核对；不会自动回滚、重试或bootout")
+	}
+	if err := m.registration(ctx, &status); err != nil {
+		return status, err
+	}
+	if !status.RegistrationOwned {
+		return status, fmt.Errorf("bootstrap返回后无法确认注册项归属；配置保留，请查看service status，不会自动bootout")
+	}
+	return status, nil
+}
+
+// Uninstall always queries launchd first. stop authorizes bootout only after
+// both the on-disk marker and the exact loaded path/program have been checked.
+// It never treats a query error or unknown output format as 'not loaded'.
+func (m *UserManager) Uninstall(ctx context.Context, stop bool) (UserStatus, error) {
+	ctx, cancel := context.WithTimeout(ctx, operationBudget)
+	defer cancel()
+	status := m.initialStatus()
+	lease, err := m.managementLease()
+	if err != nil {
+		return status, err
+	}
+	defer lease.Close()
+	original, err := m.readManaged()
+	if err != nil {
+		status.ConfigState, status.AutoLoadAtLogin = "conflict", nil
+		return status, err
+	}
+	status, err = m.Status(ctx, false)
+	if err != nil {
+		return status, err
+	}
+	if status.Registration == "registered" {
+		if !status.RegistrationOwned {
+			return status, fmt.Errorf("同名注册项归属不明确；不会停止或删除配置")
+		}
+		if !stop {
+			return status, fmt.Errorf("服务仍已注册；需要显式service uninstall --stop才会请求停止并卸载")
+		}
+		// launchctl queries may take time. Recheck complete contents and inode
+		// immediately before acting on the registration they described.
+		if err := m.unchanged(original); err != nil {
+			return status, err
+		}
+		status.Actions = append(status.Actions, "bootout_requested")
+		result, err := m.runner.Run(ctx, "bootout", m.target())
+		if err != nil || result.ExitCode != 0 {
+			status.Registration = "unknown"
+			return status, fmt.Errorf("bootout未确认成功；配置保留，请重新运行service status；不会强杀或删除文件")
+		}
+		// Do not use --wait, which current launchctl help says may wait forever.
+		for {
+			if err := m.registration(ctx, &status); err != nil {
+				return status, err
+			}
+			if status.Registration == "absent" {
+				break
+			}
+			if !status.RegistrationOwned {
+				return status, fmt.Errorf("停止后注册项归属改变；配置保留")
+			}
+			select {
+			case <-ctx.Done():
+				return status, fmt.Errorf("等待注销超时；配置保留，不能保证进程或硬件清理完成")
+			case <-time.After(100 * time.Millisecond):
+			}
+		}
+	}
+	if status.Registration != "absent" {
+		return status, fmt.Errorf("注册状态不明确；配置保留")
+	}
+	file, err := m.readManaged()
+	if err != nil {
+		return status, err
+	}
+	if err := sameManaged(original, file); err != nil {
+		return status, err
+	}
+	if file != nil {
+		latest, err := os.Lstat(m.plistPath())
+		if err != nil || !os.SameFile(file.info, latest) {
+			return status, fmt.Errorf("配置文件在检查后发生变化；拒绝删除")
+		}
+		// The persistent management lease coordinates this tool's writers.
+		// Lstat/Remove is not atomic against a deliberately racing process
+		// with the same UID; observed changes are refused, not silently ignored.
+		if err := os.Remove(m.plistPath()); err != nil {
+			return status, err
+		}
+		status.Actions = append(status.Actions, "plist_removed")
+	}
+	status.ConfigState, status.Config, status.AutoLoadAtLogin = "absent", nil, boolValue(false)
+	status.Notes = append(status.Notes, "注册已移除不等于原生I/O、设备所有权释放或最后熄灯已完成；按需另行检查。持久管理锁文件保留。")
+	return status, nil
+}
+
+func (m *UserManager) unchanged(original *managedFile) error {
+	current, err := m.readManaged()
+	if err != nil {
+		return err
+	}
+	return sameManaged(original, current)
+}
+
+func sameManaged(original, current *managedFile) error {
+	if original == nil && current == nil {
+		return nil
+	}
+	if original == nil || current == nil || !os.SameFile(original.info, current.info) || !bytes.Equal(original.content, current.content) {
+		return fmt.Errorf("托管配置在检查期间发生替换或内容变化；拒绝启动、停止或删除，请重新核对")
+	}
+	return nil
+}
+
+func (m *UserManager) registration(ctx context.Context, status *UserStatus) error {
+	status.Registration, status.RegistrationOwned = "unknown", false
+	result, err := m.runner.Run(ctx, "print", m.target())
+	if err != nil {
+		return fmt.Errorf("无法查询launchd；归属未知，不会停止或删除配置")
+	}
+	if result.ExitCode == 0 {
+		status.Registration = "registered"
+		if !result.Truncated && status.Config != nil {
+			status.RegistrationOwned = printedIdentity(result.Output, m.target(), m.plistPath(), status.Config.Binary)
+		}
+		return nil
+	}
+	// On this Darwin launchctl, 113 is the missing-service status. Confirm
+	// the GUI domain itself is reachable; do not interpret arbitrary failures
+	// (including absent GUI sessions or permission errors) as an unloaded job.
+	if result.ExitCode == 113 {
+		domain, err := m.runner.Run(ctx, "print", m.domain())
+		if err == nil && domain.ExitCode == 0 {
+			status.Registration = "absent"
+			return nil
+		}
+	}
+	return fmt.Errorf("launchd查询失败或GUI登录域不可用；注册状态未知，不会停止或删除配置")
+}
+
+// print is explicitly a human diagnostic format. Recognize only a narrow
+// top-level form, never nested fields, partial matches or a PID inferred from
+// text. Format changes degrade to unverified ownership and prohibit bootout.
+func printedIdentity(output, target, path, binary string) bool {
+	lines := strings.Split(strings.TrimSpace(output), "\n")
+	if len(lines) < 3 || lines[0] != target+" = {" || lines[len(lines)-1] != "}" {
+		return false
+	}
+	var paths, programs []string
+	for _, line := range lines[1 : len(lines)-1] {
+		for _, indent := range []string{"\t", "    "} {
+			if strings.HasPrefix(line, indent+"path = ") {
+				paths = append(paths, strings.TrimPrefix(line, indent+"path = "))
+			}
+			if strings.HasPrefix(line, indent+"program = ") {
+				programs = append(programs, strings.TrimPrefix(line, indent+"program = "))
+			}
+		}
+	}
+	return len(paths) == 1 && paths[0] == path && len(programs) == 1 && programs[0] == binary
+}
+
+func managedContent(definition managedDefinition) ([]byte, error) {
+	artifact, err := Render(definition.Config)
+	if err != nil {
+		return nil, err
+	}
+	metadata, err := json.Marshal(definition)
+	if err != nil {
+		return nil, err
+	}
+	marker := managedMarker + base64.StdEncoding.EncodeToString(metadata) + " -->\n"
+	return bytes.Replace(artifact.Content, []byte(xml.Header), []byte(xml.Header+marker), 1), nil
+}
+
+func (m *UserManager) readManaged() (*managedFile, error) {
+	if err := m.directory(filepath.Dir(m.plistPath()), false); err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	f, err := openManaged(m.plistPath())
+	if errors.Is(err, os.ErrNotExist) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("无法安全读取配置；不会覆盖或删除: %w", err)
+	}
+	defer f.Close()
+	info, err := f.Stat()
+	if err != nil {
+		return nil, err
+	}
+	if !info.Mode().IsRegular() || !ownedBy(info, m.uid) || info.Mode().Perm()&0022 != 0 {
+		return nil, fmt.Errorf("配置必须是当前用户拥有且组/其他用户不可写的普通文件；不会覆盖或删除")
+	}
+	content, err := io.ReadAll(io.LimitReader(f, maxManagedSize+1))
+	if err != nil {
+		return nil, err
+	}
+	if len(content) > maxManagedSize {
+		return nil, fmt.Errorf("配置过大；视为未知文件，不会覆盖或删除")
+	}
+	lines := bytes.SplitN(content, []byte("\n"), 3)
+	if len(lines) != 3 || string(lines[0])+"\n" != xml.Header || !bytes.HasPrefix(lines[1], []byte(managedMarker)) || !bytes.HasSuffix(lines[1], []byte(" -->")) {
+		return nil, fmt.Errorf("已有plist不含本工具的完整托管标记；不会接管、覆盖或删除")
+	}
+	encoded := strings.TrimSuffix(strings.TrimPrefix(string(lines[1]), managedMarker), " -->")
+	metadata, err := base64.StdEncoding.DecodeString(encoded)
+	if err != nil {
+		return nil, fmt.Errorf("托管标记损坏；不会覆盖或删除")
+	}
+	var definition managedDefinition
+	decoder := json.NewDecoder(bytes.NewReader(metadata))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&definition); err != nil || definition.Version != 1 || definition.Label != Label || definition.UID != m.uid || definition.Config.Platform != "darwin" {
+		return nil, fmt.Errorf("托管标记身份或版本不匹配；不会覆盖或删除")
+	}
+	canonical, err := managedContent(definition)
+	if err != nil || !bytes.Equal(canonical, content) {
+		return nil, fmt.Errorf("托管plist已修改或标记不一致；不会覆盖或删除")
+	}
+	return &managedFile{definition: definition, content: content, info: info}, nil
+}
+
+func (m *UserManager) managementLease() (*ownership.Lease, error) {
+	path := filepath.Join(m.home, "Library", "Application Support", "nb1", "service-management")
+	if err := m.directory(path, true); err != nil {
+		return nil, err
+	}
+	return ownership.Acquire(path, "managed-user-service/"+Label)
+}
+
+// All traversed directories below the canonical home must be real, owned by
+// this user and not writable by other users. Existing permissions are not
+// changed. Exclusive publication never replaces a pre-existing final plist.
+func (m *UserManager) directory(path string, create bool) error {
+	relative, err := filepath.Rel(m.home, path)
+	if err != nil || relative == ".." || strings.HasPrefix(relative, ".."+string(filepath.Separator)) {
+		return fmt.Errorf("service path escaped user home")
+	}
+	paths := []string{m.home}
+	current := m.home
+	if relative != "." {
+		for _, part := range strings.Split(relative, string(filepath.Separator)) {
+			current = filepath.Join(current, part)
+			paths = append(paths, current)
+		}
+	}
+	for _, item := range paths {
+		info, err := os.Lstat(item)
+		if errors.Is(err, os.ErrNotExist) && create {
+			if err := os.Mkdir(item, 0700); err != nil && !errors.Is(err, os.ErrExist) {
+				return err
+			}
+			info, err = os.Lstat(item)
+		}
+		if err != nil {
+			return err
+		}
+		if !info.IsDir() || !ownedBy(info, m.uid) || info.Mode().Perm()&0022 != 0 {
+			return fmt.Errorf("用户服务目录不是安全的当前用户目录；拒绝符号链接、他人拥有或组/其他用户可写的目录")
+		}
+	}
+	return nil
+}
+
+func boolValue(value bool) *bool { return &value }
+
+func WriteUserStatus(output io.Writer, status UserStatus) error {
+	var text strings.Builder
+	fmt.Fprintf(&text, "nb1 macOS 用户服务\nlabel：%s\n目标：%s\n配置：%s · %s\nlaunchd注册：%s · 归属已核对=%t\n", status.Label, status.Target, status.PlistPath, status.ConfigState, status.Registration, status.RegistrationOwned)
+	if status.AutoLoadAtLogin == nil {
+		fmt.Fprintln(&text, "下次图形登录自动加载：未检查或无法确认；不能据此判断配置存在、缺失或可安全操作。")
+	} else if *status.AutoLoadAtLogin {
+		fmt.Fprintln(&text, "下次图形登录可能自动加载：是；这不表示现在已经运行。")
+	} else {
+		fmt.Fprintln(&text, "托管plist不存在；未由这份配置安排下次登录加载。")
+	}
+	if status.Config != nil {
+		fmt.Fprintf(&text, "二进制：%s\n设备：%s\n监听：%s\n", status.Config.Binary, strings.Join(status.Config.Devices, ","), status.Config.Listen)
+	}
+	if len(status.Actions) != 0 {
+		fmt.Fprintf(&text, "本次操作：%s\n", strings.Join(status.Actions, ", "))
+	}
+	for _, note := range status.Notes {
+		fmt.Fprintln(&text, note)
+	}
+	_, err := io.WriteString(output, text.String())
+	return err
+}

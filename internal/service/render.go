@@ -1,5 +1,6 @@
-// Package service renders reviewable per-user startup configurations. Rendering
-// never registers, enables, starts or stops an operating-system service.
+// Package service renders reviewable per-user startup configurations and
+// manages explicitly requested macOS user agents. Rendering alone never
+// registers, enables, starts or stops an operating-system service.
 package service
 
 import (
@@ -21,11 +22,11 @@ import (
 const Label = "org.b1ug.nb1"
 
 type Config struct {
-	Platform string
-	Binary   string
-	Devices  []string
-	Listen   string
-	LockDir  string
+	Platform string   `json:"platform"`
+	Binary   string   `json:"binary"`
+	Devices  []string `json:"devices"`
+	Listen   string   `json:"listen"`
+	LockDir  string   `json:"lock_dir"`
 }
 
 type Artifact struct {

@@ -206,6 +206,9 @@ HTTP可使用 `{"effect":{...},"policy":"replace"}`，参见 [pulse-effect.reque
 | 方法与路径 | 返回 |
 | --- | --- |
 | `GET /healthz` | HTTP服务是否响应；不表示硬件在线 |
+| `GET /v1/capabilities` | 纯软件编译能力目录，不做设备发现 |
+| `POST /v1/programs/preview` | 权威软件编译；可选serial只检查缓存，不创建Job |
+| `POST /v1/colors/resolve` | 新候选：名字/hex3/RGB8/HSV归一化为raw hex6；无设备/Job，旧部署可能404 |
 | `GET /v1/instance` | 可选请求回执能力、实例ID、准入前缀与限额；不提交任务 |
 | `GET /v1/devices` | daemon配置设备的缓存状态数组 |
 | `GET /v1/devices/{serial}` | 单设备状态；离线目标仍可返回200状态记录 |

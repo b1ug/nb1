@@ -1,0 +1,30 @@
+name: Windows host read-only probe
+
+on:
+  push:
+    branches: [validation/windows-host-probe]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  read-only-host:
+    runs-on: windows-2022
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Observe selected own-token and exact task lookup facts
+        shell: powershell
+        run: |
+          & .\ci\windows-host-probe.ps1 -OutputPath (Join-Path $env:RUNNER_TEMP 'windows-host-probe.json')
+      - name: Upload selected facts
+        if: ${{ always() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: windows-host-read-only-${{ github.run_id }}
+          path: ${{ runner.temp }}/windows-host-probe.json
+          if-no-files-found: error
+          retention-days: 14

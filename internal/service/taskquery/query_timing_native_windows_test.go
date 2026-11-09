@@ -146,15 +146,18 @@ func TestNativeQueryTiming(t *testing.T) {
 	allMissing := true
 	for _, label := range []string{"first", "second"} {
 		report.Phase = "sample_identity"
-		sample := nativeTimingSample{Label: label, SelectedStatus: Status{SchemaVersion: 1,
-			CheckedAt: reader.now().UTC(), TaskPath: owner.TaskPath(), Presence: Unknown, Ownership: "not_checked"}}
+		// Publish before invocation so a partial/panic report cannot omit a
+		// bridge that may have started. The external harness still requires the
+		// complete terminal phase and both returned samples before cleanup.
+		report.Samples = append(report.Samples, nativeTimingSample{Label: label, SelectedStatus: Status{SchemaVersion: 1,
+			CheckedAt: reader.now().UTC(), TaskPath: owner.TaskPath(), Presence: Unknown, Ownership: "not_checked"}})
+		sample := &report.Samples[len(report.Samples)-1]
 		started = time.Now()
 		fresh, currentErr := reader.current()
 		sample.IdentityMS = time.Since(started).Milliseconds()
 		if currentErr != nil || !fresh.valid || fresh != reader.owner {
 			sample.ErrorKind = "identity"
 			sample.SelectedStatus.Failure = &Failure{Kind: "identity", Stage: "parent"}
-			report.Samples = append(report.Samples, sample)
 			report.ErrorKind = "sample_identity_rejected"
 			t.Fatal("timing samples require the same current SID, path and session")
 		}
@@ -200,7 +203,6 @@ func TestNativeQueryTiming(t *testing.T) {
 		sample.ParseMS = time.Since(started).Milliseconds()
 		cancel()
 		sample.ErrorKind = nativeQueryErrorKind(parseErr)
-		report.Samples = append(report.Samples, sample)
 		status := sample.SelectedStatus
 		if !errors.Is(parseErr, ErrAbsenceUnverified) || sample.TrustChecks != 1 || !sample.ResponseReceived ||
 			status.SchemaVersion != 1 || status.CheckedAt.IsZero() || status.TaskPath != owner.TaskPath() ||

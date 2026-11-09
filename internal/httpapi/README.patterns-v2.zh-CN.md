@@ -8,6 +8,9 @@
 
 ```go
 store, err := patternstore.NewV2(explicitAbsoluteDirectory)
+if err != nil {
+    return err // 在构造 handler 前处理目录配置错误。
+}
 handler := httpapi.New(service, httpapi.WithPatternStoreV2(store))
 ```
 

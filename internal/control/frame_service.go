@@ -58,7 +58,7 @@ func (e *Engine) FrameJob(id string) (FrameJob, error) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	r, ok := e.jobs[id]
-	if !ok || r.kind != recordFrames {
+	if !ok || r.origin != originLegacy || r.kind != recordFrames {
 		return FrameJob{}, ErrNotFound
 	}
 	return r.frameSnapshot(), nil
@@ -71,7 +71,7 @@ func (e *Engine) CancelFrame(ctx context.Context, id string) (FrameJob, error) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	r, ok := e.jobs[id]
-	if !ok || r.kind != recordFrames {
+	if !ok || r.origin != originLegacy || r.kind != recordFrames {
 		return FrameJob{}, ErrNotFound
 	}
 	e.cancelRecordLocked(r)

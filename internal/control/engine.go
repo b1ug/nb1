@@ -12,6 +12,8 @@ import (
 )
 
 type record struct {
+	origin                                     recordOrigin
+	pattern                                    patternAdmissionIdentity
 	kind                                       recordKind
 	state                                      recordState
 	program                                    *Program
@@ -218,7 +220,7 @@ func (e *Engine) Job(id string) (Job, error) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	r, ok := e.jobs[id]
-	if !ok || r.kind != recordSequential {
+	if !ok || r.origin != originLegacy || r.kind != recordSequential {
 		return Job{}, ErrNotFound
 	}
 	return r.legacySnapshot(), nil
@@ -383,7 +385,7 @@ func (e *Engine) Cancel(ctx context.Context, id string) (Job, error) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	r, ok := e.jobs[id]
-	if !ok || r.kind != recordSequential {
+	if !ok || r.origin != originLegacy || r.kind != recordSequential {
 		return Job{}, ErrNotFound
 	}
 	e.cancelRecordLocked(r)

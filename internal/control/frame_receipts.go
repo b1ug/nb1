@@ -43,7 +43,7 @@ func (e *Engine) SubmitFrameWithReceipt(ctx context.Context, serial string, prog
 	s.prune(now)
 	key := receiptKey{serial, input.RequestID}
 	if entry := s.entries[key]; entry != nil {
-		if entry.record.kind != recordFrames || entry.digest != digest {
+		if entry.record.origin != originLegacy || entry.record.kind != recordFrames || entry.digest != digest {
 			return FrameReceiptResult{}, ErrRequestConflict
 		}
 		return FrameReceiptResult{Job: entry.record.frameSnapshot(), Replayed: true, DaemonInstanceID: s.instanceID}, nil
@@ -97,7 +97,7 @@ func (e *Engine) FrameRequest(serial, requestID, expectedDaemonInstanceID string
 	now := s.nowMS()
 	s.prune(now)
 	if entry := s.entries[receiptKey{serial, requestID}]; entry != nil {
-		if entry.record.kind != recordFrames {
+		if entry.record.origin != originLegacy || entry.record.kind != recordFrames {
 			return FrameJob{}, ErrNotFound
 		}
 		return entry.record.frameSnapshot(), nil

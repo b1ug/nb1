@@ -141,7 +141,7 @@ func (e *Engine) Request(serial, requestID, expectedDaemonInstanceID string) (Jo
 	now := s.nowMS()
 	s.prune(now)
 	if entry := s.entries[receiptKey{serial, requestID}]; entry != nil {
-		if entry.record.kind != recordSequential {
+		if entry.record.origin != originLegacy || entry.record.kind != recordSequential {
 			return Job{}, ErrNotFound
 		}
 		return entry.record.legacySnapshot(), nil
@@ -186,7 +186,7 @@ func (e *Engine) SubmitWithReceipt(ctx context.Context, serial string, program P
 	s.prune(now)
 	key := receiptKey{serial, input.RequestID}
 	if entry := s.entries[key]; entry != nil {
-		if entry.record.kind != recordSequential || entry.digest != digest {
+		if entry.record.origin != originLegacy || entry.record.kind != recordSequential || entry.digest != digest {
 			return ReceiptResult{}, ErrRequestConflict
 		}
 		return ReceiptResult{Job: entry.record.legacySnapshot(), Replayed: true, DaemonInstanceID: s.instanceID}, nil

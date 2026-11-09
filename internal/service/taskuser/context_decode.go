@@ -10,6 +10,21 @@ import (
 
 var errBufferSmall = errors.New("token information buffer too small")
 
+// The scalar token classes require their exact DWORD size. Native Windows
+// returns ERROR_BAD_LENGTH for TokenElevation with the generic 64-byte buffer.
+// A scalar response must never enter the variable-length allocation loop.
+func queryDWORD(query func([]byte) (uint32, error)) (uint32, error) {
+	buffer := make([]byte, 4)
+	n, err := query(buffer)
+	if err != nil {
+		return 0, err
+	}
+	if n != 4 {
+		return 0, rejected("native token DWORD response length is invalid")
+	}
+	return decodeDWORD(buffer)
+}
+
 // queryInfo bounds allocation and retries even if the native size changes.
 func queryInfo(query func([]byte) (uint32, error)) ([]byte, error) {
 	size := uint32(64)

@@ -57,11 +57,11 @@ func (n nativeToken) integritySID() (string, error) {
 }
 
 func (n nativeToken) dword(class uint32) (uint32, error) {
-	buffer, err := n.info(class)
-	if err != nil {
-		return 0, err
-	}
-	return decodeDWORD(buffer)
+	return queryDWORD(func(buffer []byte) (uint32, error) {
+		var size uint32
+		err := syscall.GetTokenInformation(n.token, class, &buffer[0], uint32(len(buffer)), &size)
+		return size, err
+	})
 }
 
 func (n nativeToken) elevation() (uint32, error)     { return n.dword(syscall.TokenElevation) }

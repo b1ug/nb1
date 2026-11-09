@@ -1,6 +1,6 @@
 # 本地图案库 CLI：v1 与高级 v2（候选）
 
-本文按格式与候选版本分开：日常 `control patterns` 是v1，开发 `control patterns-v2` 是保留高级来源的独立库；不能交叉当作自动升级。开发CLI尚未安装到日常1d89。
+本文按格式分开：`control patterns`是兼容v1，`control patterns-v2`是保留高级来源的独立库；不能交叉当作自动升级。当前工作区已安装96a，包含两组命令；1d89/eee/4e只作为历史资格来源，部署记录见API手册第1节。
 
 ## 兼容 v1：control patterns
 
@@ -33,7 +33,7 @@ run 的有效 policy 固定为 reject，显式 replace/queue 被拒绝。没有�
 
 ## 高级 v2：control patterns-v2
 
-作者候选eee1eb9已实现get/preview-draft/save；执行候选 `4eac5293bbad413e90ff19e6c8700628a1a4a8ee` 已实现固定Ref preview/run/request/cancel。共七命令，daemon-only，未安装到日常服务；HTTP对应P3/P6，旧v1命令与格式不变。
+作者候选eee1eb9已实现get/preview-draft/save；执行候选 `4eac5293bbad413e90ff19e6c8700628a1a4a8ee` 已实现固定Ref preview/run/request/cancel。共七命令，daemon-only，已整合96a；原片软件资格与96a本机MK2有限实物资格分别记录。工作区安装看[API手册第1节](api-reference.zh-CN.md)，HTTP对应P3/P6，旧v1命令与格式不变。
 
 v2库由 `--pattern-v2-dir` / `NB1_PATTERN_V2_DIR` 独立选择，默认daemon账号 `UserConfigDir()/nb1/patterns-v2`，不随自定义旧--pattern-dir改变。构造、纯作者preview与缺失库读取不创建目录；有效保存/导入进入写事务时才可能创建，后续失败也可能留目录。既有库读取可能创建锁文件。CLI不会读取daemon返回的本地路径。
 
@@ -53,10 +53,12 @@ preview-draft只收作者 `{id,title,source}`，save再加确认本次完整候�
 
 request/cancel和accepted replay不依赖库。输出保留原pattern_ref、request_ticket、执行摘要、typed Job/FrameJob；job字段是带来源的PatternJobEnvelope，不能用旧裸Job/history查询这些任务。accepted表示原任务已确认接受，不是完成；cancel_attempted表示是否尝试过唯一取消POST。
 
+`--timeout`默认30s，Prepare、提交与--wait共享一次命令预算；长图案可用`nb1 control --timeout 2m patterns-v2 run SERIAL ID --revision SHA --wait`（替换真实变量），或保留原票据后request继续观察。
+
 --wait只读原回执，强绑定Ref/实例/request_id/Job ID/摘要、完整冻结执行与单调进度/生命周期；timeout不取消、不重发。已验证终态先于随后context结束，明确failed/cancelled可非零退出但outcome_unknown=false；后端optional错误文案为空不妨碍认定failed终态。
 
 取消先GET绑定，terminal/cancelling零POST，其余最多一次含confirmed_job_id的POST；终态hold不会补关灯。坏响应或丢失保留最后可信before状态、原票据与unknown，即使--wait也不再自动GET来覆盖错误。用户之后可显式request原票据；不因404/410/重启或库失败换新票据补播。
 
 CLI仅对明确status/code白名单认定本次准入拒绝；普通404、未知code/错status、3xx、5xx/501、过期、实例变化和传输/完整性失败都保持unknown。确切白名单与源码见[内部客户端执行说明](../internal/daemonclient/README.pattern-execution-v2.zh-CN.md)，完整HTTP合同见[API手册](api-reference.zh-CN.md)。CLI list/import/export尚未提供，不能用旧v1导入命令写入v2库。
 
-此候选软件验证覆盖Program与Frame、库消失后的原回执恢复、单POST、取消与等待；只用临时库、私有loopback和内存驱动，没有新的USB/视觉验收。开发MCP16与日常12仍分别以各自会话tools/list和部署版本为准。
+此候选软件验证覆盖Program与Frame、库消失后的原回执恢复、单POST、取消与等待；只用临时库、私有loopback和内存驱动，没有新的USB/视觉验收。开发MCP16与历史12仍分别以各自会话tools/list和部署版本为准。

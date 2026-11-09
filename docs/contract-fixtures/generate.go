@@ -27,6 +27,9 @@ import (
 )
 
 const sourceBase = "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae"
+const integratedSource = "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc"
+const integratedWebSource = "f90ef8d6143acd55c059b94ecf961ec65a1bb646"
+const integratedManifestSHA = "9f9c039abd50c65bf8ebc2e2a74954092e7cd0fff0871021666028adc9a2519d"
 
 type source struct {
 	Kind          string `json:"kind"`
@@ -301,9 +304,14 @@ func generate() error {
 	if err := os.WriteFile(path, append(output, '\n'), 0644); err != nil {
 		return err
 	}
-	// Probe conditional static resources independently of JSON model samples.
-	// This works with either complete embedded profile: old bundle =>404,
-	// extended bundle =>200 bytes. Neither probe creates a job or listener.
+	// Probe current static resources independently of JSON model samples.
+	// Historical basic-bundle404 observations stay in their original file;
+	// new source96a metadata must refer to the pinned f90 extended bundle.
+	// No probe creates a job or listener.
+	manifest, err := os.ReadFile(filepath.Join(filepath.Dir(file), "../../internal/webui/dist/manifest.json"))
+	if err != nil || fmt.Sprintf("%x", sha256.Sum256(manifest)) != integratedManifestSHA {
+		return fmt.Errorf("current observation requires the pinned96a/f90 Web manifest")
+	}
 	resourceHandler := httpapi.New(nil)
 	var observations []map[string]interface{}
 	for _, asset := range []struct{ Path, File, Media string }{{"/demo/patterns.html", "patterns.html", "text/html; charset=utf-8"}, {"/demo/patterns.js", "patterns.js", "text/javascript; charset=utf-8"}, {"/demo/patterns.css", "patterns.css", "text/css; charset=utf-8"}} {
@@ -333,15 +341,67 @@ func generate() error {
 		}
 		observations = append(observations, row)
 	}
-	probeOutput, err := json.MarshalIndent(map[string]interface{}{"host_source": "56c4aef153c560c68845e89ebdaa15bc1323eeb2", "scope": "direct Recorder, no service/Store/listener/device; status conditional on this binary embedded bundle", "observations": observations}, "", "  ")
+	probeOutput, err := json.MarshalIndent(map[string]interface{}{"runtime_source": integratedSource, "web_source": integratedWebSource, "manifest_sha256": integratedManifestSHA, "scope": "source-equivalent runtime96a, direct Recorder, no service/Store/listener/device; documentation-only changes do not rebuild native qualification", "observations": observations}, "", "  ")
 	if err != nil {
 		return err
 	}
-	if err = os.WriteFile(filepath.Join(filepath.Dir(file), "resource-observations.json"), append(probeOutput, '\n'), 0644); err != nil {
+	// Keep the historical host56c/basic-bundle404 evidence unchanged.
+	if err = os.WriteFile(filepath.Join(filepath.Dir(file), "resource-observations.current.json"), append(probeOutput, '\n'), 0644); err != nil {
 		return err
 	}
-	fmt.Printf("generated %d samples and3 conditional static observations at %s\n", len(samples), path)
+	if err = generateNumericLexemes(filepath.Dir(file)); err != nil {
+		return err
+	}
+	fmt.Printf("generated %d historical-codec samples,3 current static observations and8 numeric-codec contrasts at %s\n", len(samples), path)
 	return nil
+}
+
+// These are actual no-Service HTTP codec paths, not a replica of encoding/json.
+// They demonstrate an existing compatibility difference; no new runtime rule.
+func generateNumericLexemes(dir string) error {
+	cases := []struct {
+		Name, Path, Body string
+		Status           int
+	}{
+		{"legacy-program-negative-zero", "/v1/programs/preview", `{"program":{"steps":[{"led":-0,"color":"#000000","fade_ms":-0,"hold_ms":-0}],"repeat":-0}}`, 200},
+		{"legacy-effect-negative-zero", "/v1/programs/preview", `{"effect":{"kind":"steady","color":"#000000","led":-0,"fade_ms":-0}}`, 200},
+		{"raw-frame-zero-fade", "/v1/frame-programs/preview", `{"program":{"contract":"nb1-frame-program/experimental-v1","initial":[{"led":1,"color":"#000000"}],"frames":[{"targets":[{"led":1,"color":"#000000"}],"fade_ms":-0,"interval_ms":50}]}}`, 200},
+		{"legacy-program-fractional-integer", "/v1/programs/preview", `{"program":{"steps":[{"color":"#000000","fade_ms":0.0}]}}`, 400},
+		{"legacy-program-exponent-integer", "/v1/programs/preview", `{"program":{"steps":[{"color":"#000000","fade_ms":0e0}]}}`, 400},
+		{"high-action-negative-zero", "/v1/light/preview", `{"contract":"nb1-light-action/v1","action":{"kind":"set","color":"red","led":-0}}`, 400},
+		{"orbit-action-negative-zero", "/v2/light/preview", `{"contract":"nb1-light-action/experimental-v2","action":{"kind":"orbit","cycles":-0}}`, 400},
+		{"pattern-author-negative-zero", "/v2/patterns/preview", `{"id":"zero","title":"Zero","source":{"kind":"light_action","contract":"nb1-light-action/v1","action":{"kind":"set","color":"red","led":-0}}}`, 400},
+	}
+	handler := httpapi.New(nil)
+	var rows []map[string]interface{}
+	for _, c := range cases {
+		r := httptest.NewRequest(http.MethodPost, "http://127.0.0.1"+c.Path, bytes.NewBufferString(c.Body))
+		r.Header.Set("Content-Type", "application/json")
+		w := httptest.NewRecorder()
+		handler.ServeHTTP(w, r)
+		if w.Code != c.Status {
+			return fmt.Errorf("numeric codec %s: got%d, expected%d: %s", c.Name, w.Code, c.Status, w.Body.String())
+		}
+		row := map[string]interface{}{"name": c.Name, "path": c.Path, "raw_request": c.Body, "status": w.Code}
+		if w.Code == http.StatusOK {
+			row["response"] = json.RawMessage(w.Body.Bytes())
+		} else {
+			// encoding/json diagnostic field paths differ across Go versions;
+			// only code/status and the presence of a diagnostic are a contract.
+			var problem httpapi.ErrorResponse
+			if err := json.Unmarshal(w.Body.Bytes(), &problem); err != nil {
+				return err
+			}
+			row["error_code"] = problem.Error.Code
+			row["error_message_nonempty"] = problem.Error.Message != ""
+		}
+		rows = append(rows, row)
+	}
+	b, err := json.MarshalIndent(map[string]interface{}{"runtime_source": integratedSource, "scope": "actual strict HTTP codecs via no-Service Recorder; no Store/listener/Engine/USB; existing legacy rules unchanged", "observations": rows}, "", "  ")
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(filepath.Join(dir, "numeric-lexeme-observations.json"), append(b, '\n'), 0644)
 }
 
 // recordFixture exposes only exact in-memory resolution. Any unexpected Path,

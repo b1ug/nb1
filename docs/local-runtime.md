@@ -10,7 +10,7 @@
 
 ## 1. 构建与启动
 
-以下在 `nb1/` 仓库目录执行。本候选的 `go.mod` 已固定 SDK `v0.0.2-0.20261108210614-0336a1a2aa92` 与 GID `v0.0.3-0.20261108194932-7d9978debbdf`，单独拉取仓库也会使用这些修复。它们是已推送提交对应的开发伪版本，没有创建正式发布。开发工作区仍可覆盖依赖；要验证没有本地覆盖，显式关闭工作区：
+以下在 `nb1/` 仓库目录执行。96a候选的 `go.mod` 固定 SDK `v0.0.2-0.20261109044941-b3f2586cc730` 与 GID `v0.0.3-0.20261109043911-37d7cfde72ed`，单独拉取仓库也会使用这些修复。它们是已推送提交对应的开发伪版本，没有创建正式发布。开发工作区仍可覆盖依赖；要验证没有本地覆盖，显式关闭工作区：
 
 ```sh
 GOWORK=off go list -m github.com/b1ug/blink1-go github.com/b1ug/gid
@@ -99,7 +99,7 @@ daemon正在占用时，新旧CLI的合作式直控都会报设备占用。默�
 
 ## 颜色归一化新候选
 
-Program/Effect/set仍只收hex6。新 `control color lime` 或 `control color --file examples/runtime/hsv.color.json` 通过daemon解析可读颜色；显式 `control --mode direct color lime` 仅本地纯函数、无USB。旧daemon404/501明确不支持，不自动回退。归一化结果再用于原有preview/execute，不会自动提交。范围、色表/Gamma、固定响应及兼容见 [颜色输入v1](color-input.zh-CN.md)；候选尚未部署。
+旧Program/Effect、`control set`与MCP `set_device_state`仍只收hex6；高级`light.kind:set`支持ColorInput。新 `control color lime` 或 `control color --file examples/runtime/hsv.color.json` 通过daemon解析可读颜色；显式 `control --mode direct color lime` 仅本地纯函数、无USB。旧daemon404/501明确不支持，不自动回退。归一化结果再用于原有preview/execute，不会自动提交。范围、色表/Gamma、固定响应及兼容见 [颜色输入v1](color-input.zh-CN.md)；该入口已在历史基线1d89，整合候选96a的高级Pattern能力另按API手册分版。
 
 ## 4. 结构化程序
 

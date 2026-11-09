@@ -7,7 +7,7 @@
       "commit": "1d89eae92278f24a68fff1a34e3c1e696a962c3c",
       "source_worktree": "validation/nb1-web-embed",
       "installation_evidence": "artifacts/nb1-web-design/final-status.json",
-      "scope": "Source inventory, not a fresh daemon probe"
+      "scope": "Historical former-daily1d89 source inventory; compatibility field retained, not current installed version. See baselines.installed96a."
     },
     "development": {
       "commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
@@ -18,6 +18,34 @@
       "commit": "56c4aef153c560c68845e89ebdaa15bc1323eeb2",
       "source_worktree": "validation/nb1-web-pattern-host",
       "scope": "Source supports closed basic/extended static bundle; old dist retained at this source; no install/USB claim"
+    },
+    "integrated_candidate": {
+      "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
+      "status": "installed_workspace_only",
+      "web_source_commit": "f90ef8d6143acd55c059b94ecf961ec65a1bb646",
+      "web_manifest_sha256": "9f9c039abd50c65bf8ebc2e2a74954092e7cd0fff0871021666028adc9a2519d",
+      "manifest_files": 10,
+      "public_assets": 9,
+      "api_contracts": 4,
+      "dist_bytes_including_manifest": 208132,
+      "native_evidence": "artifacts/pattern-v2-suite-native-20261110/attempt1/report.json",
+      "native_scope": "macOS arm64 MK2/FW204; CLI3/MCP2/Web2, 7jobs/3cancel; restored daily1d89; 6USBretries/0finalfailure; optical limits, no MK3/other-platform qualification"
+    },
+    "installed": {
+      "commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
+      "worktree": "/Users/vej/Codebase/devel-blink1",
+      "source_worktree": "validation/nb1-ecosystem-next",
+      "binary": "bin/nb1-runtime",
+      "endpoint": "http://127.0.0.1:8931",
+      "evidence": "artifacts/pattern-v2-suite-native-20261110/post-install.json",
+      "readonly_checks": 33,
+      "additional_hardware_writes": false,
+      "scope": "pinned workspace binaries and owned local daemon only; no OS startup service/global MCP registration/remote Release",
+      "legacy_v1_snapshot": "same SHA before/after promotion"
+    },
+    "historical_daily": {
+      "commit": "1d89eae92278f24a68fff1a34e3c1e696a962c3c",
+      "meaning": "former workspace daily source; daily/daily_1d89 fields preserved as historical compatibility metadata, not current installation"
     }
   },
   "summary": {
@@ -33,7 +61,11 @@
     ],
     "conditional_static_routes": 3,
     "static_routes_including_demo_redirect": 10,
-    "current_legacy_bundle_serves_added_pattern_resources": false
+    "current_legacy_bundle_serves_added_pattern_resources": false,
+    "current_legacy_bundle_scope": "historical host56c with Web fe32507; false does not describe integrated96a",
+    "integrated_candidate_serves_added_pattern_resources": true,
+    "installed_method_path_count": 44,
+    "historical_daily_method_path_count": 32
   },
   "low_state_set_mapping": {
     "state": {
@@ -140,7 +172,8 @@
       "level": "discovery",
       "status": {
         "daily_1d89": "implemented",
-        "development_f8bb267": "same as daily"
+        "development_f8bb267": "same as daily",
+        "installed": "implemented"
       },
       "input": {
         "body": "none",
@@ -169,7 +202,8 @@
       "level": "discovery",
       "status": {
         "daily_1d89": "implemented",
-        "development_f8bb267": "same as daily"
+        "development_f8bb267": "same as daily",
+        "installed": "implemented"
       },
       "input": {
         "body": "none",
@@ -202,7 +236,8 @@
       "level": "receipt",
       "status": {
         "daily_1d89": "implemented",
-        "development_f8bb267": "same as daily"
+        "development_f8bb267": "same as daily",
+        "installed": "implemented"
       },
       "input": {
         "body": "none",
@@ -234,7 +269,8 @@
       "level": "diagnostic",
       "status": {
         "daily_1d89": "implemented",
-        "development_f8bb267": "same as daily"
+        "development_f8bb267": "same as daily",
+        "installed": "implemented"
       },
       "input": {
         "body": "none",
@@ -265,7 +301,8 @@
       "level": "low-state",
       "status": {
         "daily_1d89": "implemented",
-        "development_f8bb267": "same as daily"
+        "development_f8bb267": "same as daily",
+        "installed": "implemented"
       },
       "input": {
         "body": "none",
@@ -294,7 +331,8 @@
       "level": "low-state",
       "status": {
         "daily_1d89": "implemented",
-        "development_f8bb267": "same as daily"
+        "development_f8bb267": "same as daily",
+        "installed": "implemented"
       },
       "input": {
         "body": "none",
@@ -327,7 +365,8 @@
       "level": "low-program",
       "status": {
         "daily_1d89": "implemented",
-        "development_f8bb267": "same as daily"
+        "development_f8bb267": "same as daily",
+        "installed": "implemented"
       },
       "input": {
         "body": "Exactly one of program:Program / effect:Effect / pattern_ref:{id,revision}; optional serial",
@@ -361,7 +400,8 @@
       "level": "low-program",
       "status": {
         "daily_1d89": "implemented",
-        "development_f8bb267": "same as daily"
+        "development_f8bb267": "same as daily",
+        "installed": "implemented"
       },
       "input": {
         "body": "Exactly one program:Program / effect:Effect / pattern_ref:{id,revision}, policy; request_id and expected_daemon_instance_id both present or both absent for raw Program/Effect",
@@ -404,7 +444,8 @@
       "level": "receipt",
       "status": {
         "daily_1d89": "implemented",
-        "development_f8bb267": "same as daily"
+        "development_f8bb267": "same as daily",
+        "installed": "implemented"
       },
       "input": {
         "body": "documented none",
@@ -439,7 +480,8 @@
       "level": "low-job",
       "status": {
         "daily_1d89": "implemented",
-        "development_f8bb267": "same as daily"
+        "development_f8bb267": "same as daily",
+        "installed": "implemented"
       },
       "input": {
         "body": "none",
@@ -470,7 +512,8 @@
       "level": "low-job",
       "status": {
         "daily_1d89": "implemented",
-        "development_f8bb267": "same as daily"
+        "development_f8bb267": "same as daily",
+        "installed": "implemented"
       },
       "input": {
         "body": "empty or {} only; no source/instance/ticket fields",
@@ -504,7 +547,8 @@
       "level": "color",
       "status": {
         "daily_1d89": "implemented",
-        "development_f8bb267": "same as daily"
+        "development_f8bb267": "same as daily",
+        "installed": "implemented"
       },
       "input": {
         "body": "{color:ColorInput}",
@@ -541,7 +585,8 @@
       "level": "low-frame",
       "status": {
         "daily_1d89": "implemented",
-        "development_f8bb267": "same as daily"
+        "development_f8bb267": "same as daily",
+        "installed": "implemented"
       },
       "input": {
         "body": "none",
@@ -571,7 +616,8 @@
       "level": "low-frame",
       "status": {
         "daily_1d89": "implemented",
-        "development_f8bb267": "same as daily"
+        "development_f8bb267": "same as daily",
+        "installed": "implemented"
       },
       "input": {
         "body": "{program:FrameProgram,serial?:string}",
@@ -605,7 +651,8 @@
       "level": "low-frame",
       "status": {
         "daily_1d89": "implemented",
-        "development_f8bb267": "same as daily"
+        "development_f8bb267": "same as daily",
+        "installed": "implemented"
       },
       "input": {
         "body": "{program:FrameProgram,policy:\"reject\",request_id,expected_daemon_instance_id}",
@@ -643,7 +690,8 @@
       "level": "receipt",
       "status": {
         "daily_1d89": "implemented",
-        "development_f8bb267": "same as daily"
+        "development_f8bb267": "same as daily",
+        "installed": "implemented"
       },
       "input": {
         "body": "none",
@@ -676,7 +724,8 @@
       "level": "low-job",
       "status": {
         "daily_1d89": "implemented",
-        "development_f8bb267": "same as daily"
+        "development_f8bb267": "same as daily",
+        "installed": "implemented"
       },
       "input": {
         "body": "none",
@@ -707,7 +756,8 @@
       "level": "low-job",
       "status": {
         "daily_1d89": "implemented",
-        "development_f8bb267": "same as daily"
+        "development_f8bb267": "same as daily",
+        "installed": "implemented"
       },
       "input": {
         "body": "empty / {} legacy; optional nonempty expected_daemon_instance_id binds instance; explicit null/blank/wrong type/unknown/duplicate fields rejected",
@@ -745,7 +795,8 @@
       "level": "high-action",
       "status": {
         "daily_1d89": "implemented",
-        "development_f8bb267": "same as daily"
+        "development_f8bb267": "same as daily",
+        "installed": "implemented"
       },
       "input": {
         "body": "{contract:\"nb1-light-action/v1\",action:{kind:set/off/fade/blink/breathe/pulse/alternate/rainbow,...},serial?:string}",
@@ -778,7 +829,8 @@
       "level": "high-action",
       "status": {
         "daily_1d89": "implemented",
-        "development_f8bb267": "same as daily"
+        "development_f8bb267": "same as daily",
+        "installed": "implemented"
       },
       "input": {
         "body": "{contract:\"nb1-light-action/v1\",action:{...},policy:\"reject\",request_id,expected_daemon_instance_id}",
@@ -818,7 +870,8 @@
       "level": "high-action",
       "status": {
         "daily_1d89": "implemented",
-        "development_f8bb267": "same as daily"
+        "development_f8bb267": "same as daily",
+        "installed": "implemented"
       },
       "input": {
         "body": "{contract:\"nb1-light-action/experimental-v2\",action:{kind:orbit only,...},serial?:string}",
@@ -852,7 +905,8 @@
       "level": "high-action",
       "status": {
         "daily_1d89": "implemented",
-        "development_f8bb267": "same as daily"
+        "development_f8bb267": "same as daily",
+        "installed": "implemented"
       },
       "input": {
         "body": "{contract:\"nb1-light-action/experimental-v2\",action:{...},policy:\"reject\",request_id,expected_daemon_instance_id}",
@@ -893,7 +947,8 @@
       "level": "pattern-library",
       "status": {
         "daily_1d89": "implemented",
-        "development_f8bb267": "same as daily"
+        "development_f8bb267": "same as daily",
+        "installed": "implemented"
       },
       "input": {
         "body": "none",
@@ -925,7 +980,8 @@
       "level": "pattern-library",
       "status": {
         "daily_1d89": "implemented",
-        "development_f8bb267": "same as daily"
+        "development_f8bb267": "same as daily",
+        "installed": "implemented"
       },
       "input": {
         "body": "none",
@@ -957,7 +1013,8 @@
       "level": "pattern-library",
       "status": {
         "daily_1d89": "implemented",
-        "development_f8bb267": "same as daily"
+        "development_f8bb267": "same as daily",
+        "installed": "implemented"
       },
       "input": {
         "body": "v1 author package or frozen snapshot accepted by Store.Import; not advanced Action source",
@@ -990,7 +1047,8 @@
       "level": "pattern-library",
       "status": {
         "daily_1d89": "absent",
-        "development_f8bb267": "implemented; daemon selects independent default lazy v2 store; Go handler storage requires option"
+        "development_f8bb267": "implemented; daemon selects independent default lazy v2 store; Go handler storage requires option",
+        "installed": "implemented"
       },
       "input": {
         "body": "none",
@@ -1023,7 +1081,8 @@
       "level": "pattern-library",
       "status": {
         "daily_1d89": "absent",
-        "development_f8bb267": "implemented; daemon selects independent default lazy v2 store; Go handler storage requires option"
+        "development_f8bb267": "implemented; daemon selects independent default lazy v2 store; Go handler storage requires option",
+        "installed": "implemented"
       },
       "input": {
         "body": "none",
@@ -1057,7 +1116,8 @@
       "level": "pattern-library",
       "status": {
         "daily_1d89": "absent",
-        "development_f8bb267": "implemented; daemon selects independent default lazy v2 store; Go handler storage requires option"
+        "development_f8bb267": "implemented; daemon selects independent default lazy v2 store; Go handler storage requires option",
+        "installed": "implemented"
       },
       "input": {
         "body": "Full verified canonical-compatible v2 frozen Snapshot; no authoring body",
@@ -1093,7 +1153,8 @@
       "level": "pattern-authoring",
       "status": {
         "daily_1d89": "absent",
-        "development_f8bb267": "implemented; pure author preview zero Store calls"
+        "development_f8bb267": "implemented; pure author preview zero Store calls",
+        "installed": "implemented"
       },
       "input": {
         "body": "{id,title,source:{kind:\"light_action\",contract,action}}; no serial/policy/ticket/expected_revision/program",
@@ -1128,7 +1189,8 @@
       "level": "pattern-authoring",
       "status": {
         "daily_1d89": "absent",
-        "development_f8bb267": "implemented; daemon selects independent default lazy v2 store; Go handler storage requires option"
+        "development_f8bb267": "implemented; daemon selects independent default lazy v2 store; Go handler storage requires option",
+        "installed": "implemented"
       },
       "input": {
         "body": "Same author source + expected_revision matching full freshly built candidate; create-only",
@@ -1169,7 +1231,8 @@
       "level": "pattern-execution",
       "status": {
         "daily_1d89": "absent",
-        "development_f8bb267": "implemented; not installed"
+        "development_f8bb267": "implemented; not installed",
+        "installed": "implemented"
       },
       "input": {
         "body": "{pattern_ref,serial?}",
@@ -1205,7 +1268,8 @@
       "level": "pattern-execution",
       "status": {
         "daily_1d89": "absent",
-        "development_f8bb267": "implemented; not installed"
+        "development_f8bb267": "implemented; not installed",
+        "installed": "implemented"
       },
       "input": {
         "body": "{pattern_ref,policy,request_id,expected_daemon_instance_id}",
@@ -1244,7 +1308,8 @@
       "level": "pattern-execution",
       "status": {
         "daily_1d89": "absent",
-        "development_f8bb267": "implemented; not installed"
+        "development_f8bb267": "implemented; not installed",
+        "installed": "implemented"
       },
       "input": {
         "body": "none",
@@ -1280,7 +1345,8 @@
       "level": "pattern-execution",
       "status": {
         "daily_1d89": "absent",
-        "development_f8bb267": "implemented; not installed"
+        "development_f8bb267": "implemented; not installed",
+        "installed": "implemented"
       },
       "input": {
         "body": "{pattern_ref,expected_daemon_instance_id,confirmed_job_id?}",
@@ -1318,7 +1384,8 @@
       "status": {
         "daily_1d89": "implemented",
         "development_f8bb267": "same as daily",
-        "development_host_56c4aef": "existing canonical static path, payload selected by verified fixed bundle; not installed"
+        "development_host_56c4aef": "existing canonical static path, payload selected by verified fixed bundle; not installed",
+        "installed": "implemented"
       },
       "input": {
         "body": "none",
@@ -1353,7 +1420,8 @@
       "status": {
         "daily_1d89": "implemented",
         "development_f8bb267": "same as daily",
-        "development_host_56c4aef": "existing canonical static path, payload selected by verified fixed bundle; not installed"
+        "development_host_56c4aef": "existing canonical static path, payload selected by verified fixed bundle; not installed",
+        "installed": "implemented"
       },
       "input": {
         "body": "none",
@@ -1391,7 +1459,8 @@
       "status": {
         "daily_1d89": "implemented",
         "development_f8bb267": "same as daily",
-        "development_host_56c4aef": "existing canonical static path, payload selected by verified fixed bundle; not installed"
+        "development_host_56c4aef": "existing canonical static path, payload selected by verified fixed bundle; not installed",
+        "installed": "implemented"
       },
       "input": {
         "body": "none",
@@ -1429,7 +1498,8 @@
       "status": {
         "daily_1d89": "implemented",
         "development_f8bb267": "same as daily",
-        "development_host_56c4aef": "existing canonical static path, payload selected by verified fixed bundle; not installed"
+        "development_host_56c4aef": "existing canonical static path, payload selected by verified fixed bundle; not installed",
+        "installed": "implemented"
       },
       "input": {
         "body": "none",
@@ -1467,7 +1537,8 @@
       "status": {
         "daily_1d89": "implemented",
         "development_f8bb267": "same as daily",
-        "development_host_56c4aef": "existing canonical static path, payload selected by verified fixed bundle; not installed"
+        "development_host_56c4aef": "existing canonical static path, payload selected by verified fixed bundle; not installed",
+        "installed": "implemented"
       },
       "input": {
         "body": "none",
@@ -1505,7 +1576,8 @@
       "status": {
         "daily_1d89": "implemented",
         "development_f8bb267": "same as daily",
-        "development_host_56c4aef": "existing canonical static path, payload selected by verified fixed bundle; not installed"
+        "development_host_56c4aef": "existing canonical static path, payload selected by verified fixed bundle; not installed",
+        "installed": "implemented"
       },
       "input": {
         "body": "none",
@@ -1543,7 +1615,8 @@
       "status": {
         "daily_1d89": "implemented",
         "development_f8bb267": "same as daily",
-        "development_host_56c4aef": "existing canonical static path, payload selected by verified fixed bundle; not installed"
+        "development_host_56c4aef": "existing canonical static path, payload selected by verified fixed bundle; not installed",
+        "installed": "implemented"
       },
       "input": {
         "body": "none",
@@ -1580,7 +1653,8 @@
       "level": "embedded-web",
       "status": {
         "daily_1d89": "absent",
-        "development_host_56c4aef": "conditional on verified extended embedded bundle; source56c legacy dist returns404; not installed"
+        "development_host_56c4aef": "conditional on verified extended embedded bundle; source56c legacy dist returns404; not installed",
+        "installed": "implemented"
       },
       "input": {
         "body": "none",
@@ -1622,7 +1696,8 @@
       "level": "embedded-web",
       "status": {
         "daily_1d89": "absent",
-        "development_host_56c4aef": "conditional on verified extended embedded bundle; source56c legacy dist returns404; not installed"
+        "development_host_56c4aef": "conditional on verified extended embedded bundle; source56c legacy dist returns404; not installed",
+        "installed": "implemented"
       },
       "input": {
         "body": "none",
@@ -1664,7 +1739,8 @@
       "level": "embedded-web",
       "status": {
         "daily_1d89": "absent",
-        "development_host_56c4aef": "conditional on verified extended embedded bundle; source56c legacy dist returns404; not installed"
+        "development_host_56c4aef": "conditional on verified extended embedded bundle; source56c legacy dist returns404; not installed",
+        "installed": "implemented"
       },
       "input": {
         "body": "none",
@@ -1808,6 +1884,18 @@
       "/demo/patterns.css"
     ],
     "bundle_budget_bytes": 262144,
-    "no_hardware_capability_added": true
+    "no_hardware_capability_added": true,
+    "integrated_candidate": {
+      "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
+      "status": "installed_workspace_only",
+      "web_source_commit": "f90ef8d6143acd55c059b94ecf961ec65a1bb646",
+      "web_manifest_sha256": "9f9c039abd50c65bf8ebc2e2a74954092e7cd0fff0871021666028adc9a2519d",
+      "manifest_files": 10,
+      "public_assets": 9,
+      "api_contracts": 4,
+      "dist_bytes_including_manifest": 208132,
+      "native_evidence": "artifacts/pattern-v2-suite-native-20261110/attempt1/report.json",
+      "native_scope": "macOS arm64 MK2/FW204; CLI3/MCP2/Web2, 7jobs/3cancel; restored daily1d89; 6USBretries/0finalfailure; optical limits, no MK3/other-platform qualification"
+    }
   }
 }

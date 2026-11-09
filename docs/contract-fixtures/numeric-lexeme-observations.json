@@ -1,0 +1,164 @@
+{
+  "observations": [
+    {
+      "name": "legacy-program-negative-zero",
+      "path": "/v1/programs/preview",
+      "raw_request": "{\"program\":{\"steps\":[{\"led\":-0,\"color\":\"#000000\",\"fade_ms\":-0,\"hold_ms\":-0}],\"repeat\":-0}}",
+      "response": {
+        "schema_version": 1,
+        "compile_contract": "nb1-program-effect/v1",
+        "input_kind": "program",
+        "program": {
+          "steps": [
+            {
+              "led": 0,
+              "color": "#000000",
+              "fade_ms": 0,
+              "hold_ms": 0
+            }
+          ],
+          "repeat": 1,
+          "on_finish": "off"
+        },
+        "nominal_duration_ms": 10,
+        "total_steps": 1,
+        "required_capabilities": [
+          "set",
+          "program",
+          "raw-rgb"
+        ],
+        "validation": {
+          "program": "valid",
+          "device": "not_requested"
+        }
+      },
+      "status": 200
+    },
+    {
+      "name": "legacy-effect-negative-zero",
+      "path": "/v1/programs/preview",
+      "raw_request": "{\"effect\":{\"kind\":\"steady\",\"color\":\"#000000\",\"led\":-0,\"fade_ms\":-0}}",
+      "response": {
+        "schema_version": 1,
+        "compile_contract": "nb1-program-effect/v1",
+        "input_kind": "effect",
+        "program": {
+          "steps": [
+            {
+              "led": 0,
+              "color": "#000000",
+              "fade_ms": 0,
+              "hold_ms": 0
+            }
+          ],
+          "repeat": 1,
+          "on_finish": "hold"
+        },
+        "nominal_duration_ms": 10,
+        "total_steps": 1,
+        "required_capabilities": [
+          "set",
+          "program",
+          "raw-rgb",
+          "hold"
+        ],
+        "validation": {
+          "program": "valid",
+          "device": "not_requested"
+        }
+      },
+      "status": 200
+    },
+    {
+      "name": "raw-frame-zero-fade",
+      "path": "/v1/frame-programs/preview",
+      "raw_request": "{\"program\":{\"contract\":\"nb1-frame-program/experimental-v1\",\"initial\":[{\"led\":1,\"color\":\"#000000\"}],\"frames\":[{\"targets\":[{\"led\":1,\"color\":\"#000000\"}],\"fade_ms\":-0,\"interval_ms\":50}]}}",
+      "response": {
+        "contract": "nb1-frame-program/experimental-v1",
+        "program": {
+          "contract": "nb1-frame-program/experimental-v1",
+          "initial": [
+            {
+              "led": 1,
+              "color": "#000000"
+            }
+          ],
+          "frames": [
+            {
+              "targets": [
+                {
+                  "led": 1,
+                  "color": "#000000"
+                }
+              ],
+              "fade_ms": 0,
+              "interval_ms": 50
+            }
+          ],
+          "repeat": 1,
+          "on_finish": "off"
+        },
+        "total_frames": 1,
+        "stored_target_writes": 2,
+        "planned_target_writes": 2,
+        "cycle_duration_ms": 50,
+        "nominal_initial_ms": 10,
+        "nominal_tail_ms": 0,
+        "nominal_duration_ms": 60,
+        "timing_basis": "host-nominal-excludes-native-io",
+        "required_capabilities": [
+          "set",
+          "raw-rgb",
+          "frame-program-experimental-v1"
+        ],
+        "execution": {
+          "available": false,
+          "reason": "frame_service_unsupported"
+        }
+      },
+      "status": 200
+    },
+    {
+      "error_code": "invalid_json",
+      "error_message_nonempty": true,
+      "name": "legacy-program-fractional-integer",
+      "path": "/v1/programs/preview",
+      "raw_request": "{\"program\":{\"steps\":[{\"color\":\"#000000\",\"fade_ms\":0.0}]}}",
+      "status": 400
+    },
+    {
+      "error_code": "invalid_json",
+      "error_message_nonempty": true,
+      "name": "legacy-program-exponent-integer",
+      "path": "/v1/programs/preview",
+      "raw_request": "{\"program\":{\"steps\":[{\"color\":\"#000000\",\"fade_ms\":0e0}]}}",
+      "status": 400
+    },
+    {
+      "error_code": "invalid_light_action",
+      "error_message_nonempty": true,
+      "name": "high-action-negative-zero",
+      "path": "/v1/light/preview",
+      "raw_request": "{\"contract\":\"nb1-light-action/v1\",\"action\":{\"kind\":\"set\",\"color\":\"red\",\"led\":-0}}",
+      "status": 400
+    },
+    {
+      "error_code": "invalid_light_action",
+      "error_message_nonempty": true,
+      "name": "orbit-action-negative-zero",
+      "path": "/v2/light/preview",
+      "raw_request": "{\"contract\":\"nb1-light-action/experimental-v2\",\"action\":{\"kind\":\"orbit\",\"cycles\":-0}}",
+      "status": 400
+    },
+    {
+      "error_code": "invalid_pattern_request",
+      "error_message_nonempty": true,
+      "name": "pattern-author-negative-zero",
+      "path": "/v2/patterns/preview",
+      "raw_request": "{\"id\":\"zero\",\"title\":\"Zero\",\"source\":{\"kind\":\"light_action\",\"contract\":\"nb1-light-action/v1\",\"action\":{\"kind\":\"set\",\"color\":\"red\",\"led\":-0}}}",
+      "status": 400
+    }
+  ],
+  "runtime_source": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
+  "scope": "actual strict HTTP codecs via no-Service Recorder; no Store/listener/Engine/USB; existing legacy rules unchanged"
+}

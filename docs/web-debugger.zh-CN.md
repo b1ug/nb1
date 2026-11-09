@@ -31,6 +31,18 @@ python3 tools/import-web-dist.py /absolute/path/to/dist \
 
 页面内部使用同一个 `light` 对象：`set`、`off`、`fade`、`blink`、`breathe`、`pulse`、`alternate`、`rainbow` 和 `run`。它是本页的交互桥接层，不是已经发布的独立 JavaScript SDK。艺术动作在 `internal/lightaction` 的 Go 核心中编译，浏览器不自行生成它们的 Program。
 
+## 高级图案书：96a整合候选
+
+候选96a固定Web来源`f90ef8d6143acd55c059b94ecf961ec65a1bb646`；扩展bundle为9个公开页面资源+LICENSE，manifest另计，共208132字节、4合同。`/demo/patterns.html`、`patterns.js`、`patterns.css`已随该构建嵌入并返回200；历史host56c与基础fe32507的三个404保留，合法基础bundle没有这些页面时仍应404。部署状态与本机MK2有限证据看[手册第1节](api-reference.zh-CN.md)，工作区现已安装96a并通过33项只读复核；是否宿主注册/OS服务安装仍须分别核对。
+
+打开`/demo/patterns.html`后，可按图案书里的三步操作：
+
+1. 选Pulse或Orbit例子，编辑ID/标题/source，先预览完整候选。预览保留高级意图、规范动作与冻结执行，既不保存也不播放。
+2. 核对完整revision，勾选确认后保存一次；这是电脑独立v2库，不是硬件Flash。保存未知时保留原ID/revision与完整记录，只读核对，不自动重写。完整性诊断不会被随后读到同版记录抹掉。
+3. 明确选择设备、版本和policy，先准备并保留原票据，再播放一次。运行中查停只用该Ref/票据；取消先查原回执、再最多一次confirmed_job_id POST。等待超时不等于取消；终态hold再取消不自动关灯。
+
+库含合法未知来源/recipe时只读展示，不把冻结程序降成旧Program补播。离线`file://`设计预览使用明确标注的模拟资料，写入与播放禁用；同源在线页失败不偷偷切模拟、USB或其他daemon。会话恢复资料与显式导出用于保留原请求，不是后台自动重播。
+
 ## 版本化动作 API
 
 预览请求为 `POST /v1/light/preview`：

@@ -2,9 +2,9 @@
 
 `docs/openapi.json` 保持 OpenAPI3.2.1 / JSON Schema2020-12，覆盖源码库存的44个method+canonical path（其中3个是bundle条件静态资源）；另加4个显式GET别名，使操作名`import`/`preview`/`preview-ref`仍能作为普通图案ID，避免OpenAPI静态path优先级掩盖模板GET。因此实际文档是43个path /48个operation /111个schema；别名用`x-alias-of`标识，不是新增能力。
 
-来源固定为日常源码`1d89eae92278f24a68fff1a34e3c1e696a962c3c`与开发源码`f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae`。每个操作的`x-availability`和`x-api-level`区分已存在接口、未安装开发接口与显式Store依赖。此处是源码/文档证据，不是新daemon探测、安装或硬件验收。
+历史来源保留1d89与HTTP f8bb/host56c；当前安装源码96a单列于`baselines.installed`、每route的`status.installed:"implemented"`与OpenAPI installed扩展。当前规范操作44，旧daily_1d89字段32只作历史兼容，不能当当前版本过滤。`x-api-level`与Store/receipt限制仍逐路由保留；本检查器是离线文档验证，实机与33项安装复核引用独立证据，不由它重跑。
 
-开发源码已完成 P4 typed 身份/摘要与原子准入、P5 完整来源验证 resolver、P6 固定 Ref 预览/运行/原票据查询/绑定取消。daemon 显式懒选独立 `patterns-v2`，支持 `--pattern-v2-dir` / `NB1_PATTERN_V2_DIR`；Go handler 未配 option 时库操作501，配置错误503。构造/纯作者preview/读缺失库不创建，只有有效写入进入事务才可能创建，后续失败也可能留目录。所有开发能力尚未安装到日常1d89。新Pattern三policy与旧light/raw Frame仅reject的差异保留；独立本地CLI作者候选eee1eb9另已提供get/preview-draft/save（未安装、不播放）；新v2执行客户端继续分片，MCP文档仍保留日常12工具。
+开发源码已完成 P4 typed 身份/摘要与原子准入、P5 完整来源验证 resolver、P6 固定 Ref 预览/运行/原票据查询/绑定取消。daemon 显式懒选独立 `patterns-v2`，支持 `--pattern-v2-dir` / `NB1_PATTERN_V2_DIR`；Go handler 未配 option 时库操作501，配置错误503。构造/纯作者preview/读缺失库不创建，只有有效写入进入事务才可能创建，后续失败也可能留目录。整合候选96a包含上述能力，部署状态单列于API手册第1节。新Pattern三policy与旧light/raw Frame仅reject的差异保留；96a已整合CLI七命令与MCP16；作者get/preview-draft/save不播放，执行preview/run/request/cancel保留固定Ref/原票据。历史日常1d89的12工具快照保留。
 低层Program HTTP支持replace/queue/reject并允许旧无票据提交；高级light、raw Frame HTTP及legacy Frame core入口仅reject+完整票据，新Pattern核心可按三policy准入冻结帧。Frame JSON仅省略repeat/on_finish才默认1/off，显式0/空串拒绝；不能照搬Go typed Normalizer的补默认规则。详情以各schema与`x-runtime-validation`为准。
 
 ## 样例来源
@@ -34,6 +34,12 @@ python3 docs/contract-fixtures/check_openapi.py --report /tmp/nb1-openapi-check.
 
 合法未知source/recipe的已存记录使用Read schema；新导入使用Known/Write schema且仍需runtime完整验证。Store会排序并规范化合法导入输入；输入本身不必预先排序/逐字节canonical，存储与导出输出才要求精确canonical。
 
-P6 的POST原始报文限4096字节，Ref/票据均闭合ASCII；query四标量必须唯一，不接受body/空分隔段。schema只能描述结构/拼写，不能证明无重复键、请求窗口、Ref与完整来源、Envelope与实际回执一致。动态pattern_execution只报告service+resolver接线，不调用Store，也不保证库健康或设备执行。检查器包含四种合法接线状态及反例、P6请求缺失/越权字段、union错配与runtime-only摘要差异；当前离线检查118项（含3个实际host条件资源观察）。
+P6 的POST原始报文限4096字节，Ref/票据均闭合ASCII；query四标量必须唯一，不接受body/空分隔段。schema只能描述结构/拼写，不能证明无重复键、请求窗口、Ref与完整来源、Envelope与实际回执一致。动态pattern_execution只报告service+resolver接线，不调用Store，也不保证库健康或设备执行。检查器包含四种合法接线状态及反例、P6请求缺失/越权字段、union错配与runtime-only摘要差异；本轮另增加3个96a扩展资源200观察及8个实际HTTP整数词法对照；精确检查数由检查器报告，不把历史与本轮观察混为同一源码。
 
-Web host源码56c4aef支持两种完整bundle，但该源码仍固定旧Web fe32507产物；新增/demo/patterns.html/js/css各自404，只有明确import完整扩展dist才200。静态路由+3不增加硬件动作API，也不意味着日常已升级。generate.go额外写resource-observations.json：直接无Service Recorder探三路径，旧bundle验证标准404，新bundle时比对嵌入文件字节/安全headers；不创建listener/设备。工具schema和真实stdio证据仍绑定MCP c37，错误头补片679只作实现注记，不改写证据来源。
+Web host源码56c4aef支持两种完整bundle，但该源码仍固定旧Web fe32507产物；新增/demo/patterns.html/js/css各自404，只有明确import完整扩展dist才200。静态路由+3不增加硬件动作API，也不意味着日常已升级。历史resource-observations.json保留56c/fe32507的3个404。generate.go现在另写resource-observations.current.json：96a/f90固定dist的3个200，校验大小/hash/安全headers，并写numeric-lexeme-observations.json，直接无Service Recorder对照旧Program/Effect/raw Frame允许-0转0与严格Action/Pattern作者拒绝负零；均无listener/设备/Store。原52个pure/handler样例仍绑定未改语义的f8bb编译器基线，不用它们冒充96a实机资格。MCP c37历史schema/stdio与679补片证据保留；96a真实stdio/本机MK2资格另记手册第1节。
+
+## 当前整合产物
+
+96a runtime源码未改；Web来源f90ef8d6143acd55c059b94ecf961ec65a1bb646，manifest SHA256 9f9c039abd50c65bf8ebc2e2a74954092e7cd0fff0871021666028adc9a2519d。10项manifest.files（9公开资源+LICENSE）加manifest共208132B；不是10个公开URL。generator对新资源观察使用96a专门来源字段，不再将新bundle的200标为旧host56c实测。
+
+`numeric-lexeme-observations.json`原始请求字符串保留-0、0.0和0e0，不能先json.loads后靠数值重新编码证明词法。仅修OpenAPI说明/x扩展；标准validation keywords、范围、默认、union和旧响应shape与96a逐字语义保持。

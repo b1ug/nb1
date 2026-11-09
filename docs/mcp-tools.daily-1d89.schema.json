@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "source": "actual stdio tools/list from installed1d89",
+  "source": "historical actual stdio tools/list from formerly installed1d89; 12 tools, not current96a installation",
   "daemon_and_adapter_source": "1d89eae92278f24a68fff1a34e3c1e696a962c3c",
   "mcp_binary_sha256": "5167dddbf369bac48b12614df73752e2006b81cf3ca0033747539b21ee22236d",
   "tools": [
@@ -5866,5 +5866,7 @@
         "additionalProperties": false
       }
     }
-  ]
+  ],
+  "historical_snapshot": true,
+  "filename_note": "legacy download filename preserved for compatibility; current workspace96a has16 tools"
 }

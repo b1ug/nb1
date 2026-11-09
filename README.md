@@ -1,6 +1,6 @@
 # nb1
 
-控制 blink(1) 指示灯的命令行工具，也可作为本机 daemon 提供共享 HTTP v1 API。
+控制 blink(1) 指示灯的命令行工具，也可作为本机 daemon 提供共享的版本化HTTP API（兼容v1与实验v2）。
 
 将示例中的 `20005601` 换成实际设备序列号。先在一个终端启动 daemon：
 
@@ -27,3 +27,5 @@ nb1 doctor
 ## 中文 API 参考
 
 [完整手册](docs/api-reference.zh-CN.md)说明High/Low分别负责什么、当前完成状态、参数与任务语义；[OpenAPI](docs/openapi.json)、[实际MCP schema](docs/mcp-tools.schema.json)和[JSON示例](docs/examples/api/)供机器与调用方核对。开发接口与本机已安装版本分别标记，阅读不操作设备。
+
+96a整合候选已提供High八动作/实验Orbit、Low Program/Frame、独立高级Pattern库、CLI七命令、真实stdio MCP16及动森风格本地图案书。Web来源f90ef8，9公开资源+LICENSE及manifest共208132B；`/demo/patterns.html`只在有效扩展bundle中存在。该版本有本机MK2有限CLI/MCP/Web验证，验收窗口曾恢复1d89后，另完成工作区安装96a与33项只读复核；不等于发布、全局MCP注册、OS服务安装或跨平台实体USB通过，详见手册的版本与证据段。

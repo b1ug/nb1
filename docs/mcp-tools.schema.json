@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "source": "actual stdio tools/list from clean local c37f7fc candidate; not installed",
+  "source": "historical actual stdio tools/list from clean c37f7fc; same complete tools array verified in installed96a stdio, provenance retained",
   "daemon_and_adapter_source": "c37f7fc33d52cc25619b10a5bc477965bf544cc0",
   "mcp_binary_sha256": "ff881f09e541b4742cd5dd98fb600ddcaaa11e8a0c3af48c2c7ea5beca0b0af9",
   "tools_list_sha256": "6789b4dc776b4687e4e4bfe3cd0924f3f3fa64d0ce7e2b38efd948c9c25caec6",
@@ -8252,5 +8252,16 @@
         "type": "object"
       }
     }
-  ]
+  ],
+  "historical_baseline_schema": "mcp-tools.daily-1d89.schema.json",
+  "daily_baseline_schema_note": "legacy metadata name points to historical1d89 snapshot, not current installed tools",
+  "current_workspace": {
+    "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
+    "tool_count": 16,
+    "mcp_binary_sha256": "8393167a18e7645561dff82b99698615e6e77a4361358af26a593939b0898f1d",
+    "evidence": "artifacts/pattern-v2-suite-native-20261110/post-install-stdio.json",
+    "evidence_sha256": "3ff11bd5b01e92e5b97744e3c4d5d6a682519b4eb1b5d96cfd08ca375c2b912a",
+    "tools_array_exactly_equal": true,
+    "registered_global_host": false
+  }
 }

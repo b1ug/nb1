@@ -13,11 +13,29 @@
 | High level · light v1 | `set`、`off`、`fade`、`blink`、`breathe`、`pulse`、`alternate`、`rainbow` | 八动作已经实现，HTTP/CLI/MCP/Web 共用核心编译器 | 动作命名最终定稿、更多艺术动作与组合语法 |
 | High level · Orbit v2 | `orbit`，4/8 段成对长渐变；颜色、相位、周期、轮数、结束规则 | 日常版本已可用；Web、CLI、MCP 各有有限 Mac/MK2 验证 | 不是稳定视觉标准；不保证任意参数完全无闪烁 |
 | 记忆 · Pattern v1 | 电脑端保存 Program/旧 Effect、导入导出、精确 revision 引用 | 已接 Web、HTTP、CLI、MCP | 不能直接保存新的 FrameProgram/Orbit 来源 |
-| 记忆 · Pattern v2 | 同时保存原始高级来源、规范动作、recipe、冻结执行体与内容摘要 | 开发源码已完成codec/Store/创作/来源准入/P5/P6；MCP四工具与CLI作者/执行七命令均通过软件验证，尚未安装到日常服务 | Web接入、CLI list/import/export与安装后的实物验证 |
+| 记忆 · Pattern v2 | 同时保存原始高级来源、规范动作、recipe、冻结执行体与内容摘要 | 开发源码已完成codec/Store/创作/来源准入/P5/P6；MCP四工具、CLI七命令与高级图案书Web已接入候选96a；本机MK2有限实机验证后已工作区推广；实际stdio16，不自动注册宿主 | CLI list/import/export、更多参数与平台/代际验收 |
 
-日常运行来源是 `1d89eae92278f24a68fff1a34e3c1e696a962c3c`；本手册还覆盖开发源码 `f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae` 的 P1–P6 图案功能与独立 v2 库配置。后者尚未安装，不能把开发源码能力当成正在运行的 daemon 能力。日常硬件为 MK2 / FW204；这不证明 MK3 或 Windows/Linux 实物 USB 已验收。
+本文保留的历史日常基线是 `1d89eae92278f24a68fff1a34e3c1e696a962c3c`，整合候选为 `96a1f92a8a2fcf836129797e4c3a82602a4e7ffc`（简称96a），包含P1–P6、独立v2库、CLI七命令、MCP16与高级图案书Web。HTTP核心的历史资格来源f8bb267、host准备来源56c4aef、CLI4e及MCPc37/679分别保留；不是各入口仍未整合。96a在单一临时窗口验证后曾恢复1d89，随后完成工作区推广；当前安装见下面独立状态块。日常硬件为 MK2 / FW204；这不证明 MK3 或 Windows/Linux 实物 USB 已验收。
 
-新版 Web 真机验证包括 Pulse 完成、Orbit 完成与运行中取消；CLI/MCP 的实机证据单独绑定 `c4147ce`。P6 相关六包 current/Go1.18 各 1412 测试节点、339 顶层通过，race 四包1097/263通过；新 P6 用 Recorder、内存驱动和临时库，既有整包回归可能用私有 loopback fixture listener。它们不构成新实体设备验收，RGB读回和摄像观测证据仍单独记录。
+历史Web真机验证包括Pulse/Orbit完成与取消；早期CLI/MCP实机证据单独绑定c4147ce。新增96a三入口有限MK2实机证据见下段，不把旧证据改称新版本。P6 相关六包 current/Go1.18 各 1412 测试节点、339 顶层通过，race 四包1097/263通过；新 P6 用 Recorder、内存驱动和临时库，既有整包回归可能用私有 loopback fixture listener。它们不构成新实体设备验收，RGB读回和摄像观测证据仍单独记录。
+
+### 工作区部署状态（独立于源码资格）
+
+<!-- deployment-state:start -->
+2026-11-10工作区已推广并安装固定96a原生二进制：`bin/nb1`、`bin/nb1-runtime`、`bin/nb1-mcp`，本机daemon为`http://127.0.0.1:8931`。33项只读复核通过：CLI七命令、真实stdio16工具、扩展bundle10项manifest.files（9公开资源+LICENSE）及逐字节匹配、设备online/idle/黑色缓存；没有新增设备变更，原v1快照SHA前后一致。旧1d89备份保留，未创建OS开机服务、注册全局MCP、合并PR或发布Release。
+
+部署记录为本地`artifacts/pattern-v2-suite-native-20261110/install-result.json`、`promotion.json`、`post-install.json`和`post-install-stdio.json`。MCP16表示已安装适配器的实际stdio会话，宿主既有会话仍须重新发现，不会因文档更新自动注册工具。此后docs-only提交的源码号不改变实机binary资格96a及其SHA。
+<!-- deployment-state:end -->
+
+下文“日常1d89”“开发f8bb”或“原片未安装”均指其明确的历史基线；当前工作区部署只按上面这段与实际帮助/会话tools/list核对。源码有能力不等于安装已生效。
+
+### 96a候选的本机实物证据
+
+2026-11-10，macOS arm64、MK2/FW204、SDK b3f2586/GID37d7cfd，在隔离v2库和单一设备所有权窗口完成CLI 3项、真实SDK stdio MCP 2项、实际嵌入Web 2项，共7个任务、3次运行中取消。任务通过原Ref/票据查询终态，随后有新鲜双黑RGB读回、无活动/排队；结束后正规停止候选并恢复1d89。CLI作者预览/保存/读取与MCP纯预览没有设备变更。不是安装、发布或全平台验收。
+
+静默私有录像32.766667秒、983帧，没有超过50ms的PTS间隙；有限窗口未见中途全黑帧，亮边有过曝。帧时间连续不代表USB指令等间隔，也不能证明完美360度、无闪烁或已校准Gamma。该窗口USB记录6次retry（query 3、set 2、stop 1），最终失败0；原因和是否重触发fade仍待诊断，不能称零重试。
+
+候选nb1 SHA256 `b5a0f116b2f9c1b0047ef43960fb227148e29edd6b293ecee15dc45eecb3f4d3`，MCP SHA256 `8393167a18e7645561dff82b99698615e6e77a4361358af26a593939b0898f1d`；二者clean source均96a。公开脱敏资格为本地 `artifacts/pattern-v2-suite-native-20261110/qualification.json`（状态FINITE_MAC_MK2_SUITE_QUALIFIED_WITH_LIMITS）；原始执行记录为同目录attempt1/report.json，光学分析另存attempt1。raw录像保持私有，不随文档发布；报告的transport通过和光学限制分别保留。
 
 ## 2. High level 与 Low level 的职责
 
@@ -50,6 +68,8 @@ High level 不是让调用者循环发低级请求。一次高级请求由 nb1 �
 - 时间单位均为毫秒，色值为原始 RGB8，没有默认软件 Gamma 或亮度校准。名义时长不包含原生 USB 与系统调度的全部耗时。
 - `HTTP 202` 只表示任务已接受；只有可信任务终态说明执行或清理结果。
 - CLI 默认使用 daemon；显式 `--mode direct` 在当前进程复用同一核心与所有权锁。连接失败不会自动改为直控。
+
+CLI `control`的`--timeout`默认30s；同一次命令中的Prepare、HTTP提交与`--wait`共用一个context预算。长动作可显式加长，例如`nb1 control --timeout 2m patterns-v2 run SERIAL ID --revision SHA --wait`；真实SERIAL/revision须来自设备与记录。超时后daemon任务仍可继续，保留原票据并明确request恢复，不能据此换键重播。
 
 纯预览无 Job、无运行票据、无 USB。带 `serial` 的预览只检查已配置设备的缓存快照，不预留设备，也不保证稍后的提交一定成功。
 
@@ -86,7 +106,7 @@ High level 不是让调用者循环发低级请求。一次高级请求由 nb1 �
 
 `cycles` 语法范围为 1–10000，但高级 v1 **总执行步数不能超过 1024**，编译后还须在24小时名义预算内。各动作不能使用别的动作字段，例如 breathe 不接受 attack_ms，rainbow 不接受 color。
 
-时间/次数必须为普通非负 JSON 整数；不接受 `1.0`、`1e3`、负零或字符串数字。每份请求最多 65536 字节，作者 JSON 最深32层。HSV 小数另按颜色规则处理。
+高级Action的时间/次数必须为普通非负 JSON 整数；不接受 `1.0`、`1e3`、负零或字符串数字。每份请求最多 65536 字节，作者 JSON 最深32层。HSV 小数另按颜色规则处理。
 
 ### alternate 的兼容过渡
 
@@ -191,6 +211,8 @@ Program 没有新的 contract 外壳，语义标识由能力/预览中的 `compi
 
 每一步名义等待 `fade_ms + hold_ms + 10ms`。例子每轮2020ms，2轮4040ms，USB和清理另有开销。Program 的1024限制是**定义步骤数**；与高级 Action 的1024**总执行步数**不同。最终总名义时长仍不能超过24小时。
 
+旧Program/Effect HTTP通过Go int解码：小数或指数整数拼写拒绝；`-0`会先成为0，再按字段范围/默认校验。不要把高级Action/Pattern作者对原始负零的拒绝推广到该旧入口。新代码应发送普通非负整数字面量。
+
 Program 是顺序模型：第一步等待完成后才进入第二步。把两个LED分别写成两步，不会形成同时淡变。需要重叠渐变使用 FrameProgram，或让 High level Orbit 为你编译。
 
 预览会列出set/program/raw-rgb等要求，hold还列hold；当前legacy Submit并未统一把所有广告能力作为强制门槛。能力预览与实际准入检查的差异是待完善项，不能把目录直接当成执行保证。
@@ -218,14 +240,14 @@ Program 是顺序模型：第一步等待完成后才进入第二步。把两个
 | initial | 1–2个物理LED目标，LED只能1/2且不重复；初始化只执行一次 |
 | frames | 1–1024个定义帧；每帧目标数、LED顺序须与initial相同 |
 | targets[].color | 原始Hex6 |
-| fade_ms | 0–600000，10ms倍数，不能超过该帧interval向上取整至10ms后的值 |
-| interval_ms | 50–600000 |
+| fade_ms | HTTP必填，可显式0；0–600000，10ms倍数，不能超过该帧interval向上取整至10ms后的值 |
+| interval_ms | HTTP必填；50–600000 |
 | repeat | HTTP省略为1，显式值1–10000；执行总帧数仍≤1024；HTTP显式0拒绝 |
 | on_finish | 默认off，或hold |
 
 执行总目标写入最多2050，名义时间最多24小时，输入最多1MiB。每帧依次设置目标，等待同一帧的剩余间隔；不会分别等待两个LED的完整fade。迟到不突发追帧，最后fade完成后才结束。
 
-内部Go `NormalizeFrameProgram` 可把typed零值repeat/空on_finish补默认；HTTP严格decoder只允许字段省略时补默认，显式0或空串拒绝。不要把内部函数的容错范围当成HTTP语法。
+内部Go `NormalizeFrameProgram` 可把typed零值repeat/空on_finish补默认；HTTP严格decoder仅对repeat/on_finish省略时补默认，显式repeat0或空on_finish拒绝；每个target的led/color与每帧fade_ms/interval_ms均必填。raw Frame的整数仍经Go int，fade_ms:-0等价0；高级Orbit/Pattern作者另有更严格数字词法。不要把内部函数的容错范围当成HTTP语法。
 
 预览为 `POST /v1/frame-programs/preview`，body `{"program":FRAME_PROGRAM,"serial":"可省略"}`；运行用 `/v1/devices/{serial}/frame-jobs`。原始帧和当前高级 light 运行都要求显式 reject 与完整原票据。
 
@@ -347,7 +369,7 @@ Program用completed_steps/total_steps；Frame用completed_frames/total_frames及
 
 ## 11. 调度策略与当前不对称
 
-| 策略 | 普通Program jobs | 当前light/Frame入口 | 开发Pattern v2 HTTP（未安装） |
+| 策略 | 普通Program jobs | 当前light/Frame入口 | Pattern v2 HTTP（96a） |
 | --- | --- | --- | --- |
 | replace | 已实现；旧CLI默认 | 不接受 | 已实现，必须显式传入 |
 | queue | 已实现，有界队列 | 不接受 | 已实现，必须显式传入 |
@@ -398,9 +420,9 @@ P4 严格 typed 身份/摘要与原子准入、P5 完整来源 resolver、P6 公
 
 `pattern_execution.available` 只报告 PatternService 与 resolver 接线，检查状态零 Store 调用。true reason=`pattern_service_configured`；false reason=`pattern_service_unsupported`、`pattern_library_unconfigured` 或 `pattern_library_configuration_error`。true 不证明库健康、设备支持或本次准入成功；false 不阻断原回执恢复。Frame hold 的新 Pattern 准入额外要求缓存 hold，不能推广成旧 Frame helper 已做同样检查。
 
-P6 新 POST 原始报文限4096字节，单个 application/json，无 query，严格 UTF8/duplicate/unknown/null，全部身份标量为闭合 ASCII；GET 四参数必须唯一、非空、无未知或空分隔段且无 body。revision/摘要语法不是来源验证，JSON Schema 无法证明哈希和票据绑定。当前日常1d89没有 P3/P6 新路由；本册f8bb HTTP基线不含这些客户端。CLI作者候选 `eee1eb952f01bab521d5514b74b60a5fa45d6e1d` 已有get/preview-draft/save；执行候选 `4eac5293bbad413e90ff19e6c8700628a1a4a8ee` 又新增preview/run/request/cancel（第13节），均未安装。list/导入导出与Web仍分片推进；MCP日常12和开发16单独记录，HTTP能力不会自动扩展已安装工具。
+P6 新 POST 原始报文限4096字节，单个 application/json，无 query，严格 UTF8/duplicate/unknown/null，全部身份标量为闭合 ASCII；GET 四参数必须唯一、非空、无未知或空分隔段且无 body。revision/摘要语法不是来源验证，JSON Schema 无法证明哈希和票据绑定。历史1d89没有 P3/P6 新路由；历史f8bb HTTP基线不含这些客户端，96a整合候选已包含。CLI作者候选 `eee1eb952f01bab521d5514b74b60a5fa45d6e1d` 已有get/preview-draft/save；执行候选 `4eac5293bbad413e90ff19e6c8700628a1a4a8ee` 又新增preview/run/request/cancel（第13节），这些原片已整合并安装96a。CLI list/导入导出仍后续；96a已接高级图案书Web；MCP历史12和当前96a的16单独记录，HTTP能力不会自动扩展已安装工具。
 
-固定引用预览可从实际 GET 记录提取 Ref；以下是安装新开发版之后的只读示例，`PATTERN_ID` 必须是已保存记录。它不会播放：
+固定引用预览可从实际 GET 记录提取 Ref；以下是已核实96a入口的只读示例，`PATTERN_ID` 必须是已保存记录。它不会播放：
 
 ```sh
 NB1_ORIGIN=http://127.0.0.1:8931
@@ -417,7 +439,7 @@ jq -n --argjson pattern_ref "$ref" '{pattern_ref:$pattern_ref}' |
 
 ## 13. CLI与MCP入口对照
 
-本表既有CLI/MCP入口对应日常基线。日常安装仍是12工具；开发MCP的16工具schema与真实stdio证据固定 `c37f7fc33d52cc25619b10a5bc477965bf544cc0`；另有错误头校验补片 `679bdfc735a2f011c4c1fbf4fabec80f406f8f18`，工具形状不变。两者均未安装或注册宿主，不把c37证据改称679实测。独立本地CLI作者候选 `eee1eb952f01bab521d5514b74b60a5fa45d6e1d`（本册f8bb运行源码之外，未安装）另提供 `control patterns-v2 get ID`、`control patterns-v2 preview-draft FILE`、`control patterns-v2 save FILE`。它仅daemon模式，保留完整作者来源，save输出原Ref和publication_confirmed/publication_unknown；不播放、不准备票据，无policy/wait。独立CLI执行候选 `4eac5293bbad413e90ff19e6c8700628a1a4a8ee` 另已完成下面四命令；list/导入导出仍在后续片，不与旧 `control patterns` 混用。
+本表包含旧入口与96a已安装的新入口。历史基线1d89是12工具；16工具原始schema与早期真实stdio软件证据固定 `c37f7fc33d52cc25619b10a5bc477965bf544cc0`；另有错误头校验补片 `679bdfc735a2f011c4c1fbf4fabec80f406f8f18`，工具形状不变。c37/679原片均未注册宿主；96a的真实stdio实机窗口另有上文记录，不能把c37软件证据改称96a或679实测。独立本地CLI作者候选 `eee1eb952f01bab521d5514b74b60a5fa45d6e1d`（历史f8bb HTTP资格之外，已整合96a）另提供 `control patterns-v2 get ID`、`control patterns-v2 preview-draft FILE`、`control patterns-v2 save FILE`。这三个作者命令仅daemon模式，保留完整作者来源，save输出原Ref和publication_confirmed/publication_unknown；不播放、不准备票据，无policy/wait。独立CLI执行候选 `4eac5293bbad413e90ff19e6c8700628a1a4a8ee` 另已完成下面四命令；list/导入导出仍在后续片，不与旧 `control patterns` 混用。
 
 | 目的 | CLI | MCP |
 | --- | --- | --- |
@@ -433,7 +455,7 @@ jq -n --argjson pattern_ref "$ref" '{pattern_ref:$pattern_ref}' |
 | 任务读取/停止 | control job ID / control cancel ID | get_job / cancel_job |
 | 旧Pattern库 | control patterns list/get/import/export/preview/run | list_patterns/get_pattern；preview_program/run_program的pattern_ref分支 |
 
-高级文件使用[示例目录](examples/api/)。在仓库/工作区外使用时，先把nb1替换为已核实的二进制路径；本机工作区目前为bin/nb1。
+高级文件使用[示例目录](examples/api/)。在仓库/工作区外使用时，先把nb1替换为已核实的二进制路径；本机工作区当前为bin/nb1（固定96a原生字节）。
 
 ```sh
 nb1 control --mode direct light preview breathe.action.json
@@ -443,9 +465,9 @@ nb1 control light run 20005601 breathe.action.json --wait
 
 前三条分别是纯本地预览、daemon缓存目标预览和实际播放；示例命令不会由文档自动执行。高级CLI可自动准备一次票据；需要事先留档时先control prepare，并传回原二元组。
 
-MCP是**真实stdio协议服务**，经HTTP调用daemon，不执行CLI子进程、不直接打开USB。日常12个工具：cancel_job、get_device_state、get_job、get_pattern、list_devices、list_patterns、preview_light、preview_program、resolve_color、run_light、run_program、set_device_state。
+MCP是**真实stdio协议服务**，经HTTP调用daemon，不执行CLI子进程、不直接打开USB。历史1d89的12个工具：cancel_job、get_device_state、get_job、get_pattern、list_devices、list_patterns、preview_light、preview_program、resolve_color、run_light、run_program、set_device_state。
 
-开发16工具的完整输入/输出见[mcp-tools.schema.json](mcp-tools.schema.json)，来自干净候选二进制的实际tools/list；[日常1d89的12工具快照](mcp-tools.daily-1d89.schema.json)单独保留，旧12项schema相同。连接时以实际会话tools/list为准。调用示例（原有只预览）：
+当前96a的16工具完整输入/输出见[mcp-tools.schema.json](mcp-tools.schema.json)，来自干净候选二进制的实际tools/list；[历史1d89的12工具快照](mcp-tools.daily-1d89.schema.json)单独保留，旧12项schema相同。连接时以实际会话tools/list为准。调用示例（原有只预览）：
 
 ```json
 {"name":"preview_light","arguments":{"contract":"nb1-light-action/v1","action":{"kind":"breathe","color":"lime","period_ms":2000,"cycles":2}}}
@@ -453,9 +475,9 @@ MCP是**真实stdio协议服务**，经HTTP调用daemon，不执行CLI子进程�
 
 run_light必须有serial、原票据，仅reject。get_job按ID前缀区分旧/帧任务；只有票据时Frame必须显式job_kind:frame。MCP不自行展开动画，也不自动重发运行请求。
 
-### 开发CLI：高级Pattern七命令（未安装）
+### CLI：高级Pattern七命令（96a已整合）
 
-作者三个命令get/preview-draft/save不变，执行源码固定 `4eac5293bbad413e90ff19e6c8700628a1a4a8ee`。它沿P6 HTTP执行，未部署到日常daemon，不以软件测试宣称新实物验收。
+作者三个命令get/preview-draft/save不变，执行源码固定 `4eac5293bbad413e90ff19e6c8700628a1a4a8ee`。它沿P6 HTTP执行，已整合96a；原4e软件测试与96a有限实物窗口分别记录，工作区部署看第1节。
 
 | 命令 | 字段、作用与边界 |
 | --- | --- |
@@ -469,7 +491,7 @@ run_light必须有serial、原票据，仅reject。get_job按ID前缀区分旧/�
 
 SHA为真实记录的完整sha256:64位小写hex，不隐式选latest；record_contract固定实验v2并完整保留在输出。全部只走daemon，--mode direct拒绝。preview/作者命令不接受policy/wait/票据；request/cancel不接受policy且必须提供原票据。未实现CLI list/import/export，不猜旧patterns命令会自动处理v2格式。
 
-run/request/cancel支持--wait，只查询原Pattern回执，逐次核对完整typed Program/Frame、Ref、digest、Job ID、创建/启动时间、进度和生命周期；timeout不cancel、不重发、不用历史猜结果。已验证terminal先结束等待，随后caller context结束不把已知终态改成unknown。run/request等待到failed/cancelled可非零退出，仍输出可信终态且outcome_unknown=false；failed的optional错误文案为空也合法。
+run/request/cancel支持--wait，受本次命令`--timeout`约束（默认30s，Prepare/POST/等待共用）；长图案应显式加长或稍后用原票据request恢复。等待只查询原Pattern回执，逐次核对完整typed Program/Frame、Ref、digest、Job ID、创建/启动时间、进度和生命周期；timeout不cancel、不重发、不用历史猜结果。已验证terminal先结束等待，随后caller context结束不把已知终态改成unknown。run/request等待到failed/cancelled可非零退出，仍输出可信终态且outcome_unknown=false；failed的optional错误文案为空也合法。
 
 输出保留pattern_ref、request_ticket、accepted、outcome_unknown、daemon_instance_id、replayed及job。job是PatternJobEnvelope，内含原typed Job/FrameJob；accepted表示原任务已确认接受，不是完成。取消另外输出cancel_attempted，表示是否尝试过唯一POST，不能据此推断已送达或清理完成。
 
@@ -487,9 +509,9 @@ nb1 control patterns-v2 request "$SERIAL" orbit-red-blue --revision "$REVISION" 
 nb1 control patterns-v2 cancel "$SERIAL" orbit-red-blue --revision "$REVISION" --request-id "$REQUEST_ID" --expected-daemon-instance-id "$INSTANCE" --job-id "$JOB_ID" --execution-digest "$EXECUTION_DIGEST" --wait
 ```
 
-客户端只复算返回的闭合执行体摘要与回执绑定，不在run前重建作者source；完整来源/recipe/revision验证仍由daemon P5+core负责。current/Go1.18七包各1818节点/411顶层、race四包1423/320通过；原回执GET同步caller停止场景重复20次通过。新增测试只用临时库、私有loopback与内存驱动，没有日常服务/用户库/USB。详见[图案CLI分版说明](patterns-cli.md)、[内部执行客户端说明](../internal/daemonclient/README.pattern-execution-v2.zh-CN.md)。
+客户端只复算返回的闭合执行体摘要与回执绑定，不在run前重建作者source；完整来源/recipe/revision验证仍由daemon P5+core负责。current/Go1.18七包各1818节点/411顶层、race四包1423/320通过；原回执GET同步caller停止场景重复20次通过。4e新增软件测试只用临时库、私有loopback与内存驱动；96a后续有限实机资格另列于第1节，不回写4e软件证据。详见[图案CLI分版说明](patterns-cli.md)、[内部执行客户端说明](../internal/daemonclient/README.pattern-execution-v2.zh-CN.md)。
 
-### 开发MCP：高级Pattern四工具（未安装）
+### MCP：高级Pattern四工具（96a已整合）
 
 完整来源与编译验证在daemon；MCP只验证闭合执行体、执行摘要与原Ref/票据/Job绑定，不复制高级编译器。新工具不会把Pattern降成旧Program任务。
 
@@ -504,7 +526,7 @@ nb1 control patterns-v2 cancel "$SERIAL" orbit-red-blue --revision "$REVISION" -
 
 成功run的`structuredContent.kind`为`pattern_job`，`data`是完整`{pattern_ref,execution_digest,job_kind,job}`，外层保留`request_ticket`；接受不等于完成。query为`pattern_request`；cancel为`pattern_cancel`，其data含`pattern_job`（最后可信Envelope）与`cancel_attempted`。取消错误仍保留原票据及最后可信快照；`cancel_attempted`只说明是否尝试过唯一一次POST，不证明已熄灯。坏响应、断连、实例变化和回执过期不能触发换键补播；完整性错误不会被后续看似正确的响应掩盖。
 
-c37片current/race各816测试节点通过、3项显式live跳过；真实stdio→P6 HTTP→临时StoreV2→内存fake Engine贯通，未访问USB。679仅增加Pattern错误响应头检查，独立软件验证另有归档；此处工具快照/stdio证据仍绑定c37。独立MCP模块沿用Go1.25下限，不能以root Go1.18兼容性替代。v2列表/读取完整Record/保存/导入导出MCP工具仍未提供；原list_patterns/get_pattern保持v1语义。
+c37历史片current/race各816测试节点通过、3项显式live跳过；真实stdio→P6 HTTP→临时StoreV2→内存fake Engine贯通，未访问USB。679仅增加Pattern错误响应头检查，独立软件验证另有归档；此处工具快照/stdio证据仍绑定c37。独立MCP模块沿用Go1.25下限，不能以root Go1.18兼容性替代。v2列表/读取完整Record/保存/导入导出MCP工具仍未提供；原list_patterns/get_pattern保持v1语义。
 
 ## 14. 完整HTTP索引与错误
 
@@ -513,7 +535,7 @@ c37片current/race各816测试节点通过、3项显式live跳过；真实stdio�
 路径中的`{id}`、`{jobId}`是占位变量名；同一位置表示同一个任务ID，不是两条不同路由。OpenAPI另显式列出GET普通ID为preview/import/preview-ref时的四个路径别名，不代表新增能力。
 
 
-Web宿主准备源码固定 `56c4aef153c560c68845e89ebdaa15bc1323eeb2`，保持两种完整、闭合的产物：基础含6个公开页面资源+LICENSE/2合同，扩展含9个公开页面资源+LICENSE/4合同，manifest均另计，总dist≤256KiB。GET /demo重定向另算一路。因此源码索引增加3个静态路径，不代表新增硬件动作；源码56c当前仍是旧Web fe32507产物，新的三个路径实际404。后续明确import完整新dist后才有200资源，日常daemon没有因此自动升级。详细边界见[Web工作台](web-debugger.zh-CN.md)。
+Web宿主准备源码固定 `56c4aef153c560c68845e89ebdaa15bc1323eeb2`，保持两种完整、闭合的产物：基础含6个公开页面资源+LICENSE/2合同，扩展含9个公开页面资源+LICENSE/4合同，manifest均另计，总dist≤256KiB。GET /demo重定向另算一路。因此源码索引增加3个静态路径，不代表新增硬件动作。历史56c固定旧Web fe32507，新三路径实际404，原记录保留。96a已导入Web `f90ef8d6143acd55c059b94ecf961ec65a1bb646`：10项manifest.files（LICENSE+9公开资源）加manifest共208132字节、4合同，manifest SHA256 `9f9c039abd50c65bf8ebc2e2a74954092e7cd0fff0871021666028adc9a2519d`；三路径在96a实际返回200并与固定dist逐字节一致。合法基础bundle仍可恢复且新三路径404；新dist导入与实际安装是两步；本次已按第1节单独推广。详细边界见[Web工作台](web-debugger.zh-CN.md)。
 
 所有路径先经过 loopback Host/同源 Origin，返回 no-store、nosniff；未开放 CORS、公网鉴权或云控端点。下列错误引用同名分组，详见文末。
 
@@ -961,7 +983,7 @@ Web宿主准备源码固定 `56c4aef153c560c68845e89ebdaa15bc1323eeb2`，保持�
 
 ### GET /v2/patterns
 
-**版本：** 仅开发f8bb267；日常1d89不存在，未安装。
+**版本：** 历史f8bb267已实现、1d89无；96a已整合，实际部署看第1节。
 
 **输入：** none。Query：none or exactly format=snapshot。
 
@@ -979,7 +1001,7 @@ Web宿主准备源码固定 `56c4aef153c560c68845e89ebdaa15bc1323eeb2`，保持�
 
 ### GET /v2/patterns/{id}
 
-**版本：** 仅开发f8bb267；日常1d89不存在，未安装。
+**版本：** 历史f8bb267已实现、1d89无；96a已整合，实际部署看第1节。
 
 **输入：** none。Query：none or exactly format=snapshot; IDs ASCII1–64。
 
@@ -997,7 +1019,7 @@ Web宿主准备源码固定 `56c4aef153c560c68845e89ebdaa15bc1323eeb2`，保持�
 
 ### POST /v2/patterns/import
 
-**版本：** 仅开发f8bb267；日常1d89不存在，未安装。
+**版本：** 历史f8bb267已实现、1d89无；96a已整合，实际部署看第1节。
 
 **输入：** Full verified canonical-compatible v2 frozen Snapshot; no authoring body。Query：none including empty ?。 上限 1048576B。
 
@@ -1015,7 +1037,7 @@ Web宿主准备源码固定 `56c4aef153c560c68845e89ebdaa15bc1323eeb2`，保持�
 
 ### POST /v2/patterns/preview
 
-**版本：** 仅开发f8bb267；日常1d89不存在，未安装。
+**版本：** 历史f8bb267已实现、1d89无；96a已整合，实际部署看第1节。
 
 **输入：** {id,title,source:{kind:"light_action",contract,action}}; no serial/policy/ticket/expected_revision/program。Query：none including empty ?。 上限 1048576B。
 
@@ -1033,7 +1055,7 @@ Web宿主准备源码固定 `56c4aef153c560c68845e89ebdaa15bc1323eeb2`，保持�
 
 ### POST /v2/patterns
 
-**版本：** 仅开发f8bb267；日常1d89不存在，未安装。
+**版本：** 历史f8bb267已实现、1d89无；96a已整合，实际部署看第1节。
 
 **输入：** Same author source + expected_revision matching full freshly built candidate; create-only。Query：none including empty ?。 上限 1048576B。
 
@@ -1053,7 +1075,7 @@ Web宿主准备源码固定 `56c4aef153c560c68845e89ebdaa15bc1323eeb2`，保持�
 
 ### POST /v2/patterns/preview-ref
 
-**版本：** 仅开发f8bb267；日常1d89不存在，未安装。
+**版本：** 历史f8bb267已实现、1d89无；96a已整合，实际部署看第1节。
 
 **输入：** {pattern_ref,serial?}。Query：none including empty ?。 上限 4096B。
 
@@ -1071,7 +1093,7 @@ Web宿主准备源码固定 `56c4aef153c560c68845e89ebdaa15bc1323eeb2`，保持�
 
 ### POST /v2/devices/{serial}/pattern-jobs
 
-**版本：** 仅开发f8bb267；日常1d89不存在，未安装。
+**版本：** 历史f8bb267已实现、1d89无；96a已整合，实际部署看第1节。
 
 **输入：** {pattern_ref,policy,request_id,expected_daemon_instance_id}。Query：none including empty ?。 上限 4096B。
 
@@ -1091,7 +1113,7 @@ Web宿主准备源码固定 `56c4aef153c560c68845e89ebdaa15bc1323eeb2`，保持�
 
 ### GET /v2/devices/{serial}/pattern-requests/{request_id}
 
-**版本：** 仅开发f8bb267；日常1d89不存在，未安装。
+**版本：** 历史f8bb267已实现、1d89无；96a已整合，实际部署看第1节。
 
 **输入：** none。Query：exactly expected_daemon_instance_id,record_contract,pattern_id,revision, once each nonempty。
 
@@ -1111,7 +1133,7 @@ Web宿主准备源码固定 `56c4aef153c560c68845e89ebdaa15bc1323eeb2`，保持�
 
 ### POST /v2/devices/{serial}/pattern-requests/{request_id}/cancel
 
-**版本：** 仅开发f8bb267；日常1d89不存在，未安装。
+**版本：** 历史f8bb267已实现、1d89无；96a已整合，实际部署看第1节。
 
 **输入：** {pattern_ref,expected_daemon_instance_id,confirmed_job_id?}。Query：none including empty ?。 上限 4096B。
 
@@ -1255,7 +1277,7 @@ Web宿主准备源码固定 `56c4aef153c560c68845e89ebdaa15bc1323eeb2`，保持�
 
 ### GET /demo/patterns.html
 
-**版本：** 日常1d89没有此路径；host源码56c4aef已支持，尚未安装。单独升级host时仍嵌入旧bundle，此资源404。
+**版本：** 日常1d89无此路径；历史host56c/旧fe32507 bundle返回404；当前96a/f90扩展bundle已嵌入并返回200，已工作区安装96a；原1d89备份保留。
 
 **输入：** 无body/query（包括空?），只GET。
 
@@ -1271,7 +1293,7 @@ Web宿主准备源码固定 `56c4aef153c560c68845e89ebdaa15bc1323eeb2`，保持�
 
 ### GET /demo/patterns.js
 
-**版本：** 日常1d89没有此路径；host源码56c4aef已支持，尚未安装。单独升级host时仍嵌入旧bundle，此资源404。
+**版本：** 日常1d89无此路径；历史host56c/旧fe32507 bundle返回404；当前96a/f90扩展bundle已嵌入并返回200，已工作区安装96a；原1d89备份保留。
 
 **输入：** 无body/query（包括空?），只GET。
 
@@ -1287,7 +1309,7 @@ Web宿主准备源码固定 `56c4aef153c560c68845e89ebdaa15bc1323eeb2`，保持�
 
 ### GET /demo/patterns.css
 
-**版本：** 日常1d89没有此路径；host源码56c4aef已支持，尚未安装。单独升级host时仍嵌入旧bundle，此资源404。
+**版本：** 日常1d89无此路径；历史host56c/旧fe32507 bundle返回404；当前96a/f90扩展bundle已嵌入并返回200，已工作区安装96a；原1d89备份保留。
 
 **输入：** 无body/query（包括空?），只GET。
 
@@ -1305,7 +1327,7 @@ Web宿主准备源码固定 `56c4aef153c560c68845e89ebdaa15bc1323eeb2`，保持�
 
 相对日常1d89，P6 f8bb267与Web host56c4aef组合源码新增12个规范method/path：P3的5个作者/存储操作与P6的4个固定引用预览/执行/查停操作；另有3个条件Web资源。总库存44个规范操作（含3个条件Web资源）；OpenAPI 为避免静态路径掩盖普通ID GET另列4个别名，共48个operation/43个path。这不是45套独立能力。
 
-server 默认独立懒选 v2 库，Go handler 仍可不配库。纯作者preview零Store；引用preview需要Resolve来源；submit只在新key探库；query/cancel零Store/config。默认路径、flag/env、创建边界见第12节。P4/P5/P6已完成源码接线，未安装到日常daemon；新v2客户端能力仍按独立版本判断；CLI执行候选4e、作者eee和MCP16见第13节，均不等于日常已安装。
+server 默认独立懒选 v2 库，Go handler 仍可不配库。纯作者preview零Store；引用preview需要Resolve来源；submit只在新key探库；query/cancel零Store/config。默认路径、flag/env、创建边界见第12节。P4/P5/P6及客户端已整合96a；历史原片和当前部署分别判断；CLI4e、作者eee和MCP16来源见第13节，当前96a安装状态只按第1节，不把原片软件测试冒作新实机。
 
 保存重新构造来源候选并核对expected_revision，之后一次create-only Import；不匹配409且Store零调用。unknown完整合法记录可读/导出但不能新导入或执行；库含unknown使写操作read_only，已知单条仍可验证执行。publication uncertain只读核对原ID/完整记录，不自动重发。新submit失败不得替换旧活动任务，已接受原回执独立于后续库状态。
 
@@ -1392,7 +1414,7 @@ server 默认独立懒选 v2 库，Go handler 仍可不配库。纯作者preview
 - GET state is cached and may be stale while frame runs; latest sampled_at is evidence. Desired target, successful Job, readback and optical capture are different facts.
 - OpenAPI覆盖本册44个规范操作（3个静态资源有bundle条件）与4个GET别名；JSONSchema不能证明原始词法、来源SHA或实际设备效果。
 
-本册依据固定源码、隔离软件测试、实际纯编译/Recorder样例与结构schema校验；未操作日常daemon、USB、摄像头或安装。完整结构化库存见 [low-http-inventory.json](api-http-inventory.json)，固定请求例子见 [low-http-examples.json](api-low-examples.json)。本稿不替代完整 SDK 签名；legacy CLI/SDK 可继续参考 [设备backend说明](../internal/devicebackend/README.md) 与 [SDK设备命令](https://github.com/b1ug/blink1-go/blob/b3f2586cc73073a7a0432889ea14a18c13247f46/device_cmd.go)。
+本文档校验依据固定源码、隔离软件测试、实际纯编译/Recorder样例与结构schema校验，校验过程未操作daemon、USB或摄像头；引用的96a实机与推广记录由独立窗口完成，第1节分别列明。完整结构化库存见 [low-http-inventory.json](api-http-inventory.json)，固定请求例子见 [low-http-examples.json](api-low-examples.json)。本稿不替代完整 SDK 签名；legacy CLI/SDK 可继续参考 [设备backend说明](../internal/devicebackend/README.md) 与 [SDK设备命令](https://github.com/b1ug/blink1-go/blob/b3f2586cc73073a7a0432889ea14a18c13247f46/device_cmd.go)。
 
 
 ## 15. 设计评估与下一步
@@ -1401,7 +1423,7 @@ server 默认独立懒选 v2 库，Go handler 仍可不配库。纯作者preview
 
 需要继续完善的地方也很明确：
 
-1. P4来源身份准入、P5验证resolver、P6 HTTP已完成；MCP四个新工具与CLI七命令均有独立软件候选；继续Web、CLI list/import/export及安装后的验证。保存成功、已接受任务和实体效果仍分别判断。
+1. P4来源身份准入、P5验证resolver、P6 HTTP已完成；MCP16、CLI七命令与高级图案书Web已整合96a，三入口已有本机MK2有限验证；继续CLI list/import/export、USB重试诊断、参数与平台/代际验证。保存成功、已接受任务和实体效果仍分别判断。
 2. 保持艺术动作可区分：blink是亮灭，breathe是对称起伏，pulse是attack/decay/rest，alternate是换位，rainbow是色相循环，orbit是两点相位/明暗流动。
 3. 评审高级入口与低层入口的策略差异、pulse名义周期多出的30ms、hold的最后输出语义。当前文档如实写差异，未来只能通过明确新版本调整。
 4. 新命名、组合/序列、用户palette、自动恢复和同步属于后续能力，不能让AI猜一个看似自然的词就执行。
@@ -1412,7 +1434,7 @@ Web/HID直连、Homebrew、Codex hook、Starlark和正式网站按规划继续�
 ## 16. 机器可读资料、验证与版本
 
 - [OpenAPI完整快照](openapi.json)：HTTP路径、请求和响应schema；条件关系、SHA/词法等须同时遵守说明，不能只靠JSON Schema判断。
-- [实际MCP工具schema](mcp-tools.schema.json)：开发16工具的输入/输出与注释，另保留日常12快照。
+- [实际MCP工具schema](mcp-tools.schema.json)：开发16工具的输入/输出与注释，另保留历史1d89的12工具快照，下载旧名不变。
 - [HTTP操作目录](api-http-inventory.json)：逐操作的版本、状态、输入输出和源码依据。
 - [JSON示例](examples/api/)：明确区分作者文件、低层Program、Frame和颜色输入。
 - [Agent指南](agent-guide.zh-CN.md)及[项目Skill](../skills/blink1-control/SKILL.md)：使用入口；旧章节的历史状态以本手册和实际部署清单为准。

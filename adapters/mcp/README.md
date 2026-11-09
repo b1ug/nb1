@@ -25,6 +25,8 @@ GOWORK=off go build -o nb1-mcp .
 
 ## 工具
 
+当前工作区96a适配器实际stdio提供16个工具：下表12个兼容工具加文末4个实验Pattern工具。旧1d89的12工具文件保留为历史快照；安装二进制不注册宿主，实际会话先tools/list。源码与本机有限资格见[完整API手册](../../docs/api-reference.zh-CN.md)。
+
 | 工具 | 输入与结果 |
 | --- | --- |
 | `list_devices` | 原 `{}` 返回设备数组。可选 `prepare_request:true` 额外读取实例信息，在输出外层加入 `request_ticket`；仅准备时 `data` 仍是设备数组。可选 `include_capabilities:true` 才查询软件能力目录，此时 `data` 为 `{devices,capabilities}`；两选项相互独立。准备不会创建任务或预留回执。 |
@@ -344,7 +346,7 @@ GOWORK=off go test -run '^TestLiveEffectsOptIn$' -v
 
 ## 实验 v2 Pattern：保留高级动作来源
 
-这四个新工具与原 12 个工具并存。旧 `list_patterns` / `get_pattern` / `run_program.pattern_ref` 继续使用 v1；这里的引用必须明确 `record_contract:"nb1-pattern-record/experimental-v2"`，不接受省略版本、latest 或隐式替换 revision。v2 图案的创建、列出和读取目前通过相应 HTTP/CLI 作者接口完成；这片 MCP 不扩充原 v1 读取 schema，也不提供保存工具。
+这四个新工具与原 12 个工具并存。旧 `list_patterns` / `get_pattern` / `run_program.pattern_ref` 继续使用 v1；这里的引用必须明确 `record_contract:"nb1-pattern-record/experimental-v2"`，不接受省略版本、latest 或隐式替换 revision。v2图案列表与冻结快照导入导出目前使用HTTP；CLI提供get/preview-draft/save/preview/run/request/cancel七命令，没有v2 list/import/export。作者创建/读取可用HTTP或对应CLI；这片 MCP 不扩充原 v1 读取 schema，也不提供保存工具。
 
 ```json
 {

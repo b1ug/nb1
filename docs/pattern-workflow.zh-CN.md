@@ -1,6 +1,6 @@
 # Pattern：从预览到保存、复用
 
-本页使用`control patterns`命令和新MCP候选的固定引用能力。先确认`nb1 control patterns --help`、实际daemon版本和所选设备。当前工作区安装f879为十一MCP工具，临时daemon/Web为6acc；本候选十二工具尚未安装，不能把下文的新MCP字段直接发送给旧客户端。
+本页只说明兼容v1的`control patterns`与MCP固定引用流程；不是高级Pattern v2作者格式。历史基线1d89有12工具，整合候选96a有16；旧f879十一工具与6acc临时daemon属于历史，不再作为当前部署说明。先确认实际CLI帮助、会话tools/list和daemon版本。高级v2的source/recipe保留、CLI七命令及新图案书见[分版CLI合同](patterns-cli.md)和[完整API手册](api-reference.zh-CN.md)，不把v2交给旧patterns导入。
 
 所有Pattern库命令只走daemon，拒绝`--mode direct`。库位置由daemon的`--pattern-dir`/`NB1_PATTERN_DIR`决定；客户端只显示返回路径，不据此打开文件或改用另一份库。读取不存在的库为空，不创建目录；导入才允许创建。
 

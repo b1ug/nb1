@@ -23,6 +23,8 @@ run 缺票据时仅 Prepare 一次，已有完整票据时不 Prepare；执行�
 
 输出包含 pattern_ref、request_ticket、accepted、outcome_unknown、daemon_instance_id、replayed 和 job。job 为核心 Envelope `{pattern_ref,execution_digest,job_kind,job}`；job_kind=program/frame，内层保留原 Job/FrameJob 形状。accepted 说明原任务已被确认接受，不表示灯光完成。后续查询/取消输出也用 accepted 表示原任务已有可信回执；cancel_attempted另外表示是否尝试过取消POST。
 
+CLI `control --timeout`默认30s，Prepare/提交/--wait共享本次命令的context。长任务显式选择足够预算；等待超时后保留原票据，用request继续观察，不自动cancel或重新提交。
+
 --wait 只查原 Pattern receipt，固定原 Ref/serial/实例/request_id，首次可信结果后固定Job ID和摘要；每次比较完整冻结执行、创建/启动时间、进度与生命周期。timeout不cancel、不重新提交，不用历史或裸Job猜结果；已验证terminal先结束等待，随后context结束不把已知终态改成unknown。任何查询/完整性错误立即保留原票据和最后可信快照，不由随后好结果掩盖。run/request等待到failed/cancelled可返回非零，但可信终态仍是已知结果，outcome_unknown=false。
 
 取消先 GET 原回执并验证可选已知ID/摘要，terminal/cancelling零POST；其它状态最多一次带confirmed_job_id的POST。取消202可仍cancelling；native写入与清理要由worker完成，终态hold再取消不关灯。取消响应丢失或不一致时保留before快照和cancel_attempted；本方法不再自动GET来抹掉错误。用户可以之后明确request原票据；--wait只在此前操作已成功验证时继续原回执读取。

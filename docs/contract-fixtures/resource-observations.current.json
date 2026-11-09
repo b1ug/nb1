@@ -1,0 +1,86 @@
+{
+  "manifest_sha256": "9f9c039abd50c65bf8ebc2e2a74954092e7cd0fff0871021666028adc9a2519d",
+  "observations": [
+    {
+      "asset": "patterns.html",
+      "body_sha256": "52b52225e94ac9f7e2f8092ecd75553b9dd9dbae1f541c429e0de91ae8857e88",
+      "bytes": 9683,
+      "content_type": "text/html; charset=utf-8",
+      "headers": {
+        "Cache-Control": [
+          "no-store"
+        ],
+        "Content-Security-Policy": [
+          "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'"
+        ],
+        "Content-Type": [
+          "text/html; charset=utf-8"
+        ],
+        "Referrer-Policy": [
+          "no-referrer"
+        ],
+        "X-Content-Type-Options": [
+          "nosniff"
+        ]
+      },
+      "method": "GET",
+      "path": "/demo/patterns.html",
+      "status": 200
+    },
+    {
+      "asset": "patterns.js",
+      "body_sha256": "a39e98fc83d9b98d45deb77ab4646b6c225f4098986fdc80c57d28e8abaf38b3",
+      "bytes": 55787,
+      "content_type": "text/javascript; charset=utf-8",
+      "headers": {
+        "Cache-Control": [
+          "no-store"
+        ],
+        "Content-Security-Policy": [
+          "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'"
+        ],
+        "Content-Type": [
+          "text/javascript; charset=utf-8"
+        ],
+        "Referrer-Policy": [
+          "no-referrer"
+        ],
+        "X-Content-Type-Options": [
+          "nosniff"
+        ]
+      },
+      "method": "GET",
+      "path": "/demo/patterns.js",
+      "status": 200
+    },
+    {
+      "asset": "patterns.css",
+      "body_sha256": "abdcb5027f16aa4ae7bc19c797750a47bfd5fba55d9a759bdc8a04e5f4224562",
+      "bytes": 7715,
+      "content_type": "text/css; charset=utf-8",
+      "headers": {
+        "Cache-Control": [
+          "no-store"
+        ],
+        "Content-Security-Policy": [
+          "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'"
+        ],
+        "Content-Type": [
+          "text/css; charset=utf-8"
+        ],
+        "Referrer-Policy": [
+          "no-referrer"
+        ],
+        "X-Content-Type-Options": [
+          "nosniff"
+        ]
+      },
+      "method": "GET",
+      "path": "/demo/patterns.css",
+      "status": 200
+    }
+  ],
+  "runtime_source": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
+  "scope": "source-equivalent runtime96a, direct Recorder, no service/Store/listener/device; documentation-only changes do not rebuild native qualification",
+  "web_source": "f90ef8d6143acd55c059b94ecf961ec65a1bb646"
+}

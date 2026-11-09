@@ -96,6 +96,13 @@ for path,item in document['paths'].items():
         placeholders=set(re.findall(r'{([^}]+)}',path))
         assert placeholders=={p['name'] for p in params if p['in']=='path'},(key,placeholders,params)
 inventory=json.loads((HERE/'route-inventory.json').read_text())
+assert inventory['baselines']['installed']['commit']=='96a1f92a8a2fcf836129797e4c3a82602a4e7ffc'
+assert inventory['baselines']['installed']['readonly_checks']==33
+assert all(row['status']['installed']=='implemented' for row in inventory['routes'])
+public_inventory=json.loads((WORK/'docs/api-http-inventory.json').read_text())
+assert public_inventory['summary']['installed_method_path_count']==44
+assert public_inventory['summary']['daily_method_path_count']==32
+assert all(row['status']['installed']=='implemented' for row in public_inventory['routes'])
 shape=lambda key:re.sub(r'\{[^}]+\}','{}',key)
 expected={r['method']+' '+r['path'] for r in inventory['routes']}
 assert {shape(k) for k in set(operations)-set(aliases)}=={shape(k) for k in expected}
@@ -133,17 +140,38 @@ assert resources['host_source']=='56c4aef153c560c68845e89ebdaa15bc1323eeb2'
 assert len(resources['observations'])==3
 for row in resources['observations']:
     assert row['method']=='GET' and row['path']=='/demo/'+row['asset']
-    asset=WORK/'internal/webui/dist'/row['asset']
-    if row['status']==404:
-        assert not asset.exists() and row['content_type']=='application/json; charset=utf-8'
-        check('conditional legacy resource404 '+row['path'],'Error',row['error'],source='direct actual host Recorder, no service')
-    else:
-        assert row['status']==200 and asset.is_file()
-        assert hashlib.sha256(asset.read_bytes()).hexdigest()==row['body_sha256'] and asset.stat().st_size==row['bytes']
-        assert row['headers']['Referrer-Policy']==['no-referrer'] and len(row['headers']['Content-Security-Policy'])==1
-        results.append(dict(name='conditional extended resource200 '+row['path'],schema='static embedded bytes',accepted=True,expected=True,source='actual Recorder bytes match fixed dist'))
+    assert row['status']==404 and row['content_type']=='application/json; charset=utf-8'
+    check('historical host56c resource404 '+row['path'],'Error',row['error'],source='historical basic-bundle Recorder; not current96a observation')
     op=operations['GET '+row['path']]
     assert op['x-availability']['development']['status']=='conditional_on_embedded_bundle'
+current=json.loads((HERE/'resource-observations.current.json').read_text())
+candidate='96a1f92a8a2fcf836129797e4c3a82602a4e7ffc'
+assert current['runtime_source']==candidate
+manifest_path=WORK/'internal/webui/dist/manifest.json'
+manifest=json.loads(manifest_path.read_text())
+assert current['web_source']==manifest['source']['commit']=='f90ef8d6143acd55c059b94ecf961ec65a1bb646'
+assert current['manifest_sha256']==hashlib.sha256(manifest_path.read_bytes()).hexdigest()
+assert len(current['observations'])==3 and len(manifest['files'])==10
+assert sum(f['bytes'] for f in manifest['files'])+manifest_path.stat().st_size==208132
+for row in current['observations']:
+    asset=WORK/'internal/webui/dist'/row['asset']
+    assert row['status']==200 and row['method']=='GET' and row['path']=='/demo/'+row['asset']
+    assert hashlib.sha256(asset.read_bytes()).hexdigest()==row['body_sha256'] and asset.stat().st_size==row['bytes']
+    assert row['headers']['Referrer-Policy']==['no-referrer'] and len(row['headers']['Content-Security-Policy'])==1
+    assert operations['GET '+row['path']]['x-availability']['integrated_candidate']['source_commit']==candidate
+    results.append(dict(name='current96a extended resource200 '+row['path'],schema='static embedded bytes',accepted=True,expected=True,source='actual no-Service Recorder matches pinned f90 dist; historical56c preserved'))
+lexemes=json.loads((HERE/'numeric-lexeme-observations.json').read_text())
+assert lexemes['runtime_source']==candidate and len(lexemes['observations'])==8
+accepted={'legacy-program-negative-zero','legacy-effect-negative-zero','raw-frame-zero-fade'}
+for row in lexemes['observations']:
+    assert row['status']==(200 if row['name'] in accepted else 400)
+    assert isinstance(row['raw_request'],str) and json.loads(row['raw_request'])
+    if row['status']==400:
+        assert row['error_code'] and row['error_message_nonempty'] is True and 'response' not in row
+    results.append(dict(name='numeric codec contrast '+row['name'],schema='actual raw HTTP codec, not mathematical JSON Schema',accepted=row['status']==200,expected=row['name'] in accepted,source=lexemes['scope']))
+assert 'numeric_lexemes' in document['x-runtime-validation']
+for name in ('StepRequest','ProgramRequest','SteadyEffect','PulseEffect','FrameTargetRequest','FrameRequest','FrameProgramRequest'):
+    assert '-0 becomes0' in schemas[name]['x-integer-request-codec']
 report={'status':'PASS_OPENAPI_DOCUMENTATION_CHECK','openapi':document['openapi'],'jsonschema':importlib.metadata.version('jsonschema'),
         'paths':len(document['paths']),'operations':len(operations),'canonical_operations':len(expected),'id_alias_operations':aliases,
         'schemas':len(schemas),'local_refs_checked':len(refs),'examples_checked':len(results),'checks':results,

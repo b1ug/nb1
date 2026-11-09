@@ -37,7 +37,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           repository: b1ug/blink1-go
-          ref: 6847b168438ed7ffba44345f130c0a6cd199de88
+          ref: 0336a1a2aa92d73c007d2f689d4cc1ab6ea3d92c
           path: sdk
           persist-credentials: false
       - uses: actions/checkout@v7
@@ -81,7 +81,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           repository: b1ug/blink1-go
-          ref: 6847b168438ed7ffba44345f130c0a6cd199de88
+          ref: 0336a1a2aa92d73c007d2f689d4cc1ab6ea3d92c
           path: sdk
           persist-credentials: false
       - uses: actions/checkout@v7
@@ -110,7 +110,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           repository: b1ug/blink1-go
-          ref: 6847b168438ed7ffba44345f130c0a6cd199de88
+          ref: 0336a1a2aa92d73c007d2f689d4cc1ab6ea3d92c
           path: sdk
           persist-credentials: false
       - uses: actions/checkout@v7
@@ -154,7 +154,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           repository: b1ug/blink1-go
-          ref: 6847b168438ed7ffba44345f130c0a6cd199de88
+          ref: 0336a1a2aa92d73c007d2f689d4cc1ab6ea3d92c
           path: sdk
           persist-credentials: false
       - uses: actions/checkout@v7
@@ -206,3 +206,79 @@ jobs:
           go build ./...
           go test -count=1 -timeout=3m ./...
           go vet ./...
+
+  standalone-modules:
+    name: Standalone modules / Go 1.27 and MCP Go 1.25 floor
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      GOWORK: "off"
+      CGO_ENABLED: "1"
+      GOTOOLCHAIN: local
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          path: cli
+          persist-credentials: false
+      - uses: actions/checkout@v7
+        with:
+          repository: b1ug/blink1-go
+          ref: 0336a1a2aa92d73c007d2f689d4cc1ab6ea3d92c
+          path: sdk
+          persist-credentials: false
+      - uses: actions/setup-go@v7
+        with:
+          go-version: "1.27.x"
+          cache: false
+      - name: Verify standalone module graph without local replacements
+        run: |
+          set -euo pipefail
+          test "$(go env GOWORK)" = off
+          go version
+          go env GOOS GOARCH CGO_ENABLED GOWORK GOTOOLCHAIN
+          python3 - <<'PY'
+          import json
+          import subprocess
+
+          sdk = "github.com/b1ug/blink1-go"
+          gid = "github.com/b1ug/gid"
+          sdk_version = "v0.0.2-0.20261108210614-0336a1a2aa92"
+          gid_version = "v0.0.3-0.20261108194932-7d9978debbdf"
+          for directory, dependencies in [
+              ("cli", {sdk: sdk_version, gid: gid_version}),
+              ("sdk", {gid: gid_version}),
+          ]:
+              for module, version in dependencies.items():
+                  entry = json.loads(subprocess.check_output(
+                      ["go", "list", "-mod=readonly", "-m", "-json", module],
+                      cwd=directory, text=True,
+                  ))
+                  assert entry.get("Path") == module, entry
+                  assert entry.get("Version") == version, entry
+                  assert "Replace" not in entry and not entry.get("Main", False), entry
+                  print(f"{directory}: {module}@{version}; no Replace or Main")
+          PY
+      - name: Build, race tests and vet standalone CLI
+        working-directory: cli
+        run: |
+          go build -mod=readonly ./...
+          go test -mod=readonly -race -count=1 -timeout=3m ./...
+          go vet -mod=readonly ./...
+      - name: Build, race tests and vet standalone SDK
+        working-directory: sdk
+        run: |
+          go build -mod=readonly ./...
+          go test -mod=readonly -race -count=1 -timeout=3m ./...
+          go vet -mod=readonly ./...
+      - uses: actions/setup-go@v7
+        with:
+          go-version: "1.25.0"
+          cache: false
+      - name: Build, ordinary tests and vet independent MCP Go 1.25 floor
+        working-directory: cli/adapters/mcp
+        run: |
+          test "$(go env GOVERSION)" = go1.25.0
+          test "$(go env GOWORK)" = off
+          go build -mod=readonly ./...
+          go test -mod=readonly -count=1 -timeout=3m ./...
+          go vet -mod=readonly ./...

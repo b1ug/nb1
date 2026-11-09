@@ -6,10 +6,11 @@
 
 ## 1. 构建与启动
 
-以下在 `nb1/` 仓库目录执行。现有工作区的根 `go.work` 会选择本地 SDK 与 GID 修复版：
+以下在 `nb1/` 仓库目录执行。本候选的 `go.mod` 已固定 SDK `v0.0.2-0.20261108210614-0336a1a2aa92` 与 GID `v0.0.3-0.20261108194932-7d9978debbdf`，单独拉取仓库也会使用这些修复。它们是已推送提交对应的开发伪版本，没有创建正式发布。开发工作区仍可覆盖依赖；要验证没有本地覆盖，显式关闭工作区：
 
 ```sh
-go build -o ../bin/nb1-runtime .
+GOWORK=off go list -m github.com/b1ug/blink1-go github.com/b1ug/gid
+GOWORK=off go build -mod=readonly -o ../bin/nb1-runtime .
 ../bin/nb1-runtime control --mode direct devices
 ../bin/nb1-runtime server --devices 20005601 --listen 127.0.0.1:8931
 ```

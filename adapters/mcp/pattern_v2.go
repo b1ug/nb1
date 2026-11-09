@@ -294,6 +294,11 @@ func (d *daemon) patternV2HTTP(ctx context.Context, method, path string, input a
 		return bad(err, response.StatusCode)
 	}
 	if response.StatusCode < 200 || response.StatusCode >= 300 {
+		for _, key := range []string{"Location", "X-NB1-Replayed", "X-NB1-Daemon-Instance-ID"} {
+			if len(response.Header.Values(key)) != 0 {
+				return bad(errors.New("Pattern error response contains success metadata"), response.StatusCode)
+			}
+		}
 		if err := validateLightErrorResponse(data); err != nil {
 			return bad(err, response.StatusCode)
 		}

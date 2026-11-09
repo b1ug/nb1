@@ -897,3 +897,29 @@ func TestPatternV2RunErrorClassificationKeepsOriginalOutcome(t *testing.T) {
 		})
 	}
 }
+
+func TestPatternV2ErrorRejectsContradictorySuccessMetadata(t *testing.T) {
+	for _, key := range []string{"Location", "X-NB1-Replayed", "X-NB1-Daemon-Instance-ID"} {
+		for _, value := range []string{"", "unexpected"} {
+			t.Run(key+"/"+value, func(t *testing.T) {
+				var calls atomic.Int32
+				srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					calls.Add(1)
+					w.Header().Set("Content-Type", "application/json")
+					w.Header().Set(key, value)
+					w.WriteHeader(409)
+					fmt.Fprint(w, `{"error":{"code":"busy","message":"admission rejected"}}`)
+				}))
+				defer srv.Close()
+				session := connect(t, srv.URL)
+				args := patternV2TestArgs()
+				args["policy"] = "reject"
+				res, out := call(t, session, "run_pattern", args)
+				if !res.IsError || out.Error == nil || out.Error.Code != "invalid_daemon_response" || !out.Error.OutcomeUnknown || out.Data != nil || calls.Load() != 1 {
+					t.Fatal(out, calls.Load())
+				}
+				assertTicket(t, out, requestTicket{testRequestID, testInstanceID})
+			})
+		}
+	}
+}

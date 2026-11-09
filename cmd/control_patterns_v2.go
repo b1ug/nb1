@@ -23,9 +23,21 @@ type patternSaveOutputV2 struct {
 
 func newControlPatternsV2Command(options *controlFlags) *cobra.Command {
 	parent := &cobra.Command{
-		Use: "patterns-v2", Short: "Read, preview and save experimental high-level Pattern records",
-		Long: "Use the daemon's independent experimental v2 library. Source actions and frozen execution stay together. These authoring commands never play a Pattern, prepare a ticket or open USB. Existing patterns commands keep their v1 format.",
+		Use: "patterns-v2", Short: "Inspect, author and run experimental high-level Pattern records",
+		Long: "Use the daemon's independent experimental v2 library. Source actions and frozen execution stay together. List/get and authoring preview/save never play a Pattern, prepare a ticket or open USB. Execution commands use fixed references and original receipts. Existing patterns commands keep their v1 format.",
 	}
+	parent.AddCommand(&cobra.Command{Use: "list", Args: cobra.NoArgs, Short: "List advanced Pattern summaries without previewing or playing", RunE: func(cmd *cobra.Command, _ []string) error {
+		client, ctx, done, err := options.client(cmd.Context())
+		if err != nil {
+			return err
+		}
+		defer done()
+		value, err := client.ListPatternsV2(ctx)
+		if err != nil {
+			return err
+		}
+		return printControlJSON(cmd.OutOrStdout(), value)
+	}})
 	parent.AddCommand(&cobra.Command{Use: "get ID", Args: cobra.ExactArgs(1), Short: "Read a complete high-level record; unknown recipes stay read-only", RunE: func(cmd *cobra.Command, args []string) error {
 		client, ctx, done, err := options.client(cmd.Context())
 		if err != nil {

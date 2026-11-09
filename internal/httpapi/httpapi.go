@@ -21,6 +21,7 @@ const MaxBodyBytes = control.MaxRequestBytes
 type SubmitRequest struct {
 	Program                  *control.Program `json:"program,omitempty"`
 	Effect                   *control.Effect  `json:"effect,omitempty"`
+	PatternRef               *PatternRef      `json:"pattern_ref,omitempty"`
 	Policy                   string           `json:"policy"`
 	RequestID                *string          `json:"request_id,omitempty"`
 	ExpectedDaemonInstanceID *string          `json:"expected_daemon_instance_id,omitempty"`
@@ -35,9 +36,22 @@ type ErrorResponse struct {
 	Error ErrorBody `json:"error"`
 }
 
-type handler struct{ service control.Service }
+type handler struct {
+	service     control.Service
+	patterns    PatternStore
+	patternPath string
+	patternErr  error
+}
 
-func New(service control.Service) http.Handler { return &handler{service: service} }
+func New(service control.Service, options ...Option) http.Handler {
+	h := &handler{service: service}
+	for _, option := range options {
+		if option != nil {
+			option(h)
+		}
+	}
+	return h
+}
 
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
@@ -50,6 +64,9 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if h.serveLight(w, r) {
+		return
+	}
+	if h.servePatterns(w, r) {
 		return
 	}
 	parts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
@@ -130,6 +147,10 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 			var input SubmitRequest
 			if !decodeJSON(w, r, &input) {
+				return
+			}
+			if input.PatternRef != nil {
+				h.submitPattern(w, r, parts[2], input)
 				return
 			}
 			if (input.Program == nil) == (input.Effect == nil) {

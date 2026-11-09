@@ -26,7 +26,7 @@ import (
 var serverCmd = newServerCommand()
 
 func newServerCommand() *cobra.Command {
-	var listen, lockDir string
+	var listen, lockDir, patternDir string
 	var serials []string
 	var shutdownTimeout time.Duration
 	command := &cobra.Command{
@@ -75,12 +75,13 @@ func newServerCommand() *cobra.Command {
 			}
 			ctx, stop := signal.NotifyContext(cmd.Context(), os.Interrupt, syscall.SIGTERM)
 			defer stop()
-			return serveRuntime(ctx, listener, engine, cmd.OutOrStdout(), shutdownTimeout)
+			return serveRuntime(ctx, listener, engine, cmd.OutOrStdout(), shutdownTimeout, httpapi.WithPatternDirectory(patternDir))
 		},
 	}
 	command.Flags().StringVar(&listen, "listen", "127.0.0.1:8931", "loopback host:port (port 0 chooses a free port)")
 	command.Flags().StringSliceVar(&serials, "devices", nil, "comma-separated device serial numbers")
 	command.Flags().StringVar(&lockDir, "lock-dir", os.Getenv("NB1_LOCK_DIR"), "shared ownership directory (NB1_LOCK_DIR or persistent per-user config)")
+	command.Flags().StringVar(&patternDir, "pattern-dir", os.Getenv("NB1_PATTERN_DIR"), "Pattern library directory (NB1_PATTERN_DIR or current user's config/nb1/patterns; created only by import)")
 	command.Flags().DurationVar(&shutdownTimeout, "shutdown-timeout", 10*time.Second, "maximum time to await graceful cleanup; does not cancel blocked native I/O")
 	command.Flags().Uint32("port", 8931, "compatibility flag for a loopback port; cannot be combined with --listen")
 	command.Flags().String("base", "", "reserved legacy base URL; the v1 API uses the root endpoint")
@@ -133,14 +134,14 @@ func validateLocalAddress(address string) error {
 	return nil
 }
 
-func serveRuntime(parent context.Context, listener net.Listener, engine *control.Engine, output io.Writer, shutdownTimeout time.Duration) error {
+func serveRuntime(parent context.Context, listener net.Listener, engine *control.Engine, output io.Writer, shutdownTimeout time.Duration, options ...httpapi.Option) error {
 	ctx, cancel := context.WithCancel(parent)
 	defer cancel()
 	if err := engine.Start(ctx); err != nil {
 		listener.Close()
 		return err
 	}
-	server := &http.Server{Handler: httpapi.New(engine), ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 10 * time.Second, WriteTimeout: 10 * time.Second, IdleTimeout: 30 * time.Second, MaxHeaderBytes: 16 << 10}
+	server := &http.Server{Handler: httpapi.New(engine, options...), ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 10 * time.Second, WriteTimeout: 10 * time.Second, IdleTimeout: 30 * time.Second, MaxHeaderBytes: 16 << 10}
 	served := make(chan error, 1)
 	go func() { served <- server.Serve(listener) }()
 	var cause error

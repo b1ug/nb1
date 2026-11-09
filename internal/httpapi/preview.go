@@ -15,7 +15,15 @@ func (h *handler) capabilities(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid_request", "capabilities accepts no query parameters or body")
 		return
 	}
-	writeJSON(w, http.StatusOK, control.Capabilities())
+	catalog := control.Capabilities()
+	if h.patterns != nil && h.patternErr == nil {
+		_, err := h.patterns.List()
+		catalog.PatternLibrary = err == nil
+		if catalog.PatternLibrary {
+			catalog.SupportedInputs = append(catalog.SupportedInputs, "pattern_ref")
+		}
+	}
+	writeJSON(w, http.StatusOK, catalog)
 }
 
 func (h *handler) preview(w http.ResponseWriter, r *http.Request) {
@@ -32,6 +40,10 @@ func (h *handler) preview(w http.ResponseWriter, r *http.Request) {
 	}
 	if input.Serial != nil && !control.ValidDeviceSerial(*input.Serial) {
 		writeError(w, http.StatusBadRequest, "invalid_request", "serial must be 1-128 ASCII letters, digits, hyphens or underscores")
+		return
+	}
+	if input.PatternRef != nil {
+		h.previewPattern(w, r, input)
 		return
 	}
 	result, err := control.Preview(input.Program, input.Effect)

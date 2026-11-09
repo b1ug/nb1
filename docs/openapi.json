@@ -592,6 +592,89 @@
           }
         }
       }
+    },
+    "/v1/colors/resolve": {
+      "post": {
+        "operationId": "resolveColor",
+        "summary": "Pure color authoring normalization, no device or Job",
+        "description": "No query (including empty query). Maximum4096 bytes. Strict one-field envelope, no serial/policy/ticket. Fixed opaque CSS names, hex3/6, rgb8 and exact-decimal HSV. Output is raw RGB with no gamma. New route and independently versioned contract; existing v1 execution shapes unchanged. Old daemon404/501 is unsupported, no USB fallback.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ColorResolveRequest"
+              },
+              "examples": {
+                "name": {
+                  "value": {
+                    "color": "green"
+                  }
+                },
+                "hex3": {
+                  "value": {
+                    "color": "#0f8"
+                  }
+                },
+                "rgb8": {
+                  "value": {
+                    "color": {
+                      "space": "rgb8",
+                      "r": 0,
+                      "g": 255,
+                      "b": 136
+                    }
+                  }
+                },
+                "hsv": {
+                  "value": {
+                    "color": {
+                      "space": "hsv",
+                      "h_deg": 120,
+                      "s_pct": 100,
+                      "v_pct": 50
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Canonical raw RGB only, not a Job/preview or hardware proof",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ColorResolution"
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "405": {
+            "$ref": "#/components/responses/405"
+          },
+          "413": {
+            "$ref": "#/components/responses/413"
+          },
+          "415": {
+            "$ref": "#/components/responses/415"
+          },
+          "400": {
+            "description": "invalid_color for color/envelope syntax or semantics; invalid_request for any query. No device or service methods invoked.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1649,6 +1732,197 @@
           }
         },
         "description": "软件能力与编译契约，非设备实物验证。当前输入program/effect、效果steady/pulse、策略replace/queue/reject；保留已知编译契约时未来目录可以追加能力名称或声明新feature。设备启用能力仍来自已有GET /v1/devices快照，不扫描/不试写。"
+      },
+      "ColorRGB8": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "space": {
+            "type": "string",
+            "const": "rgb8"
+          },
+          "r": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 255,
+            "description": "Ordinary nonnegative JSON integer token; decimal/exponent forms and negative zero are rejected."
+          },
+          "g": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 255,
+            "description": "Ordinary nonnegative JSON integer token; decimal/exponent forms and negative zero are rejected."
+          },
+          "b": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 255,
+            "description": "Ordinary nonnegative JSON integer token; decimal/exponent forms and negative zero are rejected."
+          }
+        },
+        "required": [
+          "space",
+          "r",
+          "g",
+          "b"
+        ]
+      },
+      "ColorHSV": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "space": {
+            "type": "string",
+            "const": "hsv"
+          },
+          "h_deg": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 360,
+            "description": "Plain nonnegative decimal with at most six fractional digits; no exponent/negative zero. Exact rational conversion and final half-up RGB8 quantization."
+          },
+          "s_pct": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Plain nonnegative decimal with at most six fractional digits; no exponent/negative zero. Exact rational conversion and final half-up RGB8 quantization."
+          },
+          "v_pct": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Plain nonnegative decimal with at most six fractional digits; no exponent/negative zero. Exact rational conversion and final half-up RGB8 quantization."
+          }
+        },
+        "required": [
+          "space",
+          "h_deg",
+          "s_pct",
+          "v_pct"
+        ]
+      },
+      "ColorInput": {
+        "oneOf": [
+          {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Hex3/hex6 or frozen css-named-2026 opaque name, ASCII case-insensitive after outer ASCII whitespace. Server verifies exact dictionary. No alpha/currentColor/transparent/rgb()/HSL/random."
+          },
+          {
+            "$ref": "#/components/schemas/ColorRGB8"
+          },
+          {
+            "$ref": "#/components/schemas/ColorHSV"
+          }
+        ],
+        "description": "Color authoring only. Does not widen Program/Effect/set color; normalize to canonical_color first. No implicit gamma, calibration or physical sRGB guarantee."
+      },
+      "ColorResolveRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "color": {
+            "$ref": "#/components/schemas/ColorInput"
+          }
+        },
+        "required": [
+          "color"
+        ]
+      },
+      "ResolvedRGB8": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "r": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 255
+          },
+          "g": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 255
+          },
+          "b": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 255
+          }
+        },
+        "required": [
+          "r",
+          "g",
+          "b"
+        ]
+      },
+      "ColorResolution": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "schema_version": {
+            "type": "integer",
+            "const": 1
+          },
+          "color_contract": {
+            "type": "string",
+            "const": "nb1-color-input/v1"
+          },
+          "input_kind": {
+            "type": "string",
+            "enum": [
+              "hex6",
+              "hex3",
+              "name",
+              "rgb8",
+              "hsv"
+            ]
+          },
+          "canonical_color": {
+            "type": "string",
+            "pattern": "^#[0-9a-f]{6}$"
+          },
+          "rgb8": {
+            "$ref": "#/components/schemas/ResolvedRGB8"
+          },
+          "palette": {
+            "type": "string",
+            "const": "css-named-2026"
+          }
+        },
+        "required": [
+          "schema_version",
+          "color_contract",
+          "input_kind",
+          "canonical_color",
+          "rgb8"
+        ],
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "input_kind": {
+                  "const": "name"
+                }
+              },
+              "required": [
+                "input_kind"
+              ]
+            },
+            "then": {
+              "required": [
+                "palette"
+              ]
+            },
+            "else": {
+              "not": {
+                "required": [
+                  "palette"
+                ]
+              }
+            }
+          }
+        ]
       }
     },
     "responses": {

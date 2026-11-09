@@ -97,6 +97,10 @@ Windows的 `install/start/stop/uninstall` 与 `status --config-only` 都在构�
 
 daemon正在占用时，新旧CLI的合作式直控都会报设备占用。默认daemon模式连接失败不会静默回退到USB；需要直控时必须显式选择 `--mode direct`。跨命令的任务查询与取消使用daemon模式；单次直控退出后没有常驻任务存储。
 
+## 颜色归一化新候选
+
+Program/Effect/set仍只收hex6。新 `control color lime` 或 `control color --file examples/runtime/hsv.color.json` 通过daemon解析可读颜色；显式 `control --mode direct color lime` 仅本地纯函数、无USB。旧daemon404/501明确不支持，不自动回退。归一化结果再用于原有preview/execute，不会自动提交。范围、色表/Gamma、固定响应及兼容见 [颜色输入v1](color-input.zh-CN.md)；候选尚未部署。
+
 ## 4. 结构化程序
 
 示例文件分为三类：`*.program.json` 是 `control run` 的程序；`*.effect.json` 是 `control effect` 的高层意图；`*.request.json` 是HTTP信封，必须且仅有 `program/effect` 之一，可带policy与回执二元组。不要把HTTP信封直接交给CLI的run或effect。

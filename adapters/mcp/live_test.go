@@ -36,7 +36,7 @@ func TestLiveDaemonOptIn(t *testing.T) {
 	}
 	defer session.Close()
 	listed, err := session.ListTools(ctx, nil)
-	if err != nil || len(listed.Tools) != 7 {
+	if err != nil || len(listed.Tools) != 8 {
 		t.Fatalf("tool discovery: %v %v", listed, err)
 	}
 	res, state := call(t, session, "get_device_state", map[string]any{"serial": serial})

@@ -54,8 +54,8 @@ func TestSDKAuthoritativePreviewIsReadOnlySinglePost(t *testing.T) {
 	defer srv.Close()
 	session := connect(t, srv.URL)
 	tools, err := session.ListTools(context.Background(), nil)
-	if err != nil || len(tools.Tools) != 7 {
-		t.Fatalf("expected seven tools: %+v %v", tools, err)
+	if err != nil || len(tools.Tools) != 8 {
+		t.Fatalf("expected eight tools: %+v %v", tools, err)
 	}
 	for _, tool := range tools.Tools {
 		if tool.Name == "preview_program" && (tool.Annotations == nil || !tool.Annotations.ReadOnlyHint || !tool.Annotations.IdempotentHint || tool.Annotations.DestructiveHint == nil || *tool.Annotations.DestructiveHint || tool.Annotations.OpenWorldHint == nil || *tool.Annotations.OpenWorldHint) {

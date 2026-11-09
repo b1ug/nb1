@@ -45,7 +45,7 @@ func newControlCommand() *cobra.Command {
 		if options.policy != "replace" && options.policy != "queue" && options.policy != "reject" {
 			return fmt.Errorf("--policy must be replace, queue or reject")
 		}
-		if (cmd.Name() == "preview" || cmd.Name() == "capabilities") && cmd.Flags().Changed("policy") {
+		if (cmd.Name() == "preview" || cmd.Name() == "capabilities" || cmd.Name() == "color") && cmd.Flags().Changed("policy") {
 			return fmt.Errorf("%s is read-only and does not accept --policy", cmd.Name())
 		}
 		requestFlag := cmd.Flags().Changed("request-id")
@@ -69,7 +69,7 @@ func newControlCommand() *cobra.Command {
 		}
 		return nil
 	}
-	command.AddCommand(newControlCapabilitiesCommand(options), newControlPreviewCommand(options))
+	command.AddCommand(newControlCapabilitiesCommand(options), newControlPreviewCommand(options), newControlColorCommand(options))
 	command.AddCommand(&cobra.Command{Use: "prepare", Short: "Prepare an optional daemon request binding without submitting a job", Args: cobra.NoArgs, RunE: func(cmd *cobra.Command, _ []string) error {
 		client, ctx, done, err := options.client(cmd.Context())
 		if err != nil {

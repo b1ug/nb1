@@ -1,6 +1,6 @@
 # blink(1) Agent 使用指南
 
-此文对应已实现的 Program/Effect v1 与七个 MCP 工具。它提供使用方法；设备与软件能力以运行时结果为准。项目内 [skill](../skills/blink1-control/SKILL.md) 不会自动安装或被所有 Agent 自动读取。
+此文对应 Program/Effect v1 与新颜色输入候选；原七个 MCP 工具保持形状，新候选增加只读 resolve_color（总八工具），尚未推广部署。它提供使用方法；设备与软件能力以运行时结果为准。项目内 [skill](../skills/blink1-control/SKILL.md) 不会自动安装或被所有 Agent 自动读取。
 
 ## 入口和抽象
 
@@ -13,6 +13,18 @@
 | Pattern | 命名与复用 | 规划中，不能调用尚不存在的工具 |
 
 当前 color 必须六位 `#RRGGBB`，接受大小写并规范为小写，值是原始 RGB，不隐式 Gamma。不要把旧 SDK 的名字/#rgb/rgb()/hsb() 支持误当成新接口能力。已知的客户端转换必须明确值；例如鲜绿可以选 `#00ff00`。名字表不能混用：旧 SDK green/lime 映射与 CSS 同名值相反。 迁移旧配置时还需核实原入口是否应用 Gamma/亮度：保留输入值、保留实际发送值和保留视觉效果是不同目标。先说明选择，不能重复补偿或承诺未校准硬件的视觉等价。
+
+## 先把可读颜色归一化
+
+当运行时 tools/list 已有 `resolve_color`，可先调用：
+
+```json
+{"color":"lime"}
+```
+
+或 `{"color":{"space":"hsv","h_deg":120,"s_pct":100,"v_pct":50}}`。读取实际响应 `data.canonical_color` 后，用这个值构造原有 Effect/Program；不要把对象直接塞进执行字段。工具通过新 HTTP 路由计算，accepted=false，不创建 Job。精确范围、六位小数、舍入、固定色表及不支持的表达见 [颜色输入 v1](color-input.zh-CN.md)。
+
+旧部署可能仅有七工具，或新路由返回404/501；明确不支持，不转旧 CLI、不猜返回值。新候选CLI纯本地可用 `control --mode direct color lime`；这个显式pure命令不打开USB。命名与HSV归一化不是Gamma校正，输出原始RGB。
 
 ## 从预览到执行
 

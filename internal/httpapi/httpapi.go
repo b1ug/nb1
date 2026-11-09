@@ -65,6 +65,10 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		h.preview(w, r)
 		return
 	}
+	if r.URL.Path == "/v1/colors/resolve" {
+		h.resolveColor(w, r)
+		return
+	}
 	if r.URL.Path == "/v1/instance" {
 		if !method(w, r, http.MethodGet) {
 			return

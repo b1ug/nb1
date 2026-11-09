@@ -1,0 +1,187 @@
+[
+  {
+    "name": "sector_0",
+    "input": "{\"space\":\"hsv\",\"h_deg\":0,\"s_pct\":100,\"v_pct\":100}",
+    "want": "#ff0000"
+  },
+  {
+    "name": "sector_30",
+    "input": "{\"space\":\"hsv\",\"h_deg\":30,\"s_pct\":100,\"v_pct\":100}",
+    "want": "#ff8000"
+  },
+  {
+    "name": "sector_60",
+    "input": "{\"space\":\"hsv\",\"h_deg\":60,\"s_pct\":100,\"v_pct\":100}",
+    "want": "#ffff00"
+  },
+  {
+    "name": "sector_90",
+    "input": "{\"space\":\"hsv\",\"h_deg\":90,\"s_pct\":100,\"v_pct\":100}",
+    "want": "#80ff00"
+  },
+  {
+    "name": "sector_120",
+    "input": "{\"space\":\"hsv\",\"h_deg\":120,\"s_pct\":100,\"v_pct\":100}",
+    "want": "#00ff00"
+  },
+  {
+    "name": "sector_150",
+    "input": "{\"space\":\"hsv\",\"h_deg\":150,\"s_pct\":100,\"v_pct\":100}",
+    "want": "#00ff80"
+  },
+  {
+    "name": "sector_180",
+    "input": "{\"space\":\"hsv\",\"h_deg\":180,\"s_pct\":100,\"v_pct\":100}",
+    "want": "#00ffff"
+  },
+  {
+    "name": "sector_210",
+    "input": "{\"space\":\"hsv\",\"h_deg\":210,\"s_pct\":100,\"v_pct\":100}",
+    "want": "#0080ff"
+  },
+  {
+    "name": "sector_240",
+    "input": "{\"space\":\"hsv\",\"h_deg\":240,\"s_pct\":100,\"v_pct\":100}",
+    "want": "#0000ff"
+  },
+  {
+    "name": "sector_270",
+    "input": "{\"space\":\"hsv\",\"h_deg\":270,\"s_pct\":100,\"v_pct\":100}",
+    "want": "#8000ff"
+  },
+  {
+    "name": "sector_300",
+    "input": "{\"space\":\"hsv\",\"h_deg\":300,\"s_pct\":100,\"v_pct\":100}",
+    "want": "#ff00ff"
+  },
+  {
+    "name": "sector_330",
+    "input": "{\"space\":\"hsv\",\"h_deg\":330,\"s_pct\":100,\"v_pct\":100}",
+    "want": "#ff0080"
+  },
+  {
+    "name": "sector_360",
+    "input": "{\"space\":\"hsv\",\"h_deg\":360,\"s_pct\":100,\"v_pct\":100}",
+    "want": "#ff0000"
+  },
+  {
+    "name": "below_30",
+    "input": "{\"space\":\"hsv\",\"h_deg\":29.999999,\"s_pct\":100,\"v_pct\":100}",
+    "want": "#ff7f00"
+  },
+  {
+    "name": "exact_30",
+    "input": "{\"space\":\"hsv\",\"h_deg\":30.000000,\"s_pct\":100,\"v_pct\":100}",
+    "want": "#ff8000"
+  },
+  {
+    "name": "above_30",
+    "input": "{\"space\":\"hsv\",\"h_deg\":30.000001,\"s_pct\":100,\"v_pct\":100}",
+    "want": "#ff8000"
+  },
+  {
+    "name": "below_60",
+    "input": "{\"space\":\"hsv\",\"h_deg\":59.999999,\"s_pct\":100,\"v_pct\":100}",
+    "want": "#ffff00"
+  },
+  {
+    "name": "above_60",
+    "input": "{\"space\":\"hsv\",\"h_deg\":60.000001,\"s_pct\":100,\"v_pct\":100}",
+    "want": "#ffff00"
+  },
+  {
+    "name": "below_360",
+    "input": "{\"space\":\"hsv\",\"h_deg\":359.999999,\"s_pct\":100,\"v_pct\":100}",
+    "want": "#ff0000"
+  },
+  {
+    "name": "gray_v_0",
+    "input": "{\"space\":\"hsv\",\"h_deg\":271.123456,\"s_pct\":0,\"v_pct\":0}",
+    "want": "#000000"
+  },
+  {
+    "name": "gray_v_0.196078",
+    "input": "{\"space\":\"hsv\",\"h_deg\":271.123456,\"s_pct\":0,\"v_pct\":0.196078}",
+    "want": "#000000"
+  },
+  {
+    "name": "gray_v_0.196079",
+    "input": "{\"space\":\"hsv\",\"h_deg\":271.123456,\"s_pct\":0,\"v_pct\":0.196079}",
+    "want": "#010101"
+  },
+  {
+    "name": "gray_v_10",
+    "input": "{\"space\":\"hsv\",\"h_deg\":271.123456,\"s_pct\":0,\"v_pct\":10}",
+    "want": "#1a1a1a"
+  },
+  {
+    "name": "gray_v_30",
+    "input": "{\"space\":\"hsv\",\"h_deg\":271.123456,\"s_pct\":0,\"v_pct\":30}",
+    "want": "#4d4d4d"
+  },
+  {
+    "name": "gray_v_49.999999",
+    "input": "{\"space\":\"hsv\",\"h_deg\":271.123456,\"s_pct\":0,\"v_pct\":49.999999}",
+    "want": "#7f7f7f"
+  },
+  {
+    "name": "gray_v_50",
+    "input": "{\"space\":\"hsv\",\"h_deg\":271.123456,\"s_pct\":0,\"v_pct\":50}",
+    "want": "#808080"
+  },
+  {
+    "name": "gray_v_50.000001",
+    "input": "{\"space\":\"hsv\",\"h_deg\":271.123456,\"s_pct\":0,\"v_pct\":50.000001}",
+    "want": "#808080"
+  },
+  {
+    "name": "gray_v_70",
+    "input": "{\"space\":\"hsv\",\"h_deg\":271.123456,\"s_pct\":0,\"v_pct\":70}",
+    "want": "#b3b3b3"
+  },
+  {
+    "name": "gray_v_90",
+    "input": "{\"space\":\"hsv\",\"h_deg\":271.123456,\"s_pct\":0,\"v_pct\":90}",
+    "want": "#e6e6e6"
+  },
+  {
+    "name": "gray_v_100",
+    "input": "{\"space\":\"hsv\",\"h_deg\":271.123456,\"s_pct\":0,\"v_pct\":100}",
+    "want": "#ffffff"
+  },
+  {
+    "name": "red_s_49.999999",
+    "input": "{\"space\":\"hsv\",\"h_deg\":0,\"s_pct\":49.999999,\"v_pct\":100}",
+    "want": "#ff8080"
+  },
+  {
+    "name": "red_s_50",
+    "input": "{\"space\":\"hsv\",\"h_deg\":0,\"s_pct\":50,\"v_pct\":100}",
+    "want": "#ff8080"
+  },
+  {
+    "name": "red_s_50.000001",
+    "input": "{\"space\":\"hsv\",\"h_deg\":0,\"s_pct\":50.000001,\"v_pct\":100}",
+    "want": "#ff7f7f"
+  },
+  {
+    "name": "fractional_all",
+    "input": "{\"space\":\"hsv\",\"h_deg\":210.123456,\"s_pct\":33.333333,\"v_pct\":66.666667}",
+    "want": "#718eaa"
+  },
+  {
+    "name": "fractional_red",
+    "input": "{\"space\":\"hsv\",\"h_deg\":0.000001,\"s_pct\":99.999999,\"v_pct\":99.999999}",
+    "want": "#ff0000"
+  },
+  {
+    "name": "black_saturated",
+    "input": "{\"space\":\"hsv\",\"h_deg\":300,\"s_pct\":100,\"v_pct\":0}",
+    "want": "#000000"
+  },
+  {
+    "name": "all_zero",
+    "input": "{\"space\":\"hsv\",\"h_deg\":0,\"s_pct\":0,\"v_pct\":0}",
+    "want": "#000000"
+  }
+]

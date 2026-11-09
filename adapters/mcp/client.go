@@ -75,7 +75,7 @@ func (d *daemon) requestBound(ctx context.Context, method, path, kind string, in
 	return d.requestMode(ctx, method, path, kind, input, binding, false)
 }
 
-// Software preview uses POST only for structured input. It cannot admit a job;
+// Read-only software operations use POST for structured input. They cannot admit a job;
 // transport errors must not inherit the job submission's unknown-outcome warning.
 func (d *daemon) requestSoftware(ctx context.Context, method, path, kind string, input any) output {
 	return d.requestMode(ctx, method, path, kind, input, nil, true)
@@ -116,7 +116,7 @@ func (d *daemon) requestMode(ctx context.Context, method, path, kind string, inp
 	}
 	if response.StatusCode < 200 || response.StatusCode >= 300 {
 		if software && (response.StatusCode == http.StatusNotFound || response.StatusCode == http.StatusNotImplemented) {
-			return errorOutput("unsupported", "daemon does not support the requested software preview or capability route; no job was submitted", response.StatusCode, false)
+			return errorOutput("unsupported", "daemon does not support the requested read-only software route; no job was submitted", response.StatusCode, false)
 		}
 		var problem struct {
 			Error struct {
@@ -132,11 +132,11 @@ func (d *daemon) requestMode(ctx context.Context, method, path, kind string, inp
 	}
 	if software {
 		if response.StatusCode != http.StatusOK {
-			return errorOutput("invalid_daemon_response", "software preview and capabilities require HTTP200", response.StatusCode, false)
+			return errorOutput("invalid_daemon_response", "read-only software responses require HTTP200", response.StatusCode, false)
 		}
 		media, _, err := mime.ParseMediaType(response.Header.Get("Content-Type"))
 		if err != nil || media != "application/json" {
-			return errorOutput("invalid_daemon_response", "software preview and capabilities require application/json", response.StatusCode, false)
+			return errorOutput("invalid_daemon_response", "read-only software responses require application/json", response.StatusCode, false)
 		}
 		value, err := validateSoftwareResponse(data, kind, input)
 		if err != nil {

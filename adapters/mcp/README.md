@@ -30,10 +30,27 @@ GOWORK=off go build -o ../../../bin/nb1-mcp .
 | `set_device_state` | `serial`、`color`，可选 `led`、`fade_ms`、`hold_ms`、`policy`、`dry_run` 及齐全的请求二元组。编译成完成后保留颜色的单步程序，返回 job。 |
 | `run_program` | `serial` 和互斥的 `program` / `effect`，可选 `policy`、`dry_run` 及齐全的请求二元组。原始程序或高层效果均由同一 daemon 设备执行器管理。 |
 | `preview_program` | 互斥的 `program` / `effect`，可选 `serial`。由 daemon 权威编译并返回 `kind:"program_preview"`、`accepted:false`；不创建 Job/回执、不打开 USB。可选设备检查只使用缓存快照，不保证随后能执行。 |
+| `resolve_color` | 新候选只读工具，必填 color：名字/hex3/hex6字符串、rgb8或hsv对象；HTTP归一化为 canonical_color 和 raw RGB，不发现设备或创建Job。 |
 | `get_job` | 原 `{id}`，或互斥的 `{serial,request_id,expected_daemon_instance_id}`。后者只查询原回执，不提交任务；任务历史与回执均有界且不跨 daemon 重启保存。 |
 | `cancel_job` | `id`。请求取消；可能返回 `cancelling`，此时还不能认为硬件已停止。 |
 
 输入仅接受声明的字段。`color` 为原始 `#RRGGBB`，不隐式应用 Gamma；`led` 为0（全部）、1或2。原始 `program` 的 `fade_ms` 在0–600000之间且必须是10的倍数；`hold_ms` 在0–3600000之间。程序有1–1024步，repeat为0或省略时运行一次，最大10000次；每步的淡入、保持及10ms固件更新余量计入24小时名义上限，原生 I/O 仍有额外开销。`on_finish` 默认为 `off`，也可指定 `hold`。能力与实际支持型号以 daemon 结果为准，不据协议模拟声称 mk3 已经实测。
+
+## 可读颜色输入候选
+
+原七工具形状不变；新增 `resolve_color` 后本候选共八工具，尚未推广到现有daemon。运行时先 tools/list；新daemon路由 `POST /v1/colors/resolve`，请求仅 `{"color":...}`，无serial/policy/ticket。
+
+```json
+{"color":"lime"}
+```
+
+```json
+{"color":{"space":"hsv","h_deg":120,"s_pct":100,"v_pct":50}}
+```
+
+成功外层 `kind:"color_resolution"`、`accepted:false`，data包含 schema_version=1、color_contract=nb1-color-input/v1、input_kind、canonical_color、rgb8，名字输入才有 palette=css-named-2026。把实际返回的hex放入原有Effect，再preview/run；原工具的color仍只收hex6。此计算不隐式Gamma、无USB、无回执；超时/损坏响应/5xx不产生未知Job，不自动重试或直控。旧路由404/501明确不支持。
+
+适配器不复制色表/HSV算法；保留原JSON数字形式转发，由daemon严格校验普通整数/最多6位小数等词法。schema只做结构/范围检查，响应校验契约、规范hex/RGB自洽、输入种类和palette规则；不宣称远端来源认证或独立重算名字/HSV。完整语义和兼容限制见 [颜色输入v1](../../docs/color-input.zh-CN.md)。
 
 ## 高层效果
 
@@ -83,7 +100,7 @@ MCP仅校验字段、枚举和基本范围，并将RGB规范为小写；省略�
 
 ## 权威软件预览与能力目录
 
-新增只读、幂等提示的 `preview_program` 与原六工具共计七个固定工具；原有 `dry_run` 语义不变。需要让 daemon 检查完整编译、总时长和结束行为时使用新工具：
+`preview_program` 与原六工具构成原七工具；新增颜色归一化工具后当前候选为八工具。预览仍是只读、幂等提示工具；原有 `dry_run` 语义不变。需要让 daemon 检查完整编译、总时长和结束行为时使用新工具：
 
 ```json
 {

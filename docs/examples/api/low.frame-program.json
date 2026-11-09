@@ -1,0 +1,45 @@
+{
+  "contract": "nb1-frame-program/experimental-v1",
+  "initial": [
+    {
+      "led": 1,
+      "color": "#ff0000"
+    },
+    {
+      "led": 2,
+      "color": "#0000ff"
+    }
+  ],
+  "frames": [
+    {
+      "targets": [
+        {
+          "led": 1,
+          "color": "#0000ff"
+        },
+        {
+          "led": 2,
+          "color": "#ff0000"
+        }
+      ],
+      "fade_ms": 500,
+      "interval_ms": 500
+    },
+    {
+      "targets": [
+        {
+          "led": 1,
+          "color": "#ff0000"
+        },
+        {
+          "led": 2,
+          "color": "#0000ff"
+        }
+      ],
+      "fade_ms": 500,
+      "interval_ms": 500
+    }
+  ],
+  "repeat": 2,
+  "on_finish": "off"
+}

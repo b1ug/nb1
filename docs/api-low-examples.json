@@ -1,0 +1,122 @@
+{
+  "program_preview_from_test": {
+    "program": {
+      "steps": [
+        {
+          "color": "#00A000",
+          "fade_ms": 200,
+          "hold_ms": 30
+        }
+      ]
+    }
+  },
+  "effect_preview_from_test": {
+    "effect": {
+      "kind": "pulse",
+      "color": "#00A000",
+      "cycles": 2,
+      "period_ms": 800
+    }
+  },
+  "raw_set_program": {
+    "program": {
+      "steps": [
+        {
+          "led": 0,
+          "color": "#00a000",
+          "fade_ms": 0,
+          "hold_ms": 0
+        }
+      ],
+      "repeat": 1,
+      "on_finish": "hold"
+    },
+    "policy": "reject",
+    "request_id": "<original prepared request_id>",
+    "expected_daemon_instance_id": "<original prepared daemon_instance_id>"
+  },
+  "frame_preview_from_frozen_P1": {
+    "program": {
+      "contract": "nb1-frame-program/experimental-v1",
+      "initial": [
+        {
+          "led": 1,
+          "color": "#990000"
+        },
+        {
+          "led": 2,
+          "color": "#000099"
+        }
+      ],
+      "frames": [
+        {
+          "targets": [
+            {
+              "led": 1,
+              "color": "#800080"
+            },
+            {
+              "led": 2,
+              "color": "#1a001a"
+            }
+          ],
+          "fade_ms": 750,
+          "interval_ms": 750
+        },
+        {
+          "targets": [
+            {
+              "led": 1,
+              "color": "#000099"
+            },
+            {
+              "led": 2,
+              "color": "#990000"
+            }
+          ],
+          "fade_ms": 750,
+          "interval_ms": 750
+        },
+        {
+          "targets": [
+            {
+              "led": 1,
+              "color": "#1a001a"
+            },
+            {
+              "led": 2,
+              "color": "#800080"
+            }
+          ],
+          "fade_ms": 750,
+          "interval_ms": 750
+        },
+        {
+          "targets": [
+            {
+              "led": 1,
+              "color": "#990000"
+            },
+            {
+              "led": 2,
+              "color": "#000099"
+            }
+          ],
+          "fade_ms": 750,
+          "interval_ms": 750
+        }
+      ],
+      "repeat": 3,
+      "on_finish": "off"
+    }
+  },
+  "color_resolve_from_test": {
+    "color": {
+      "space": "hsv",
+      "h_deg": 120,
+      "s_pct": 100,
+      "v_pct": 50
+    }
+  },
+  "examples_are_data_only": "Ticket placeholders are not runnable, no request sent."
+}

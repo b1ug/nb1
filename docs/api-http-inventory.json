@@ -1,0 +1,1459 @@
+{
+  "schema_version": 1,
+  "kind": "read_only_public_http_low_level_inventory",
+  "date": "2026-11-10",
+  "baselines": {
+    "daily": {
+      "commit": "1d89eae92278f24a68fff1a34e3c1e696a962c3c",
+      "source_worktree": "validation/nb1-web-embed",
+      "installation_evidence": "artifacts/nb1-web-design/final-status.json",
+      "scope": "Source inventory, not a fresh daemon probe"
+    },
+    "development": {
+      "commit": "4d625891cc421c037807e2e6a193174016c05c71",
+      "source_worktree": "validation/nb1-ecosystem-next",
+      "scope": "P1/P2/authoring+P3 storage handlers; not installed; no Pattern v2 execution API"
+    }
+  },
+  "summary": {
+    "daily_method_path_count": 32,
+    "development_method_path_count": 37,
+    "development_added_method_paths": 5,
+    "export_query_variants": "counted within the corresponding GET route",
+    "not_implemented": [
+      "GET /v1/devices/{serial}/state",
+      "POST /v1/devices/{serial}/set",
+      "HTTP device USB open/close/raw report/flash upload endpoints",
+      "Pattern v2 run/query/cancel endpoints",
+      "Generic high sequence/compose/spin API"
+    ]
+  },
+  "low_state_set_mapping": {
+    "state": {
+      "cli": "control state SERIAL",
+      "http": "GET /v1/devices/{serial}",
+      "response": "DeviceState cached snapshot, observed LED1/LED2+sampled_at",
+      "fresh_usb_read": false
+    },
+    "set": {
+      "cli": "control set SERIAL #RRGGBB [--led --fade-ms --hold-ms]",
+      "http": "POST /v1/devices/{serial}/jobs",
+      "program": "{steps:[{led,color,fade_ms,hold_ms}],repeat:1,on_finish:\"hold\"}",
+      "raw_hex_only": true,
+      "separate_set_http_route": false
+    }
+  },
+  "program_schema": {
+    "contract_context": "nb1-program-effect/v1; Program JSON itself has no contract field",
+    "shape": {
+      "steps": "Step[1..1024]",
+      "repeat": "int 1..10000; omitted/0 normalize to1",
+      "on_finish": "off|hold; omitted/empty defaults off"
+    },
+    "step": {
+      "led": "integer0(default)=both,1/2=physical LEDs",
+      "color": "required #RRGGBB, uppercase accepted and normalized lowercase; no names/hex3/rgb8/hsv",
+      "fade_ms": "integer0..600000, multiple10, default0",
+      "hold_ms": "integer0..3600000, default0"
+    },
+    "timing": "sum(fade_ms+hold_ms+10)*repeat <=86400000; native I/O, preflight/finish cleanup add time",
+    "semantics": "Sequential per Step: Set then fade+hold+10 wait; no paired overlap. repeat repeats all steps. Raw RGB, no implicit gamma.",
+    "capabilities": "Preview requires set/program/raw-rgb and hold if requested. Legacy submit validates payload/runtime state/policy but does not universally re-enforce Preview capability list.",
+    "finish": "off or hold only after final step; cancellation/execution errors force off cleanup; active terminal after Stop+Read success, cleanup failure=failed."
+  },
+  "frame_schema": {
+    "contract": "nb1-frame-program/experimental-v1",
+    "shape": {
+      "contract": "required exact FrameContract",
+      "initial": "1..2 FrameTarget, physical led1/2 distinct",
+      "frames": "1..1024 Frame, every targets array has same LED set AND order as initial",
+      "repeat": "HTTP: 1..10000 when present; omitted defaults1; explicit0 rejected; also total executed frames<=1024",
+      "on_finish": "HTTP: off|hold when present; omitted defaults off; explicit empty rejected"
+    },
+    "target": {
+      "led": "1 or2 only, never0",
+      "color": "#RRGGBB only, canonical lowercase after Normalize"
+    },
+    "frame": {
+      "targets": "required; same count/order as initial; each led/color required",
+      "interval_ms": "required integer50..600000",
+      "fade_ms": "required integer0..600000 (explicit0 allowed), multiple10, <=ceil(interval_ms/10)*10"
+    },
+    "budgets": {
+      "max_executed_frames": 1024,
+      "max_stored_and_executed_target_writes": 2050,
+      "max_nominal_duration_ms": 86400000,
+      "max_http_body_bytes": 1048576
+    },
+    "timing": "Initial once; repeat frames only; targets sequential with10ms spacing; shared frame interval, not wait fade per LED; late scheduler does not catch up; tail waits actual last Set return+fade+10; no periodic Read during frame schedule.",
+    "preview_timing": "host-nominal-excludes-native-io; nominal init=count*10; nominal tail=max(0,(lastTargetCount-1)*10+lastFade+10-lastInterval). USB/OS/cleanup add time.",
+    "admission": "FrameService required; cached online profile must advertise set/raw-rgb/mk2-basic; no MK3 physical qualification. Current Frame helper checks these three names; hold appears in preview requirements but helper does not itself add a separate hold check.",
+    "wire_vs_go_defaults": "DecodeFrameProgram rejects explicit repeat:0 and on_finish empty; Go typed NormalizeFrameProgram may fill these zero defaults. Do not copy typed zero-default semantics into HTTP schema.",
+    "public_policy": "raw Frame HTTP and high v2 HTTP require explicit reject + original full ticket; future Pattern core policy design is not this public route."
+  },
+  "effect_schema": {
+    "meaning": "Legacy two-effect compiler, distinct from eight-action high API",
+    "steady": "kind,color:#RRGGBB,led(default0),fade_ms(optional0); no cycles/period_ms/on_finish; generates one-step hold Program",
+    "pulse": "kind,color:#RRGGBB,led(default0),cycles(default1,1..10000),period_ms(default1000,60..1200000 multiple10),on_finish(defaultoff); fade_ms forbidden; compact 3-step symmetric cycle",
+    "color": "raw hex6 only; newer high pulse attack/decay/rest is a different API"
+  },
+  "color_boundary": {
+    "high_and_resolve": "ColorInput supports CSS frozen name,hex3/hex6,rgb8 object,hsv object; high actions reuse this parser",
+    "low_program_frame_effect_set": "hex6 #RRGGBB only; convert through resolve_color first if needed",
+    "rgb8": "{space:\"rgb8\",r,g,b}; channels0..255 ordinary JSON integers, no1.0/1e0",
+    "hsv": "{space:\"hsv\",h_deg,s_pct,v_pct}; h0..360 and s/v0..100; ordinary nonnegative decimal <=6fractional places; no exponent/negative zero; deterministic one-time quantization",
+    "unsupported": "alpha/HSL/rgb() strings/transparent/currentColor/CSS vars/Chinese aliases/random; no implicit gamma"
+  },
+  "job_and_receipts": {
+    "job": "Job fields id,device,status,program,completed_steps,total_steps,created_at,started_at?,finished_at?,error?",
+    "frame_job": "FrameJob replaces step counts with completed_frames,total_frames,completed_target_writes,planned_target_writes; id prefix framejob_",
+    "statuses": [
+      "queued",
+      "running",
+      "cancelling",
+      "succeeded",
+      "cancelled",
+      "failed"
+    ],
+    "identity": "daemon_ +32lowerhex per Engine; request_id=req_<positive Engine uptime deadline>_<32lowerhex random>",
+    "window_ms": 60000,
+    "terminal_retention_ms": 60000,
+    "max_receipts": 4096,
+    "max_retained_steps_or_stored_targets": 65536,
+    "history_default": 128,
+    "receipt_semantics": "same serial/key space for Program and Frame; cross-kind key reuse conflicts; same accepted payload returns current original Job, never reruns; active pinned; terminal retention expires independently of ordinary history; no restart persistence",
+    "uncertainty": "202/accepted is admission only. POST timeout/bad response does not prove no execution; keep original ticket, only GET original receipt. 404/410/restart do not authorize automatic new POST.",
+    "cancel": "Cancelling active waits native completion and worker cleanup; queued cancel can finish immediately without Set. Terminal succeeded hold does not extinguish when cancelled. Native I/O has no universal hard deadline."
+  },
+  "routes": [
+    {
+      "id": "health",
+      "method": "GET",
+      "path": "/healthz",
+      "level": "discovery",
+      "status": {
+        "daily_1d89": "implemented",
+        "development_4d62589": "same as daily"
+      },
+      "input": {
+        "body": "none",
+        "query": "none in documented canonical use"
+      },
+      "output": {
+        "status": 200,
+        "shape": "{status:\"ok\",api_version:\"v1\"}"
+      },
+      "success_headers": [],
+      "io_and_execution": "No service/USB call; proves HTTP handler only.",
+      "receipt": "none",
+      "errors": [
+        "global"
+      ],
+      "source": "internal/httpapi/httpapi.go",
+      "tests": [
+        "internal/httpapi/httpapi_test.go"
+      ],
+      "notes": []
+    },
+    {
+      "id": "capabilities",
+      "method": "GET",
+      "path": "/v1/capabilities",
+      "level": "discovery",
+      "status": {
+        "daily_1d89": "implemented",
+        "development_4d62589": "same as daily"
+      },
+      "input": {
+        "body": "none",
+        "query": "RawQuery must be empty"
+      },
+      "output": {
+        "status": 200,
+        "shape": "control.CapabilityCatalog; compile_contract, supported_inputs, effects, policies, color_model, led_selectors, program/effect limits, pattern_library, hardware_pattern_upload"
+      },
+      "success_headers": [],
+      "io_and_execution": "No USB; if v1 Store configured, calls Store.List to report pattern_library, so not zero filesystem I/O.",
+      "receipt": "none",
+      "errors": [
+        "global",
+        "invalid_request"
+      ],
+      "source": "internal/httpapi/preview.go",
+      "tests": [
+        "internal/httpapi/preview_test.go",
+        "internal/httpapi/patterns_test.go"
+      ],
+      "notes": [
+        "Old catalog describes Program/Effect and optionally v1 pattern_ref; use frame-capabilities separately. hardware_pattern_upload=false."
+      ]
+    },
+    {
+      "id": "instance",
+      "method": "GET",
+      "path": "/v1/instance",
+      "level": "receipt",
+      "status": {
+        "daily_1d89": "implemented",
+        "development_4d62589": "same as daily"
+      },
+      "input": {
+        "body": "none",
+        "query": "none in documented canonical use"
+      },
+      "output": {
+        "status": 200,
+        "shape": "InstanceInfo{daemon_instance_id,idempotency{supported,request_id_prefix,accept_until_uptime_ms,max_accept_window_ms,receipt_retention_ms,max_entries,max_retained_steps}}"
+      },
+      "success_headers": [
+        "X-NB1-Daemon-Instance-ID"
+      ],
+      "io_and_execution": "No USB; computes uptime window; does not reserve receipt capacity or submit Job.",
+      "receipt": "Returns preparation metadata; caller appends 16 random bytes as 32 lowerhex chars to request_id_prefix.",
+      "errors": [
+        "global",
+        "idempotency_unsupported"
+      ],
+      "source": "internal/httpapi/httpapi.go",
+      "tests": [
+        "internal/httpapi/receipt_test.go"
+      ],
+      "notes": []
+    },
+    {
+      "id": "transport-metrics",
+      "method": "GET",
+      "path": "/v1/transport-metrics",
+      "level": "diagnostic",
+      "status": {
+        "daily_1d89": "implemented",
+        "development_4d62589": "same as daily"
+      },
+      "input": {
+        "body": "none",
+        "query": "none in documented canonical use"
+      },
+      "output": {
+        "status": 200,
+        "shape": "[]TransportMetric{serial,operation,calls,attempts,retries,failures,last_error?}"
+      },
+      "success_headers": [],
+      "io_and_execution": "Only copied in-memory state/counters; handler does not request a USB sample. Background worker monitoring is separate.",
+      "receipt": "none",
+      "errors": [
+        "global"
+      ],
+      "source": "internal/httpapi/httpapi.go",
+      "tests": [
+        "internal/httpapi/httpapi_test.go"
+      ],
+      "notes": [
+        "Missing optional Metrics provider returns []. LastError is historical; retries may have recovered."
+      ]
+    },
+    {
+      "id": "devices",
+      "method": "GET",
+      "path": "/v1/devices",
+      "level": "low-state",
+      "status": {
+        "daily_1d89": "implemented",
+        "development_4d62589": "same as daily"
+      },
+      "input": {
+        "body": "none",
+        "query": "none in documented canonical use"
+      },
+      "output": {
+        "status": 200,
+        "shape": "[]DeviceState (empty is [])"
+      },
+      "success_headers": [],
+      "io_and_execution": "Only copied in-memory state/counters; handler does not request a USB sample. Background worker monitoring is separate.",
+      "receipt": "none",
+      "errors": [
+        "global"
+      ],
+      "source": "internal/httpapi/httpapi.go",
+      "tests": [
+        "internal/httpapi/httpapi_test.go"
+      ],
+      "notes": []
+    },
+    {
+      "id": "device-state",
+      "method": "GET",
+      "path": "/v1/devices/{serial}",
+      "level": "low-state",
+      "status": {
+        "daily_1d89": "implemented",
+        "development_4d62589": "same as daily"
+      },
+      "input": {
+        "body": "none",
+        "query": "none in documented canonical use"
+      },
+      "output": {
+        "status": 200,
+        "shape": "DeviceState; serial/product/path?/firmware?/capabilities,connection,active_job?,queue_depth,desired?,observed?,last_error?"
+      },
+      "success_headers": [],
+      "io_and_execution": "Only copied in-memory state/counters; handler does not request a USB sample. Background worker monitoring is separate.",
+      "receipt": "none",
+      "errors": [
+        "global",
+        "service"
+      ],
+      "source": "internal/httpapi/httpapi.go",
+      "tests": [
+        "internal/httpapi/httpapi_test.go",
+        "internal/httpapi/preview_test.go"
+      ],
+      "notes": [
+        "This is CLI control state route. No /state suffix; observed.sampled_at must be retained. desired is a target, not observation."
+      ]
+    },
+    {
+      "id": "program-preview",
+      "method": "POST",
+      "path": "/v1/programs/preview",
+      "level": "low-program",
+      "status": {
+        "daily_1d89": "implemented",
+        "development_4d62589": "same as daily"
+      },
+      "input": {
+        "body": "Exactly one of program:Program / effect:Effect / pattern_ref:{id,revision}; optional serial",
+        "query": "RawQuery must be empty",
+        "max_body_bytes": 1048576
+      },
+      "output": {
+        "status": 200,
+        "shape": "Program/Effect: PreviewResult{schema_version,compile_contract,input_kind,program,nominal_duration_ms,total_steps,required_capabilities,validation,device?}; reference: {pattern_ref,preview}"
+      },
+      "success_headers": [],
+      "io_and_execution": "Raw Program/Effect pure; optional serial reads one cached snapshot only. pattern_ref reads/resolves v1 Store (filesystem I/O), never submits/opens USB.",
+      "receipt": "No policy/ticket/dry_run allowed. Does not prepare receipt.",
+      "errors": [
+        "global",
+        "json_1m",
+        "service",
+        "library"
+      ],
+      "source": "internal/httpapi/preview.go",
+      "tests": [
+        "internal/httpapi/preview_test.go",
+        "internal/httpapi/patterns_test.go"
+      ],
+      "notes": []
+    },
+    {
+      "id": "program-submit",
+      "method": "POST",
+      "path": "/v1/devices/{serial}/jobs",
+      "level": "low-program",
+      "status": {
+        "daily_1d89": "implemented",
+        "development_4d62589": "same as daily"
+      },
+      "input": {
+        "body": "Exactly one program:Program / effect:Effect / pattern_ref:{id,revision}, policy; request_id and expected_daemon_instance_id both present or both absent for raw Program/Effect",
+        "query": "Canonical use has none; legacy raw branch does not explicitly reject all query/body extras beyond strict JSON schema",
+        "max_body_bytes": 1048576
+      },
+      "output": {
+        "status": 202,
+        "shape": "Job (bare, not receipt wrapper)"
+      },
+      "success_headers": [
+        "keyed: X-NB1-Daemon-Instance-ID",
+        "keyed: X-NB1-Replayed true|false",
+        "Location: keyed original request URI; unkeyed /v1/jobs/{id}"
+      ],
+      "io_and_execution": "Queues same device worker; actual execution calls Stop(hold), Set/waits, final Stop(off|hold)+Read.",
+      "receipt": "Raw Program/Effect supports legacy unkeyed mode; supplied pair uses atomic receipt. v1 pattern_ref requires explicit reject + original ticket.",
+      "errors": [
+        "global",
+        "json_1m",
+        "service",
+        "library"
+      ],
+      "source": "internal/httpapi/httpapi.go",
+      "tests": [
+        "internal/httpapi/receipt_test.go",
+        "internal/httpapi/effects_test.go",
+        "internal/httpapi/patterns_execution_test.go"
+      ],
+      "notes": [
+        "Raw policy empty defaults replace; accepts replace/queue/reject. New callers should explicitly choose policy and ticket.",
+        "CLI control set is a one-Step Program with on_finish:hold sent here; there is no separate /set HTTP route.",
+        "v1 Pattern returns frozen Program Job and does not retain v2 provenance."
+      ]
+    },
+    {
+      "id": "program-receipt",
+      "method": "GET",
+      "path": "/v1/devices/{serial}/requests/{request_id}",
+      "level": "receipt",
+      "status": {
+        "daily_1d89": "implemented",
+        "development_4d62589": "same as daily"
+      },
+      "input": {
+        "body": "documented none",
+        "query": "Exactly one nonempty expected_daemon_instance_id"
+      },
+      "output": {
+        "status": 200,
+        "shape": "Original current Job snapshot"
+      },
+      "success_headers": [
+        "X-NB1-Daemon-Instance-ID"
+      ],
+      "io_and_execution": "Only copied in-memory state/counters; handler does not request a USB sample. Background worker monitoring is separate. Lookup can prune expired terminal receipts.",
+      "receipt": "Original serial+request_id+instance; no Store lookup.",
+      "errors": [
+        "global",
+        "service"
+      ],
+      "source": "internal/httpapi/httpapi.go",
+      "tests": [
+        "internal/httpapi/receipt_test.go",
+        "internal/httpapi/patterns_execution_test.go"
+      ],
+      "notes": [
+        "404 request_not_found does not prove original POST never arrived."
+      ]
+    },
+    {
+      "id": "program-job",
+      "method": "GET",
+      "path": "/v1/jobs/{id}",
+      "level": "low-job",
+      "status": {
+        "daily_1d89": "implemented",
+        "development_4d62589": "same as daily"
+      },
+      "input": {
+        "body": "none",
+        "query": "none in documented canonical use"
+      },
+      "output": {
+        "status": 200,
+        "shape": "Job"
+      },
+      "success_headers": [],
+      "io_and_execution": "Only copied in-memory state/counters; handler does not request a USB sample. Background worker monitoring is separate.",
+      "receipt": "ID only; bounded ordinary history, separate from receipt retention.",
+      "errors": [
+        "global",
+        "service"
+      ],
+      "source": "internal/httpapi/httpapi.go",
+      "tests": [
+        "internal/httpapi/httpapi_test.go",
+        "internal/httpapi/receipt_test.go"
+      ],
+      "notes": []
+    },
+    {
+      "id": "program-cancel",
+      "method": "POST",
+      "path": "/v1/jobs/{id}/cancel",
+      "level": "low-job",
+      "status": {
+        "daily_1d89": "implemented",
+        "development_4d62589": "same as daily"
+      },
+      "input": {
+        "body": "empty or {} only; no source/instance/ticket fields",
+        "query": "canonical none; old branch does not explicitly reject all query parameters"
+      },
+      "output": {
+        "status": 202,
+        "shape": "Current Job, may be cancelling/queued-cancelled/already-terminal"
+      },
+      "success_headers": [],
+      "io_and_execution": "Mutates cancellation state; worker confirms cleanup before active task terminal. Does not itself interrupt native I/O.",
+      "receipt": "ID only; no original instance precondition on this legacy route.",
+      "errors": [
+        "global",
+        "json_1m",
+        "service"
+      ],
+      "source": "internal/httpapi/httpapi.go",
+      "tests": [
+        "internal/httpapi/httpapi_test.go",
+        "internal/control/engine_test.go"
+      ],
+      "notes": [
+        "Cancelling is not cleanup complete; cancelling succeeded hold returns terminal job without extinguishing held output."
+      ]
+    },
+    {
+      "id": "color-resolve",
+      "method": "POST",
+      "path": "/v1/colors/resolve",
+      "level": "color",
+      "status": {
+        "daily_1d89": "implemented",
+        "development_4d62589": "same as daily"
+      },
+      "input": {
+        "body": "{color:ColorInput}",
+        "query": "none, including empty ?",
+        "max_body_bytes": 4096
+      },
+      "output": {
+        "status": 200,
+        "shape": "{schema_version:1,color_contract:\"nb1-color-input/v1\",input_kind,canonical_color,rgb8:{r,g,b},palette?}"
+      },
+      "success_headers": [],
+      "io_and_execution": "Pure bounded computation; no device discovery/open/Set/Read, no Job/receipt preparation.",
+      "receipt": "none",
+      "errors": [
+        "global",
+        "405 method_not_allowed",
+        "415 json_required",
+        "413 body_too_large",
+        "400 invalid_request(query)",
+        "400 invalid_color"
+      ],
+      "source": "internal/httpapi/color.go",
+      "tests": [
+        "internal/httpapi/color_test.go"
+      ],
+      "notes": [
+        "No accepted:false or Job field in HTTP response; MCP wrapper is separate."
+      ]
+    },
+    {
+      "id": "frame-capabilities",
+      "method": "GET",
+      "path": "/v1/frame-capabilities",
+      "level": "low-frame",
+      "status": {
+        "daily_1d89": "implemented",
+        "development_4d62589": "same as daily"
+      },
+      "input": {
+        "body": "none",
+        "query": "none including empty ?"
+      },
+      "output": {
+        "status": 200,
+        "shape": "schema_version:1,contract,experimental:true,software_supported,max_frames,max_executed_frames,max_target_writes,min/max_interval_ms,fade_quantum_ms,write_spacing_ms,max_nominal_duration_ms,policy:\"reject\",initialization,timing_basis,required_device_capabilities"
+      },
+      "success_headers": [],
+      "io_and_execution": "No USB, type-asserts FrameService only.",
+      "receipt": "none",
+      "errors": [
+        "global",
+        "invalid_request"
+      ],
+      "source": "internal/httpapi/frames.go",
+      "tests": [
+        "internal/httpapi/frames_test.go"
+      ],
+      "notes": []
+    },
+    {
+      "id": "frame-preview",
+      "method": "POST",
+      "path": "/v1/frame-programs/preview",
+      "level": "low-frame",
+      "status": {
+        "daily_1d89": "implemented",
+        "development_4d62589": "same as daily"
+      },
+      "input": {
+        "body": "{program:FrameProgram,serial?:string}",
+        "query": "none including empty ?",
+        "max_body_bytes": 1048576
+      },
+      "output": {
+        "status": 200,
+        "shape": "FramePreview + device?:{serial,connection}"
+      },
+      "success_headers": [],
+      "io_and_execution": "Pure schedule preview; serial checks only configured cached snapshot. No FrameService still returns valid preview with execution unavailable.",
+      "receipt": "none",
+      "errors": [
+        "global",
+        "json_1m",
+        "service"
+      ],
+      "source": "internal/httpapi/frames.go",
+      "tests": [
+        "internal/httpapi/frames_test.go"
+      ],
+      "notes": [
+        "execution unavailable reason distinguishes not_selected/frame_service_unsupported/device_not_configured/device_not_online/missing_capabilities; no fallback to steps."
+      ]
+    },
+    {
+      "id": "frame-submit",
+      "method": "POST",
+      "path": "/v1/devices/{serial}/frame-jobs",
+      "level": "low-frame",
+      "status": {
+        "daily_1d89": "implemented",
+        "development_4d62589": "same as daily"
+      },
+      "input": {
+        "body": "{program:FrameProgram,policy:\"reject\",request_id,expected_daemon_instance_id}",
+        "query": "none including empty ?",
+        "max_body_bytes": 1048576
+      },
+      "output": {
+        "status": 202,
+        "shape": "FrameJob"
+      },
+      "success_headers": [
+        "X-NB1-Replayed",
+        "X-NB1-Daemon-Instance-ID",
+        "Location: /v1/devices/{serial}/frame-requests/{request_id}?expected_daemon_instance_id=..."
+      ],
+      "io_and_execution": "Same worker/lease; paired target writes 10ms apart, host intervals, final fade wait and shared cleanup. No periodic Read during frame schedule.",
+      "receipt": "Mandatory complete original pair; no unkeyed/replace/queue raw Frame route.",
+      "errors": [
+        "global",
+        "json_1m",
+        "service",
+        "501 frame_unsupported"
+      ],
+      "source": "internal/httpapi/frames.go",
+      "tests": [
+        "internal/httpapi/frames_test.go",
+        "internal/httpapi/frames_engine_test.go"
+      ],
+      "notes": []
+    },
+    {
+      "id": "frame-receipt",
+      "method": "GET",
+      "path": "/v1/devices/{serial}/frame-requests/{request_id}",
+      "level": "receipt",
+      "status": {
+        "daily_1d89": "implemented",
+        "development_4d62589": "same as daily"
+      },
+      "input": {
+        "body": "none",
+        "query": "Exactly one nonempty expected_daemon_instance_id"
+      },
+      "output": {
+        "status": 200,
+        "shape": "Original FrameJob"
+      },
+      "success_headers": [
+        "X-NB1-Daemon-Instance-ID"
+      ],
+      "io_and_execution": "Only copied in-memory state/counters; handler does not request a USB sample. Background worker monitoring is separate. No Store.",
+      "receipt": "Original frame receipt; Program receipt route does not substitute.",
+      "errors": [
+        "global",
+        "service",
+        "501 frame_unsupported"
+      ],
+      "source": "internal/httpapi/frames.go",
+      "tests": [
+        "internal/httpapi/frames_test.go"
+      ],
+      "notes": []
+    },
+    {
+      "id": "frame-job",
+      "method": "GET",
+      "path": "/v1/frame-jobs/{id}",
+      "level": "low-job",
+      "status": {
+        "daily_1d89": "implemented",
+        "development_4d62589": "same as daily"
+      },
+      "input": {
+        "body": "none",
+        "query": "none including empty ?"
+      },
+      "output": {
+        "status": 200,
+        "shape": "FrameJob"
+      },
+      "success_headers": [],
+      "io_and_execution": "Only copied in-memory state/counters; handler does not request a USB sample. Background worker monitoring is separate.",
+      "receipt": "ID only history.",
+      "errors": [
+        "global",
+        "service",
+        "501 frame_unsupported"
+      ],
+      "source": "internal/httpapi/frames.go",
+      "tests": [
+        "internal/httpapi/frames_test.go"
+      ],
+      "notes": []
+    },
+    {
+      "id": "frame-cancel",
+      "method": "POST",
+      "path": "/v1/frame-jobs/{id}/cancel",
+      "level": "low-job",
+      "status": {
+        "daily_1d89": "implemented",
+        "development_4d62589": "same as daily"
+      },
+      "input": {
+        "body": "empty / {} legacy; optional nonempty expected_daemon_instance_id binds instance; explicit null/blank/wrong type/unknown/duplicate fields rejected",
+        "query": "none including empty ?"
+      },
+      "output": {
+        "status": 202,
+        "shape": "Current FrameJob; cancelling is possible"
+      },
+      "success_headers": [
+        "X-NB1-Daemon-Instance-ID only when conditional instance branch succeeds"
+      ],
+      "io_and_execution": "Checks supplied immutable instance before CancelFrame; only same worker performs Stop/Read.",
+      "receipt": "ID only legacy remains; optional instance is not full Action/ticket binding.",
+      "errors": [
+        "global",
+        "json_1m",
+        "service",
+        "501 frame_unsupported"
+      ],
+      "source": "internal/httpapi/frames.go",
+      "tests": [
+        "internal/httpapi/frame_cancel_bound_test.go",
+        "internal/httpapi/frames_test.go"
+      ],
+      "notes": [
+        "CLI high v2 cancel first validates original Action+receipt, then uses this conditional cancel once; no dedicated HTTP action-cancel route.",
+        "Current Web/MCP generic cancel uses existing ID-only branch; do not claim equal cross-instance protection."
+      ]
+    },
+    {
+      "id": "v1-light-preview",
+      "method": "POST",
+      "path": "/v1/light/preview",
+      "level": "high-action",
+      "status": {
+        "daily_1d89": "implemented",
+        "development_4d62589": "same as daily"
+      },
+      "input": {
+        "body": "{contract:\"nb1-light-action/v1\",action:{kind:set/off/fade/blink/breathe/pulse/alternate/rainbow,...},serial?:string}",
+        "query": "none including empty ?",
+        "max_body_bytes": 65536
+      },
+      "output": {
+        "status": 200,
+        "shape": "{result: normalized Action + frozen Program/FrameProgram and compile facts, preview: matching low preview}"
+      },
+      "success_headers": [],
+      "io_and_execution": "No Job/ticket/USB. Optional serial checks one cached device snapshot only.",
+      "receipt": "No policy/dry_run/ticket accepted.",
+      "errors": [
+        "global",
+        "json_64k",
+        "400 invalid_light_action",
+        "service"
+      ],
+      "source": "internal/httpapi/light.go",
+      "tests": [
+        "internal/httpapi/light_test.go"
+      ],
+      "notes": []
+    },
+    {
+      "id": "v1-light-submit",
+      "method": "POST",
+      "path": "/v1/devices/{serial}/light",
+      "level": "high-action",
+      "status": {
+        "daily_1d89": "implemented",
+        "development_4d62589": "same as daily"
+      },
+      "input": {
+        "body": "{contract:\"nb1-light-action/v1\",action:{...},policy:\"reject\",request_id,expected_daemon_instance_id}",
+        "query": "none including empty ?",
+        "max_body_bytes": 65536
+      },
+      "output": {
+        "status": 202,
+        "shape": "Job (bare)"
+      },
+      "success_headers": [
+        "X-NB1-Replayed",
+        "X-NB1-Daemon-Instance-ID",
+        "Location: corresponding original Program/frame receipt"
+      ],
+      "io_and_execution": "Original high intent compiled by nb1; same low worker admission/executor.",
+      "receipt": "Mandatory original pair; explicit reject only; no automatic POST replay in provided high clients.",
+      "errors": [
+        "global",
+        "json_64k",
+        "400 invalid_light_action",
+        "service",
+        "501 idempotency_unsupported"
+      ],
+      "source": "internal/httpapi/light.go",
+      "tests": [
+        "internal/httpapi/light_test.go"
+      ],
+      "notes": [
+        "v1 old alternate.transition=orbit remains old sequential Program, not experimental-v2 orbit."
+      ]
+    },
+    {
+      "id": "v2-light-preview",
+      "method": "POST",
+      "path": "/v2/light/preview",
+      "level": "high-action",
+      "status": {
+        "daily_1d89": "implemented",
+        "development_4d62589": "same as daily"
+      },
+      "input": {
+        "body": "{contract:\"nb1-light-action/experimental-v2\",action:{kind:orbit only,...},serial?:string}",
+        "query": "none including empty ?",
+        "max_body_bytes": 65536
+      },
+      "output": {
+        "status": 200,
+        "shape": "{result: normalized Action + frozen Program/FrameProgram and compile facts, preview: matching low preview}"
+      },
+      "success_headers": [],
+      "io_and_execution": "No Job/ticket/USB. Optional serial checks one cached device snapshot only.",
+      "receipt": "No policy/dry_run/ticket accepted.",
+      "errors": [
+        "global",
+        "json_64k",
+        "400 invalid_light_action",
+        "service"
+      ],
+      "source": "internal/httpapi/light_v2.go",
+      "tests": [
+        "internal/httpapi/frames_test.go",
+        "internal/httpapi/frames_engine_test.go"
+      ],
+      "notes": []
+    },
+    {
+      "id": "v2-light-submit",
+      "method": "POST",
+      "path": "/v2/devices/{serial}/light",
+      "level": "high-action",
+      "status": {
+        "daily_1d89": "implemented",
+        "development_4d62589": "same as daily"
+      },
+      "input": {
+        "body": "{contract:\"nb1-light-action/experimental-v2\",action:{...},policy:\"reject\",request_id,expected_daemon_instance_id}",
+        "query": "none including empty ?",
+        "max_body_bytes": 65536
+      },
+      "output": {
+        "status": 202,
+        "shape": "FrameJob (bare)"
+      },
+      "success_headers": [
+        "X-NB1-Replayed",
+        "X-NB1-Daemon-Instance-ID",
+        "Location: corresponding original Program/frame receipt"
+      ],
+      "io_and_execution": "Original high intent compiled by nb1; same low worker admission/executor.",
+      "receipt": "Mandatory original pair; explicit reject only; no automatic POST replay in provided high clients.",
+      "errors": [
+        "global",
+        "json_64k",
+        "400 invalid_light_action",
+        "service",
+        "501 frame_unsupported"
+      ],
+      "source": "internal/httpapi/light_v2.go",
+      "tests": [
+        "internal/httpapi/frames_test.go",
+        "internal/httpapi/frames_engine_test.go"
+      ],
+      "notes": [
+        "4/8 segments; preserves high Action authoring; no hand-authored frames required."
+      ]
+    },
+    {
+      "id": "v1-patterns-list",
+      "method": "GET",
+      "path": "/v1/patterns",
+      "level": "pattern-library",
+      "status": {
+        "daily_1d89": "implemented",
+        "development_4d62589": "same as daily"
+      },
+      "input": {
+        "body": "none",
+        "query": "none or exactly format=snapshot"
+      },
+      "output": {
+        "status": 200,
+        "shape": "PatternList{schema_version:1,contract,library,patterns}; format=snapshot canonical v1 Snapshot bytes"
+      },
+      "success_headers": [],
+      "io_and_execution": "Filesystem Store read only; no device/service method, Job or execution ticket.",
+      "receipt": "none",
+      "errors": [
+        "global",
+        "library"
+      ],
+      "source": "internal/httpapi/patterns.go",
+      "tests": [
+        "internal/httpapi/patterns_test.go"
+      ],
+      "notes": [
+        "configured v1 library selection only; does not expose v2 records."
+      ]
+    },
+    {
+      "id": "v1-patterns-get",
+      "method": "GET",
+      "path": "/v1/patterns/{id}",
+      "level": "pattern-library",
+      "status": {
+        "daily_1d89": "implemented",
+        "development_4d62589": "same as daily"
+      },
+      "input": {
+        "body": "none",
+        "query": "none or exactly format=snapshot; IDs ASCII1–64"
+      },
+      "output": {
+        "status": 200,
+        "shape": "Frozen v1 Record; format=snapshot single canonical Snapshot"
+      },
+      "success_headers": [],
+      "io_and_execution": "Filesystem Store read only; no device/service method, Job or execution ticket.",
+      "receipt": "none",
+      "errors": [
+        "global",
+        "library"
+      ],
+      "source": "internal/httpapi/patterns.go",
+      "tests": [
+        "internal/httpapi/patterns_test.go"
+      ],
+      "notes": [
+        "GET import is a legal ID."
+      ]
+    },
+    {
+      "id": "v1-patterns-import",
+      "method": "POST",
+      "path": "/v1/patterns/import",
+      "level": "pattern-library",
+      "status": {
+        "daily_1d89": "implemented",
+        "development_4d62589": "same as daily"
+      },
+      "input": {
+        "body": "v1 author package or frozen snapshot accepted by Store.Import; not advanced Action source",
+        "query": "none including empty ?",
+        "max_body_bytes": 1048576
+      },
+      "output": {
+        "status": 200,
+        "shape": "ImportResult{records,created,existing,total}"
+      },
+      "success_headers": [],
+      "io_and_execution": "Filesystem create-only atomic import; no device/service method or execution.",
+      "receipt": "No execution receipt. publication_unknown is storage uncertainty, not Job uncertainty.",
+      "errors": [
+        "global",
+        "415 json_required",
+        "413 pattern_package_too_large",
+        "library"
+      ],
+      "source": "internal/httpapi/patterns.go",
+      "tests": [
+        "internal/httpapi/patterns_test.go"
+      ],
+      "notes": []
+    },
+    {
+      "id": "v2-patterns-list",
+      "method": "GET",
+      "path": "/v2/patterns",
+      "level": "pattern-library",
+      "status": {
+        "daily_1d89": "absent",
+        "development_4d62589": "handler implemented; storage operations require explicit Go StoreV2 injection"
+      },
+      "input": {
+        "body": "none",
+        "query": "none or exactly format=snapshot"
+      },
+      "output": {
+        "status": 200,
+        "shape": "v2 List envelope {schema_version:2,contract,library,pattern_execution,patterns}; format=snapshot canonical v2 Snapshot bytes"
+      },
+      "success_headers": [],
+      "io_and_execution": "Filesystem Store read only; no device/service method, Job or execution ticket.",
+      "receipt": "none",
+      "errors": [
+        "global",
+        "library",
+        "library_v2"
+      ],
+      "source": "internal/httpapi/patterns_v2.go",
+      "tests": [
+        "internal/httpapi/patterns_v2_test.go"
+      ],
+      "notes": [
+        "v2 default daemon has no StoreV2 injection; normal storage request returns501. Unknown valid records make library read_only and remain readable/exportable."
+      ]
+    },
+    {
+      "id": "v2-patterns-get",
+      "method": "GET",
+      "path": "/v2/patterns/{id}",
+      "level": "pattern-library",
+      "status": {
+        "daily_1d89": "absent",
+        "development_4d62589": "handler implemented; storage operations require explicit Go StoreV2 injection"
+      },
+      "input": {
+        "body": "none",
+        "query": "none or exactly format=snapshot; IDs ASCII1–64"
+      },
+      "output": {
+        "status": 200,
+        "shape": "v2 {schema_version:2,contract,record,verification,execution_digest}; format=snapshot single canonical Snapshot"
+      },
+      "success_headers": [],
+      "io_and_execution": "Filesystem Store read only; no device/service method, Job or execution ticket.",
+      "receipt": "none",
+      "errors": [
+        "global",
+        "library",
+        "library_v2"
+      ],
+      "source": "internal/httpapi/patterns_v2.go",
+      "tests": [
+        "internal/httpapi/patterns_v2_test.go"
+      ],
+      "notes": [
+        "GET preview/import/export/capabilities are ordinary IDs, not operation routes. Unknown source/recipe is explicit unverified read-only data, not executable."
+      ]
+    },
+    {
+      "id": "v2-patterns-import",
+      "method": "POST",
+      "path": "/v2/patterns/import",
+      "level": "pattern-library",
+      "status": {
+        "daily_1d89": "absent",
+        "development_4d62589": "handler implemented; storage operations require explicit Go StoreV2 injection"
+      },
+      "input": {
+        "body": "Full verified canonical-compatible v2 frozen Snapshot; no authoring body",
+        "query": "none including empty ?",
+        "max_body_bytes": 1048576
+      },
+      "output": {
+        "status": 200,
+        "shape": "{schema_version:2,contract,records,created,existing,total}"
+      },
+      "success_headers": [],
+      "io_and_execution": "Filesystem create-only atomic import; no device/service method or execution.",
+      "receipt": "No execution receipt. publication_unknown is storage uncertainty, not Job uncertainty.",
+      "errors": [
+        "global",
+        "415 json_required",
+        "413 pattern_package_too_large",
+        "library",
+        "library_v2"
+      ],
+      "source": "internal/httpapi/patterns_v2.go",
+      "tests": [
+        "internal/httpapi/patterns_v2_test.go"
+      ],
+      "notes": []
+    },
+    {
+      "id": "v2-pattern-preview",
+      "method": "POST",
+      "path": "/v2/patterns/preview",
+      "level": "pattern-authoring",
+      "status": {
+        "daily_1d89": "absent",
+        "development_4d62589": "handler implemented; storage operations require explicit Go StoreV2 injection"
+      },
+      "input": {
+        "body": "{id,title,source:{kind:\"light_action\",contract,action}}; no serial/policy/ticket/expected_revision/program",
+        "query": "none including empty ?",
+        "max_body_bytes": 1048576
+      },
+      "output": {
+        "status": 200,
+        "shape": "{schema_version:2,contract,record,verification,execution_digest,preview,pattern_execution:{available:false,reason:\"pattern_identity_admission_not_integrated\"}}"
+      },
+      "success_headers": [],
+      "io_and_execution": "Pure codec only; Store zero calls including Path; Service zero calls; no USB.",
+      "receipt": "none",
+      "errors": [
+        "global",
+        "415 json_required",
+        "413 pattern_package_too_large",
+        "library_v2"
+      ],
+      "source": "internal/httpapi/patterns_v2.go",
+      "tests": [
+        "internal/httpapi/patterns_v2_test.go"
+      ],
+      "notes": []
+    },
+    {
+      "id": "v2-pattern-save",
+      "method": "POST",
+      "path": "/v2/patterns",
+      "level": "pattern-authoring",
+      "status": {
+        "daily_1d89": "absent",
+        "development_4d62589": "handler implemented; storage operations require explicit Go StoreV2 injection"
+      },
+      "input": {
+        "body": "Same author source + expected_revision matching full freshly built candidate; create-only",
+        "query": "none including empty ?",
+        "max_body_bytes": 1048576
+      },
+      "output": {
+        "status": [
+          201,
+          200
+        ],
+        "shape": "{schema_version:2,contract,records,created,existing,total}; 201 new ID,200 identical existing"
+      },
+      "success_headers": [
+        "Location: /v2/patterns/{id}"
+      ],
+      "io_and_execution": "Rebuild/verify pure candidate, then exactly one Store.Import; no execution/service/USB.",
+      "receipt": "No daemon/request ticket; expected_revision confirms candidate, not overwrite permission.",
+      "errors": [
+        "global",
+        "415 json_required",
+        "413 pattern_package_too_large",
+        "library",
+        "library_v2"
+      ],
+      "source": "internal/httpapi/patterns_v2.go",
+      "tests": [
+        "internal/httpapi/patterns_v2_test.go"
+      ],
+      "notes": []
+    },
+    {
+      "id": "web-demo",
+      "method": "GET",
+      "path": "/demo",
+      "level": "embedded-web",
+      "status": {
+        "daily_1d89": "implemented",
+        "development_4d62589": "same as daily"
+      },
+      "input": {
+        "body": "none",
+        "query": "none including empty ?"
+      },
+      "output": {
+        "status": 307,
+        "shape": "307 redirect to /demo/"
+      },
+      "success_headers": [],
+      "io_and_execution": "Read embedded static bytes only; page load itself creates no light Job; subsequent explicit user actions call documented APIs.",
+      "receipt": "none",
+      "errors": [
+        "global",
+        "invalid_request",
+        "404 not_found",
+        "500 internal_error"
+      ],
+      "source": "internal/httpapi/light.go",
+      "tests": [
+        "internal/httpapi/light_test.go"
+      ],
+      "notes": []
+    },
+    {
+      "id": "web-demo-index",
+      "method": "GET",
+      "path": "/demo/",
+      "level": "embedded-web",
+      "status": {
+        "daily_1d89": "implemented",
+        "development_4d62589": "same as daily"
+      },
+      "input": {
+        "body": "none",
+        "query": "none including empty ?"
+      },
+      "output": {
+        "status": 200,
+        "shape": "HTML index"
+      },
+      "success_headers": [
+        "Content-Security-Policy: default-src none; script/style/connect self; base/frame/form none",
+        "Referrer-Policy: no-referrer"
+      ],
+      "io_and_execution": "Read embedded static bytes only; page load itself creates no light Job; subsequent explicit user actions call documented APIs.",
+      "receipt": "none",
+      "errors": [
+        "global",
+        "invalid_request",
+        "404 not_found",
+        "500 internal_error"
+      ],
+      "source": "internal/httpapi/light.go",
+      "tests": [
+        "internal/httpapi/light_test.go"
+      ],
+      "notes": []
+    },
+    {
+      "id": "web-demo-demo-js",
+      "method": "GET",
+      "path": "/demo/demo.js",
+      "level": "embedded-web",
+      "status": {
+        "daily_1d89": "implemented",
+        "development_4d62589": "same as daily"
+      },
+      "input": {
+        "body": "none",
+        "query": "none including empty ?"
+      },
+      "output": {
+        "status": 200,
+        "shape": "JS"
+      },
+      "success_headers": [
+        "Content-Security-Policy: default-src none; script/style/connect self; base/frame/form none",
+        "Referrer-Policy: no-referrer"
+      ],
+      "io_and_execution": "Read embedded static bytes only; page load itself creates no light Job; subsequent explicit user actions call documented APIs.",
+      "receipt": "none",
+      "errors": [
+        "global",
+        "invalid_request",
+        "404 not_found",
+        "500 internal_error"
+      ],
+      "source": "internal/httpapi/light.go",
+      "tests": [
+        "internal/httpapi/light_test.go"
+      ],
+      "notes": []
+    },
+    {
+      "id": "web-demo-demo-css",
+      "method": "GET",
+      "path": "/demo/demo.css",
+      "level": "embedded-web",
+      "status": {
+        "daily_1d89": "implemented",
+        "development_4d62589": "same as daily"
+      },
+      "input": {
+        "body": "none",
+        "query": "none including empty ?"
+      },
+      "output": {
+        "status": 200,
+        "shape": "CSS"
+      },
+      "success_headers": [
+        "Content-Security-Policy: default-src none; script/style/connect self; base/frame/form none",
+        "Referrer-Policy: no-referrer"
+      ],
+      "io_and_execution": "Read embedded static bytes only; page load itself creates no light Job; subsequent explicit user actions call documented APIs.",
+      "receipt": "none",
+      "errors": [
+        "global",
+        "invalid_request",
+        "404 not_found",
+        "500 internal_error"
+      ],
+      "source": "internal/httpapi/light.go",
+      "tests": [
+        "internal/httpapi/light_test.go"
+      ],
+      "notes": []
+    },
+    {
+      "id": "web-demo-orbit-html",
+      "method": "GET",
+      "path": "/demo/orbit.html",
+      "level": "embedded-web",
+      "status": {
+        "daily_1d89": "implemented",
+        "development_4d62589": "same as daily"
+      },
+      "input": {
+        "body": "none",
+        "query": "none including empty ?"
+      },
+      "output": {
+        "status": 200,
+        "shape": "HTML Orbit experimental"
+      },
+      "success_headers": [
+        "Content-Security-Policy: default-src none; script/style/connect self; base/frame/form none",
+        "Referrer-Policy: no-referrer"
+      ],
+      "io_and_execution": "Read embedded static bytes only; page load itself creates no light Job; subsequent explicit user actions call documented APIs.",
+      "receipt": "none",
+      "errors": [
+        "global",
+        "invalid_request",
+        "404 not_found",
+        "500 internal_error"
+      ],
+      "source": "internal/httpapi/light.go",
+      "tests": [
+        "internal/httpapi/light_test.go"
+      ],
+      "notes": []
+    },
+    {
+      "id": "web-demo-orbit-js",
+      "method": "GET",
+      "path": "/demo/orbit.js",
+      "level": "embedded-web",
+      "status": {
+        "daily_1d89": "implemented",
+        "development_4d62589": "same as daily"
+      },
+      "input": {
+        "body": "none",
+        "query": "none including empty ?"
+      },
+      "output": {
+        "status": 200,
+        "shape": "JS"
+      },
+      "success_headers": [
+        "Content-Security-Policy: default-src none; script/style/connect self; base/frame/form none",
+        "Referrer-Policy: no-referrer"
+      ],
+      "io_and_execution": "Read embedded static bytes only; page load itself creates no light Job; subsequent explicit user actions call documented APIs.",
+      "receipt": "none",
+      "errors": [
+        "global",
+        "invalid_request",
+        "404 not_found",
+        "500 internal_error"
+      ],
+      "source": "internal/httpapi/light.go",
+      "tests": [
+        "internal/httpapi/light_test.go"
+      ],
+      "notes": []
+    },
+    {
+      "id": "web-demo-orbit-css",
+      "method": "GET",
+      "path": "/demo/orbit.css",
+      "level": "embedded-web",
+      "status": {
+        "daily_1d89": "implemented",
+        "development_4d62589": "same as daily"
+      },
+      "input": {
+        "body": "none",
+        "query": "none including empty ?"
+      },
+      "output": {
+        "status": 200,
+        "shape": "CSS"
+      },
+      "success_headers": [
+        "Content-Security-Policy: default-src none; script/style/connect self; base/frame/form none",
+        "Referrer-Policy: no-referrer"
+      ],
+      "io_and_execution": "Read embedded static bytes only; page load itself creates no light Job; subsequent explicit user actions call documented APIs.",
+      "receipt": "none",
+      "errors": [
+        "global",
+        "invalid_request",
+        "404 not_found",
+        "500 internal_error"
+      ],
+      "source": "internal/httpapi/light.go",
+      "tests": [
+        "internal/httpapi/light_test.go"
+      ],
+      "notes": []
+    }
+  ],
+  "error_groups": {
+    "global": {
+      "403": "local_only: loopback Host and same-origin Origin required",
+      "405": "method_not_allowed + Allow header",
+      "404": "not_found: unknown route/resource"
+    },
+    "json_1m": {
+      "415": "json_required",
+      "413": "body_too_large (1MiB), Connection close",
+      "400": "invalid_json: strict object/unknown/duplicate/null/tail/type errors"
+    },
+    "json_64k": {
+      "415": "json_required",
+      "413": "body_too_large (65536B), Connection close",
+      "400": "invalid_json: strict envelope; invalid_light_action from authoritative action parser"
+    },
+    "service": {
+      "400": "invalid_request",
+      "404": "not_found or request_not_found",
+      "409": "idempotency_conflict / daemon_instance_changed / queue_full / busy",
+      "410": "request_expired",
+      "429": "idempotency_capacity",
+      "503": "unavailable (offline/closed)",
+      "500": "internal_error",
+      "501": "idempotency_unsupported or frame_unsupported at optional service boundary"
+    },
+    "library": {
+      "400": "invalid_pattern_request",
+      "404": "pattern_not_found",
+      "409": "pattern_library_limit / pattern_revision_conflict / pattern_conflict / pattern_library_busy",
+      "501": "pattern_library_unsupported",
+      "503": "pattern_library_unavailable / pattern_commit_uncertain"
+    },
+    "library_v2": {
+      "400": "invalid_pattern_request",
+      "409": "pattern_revision_conflict / pattern_library_read_only",
+      "501": "pattern_source_unsupported or unconfigured pattern_library_unsupported",
+      "503": "pattern_library_format_mismatch / pattern_commit_uncertain; uncertain response has no partial result/Location"
+    }
+  },
+  "strictness_notes": [
+    "All routes share loopback Host/same-origin Origin, no-store,nosniff. No authenticated public/cloud API or CORS relaxation.",
+    "Strict JSON decoders reject unknown/duplicate/null/trailing fields; newer Action/Frame/Pattern codec additionally preserves nested numeric/Unicode grammar. Do not generalize every newest codec guarantee to all legacy routes.",
+    "New Light/Frame/Color/Pattern routes reject query including empty ? where code checks ForceQuery; several old root/job routes do not uniformly reject query/body. Prefer documented canonical paths; this inventory does not claim missing guards are implemented.",
+    "GET state is cached and may be stale while frame runs; latest sampled_at is evidence. Desired target, successful Job, readback and optical capture are different facts.",
+    "OpenAPI file at these baselines is older v1 subset; do not treat it as complete inventory."
+  ],
+  "related_docs": [
+    "validation/nb1-web-embed/docs/agent-guide.zh-CN.md",
+    "validation/nb1-web-embed/internal/lightaction/README.zh-CN.md",
+    "validation/nb1-web-embed/internal/lightactionv2/README.zh-CN.md",
+    "validation/nb1-web-embed/docs/patterns-cli.md",
+    "validation/nb1-web-embed/internal/devicebackend/README.md",
+    "blink1-go/device_cmd.go",
+    "validation/nb1-ecosystem-next/internal/httpapi/README.patterns-v2.zh-CN.md"
+  ],
+  "scope": {
+    "production_changes": false,
+    "service_or_device_requests": false,
+    "hardware_or_camera": false,
+    "build_or_test_execution": false,
+    "installation": false,
+    "remote_write": false,
+    "existing_tests_read_as_evidence_only": true
+  }
+}

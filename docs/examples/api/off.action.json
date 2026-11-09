@@ -1,0 +1,7 @@
+{
+  "contract": "nb1-light-action/v1",
+  "action": {
+    "kind": "off",
+    "led": 0
+  }
+}

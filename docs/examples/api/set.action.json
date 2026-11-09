@@ -1,0 +1,9 @@
+{
+  "contract": "nb1-light-action/v1",
+  "action": {
+    "kind": "set",
+    "color": "#0f8",
+    "led": 1,
+    "on_finish": "hold"
+  }
+}

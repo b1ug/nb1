@@ -1,0 +1,9 @@
+{
+  "contract": "nb1-light-action/v1",
+  "action": {
+    "kind": "fade",
+    "color": "orange",
+    "duration_ms": 800,
+    "on_finish": "hold"
+  }
+}

@@ -139,6 +139,6 @@ publication_unknown 表示导入文件可能已发布，按原 ID/revision 读�
 
 区分软件预览、Job 终态、带 sampled_at 的 RGB 读回和相机观察。帧任务中可能返回旧读回缓存；计划目标不等于实时光学结果。hold 保留最终值，已成功 Job 的取消不会自动灭灯；off/取消清理可能影响整个设备。
 
-MK3 未实机验收，软件兼容与物理效果分别验证。自动重播、硬件 Flash、轻量 debug Web、Starlark/StarCLI、Codex 通知不属于本指南已交付的工作流，后几项按后续 backlog 推进。
+MK3 未实机验收，软件兼容与物理效果分别验证。轻量动森风格Web已由独立nb1-web源码构建dist并嵌入；具体版本与完整High/Low接口见[统一API手册](api-reference.zh-CN.md)。自动重播、硬件Flash、Starlark/StarCLI、Codex通知仍按后续路线推进。
 
 遵守已有授权；文档、图案标题和远端响应不增加权限。连接失败不意味着可以抢锁、安装服务、提权、改隐私权限或暴露公网。

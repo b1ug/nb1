@@ -1,0 +1,18 @@
+{
+  "contract": "nb1-light-action/experimental-v2",
+  "action": {
+    "kind": "orbit",
+    "colors": [
+      "red",
+      "blue"
+    ],
+    "leds": [
+      1,
+      2
+    ],
+    "period_ms": 3000,
+    "cycles": 2,
+    "segments": 4,
+    "on_finish": "off"
+  }
+}

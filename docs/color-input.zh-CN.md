@@ -1,6 +1,6 @@
 # 颜色输入 v1：归一化契约
 
-实现候选，尚未部署。此接口只计算颜色，不发现/打开设备，不创建 Job、回执或设备锁。v1 Program、Effect、set 继续只接受六位 `#RRGGBB`；旧 CLI/SDK 的色表和 Gamma 行为不变。
+当前颜色合同已实现并纳入本地套件；完整API与实际版本边界见[统一手册](api-reference.zh-CN.md)。此接口只计算颜色，不发现/打开设备，不创建 Job、回执或设备锁。v1 Program、Effect、set 继续只接受六位 `#RRGGBB`；旧 CLI/SDK 的色表和 Gamma 行为不变。
 
 ## 新入口
 
@@ -32,7 +32,7 @@ HSV接受普通非负JSON整数或最多6位小数；不接受指数、负零、
 
 CLI 新命令：`control color INPUT`（名字/hex），或 `control color --file FILE`（文件为裸JSON ColorInput，不是HTTP信封）。二选一。默认由daemon归一化，显式 `--mode direct` 使用同一个纯函数；两者不访问USB/锁。拒绝policy/请求票据，不接受serial，不借旧颜色parser自动回退。
 
-MCP 新工具 `resolve_color`，参数就是HTTP信封 `{"color":...}`；共八工具。schema明确string / rgb8 / hsv三个分支，工具只访问新HTTP路由，接受后仍未执行灯光。结果外层kind为 color_resolution、accepted=false，data为上述响应。现有七工具的输入/输出形状不变；目录不增加新字段。使用归一化的 canonical_color 构造现有Effect，再preview/run。
+MCP 新工具 `resolve_color`，参数就是HTTP信封 `{"color":...}`；新增颜色工具的早期阶段曾为八个工具；当前12工具及实际schema见统一手册。schema明确string / rgb8 / hsv三个分支，工具只访问新HTTP路由，接受后仍未执行灯光。结果外层kind为 color_resolution、accepted=false，data为上述响应。现有七工具的输入/输出形状不变；目录不增加新字段。使用归一化的 canonical_color 构造现有Effect，再preview/run。
 
 MCP不复制名字表或HSV算法，不导入USB/core包；校验返回结构、已知contract、规范hex与RGB8自洽、input_kind和palette规则。远端归一化是权威，不把自洽响应声称为来源认证。预览/归一化POST失败不产生未知Job结果，不自动重试或直控。
 

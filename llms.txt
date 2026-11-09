@@ -27,7 +27,9 @@ v2 取消使用 control light cancel SERIAL FILE 加同一对原票据，可选 
 - [MCP 合同](adapters/mcp/README.md)：真实工具 schema、返回值、job_kind 和回执路径。
 - [Pattern CLI 合同](docs/patterns-cli.md)：import/list/get/export/preview/run 与固定 revision。
 - [颜色输入](docs/color-input.zh-CN.md)：名字、Hex3/Hex6、RGB8、HSV。
-- [HTTP OpenAPI](docs/openapi.json)：既有 v1 机器合同；实验 v2 另查高级动作与 MCP 文档，并核对 daemon 实际支持。
+- [完整中文API手册](docs/api-reference.zh-CN.md)：High/Low职责、参数、当前状态、全部HTTP操作、CLI/MCP和记忆边界。
+- [HTTP OpenAPI](docs/openapi.json)：版本化机器合同；按x-availability区分日常接口与需显式启用的开发接口，仍须核对实际daemon。
+- [实际MCP工具schema](docs/mcp-tools.schema.json)：12个工具的已采集输入/输出定义。
 
 ## 图案与边界
 

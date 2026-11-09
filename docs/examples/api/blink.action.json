@@ -1,0 +1,11 @@
+{
+  "contract": "nb1-light-action/v1",
+  "action": {
+    "kind": "blink",
+    "color": "orange",
+    "on_ms": 250,
+    "off_ms": 250,
+    "cycles": 3,
+    "on_finish": "off"
+  }
+}

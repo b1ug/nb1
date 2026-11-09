@@ -1,0 +1,5768 @@
+{
+  "cancel_job": {
+    "input": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_-]+$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "type": "object"
+    },
+    "output": {
+      "additionalProperties": false,
+      "properties": {
+        "accepted": {
+          "type": "boolean"
+        },
+        "data": true,
+        "dry_run": {
+          "type": "boolean"
+        },
+        "error": {
+          "additionalProperties": false,
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "http_status": {
+              "type": "integer"
+            },
+            "message": {
+              "type": "string"
+            },
+            "outcome_unknown": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "code",
+            "message"
+          ],
+          "type": [
+            "null",
+            "object"
+          ]
+        },
+        "instance_binding_verified": {
+          "type": [
+            "null",
+            "boolean"
+          ]
+        },
+        "kind": {
+          "type": "string"
+        },
+        "poll_after_ms": {
+          "type": "integer"
+        },
+        "request_ticket": {
+          "additionalProperties": false,
+          "properties": {
+            "expected_daemon_instance_id": {
+              "type": "string"
+            },
+            "request_id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "request_id",
+            "expected_daemon_instance_id"
+          ],
+          "type": [
+            "null",
+            "object"
+          ]
+        }
+      },
+      "required": [
+        "kind",
+        "accepted"
+      ],
+      "type": "object"
+    }
+  },
+  "get_device_state": {
+    "input": {
+      "additionalProperties": false,
+      "properties": {
+        "serial": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_-]+$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "serial"
+      ],
+      "type": "object"
+    },
+    "output": {
+      "additionalProperties": false,
+      "properties": {
+        "accepted": {
+          "type": "boolean"
+        },
+        "data": true,
+        "dry_run": {
+          "type": "boolean"
+        },
+        "error": {
+          "additionalProperties": false,
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "http_status": {
+              "type": "integer"
+            },
+            "message": {
+              "type": "string"
+            },
+            "outcome_unknown": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "code",
+            "message"
+          ],
+          "type": [
+            "null",
+            "object"
+          ]
+        },
+        "instance_binding_verified": {
+          "type": [
+            "null",
+            "boolean"
+          ]
+        },
+        "kind": {
+          "type": "string"
+        },
+        "poll_after_ms": {
+          "type": "integer"
+        },
+        "request_ticket": {
+          "additionalProperties": false,
+          "properties": {
+            "expected_daemon_instance_id": {
+              "type": "string"
+            },
+            "request_id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "request_id",
+            "expected_daemon_instance_id"
+          ],
+          "type": [
+            "null",
+            "object"
+          ]
+        }
+      },
+      "required": [
+        "kind",
+        "accepted"
+      ],
+      "type": "object"
+    }
+  },
+  "get_job": {
+    "input": {
+      "additionalProperties": false,
+      "oneOf": [
+        {
+          "additionalProperties": false,
+          "properties": {
+            "id": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9_-]+$",
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "expected_daemon_instance_id": {
+              "description": "Original daemon instance binding; never replace it automatically after a restart",
+              "pattern": "^daemon_[0-9a-f]{32}$",
+              "type": "string"
+            },
+            "job_kind": {
+              "description": "Receipt-only selector: omit for legacy Program, use frame for an experimental FrameJob. Do not combine with id.",
+              "enum": [
+                "program",
+                "frame"
+              ],
+              "type": "string"
+            },
+            "request_id": {
+              "description": "Use the prepared request_id unchanged; deadlines are daemon uptime, not wall time",
+              "maxLength": 56,
+              "minLength": 38,
+              "pattern": "^req_[1-9][0-9]{0,18}_[0-9a-f]{32}$",
+              "type": "string"
+            },
+            "serial": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9_-]+$",
+              "type": "string"
+            }
+          },
+          "required": [
+            "serial",
+            "request_id",
+            "expected_daemon_instance_id"
+          ],
+          "type": "object"
+        }
+      ],
+      "properties": {
+        "expected_daemon_instance_id": {
+          "description": "Original daemon instance binding; never replace it automatically after a restart",
+          "pattern": "^daemon_[0-9a-f]{32}$",
+          "type": "string"
+        },
+        "id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_-]+$",
+          "type": "string"
+        },
+        "job_kind": {
+          "description": "Receipt-only selector: omit for legacy Program, use frame for an experimental FrameJob. Do not combine with id.",
+          "enum": [
+            "program",
+            "frame"
+          ],
+          "type": "string"
+        },
+        "request_id": {
+          "description": "Use the prepared request_id unchanged; deadlines are daemon uptime, not wall time",
+          "maxLength": 56,
+          "minLength": 38,
+          "pattern": "^req_[1-9][0-9]{0,18}_[0-9a-f]{32}$",
+          "type": "string"
+        },
+        "serial": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_-]+$",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "output": {
+      "additionalProperties": false,
+      "properties": {
+        "accepted": {
+          "type": "boolean"
+        },
+        "data": true,
+        "dry_run": {
+          "type": "boolean"
+        },
+        "error": {
+          "additionalProperties": false,
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "http_status": {
+              "type": "integer"
+            },
+            "message": {
+              "type": "string"
+            },
+            "outcome_unknown": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "code",
+            "message"
+          ],
+          "type": [
+            "null",
+            "object"
+          ]
+        },
+        "instance_binding_verified": {
+          "type": [
+            "null",
+            "boolean"
+          ]
+        },
+        "kind": {
+          "type": "string"
+        },
+        "poll_after_ms": {
+          "type": "integer"
+        },
+        "request_ticket": {
+          "additionalProperties": false,
+          "properties": {
+            "expected_daemon_instance_id": {
+              "type": "string"
+            },
+            "request_id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "request_id",
+            "expected_daemon_instance_id"
+          ],
+          "type": [
+            "null",
+            "object"
+          ]
+        }
+      },
+      "required": [
+        "kind",
+        "accepted"
+      ],
+      "type": "object"
+    }
+  },
+  "get_pattern": {
+    "input": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "type": "object"
+    },
+    "output": {
+      "additionalProperties": false,
+      "oneOf": [
+        {
+          "not": {
+            "required": [
+              "error"
+            ]
+          },
+          "properties": {
+            "kind": {
+              "const": "pattern_record"
+            }
+          },
+          "required": [
+            "data"
+          ]
+        },
+        {
+          "not": {
+            "required": [
+              "data"
+            ]
+          },
+          "properties": {
+            "kind": {
+              "const": "error"
+            }
+          },
+          "required": [
+            "error"
+          ]
+        }
+      ],
+      "properties": {
+        "accepted": {
+          "const": false
+        },
+        "data": {
+          "additionalProperties": false,
+          "properties": {
+            "compile_contract": {
+              "const": "nb1-program-effect/v1"
+            },
+            "compiled_program": {
+              "additionalProperties": false,
+              "properties": {
+                "on_finish": {
+                  "enum": [
+                    "off",
+                    "hold"
+                  ],
+                  "type": "string"
+                },
+                "repeat": {
+                  "maximum": 10000,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "steps": {
+                  "items": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "color": {
+                        "pattern": "^#[0-9a-f]{6}$",
+                        "type": "string"
+                      },
+                      "fade_ms": {
+                        "maximum": 600000,
+                        "minimum": 0,
+                        "multipleOf": 10,
+                        "type": "integer"
+                      },
+                      "hold_ms": {
+                        "maximum": 3600000,
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "led": {
+                        "enum": [
+                          0,
+                          1,
+                          2
+                        ],
+                        "type": "integer"
+                      }
+                    },
+                    "required": [
+                      "led",
+                      "color",
+                      "fade_ms",
+                      "hold_ms"
+                    ],
+                    "type": "object"
+                  },
+                  "maxItems": 1024,
+                  "minItems": 1,
+                  "type": "array"
+                }
+              },
+              "required": [
+                "steps",
+                "repeat",
+                "on_finish"
+              ],
+              "type": "object"
+            },
+            "id": {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$",
+              "type": "string"
+            },
+            "revision": {
+              "pattern": "^sha256:[0-9a-f]{64}$",
+              "type": "string"
+            },
+            "source": {
+              "additionalProperties": false,
+              "oneOf": [
+                {
+                  "not": {
+                    "required": [
+                      "effect"
+                    ]
+                  },
+                  "required": [
+                    "program"
+                  ]
+                },
+                {
+                  "not": {
+                    "required": [
+                      "program"
+                    ]
+                  },
+                  "required": [
+                    "effect"
+                  ]
+                }
+              ],
+              "properties": {
+                "effect": {
+                  "oneOf": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "color": {
+                          "pattern": "^#[0-9a-f]{6}$",
+                          "type": "string"
+                        },
+                        "fade_ms": {
+                          "maximum": 600000,
+                          "minimum": 0,
+                          "multipleOf": 10,
+                          "type": "integer"
+                        },
+                        "kind": {
+                          "const": "steady"
+                        },
+                        "led": {
+                          "enum": [
+                            0,
+                            1,
+                            2
+                          ],
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "color",
+                        "led",
+                        "fade_ms"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "color": {
+                          "pattern": "^#[0-9a-f]{6}$",
+                          "type": "string"
+                        },
+                        "cycles": {
+                          "maximum": 10000,
+                          "minimum": 1,
+                          "type": "integer"
+                        },
+                        "kind": {
+                          "const": "pulse"
+                        },
+                        "led": {
+                          "enum": [
+                            0,
+                            1,
+                            2
+                          ],
+                          "type": "integer"
+                        },
+                        "on_finish": {
+                          "enum": [
+                            "off",
+                            "hold"
+                          ],
+                          "type": "string"
+                        },
+                        "period_ms": {
+                          "maximum": 1200000,
+                          "minimum": 60,
+                          "multipleOf": 10,
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "color",
+                        "led",
+                        "cycles",
+                        "period_ms",
+                        "on_finish"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                },
+                "program": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "on_finish": {
+                      "enum": [
+                        "off",
+                        "hold"
+                      ],
+                      "type": "string"
+                    },
+                    "repeat": {
+                      "maximum": 10000,
+                      "minimum": 1,
+                      "type": "integer"
+                    },
+                    "steps": {
+                      "items": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "color": {
+                            "pattern": "^#[0-9a-f]{6}$",
+                            "type": "string"
+                          },
+                          "fade_ms": {
+                            "maximum": 600000,
+                            "minimum": 0,
+                            "multipleOf": 10,
+                            "type": "integer"
+                          },
+                          "hold_ms": {
+                            "maximum": 3600000,
+                            "minimum": 0,
+                            "type": "integer"
+                          },
+                          "led": {
+                            "enum": [
+                              0,
+                              1,
+                              2
+                            ],
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "led",
+                          "color",
+                          "fade_ms",
+                          "hold_ms"
+                        ],
+                        "type": "object"
+                      },
+                      "maxItems": 1024,
+                      "minItems": 1,
+                      "type": "array"
+                    }
+                  },
+                  "required": [
+                    "steps",
+                    "repeat",
+                    "on_finish"
+                  ],
+                  "type": "object"
+                }
+              },
+              "type": "object"
+            },
+            "title": {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "title",
+            "source",
+            "compiled_program",
+            "compile_contract",
+            "revision"
+          ],
+          "type": "object"
+        },
+        "error": {
+          "additionalProperties": false,
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "http_status": {
+              "type": "integer"
+            },
+            "message": {
+              "type": "string"
+            },
+            "outcome_unknown": {
+              "const": false
+            }
+          },
+          "required": [
+            "code",
+            "message"
+          ],
+          "type": "object"
+        },
+        "kind": {
+          "enum": [
+            "pattern_record",
+            "error"
+          ]
+        }
+      },
+      "required": [
+        "kind",
+        "accepted"
+      ],
+      "type": "object"
+    }
+  },
+  "list_devices": {
+    "input": {
+      "additionalProperties": false,
+      "properties": {
+        "include_capabilities": {
+          "type": "boolean"
+        },
+        "prepare_request": {
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "output": {
+      "additionalProperties": false,
+      "properties": {
+        "accepted": {
+          "type": "boolean"
+        },
+        "data": true,
+        "dry_run": {
+          "type": "boolean"
+        },
+        "error": {
+          "additionalProperties": false,
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "http_status": {
+              "type": "integer"
+            },
+            "message": {
+              "type": "string"
+            },
+            "outcome_unknown": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "code",
+            "message"
+          ],
+          "type": [
+            "null",
+            "object"
+          ]
+        },
+        "instance_binding_verified": {
+          "type": [
+            "null",
+            "boolean"
+          ]
+        },
+        "kind": {
+          "type": "string"
+        },
+        "poll_after_ms": {
+          "type": "integer"
+        },
+        "request_ticket": {
+          "additionalProperties": false,
+          "properties": {
+            "expected_daemon_instance_id": {
+              "type": "string"
+            },
+            "request_id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "request_id",
+            "expected_daemon_instance_id"
+          ],
+          "type": [
+            "null",
+            "object"
+          ]
+        }
+      },
+      "required": [
+        "kind",
+        "accepted"
+      ],
+      "type": "object"
+    }
+  },
+  "list_patterns": {
+    "input": {
+      "additionalProperties": false,
+      "properties": {},
+      "type": "object"
+    },
+    "output": {
+      "additionalProperties": false,
+      "oneOf": [
+        {
+          "not": {
+            "required": [
+              "error"
+            ]
+          },
+          "properties": {
+            "kind": {
+              "const": "pattern_list"
+            }
+          },
+          "required": [
+            "data"
+          ]
+        },
+        {
+          "not": {
+            "required": [
+              "data"
+            ]
+          },
+          "properties": {
+            "kind": {
+              "const": "error"
+            }
+          },
+          "required": [
+            "error"
+          ]
+        }
+      ],
+      "properties": {
+        "accepted": {
+          "const": false
+        },
+        "data": {
+          "additionalProperties": false,
+          "properties": {
+            "contract": {
+              "const": "nb1-pattern-library/v1"
+            },
+            "library": {
+              "additionalProperties": false,
+              "properties": {
+                "compile_contract": {
+                  "const": "nb1-program-effect/v1"
+                },
+                "create_only": {
+                  "const": true
+                },
+                "max_package_bytes": {
+                  "const": 1048576
+                },
+                "max_records": {
+                  "const": 128
+                },
+                "path": {
+                  "description": "Daemon-selected absolute display path; adapter never opens it",
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "record_contract": {
+                  "const": "nb1-pattern-record/v1"
+                },
+                "snapshot_kind": {
+                  "const": "nb1-pattern-snapshot"
+                },
+                "state": {
+                  "const": "ready"
+                }
+              },
+              "required": [
+                "path",
+                "state",
+                "create_only",
+                "max_records",
+                "max_package_bytes",
+                "record_contract",
+                "compile_contract",
+                "snapshot_kind"
+              ],
+              "type": "object"
+            },
+            "patterns": {
+              "items": {
+                "additionalProperties": false,
+                "properties": {
+                  "compile_contract": {
+                    "const": "nb1-program-effect/v1"
+                  },
+                  "id": {
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$",
+                    "type": "string"
+                  },
+                  "nominal_duration_ms": {
+                    "maximum": 86400000,
+                    "minimum": 10,
+                    "type": "integer"
+                  },
+                  "on_finish": {
+                    "enum": [
+                      "off",
+                      "hold"
+                    ]
+                  },
+                  "required_capabilities": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "maxItems": 4,
+                    "minItems": 3,
+                    "type": "array"
+                  },
+                  "revision": {
+                    "pattern": "^sha256:[0-9a-f]{64}$",
+                    "type": "string"
+                  },
+                  "title": {
+                    "maxLength": 256,
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "total_steps": {
+                    "maximum": 10240000,
+                    "minimum": 1,
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "id",
+                  "title",
+                  "revision",
+                  "compile_contract",
+                  "total_steps",
+                  "nominal_duration_ms",
+                  "on_finish",
+                  "required_capabilities"
+                ],
+                "type": "object"
+              },
+              "maxItems": 128,
+              "minItems": 0,
+              "type": "array"
+            },
+            "schema_version": {
+              "const": 1
+            }
+          },
+          "required": [
+            "schema_version",
+            "contract",
+            "library",
+            "patterns"
+          ],
+          "type": "object"
+        },
+        "error": {
+          "additionalProperties": false,
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "http_status": {
+              "type": "integer"
+            },
+            "message": {
+              "type": "string"
+            },
+            "outcome_unknown": {
+              "const": false
+            }
+          },
+          "required": [
+            "code",
+            "message"
+          ],
+          "type": "object"
+        },
+        "kind": {
+          "enum": [
+            "pattern_list",
+            "error"
+          ]
+        }
+      },
+      "required": [
+        "kind",
+        "accepted"
+      ],
+      "type": "object"
+    }
+  },
+  "preview_light": {
+    "input": {
+      "additionalProperties": false,
+      "oneOf": [
+        {
+          "properties": {
+            "action": {
+              "description": "One action in the unified light namespace. breathe is a symmetric cosine16 envelope; new pulse is fast attack, decay, rest. All actions are finite; daemon enforces \u003c=1024 executed steps/24h. Legacy run_program.effect.pulse is unchanged.",
+              "oneOf": [
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "color": {
+                      "description": "Independent color notation only; does not change existing v1 Program/Effect color fields. String ≤64 decoded bytes; final lexical/semantic validation belongs to the daemon.",
+                      "oneOf": [
+                        {
+                          "maxLength": 64,
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "b": {
+                              "maximum": 255,
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "g": {
+                              "maximum": 255,
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "r": {
+                              "maximum": 255,
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "space": {
+                              "enum": [
+                                "rgb8"
+                              ],
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "space",
+                            "r",
+                            "g",
+                            "b"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "h_deg": {
+                              "maximum": 360,
+                              "minimum": 0,
+                              "type": "number"
+                            },
+                            "s_pct": {
+                              "maximum": 100,
+                              "minimum": 0,
+                              "type": "number"
+                            },
+                            "space": {
+                              "enum": [
+                                "hsv"
+                              ],
+                              "type": "string"
+                            },
+                            "v_pct": {
+                              "maximum": 100,
+                              "minimum": 0,
+                              "type": "number"
+                            }
+                          },
+                          "required": [
+                            "space",
+                            "h_deg",
+                            "s_pct",
+                            "v_pct"
+                          ],
+                          "type": "object"
+                        }
+                      ]
+                    },
+                    "kind": {
+                      "const": "set",
+                      "type": "string"
+                    },
+                    "led": {
+                      "default": 0,
+                      "enum": [
+                        0,
+                        1,
+                        2
+                      ],
+                      "type": "integer"
+                    },
+                    "on_finish": {
+                      "default": "hold",
+                      "enum": [
+                        "off",
+                        "hold"
+                      ],
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "color"
+                  ],
+                  "type": "object"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "kind": {
+                      "const": "off",
+                      "type": "string"
+                    },
+                    "led": {
+                      "default": 0,
+                      "enum": [
+                        0,
+                        1,
+                        2
+                      ],
+                      "type": "integer"
+                    },
+                    "on_finish": {
+                      "default": "hold",
+                      "enum": [
+                        "off",
+                        "hold"
+                      ],
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "kind"
+                  ],
+                  "type": "object"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "color": {
+                      "description": "Independent color notation only; does not change existing v1 Program/Effect color fields. String ≤64 decoded bytes; final lexical/semantic validation belongs to the daemon.",
+                      "oneOf": [
+                        {
+                          "maxLength": 64,
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "b": {
+                              "maximum": 255,
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "g": {
+                              "maximum": 255,
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "r": {
+                              "maximum": 255,
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "space": {
+                              "enum": [
+                                "rgb8"
+                              ],
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "space",
+                            "r",
+                            "g",
+                            "b"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "h_deg": {
+                              "maximum": 360,
+                              "minimum": 0,
+                              "type": "number"
+                            },
+                            "s_pct": {
+                              "maximum": 100,
+                              "minimum": 0,
+                              "type": "number"
+                            },
+                            "space": {
+                              "enum": [
+                                "hsv"
+                              ],
+                              "type": "string"
+                            },
+                            "v_pct": {
+                              "maximum": 100,
+                              "minimum": 0,
+                              "type": "number"
+                            }
+                          },
+                          "required": [
+                            "space",
+                            "h_deg",
+                            "s_pct",
+                            "v_pct"
+                          ],
+                          "type": "object"
+                        }
+                      ]
+                    },
+                    "duration_ms": {
+                      "maximum": 600000,
+                      "minimum": 10,
+                      "multipleOf": 10,
+                      "type": "integer"
+                    },
+                    "kind": {
+                      "const": "fade",
+                      "type": "string"
+                    },
+                    "led": {
+                      "default": 0,
+                      "enum": [
+                        0,
+                        1,
+                        2
+                      ],
+                      "type": "integer"
+                    },
+                    "on_finish": {
+                      "default": "hold",
+                      "enum": [
+                        "off",
+                        "hold"
+                      ],
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "color",
+                    "duration_ms"
+                  ],
+                  "type": "object"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "color": {
+                      "description": "Independent color notation only; does not change existing v1 Program/Effect color fields. String ≤64 decoded bytes; final lexical/semantic validation belongs to the daemon.",
+                      "oneOf": [
+                        {
+                          "maxLength": 64,
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "b": {
+                              "maximum": 255,
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "g": {
+                              "maximum": 255,
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "r": {
+                              "maximum": 255,
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "space": {
+                              "enum": [
+                                "rgb8"
+                              ],
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "space",
+                            "r",
+                            "g",
+                            "b"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "h_deg": {
+                              "maximum": 360,
+                              "minimum": 0,
+                              "type": "number"
+                            },
+                            "s_pct": {
+                              "maximum": 100,
+                              "minimum": 0,
+                              "type": "number"
+                            },
+                            "space": {
+                              "enum": [
+                                "hsv"
+                              ],
+                              "type": "string"
+                            },
+                            "v_pct": {
+                              "maximum": 100,
+                              "minimum": 0,
+                              "type": "number"
+                            }
+                          },
+                          "required": [
+                            "space",
+                            "h_deg",
+                            "s_pct",
+                            "v_pct"
+                          ],
+                          "type": "object"
+                        }
+                      ]
+                    },
+                    "cycles": {
+                      "default": 1,
+                      "maximum": 10000,
+                      "minimum": 1,
+                      "type": "integer"
+                    },
+                    "kind": {
+                      "const": "blink",
+                      "type": "string"
+                    },
+                    "led": {
+                      "default": 0,
+                      "enum": [
+                        0,
+                        1,
+                        2
+                      ],
+                      "type": "integer"
+                    },
+                    "off_ms": {
+                      "default": 250,
+                      "maximum": 3600000,
+                      "minimum": 10,
+                      "type": "integer"
+                    },
+                    "on_finish": {
+                      "default": "off",
+                      "enum": [
+                        "off",
+                        "hold"
+                      ],
+                      "type": "string"
+                    },
+                    "on_ms": {
+                      "default": 250,
+                      "maximum": 3600000,
+                      "minimum": 10,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "color"
+                  ],
+                  "type": "object"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "color": {
+                      "description": "Independent color notation only; does not change existing v1 Program/Effect color fields. String ≤64 decoded bytes; final lexical/semantic validation belongs to the daemon.",
+                      "oneOf": [
+                        {
+                          "maxLength": 64,
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "b": {
+                              "maximum": 255,
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "g": {
+                              "maximum": 255,
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "r": {
+                              "maximum": 255,
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "space": {
+                              "enum": [
+                                "rgb8"
+                              ],
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "space",
+                            "r",
+                            "g",
+                            "b"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "h_deg": {
+                              "maximum": 360,
+                              "minimum": 0,
+                              "type": "number"
+                            },
+                            "s_pct": {
+                              "maximum": 100,
+                              "minimum": 0,
+                              "type": "number"
+                            },
+                            "space": {
+                              "enum": [
+                                "hsv"
+                              ],
+                              "type": "string"
+                            },
+                            "v_pct": {
+                              "maximum": 100,
+                              "minimum": 0,
+                              "type": "number"
+                            }
+                          },
+                          "required": [
+                            "space",
+                            "h_deg",
+                            "s_pct",
+                            "v_pct"
+                          ],
+                          "type": "object"
+                        }
+                      ]
+                    },
+                    "cycles": {
+                      "default": 1,
+                      "maximum": 10000,
+                      "minimum": 1,
+                      "type": "integer"
+                    },
+                    "kind": {
+                      "const": "breathe",
+                      "type": "string"
+                    },
+                    "led": {
+                      "default": 0,
+                      "enum": [
+                        0,
+                        1,
+                        2
+                      ],
+                      "type": "integer"
+                    },
+                    "on_finish": {
+                      "default": "off",
+                      "enum": [
+                        "off",
+                        "hold"
+                      ],
+                      "type": "string"
+                    },
+                    "period_ms": {
+                      "default": 2000,
+                      "maximum": 1200000,
+                      "minimum": 330,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "color"
+                  ],
+                  "type": "object"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "attack_ms": {
+                      "default": 60,
+                      "maximum": 600000,
+                      "minimum": 10,
+                      "multipleOf": 10,
+                      "type": "integer"
+                    },
+                    "color": {
+                      "description": "Independent color notation only; does not change existing v1 Program/Effect color fields. String ≤64 decoded bytes; final lexical/semantic validation belongs to the daemon.",
+                      "oneOf": [
+                        {
+                          "maxLength": 64,
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "b": {
+                              "maximum": 255,
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "g": {
+                              "maximum": 255,
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "r": {
+                              "maximum": 255,
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "space": {
+                              "enum": [
+                                "rgb8"
+                              ],
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "space",
+                            "r",
+                            "g",
+                            "b"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "h_deg": {
+                              "maximum": 360,
+                              "minimum": 0,
+                              "type": "number"
+                            },
+                            "s_pct": {
+                              "maximum": 100,
+                              "minimum": 0,
+                              "type": "number"
+                            },
+                            "space": {
+                              "enum": [
+                                "hsv"
+                              ],
+                              "type": "string"
+                            },
+                            "v_pct": {
+                              "maximum": 100,
+                              "minimum": 0,
+                              "type": "number"
+                            }
+                          },
+                          "required": [
+                            "space",
+                            "h_deg",
+                            "s_pct",
+                            "v_pct"
+                          ],
+                          "type": "object"
+                        }
+                      ]
+                    },
+                    "cycles": {
+                      "default": 1,
+                      "maximum": 10000,
+                      "minimum": 1,
+                      "type": "integer"
+                    },
+                    "decay_ms": {
+                      "default": 240,
+                      "maximum": 600000,
+                      "minimum": 10,
+                      "multipleOf": 10,
+                      "type": "integer"
+                    },
+                    "kind": {
+                      "const": "pulse",
+                      "type": "string"
+                    },
+                    "led": {
+                      "default": 0,
+                      "enum": [
+                        0,
+                        1,
+                        2
+                      ],
+                      "type": "integer"
+                    },
+                    "on_finish": {
+                      "default": "off",
+                      "enum": [
+                        "off",
+                        "hold"
+                      ],
+                      "type": "string"
+                    },
+                    "rest_ms": {
+                      "default": 700,
+                      "maximum": 3600000,
+                      "minimum": 0,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "color"
+                  ],
+                  "type": "object"
+                },
+                {
+                  "additionalProperties": false,
+                  "allOf": [
+                    {
+                      "if": {
+                        "properties": {
+                          "transition": {
+                            "enum": [
+                              "linear",
+                              "sine",
+                              "orbit"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "transition"
+                        ]
+                      },
+                      "then": {
+                        "properties": {
+                          "cycles": {
+                            "default": 1,
+                            "maximum": 15,
+                            "minimum": 1,
+                            "type": "integer"
+                          },
+                          "period_ms": {
+                            "default": 2000,
+                            "maximum": 1200000,
+                            "minimum": 1300,
+                            "type": "integer"
+                          }
+                        }
+                      }
+                    }
+                  ],
+                  "properties": {
+                    "colors": {
+                      "default": [
+                        "red",
+                        "blue"
+                      ],
+                      "items": {
+                        "description": "Independent color notation only; does not change existing v1 Program/Effect color fields. String ≤64 decoded bytes; final lexical/semantic validation belongs to the daemon.",
+                        "oneOf": [
+                          {
+                            "maxLength": 64,
+                            "minLength": 1,
+                            "type": "string"
+                          },
+                          {
+                            "additionalProperties": false,
+                            "properties": {
+                              "b": {
+                                "maximum": 255,
+                                "minimum": 0,
+                                "type": "integer"
+                              },
+                              "g": {
+                                "maximum": 255,
+                                "minimum": 0,
+                                "type": "integer"
+                              },
+                              "r": {
+                                "maximum": 255,
+                                "minimum": 0,
+                                "type": "integer"
+                              },
+                              "space": {
+                                "enum": [
+                                  "rgb8"
+                                ],
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "space",
+                              "r",
+                              "g",
+                              "b"
+                            ],
+                            "type": "object"
+                          },
+                          {
+                            "additionalProperties": false,
+                            "properties": {
+                              "h_deg": {
+                                "maximum": 360,
+                                "minimum": 0,
+                                "type": "number"
+                              },
+                              "s_pct": {
+                                "maximum": 100,
+                                "minimum": 0,
+                                "type": "number"
+                              },
+                              "space": {
+                                "enum": [
+                                  "hsv"
+                                ],
+                                "type": "string"
+                              },
+                              "v_pct": {
+                                "maximum": 100,
+                                "minimum": 0,
+                                "type": "number"
+                              }
+                            },
+                            "required": [
+                              "space",
+                              "h_deg",
+                              "s_pct",
+                              "v_pct"
+                            ],
+                            "type": "object"
+                          }
+                        ]
+                      },
+                      "maxItems": 2,
+                      "minItems": 2,
+                      "type": "array"
+                    },
+                    "cycles": {
+                      "default": 1,
+                      "maximum": 10000,
+                      "minimum": 1,
+                      "type": "integer"
+                    },
+                    "kind": {
+                      "const": "alternate",
+                      "type": "string"
+                    },
+                    "leds": {
+                      "default": [
+                        1,
+                        2
+                      ],
+                      "items": {
+                        "enum": [
+                          1,
+                          2
+                        ],
+                        "type": "integer"
+                      },
+                      "maxItems": 2,
+                      "minItems": 2,
+                      "type": "array",
+                      "uniqueItems": true
+                    },
+                    "on_finish": {
+                      "default": "off",
+                      "enum": [
+                        "off",
+                        "hold"
+                      ],
+                      "type": "string"
+                    },
+                    "period_ms": {
+                      "default": 2000,
+                      "maximum": 1200000,
+                      "minimum": 40,
+                      "type": "integer"
+                    },
+                    "transition": {
+                      "description": "Omitted or cut keeps the original four steps. Continuous modes use 66 sequential steps per cycle; they do not imply simultaneous LED writes or physical rotation.",
+                      "enum": [
+                        "cut",
+                        "linear",
+                        "sine",
+                        "orbit"
+                      ],
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "kind"
+                  ],
+                  "type": "object"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "cycles": {
+                      "default": 1,
+                      "maximum": 10000,
+                      "minimum": 1,
+                      "type": "integer"
+                    },
+                    "kind": {
+                      "const": "rainbow",
+                      "type": "string"
+                    },
+                    "led": {
+                      "default": 0,
+                      "enum": [
+                        0,
+                        1,
+                        2
+                      ],
+                      "type": "integer"
+                    },
+                    "on_finish": {
+                      "default": "off",
+                      "enum": [
+                        "off",
+                        "hold"
+                      ],
+                      "type": "string"
+                    },
+                    "period_ms": {
+                      "default": 3000,
+                      "maximum": 1200000,
+                      "minimum": 130,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "kind"
+                  ],
+                  "type": "object"
+                }
+              ]
+            },
+            "contract": {
+              "const": "nb1-light-action/v1"
+            }
+          }
+        },
+        {
+          "properties": {
+            "action": {
+              "additionalProperties": false,
+              "allOf": [
+                {
+                  "else": {
+                    "properties": {
+                      "period_ms": {
+                        "maximum": 2400000
+                      }
+                    }
+                  },
+                  "if": {
+                    "properties": {
+                      "segments": {
+                        "const": 8
+                      }
+                    },
+                    "required": [
+                      "segments"
+                    ]
+                  },
+                  "then": {
+                    "properties": {
+                      "cycles": {
+                        "maximum": 128
+                      },
+                      "period_ms": {
+                        "minimum": 400
+                      }
+                    }
+                  }
+                }
+              ],
+              "description": "Experimental Orbit: 4 simple or 8 detailed paired linear fade segments. Default one cycle, 3000ms. The daemon owns the curve and the 24h total budget; this adapter does not compile effects or prove optical quality.",
+              "properties": {
+                "colors": {
+                  "default": [
+                    "red",
+                    "blue"
+                  ],
+                  "items": {
+                    "description": "Independent color notation only; does not change existing v1 Program/Effect color fields. String ≤64 decoded bytes; final lexical/semantic validation belongs to the daemon.",
+                    "oneOf": [
+                      {
+                        "maxLength": 64,
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "b": {
+                            "maximum": 255,
+                            "minimum": 0,
+                            "type": "integer"
+                          },
+                          "g": {
+                            "maximum": 255,
+                            "minimum": 0,
+                            "type": "integer"
+                          },
+                          "r": {
+                            "maximum": 255,
+                            "minimum": 0,
+                            "type": "integer"
+                          },
+                          "space": {
+                            "enum": [
+                              "rgb8"
+                            ],
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "space",
+                          "r",
+                          "g",
+                          "b"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "h_deg": {
+                            "maximum": 360,
+                            "minimum": 0,
+                            "type": "number"
+                          },
+                          "s_pct": {
+                            "maximum": 100,
+                            "minimum": 0,
+                            "type": "number"
+                          },
+                          "space": {
+                            "enum": [
+                              "hsv"
+                            ],
+                            "type": "string"
+                          },
+                          "v_pct": {
+                            "maximum": 100,
+                            "minimum": 0,
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "space",
+                          "h_deg",
+                          "s_pct",
+                          "v_pct"
+                        ],
+                        "type": "object"
+                      }
+                    ]
+                  },
+                  "maxItems": 2,
+                  "minItems": 2,
+                  "type": "array"
+                },
+                "cycles": {
+                  "default": 1,
+                  "maximum": 256,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "kind": {
+                  "const": "orbit",
+                  "type": "string"
+                },
+                "leds": {
+                  "default": [
+                    1,
+                    2
+                  ],
+                  "items": {
+                    "enum": [
+                      1,
+                      2
+                    ],
+                    "type": "integer"
+                  },
+                  "maxItems": 2,
+                  "minItems": 2,
+                  "type": "array",
+                  "uniqueItems": true
+                },
+                "on_finish": {
+                  "default": "off",
+                  "enum": [
+                    "off",
+                    "hold"
+                  ],
+                  "type": "string"
+                },
+                "period_ms": {
+                  "default": 3000,
+                  "maximum": 4800000,
+                  "minimum": 200,
+                  "type": "integer"
+                },
+                "segments": {
+                  "default": 4,
+                  "enum": [
+                    4,
+                    8
+                  ],
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "kind"
+              ],
+              "type": "object"
+            },
+            "contract": {
+              "const": "nb1-light-action/experimental-v2"
+            }
+          }
+        }
+      ],
+      "properties": {
+        "action": {
+          "description": "Action shape is selected by the explicit contract in oneOf."
+        },
+        "contract": {
+          "enum": [
+            "nb1-light-action/v1",
+            "nb1-light-action/experimental-v2"
+          ],
+          "type": "string"
+        },
+        "serial": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_-]+$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "contract",
+        "action"
+      ],
+      "type": "object"
+    },
+    "output": {
+      "additionalProperties": false,
+      "oneOf": [
+        {
+          "not": {
+            "required": [
+              "error"
+            ]
+          },
+          "properties": {
+            "kind": {
+              "const": "light_preview"
+            }
+          },
+          "required": [
+            "data"
+          ]
+        },
+        {
+          "not": {
+            "required": [
+              "data"
+            ]
+          },
+          "properties": {
+            "kind": {
+              "const": "error"
+            }
+          },
+          "required": [
+            "error"
+          ]
+        }
+      ],
+      "properties": {
+        "accepted": {
+          "const": false
+        },
+        "data": {
+          "additionalProperties": false,
+          "oneOf": [
+            {
+              "properties": {
+                "preview": {
+                  "properties": {
+                    "compile_contract": {
+                      "const": "nb1-program-effect/v1"
+                    }
+                  },
+                  "required": [
+                    "compile_contract"
+                  ]
+                },
+                "result": {
+                  "properties": {
+                    "contract": {
+                      "const": "nb1-light-action/v1"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "properties": {
+                "preview": {
+                  "properties": {
+                    "contract": {
+                      "const": "nb1-frame-program/experimental-v1"
+                    }
+                  },
+                  "required": [
+                    "contract"
+                  ]
+                },
+                "result": {
+                  "properties": {
+                    "contract": {
+                      "const": "nb1-light-action/experimental-v2"
+                    }
+                  }
+                }
+              }
+            }
+          ],
+          "properties": {
+            "preview": {
+              "oneOf": [
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "compile_contract": {
+                      "const": "nb1-program-effect/v1"
+                    },
+                    "device": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "capabilities": {
+                          "items": {
+                            "type": "string"
+                          },
+                          "type": "array"
+                        },
+                        "connection": {
+                          "type": "string"
+                        },
+                        "serial": {
+                          "maxLength": 128,
+                          "minLength": 1,
+                          "pattern": "^[A-Za-z0-9_-]+$",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "serial",
+                        "capabilities"
+                      ],
+                      "type": "object"
+                    },
+                    "input_kind": {
+                      "const": "program"
+                    },
+                    "nominal_duration_ms": {
+                      "minimum": 1,
+                      "type": "integer"
+                    },
+                    "program": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "on_finish": {
+                          "enum": [
+                            "off",
+                            "hold"
+                          ],
+                          "type": "string"
+                        },
+                        "repeat": {
+                          "maximum": 10000,
+                          "minimum": 1,
+                          "type": "integer"
+                        },
+                        "steps": {
+                          "items": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "color": {
+                                "pattern": "^#[0-9a-f]{6}$",
+                                "type": "string"
+                              },
+                              "fade_ms": {
+                                "maximum": 600000,
+                                "minimum": 0,
+                                "multipleOf": 10,
+                                "type": "integer"
+                              },
+                              "hold_ms": {
+                                "maximum": 3600000,
+                                "minimum": 0,
+                                "type": "integer"
+                              },
+                              "led": {
+                                "enum": [
+                                  0,
+                                  1,
+                                  2
+                                ],
+                                "type": "integer"
+                              }
+                            },
+                            "required": [
+                              "led",
+                              "color",
+                              "fade_ms",
+                              "hold_ms"
+                            ],
+                            "type": "object"
+                          },
+                          "maxItems": 1024,
+                          "minItems": 1,
+                          "type": "array"
+                        }
+                      },
+                      "required": [
+                        "steps",
+                        "repeat",
+                        "on_finish"
+                      ],
+                      "type": "object"
+                    },
+                    "required_capabilities": {
+                      "items": {
+                        "type": "string"
+                      },
+                      "type": "array"
+                    },
+                    "schema_version": {
+                      "const": 1
+                    },
+                    "total_steps": {
+                      "minimum": 1,
+                      "type": "integer"
+                    },
+                    "validation": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "device": {
+                          "enum": [
+                            "not_requested",
+                            "unknown",
+                            "supported",
+                            "unsupported"
+                          ]
+                        },
+                        "missing_capabilities": {
+                          "items": {
+                            "type": "string"
+                          },
+                          "type": "array"
+                        },
+                        "program": {
+                          "const": "valid"
+                        },
+                        "reason": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "program",
+                        "device"
+                      ],
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "schema_version",
+                    "compile_contract",
+                    "input_kind",
+                    "program",
+                    "nominal_duration_ms",
+                    "total_steps",
+                    "required_capabilities",
+                    "validation"
+                  ],
+                  "type": "object"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "contract": {
+                      "const": "nb1-frame-program/experimental-v1"
+                    },
+                    "cycle_duration_ms": {
+                      "minimum": 1,
+                      "type": "integer"
+                    },
+                    "device": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "connection": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "serial": {
+                          "maxLength": 128,
+                          "minLength": 1,
+                          "pattern": "^[A-Za-z0-9_-]+$",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "serial",
+                        "connection"
+                      ],
+                      "type": "object"
+                    },
+                    "execution": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "available": {
+                          "type": "boolean"
+                        },
+                        "reason": {
+                          "minLength": 1,
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "available",
+                        "reason"
+                      ],
+                      "type": "object"
+                    },
+                    "nominal_duration_ms": {
+                      "minimum": 1,
+                      "type": "integer"
+                    },
+                    "nominal_initial_ms": {
+                      "minimum": 1,
+                      "type": "integer"
+                    },
+                    "nominal_tail_ms": {
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "planned_target_writes": {
+                      "maximum": 2050,
+                      "minimum": 1,
+                      "type": "integer"
+                    },
+                    "program": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "contract": {
+                          "const": "nb1-frame-program/experimental-v1"
+                        },
+                        "frames": {
+                          "items": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "fade_ms": {
+                                "maximum": 600000,
+                                "minimum": 0,
+                                "multipleOf": 10,
+                                "type": "integer"
+                              },
+                              "interval_ms": {
+                                "maximum": 600000,
+                                "minimum": 50,
+                                "type": "integer"
+                              },
+                              "targets": {
+                                "items": {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "color": {
+                                      "pattern": "^#[0-9a-f]{6}$",
+                                      "type": "string"
+                                    },
+                                    "led": {
+                                      "enum": [
+                                        1,
+                                        2
+                                      ],
+                                      "type": "integer"
+                                    }
+                                  },
+                                  "required": [
+                                    "led",
+                                    "color"
+                                  ],
+                                  "type": "object"
+                                },
+                                "maxItems": 2,
+                                "minItems": 1,
+                                "type": "array"
+                              }
+                            },
+                            "required": [
+                              "targets",
+                              "fade_ms",
+                              "interval_ms"
+                            ],
+                            "type": "object"
+                          },
+                          "maxItems": 1024,
+                          "minItems": 1,
+                          "type": "array"
+                        },
+                        "initial": {
+                          "items": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "color": {
+                                "pattern": "^#[0-9a-f]{6}$",
+                                "type": "string"
+                              },
+                              "led": {
+                                "enum": [
+                                  1,
+                                  2
+                                ],
+                                "type": "integer"
+                              }
+                            },
+                            "required": [
+                              "led",
+                              "color"
+                            ],
+                            "type": "object"
+                          },
+                          "maxItems": 2,
+                          "minItems": 1,
+                          "type": "array"
+                        },
+                        "on_finish": {
+                          "enum": [
+                            "off",
+                            "hold"
+                          ],
+                          "type": "string"
+                        },
+                        "repeat": {
+                          "maximum": 10000,
+                          "minimum": 1,
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "contract",
+                        "initial",
+                        "frames",
+                        "repeat",
+                        "on_finish"
+                      ],
+                      "type": "object"
+                    },
+                    "required_capabilities": {
+                      "items": {
+                        "type": "string"
+                      },
+                      "type": "array"
+                    },
+                    "stored_target_writes": {
+                      "maximum": 2050,
+                      "minimum": 1,
+                      "type": "integer"
+                    },
+                    "timing_basis": {
+                      "const": "host-nominal-excludes-native-io"
+                    },
+                    "total_frames": {
+                      "maximum": 1024,
+                      "minimum": 1,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "contract",
+                    "program",
+                    "total_frames",
+                    "stored_target_writes",
+                    "planned_target_writes",
+                    "cycle_duration_ms",
+                    "nominal_initial_ms",
+                    "nominal_tail_ms",
+                    "nominal_duration_ms",
+                    "timing_basis",
+                    "required_capabilities",
+                    "execution"
+                  ],
+                  "type": "object"
+                }
+              ]
+            },
+            "result": {
+              "oneOf": [
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "action": {
+                      "properties": {
+                        "kind": {
+                          "enum": [
+                            "set",
+                            "off",
+                            "fade",
+                            "blink",
+                            "breathe",
+                            "pulse",
+                            "alternate",
+                            "rainbow"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "kind"
+                      ]
+                    },
+                    "contract": {
+                      "const": "nb1-light-action/v1"
+                    },
+                    "nominal_duration_ms": {
+                      "minimum": 1,
+                      "type": "integer"
+                    },
+                    "program": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "on_finish": {
+                          "enum": [
+                            "off",
+                            "hold"
+                          ],
+                          "type": "string"
+                        },
+                        "repeat": {
+                          "maximum": 10000,
+                          "minimum": 1,
+                          "type": "integer"
+                        },
+                        "steps": {
+                          "items": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "color": {
+                                "pattern": "^#[0-9a-f]{6}$",
+                                "type": "string"
+                              },
+                              "fade_ms": {
+                                "maximum": 600000,
+                                "minimum": 0,
+                                "multipleOf": 10,
+                                "type": "integer"
+                              },
+                              "hold_ms": {
+                                "maximum": 3600000,
+                                "minimum": 0,
+                                "type": "integer"
+                              },
+                              "led": {
+                                "enum": [
+                                  0,
+                                  1,
+                                  2
+                                ],
+                                "type": "integer"
+                              }
+                            },
+                            "required": [
+                              "led",
+                              "color",
+                              "fade_ms",
+                              "hold_ms"
+                            ],
+                            "type": "object"
+                          },
+                          "maxItems": 1024,
+                          "minItems": 1,
+                          "type": "array"
+                        }
+                      },
+                      "required": [
+                        "steps",
+                        "repeat",
+                        "on_finish"
+                      ],
+                      "type": "object"
+                    },
+                    "program_compile_contract": {
+                      "const": "nb1-program-effect/v1"
+                    },
+                    "required_capabilities": {
+                      "items": {
+                        "type": "string"
+                      },
+                      "type": "array"
+                    },
+                    "schema_version": {
+                      "const": 1
+                    },
+                    "total_steps": {
+                      "maximum": 1024,
+                      "minimum": 1,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "schema_version",
+                    "contract",
+                    "program_compile_contract",
+                    "action",
+                    "program",
+                    "nominal_duration_ms",
+                    "total_steps",
+                    "required_capabilities"
+                  ],
+                  "type": "object"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "action": {
+                      "properties": {
+                        "kind": {
+                          "const": "orbit"
+                        }
+                      },
+                      "required": [
+                        "kind"
+                      ]
+                    },
+                    "contract": {
+                      "const": "nb1-light-action/experimental-v2"
+                    },
+                    "nominal_duration_ms": {
+                      "minimum": 1,
+                      "type": "integer"
+                    },
+                    "planned_target_writes": {
+                      "maximum": 2050,
+                      "minimum": 1,
+                      "type": "integer"
+                    },
+                    "program": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "contract": {
+                          "const": "nb1-frame-program/experimental-v1"
+                        },
+                        "frames": {
+                          "items": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "fade_ms": {
+                                "maximum": 600000,
+                                "minimum": 0,
+                                "multipleOf": 10,
+                                "type": "integer"
+                              },
+                              "interval_ms": {
+                                "maximum": 600000,
+                                "minimum": 50,
+                                "type": "integer"
+                              },
+                              "targets": {
+                                "items": {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "color": {
+                                      "pattern": "^#[0-9a-f]{6}$",
+                                      "type": "string"
+                                    },
+                                    "led": {
+                                      "enum": [
+                                        1,
+                                        2
+                                      ],
+                                      "type": "integer"
+                                    }
+                                  },
+                                  "required": [
+                                    "led",
+                                    "color"
+                                  ],
+                                  "type": "object"
+                                },
+                                "maxItems": 2,
+                                "minItems": 1,
+                                "type": "array"
+                              }
+                            },
+                            "required": [
+                              "targets",
+                              "fade_ms",
+                              "interval_ms"
+                            ],
+                            "type": "object"
+                          },
+                          "maxItems": 1024,
+                          "minItems": 1,
+                          "type": "array"
+                        },
+                        "initial": {
+                          "items": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "color": {
+                                "pattern": "^#[0-9a-f]{6}$",
+                                "type": "string"
+                              },
+                              "led": {
+                                "enum": [
+                                  1,
+                                  2
+                                ],
+                                "type": "integer"
+                              }
+                            },
+                            "required": [
+                              "led",
+                              "color"
+                            ],
+                            "type": "object"
+                          },
+                          "maxItems": 2,
+                          "minItems": 1,
+                          "type": "array"
+                        },
+                        "on_finish": {
+                          "enum": [
+                            "off",
+                            "hold"
+                          ],
+                          "type": "string"
+                        },
+                        "repeat": {
+                          "maximum": 10000,
+                          "minimum": 1,
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "contract",
+                        "initial",
+                        "frames",
+                        "repeat",
+                        "on_finish"
+                      ],
+                      "type": "object"
+                    },
+                    "program_compile_contract": {
+                      "const": "nb1-frame-program/experimental-v1"
+                    },
+                    "recipe_id": {
+                      "enum": [
+                        "orbit-paired-linear-4/experimental-v1",
+                        "orbit-paired-linear-8/experimental-v1"
+                      ]
+                    },
+                    "required_capabilities": {
+                      "items": {
+                        "type": "string"
+                      },
+                      "type": "array"
+                    },
+                    "schema_version": {
+                      "const": 1
+                    },
+                    "total_frames": {
+                      "maximum": 1024,
+                      "minimum": 1,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "schema_version",
+                    "contract",
+                    "program_compile_contract",
+                    "recipe_id",
+                    "action",
+                    "program",
+                    "nominal_duration_ms",
+                    "total_frames",
+                    "planned_target_writes",
+                    "required_capabilities"
+                  ],
+                  "type": "object"
+                }
+              ],
+              "properties": {
+                "action": {
+                  "oneOf": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "color": {
+                          "pattern": "^#[0-9a-f]{6}$",
+                          "type": "string"
+                        },
+                        "kind": {
+                          "const": "set",
+                          "type": "string"
+                        },
+                        "led": {
+                          "default": 0,
+                          "enum": [
+                            0,
+                            1,
+                            2
+                          ],
+                          "type": "integer"
+                        },
+                        "on_finish": {
+                          "default": "hold",
+                          "enum": [
+                            "off",
+                            "hold"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "color",
+                        "kind",
+                        "led",
+                        "on_finish"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "kind": {
+                          "const": "off",
+                          "type": "string"
+                        },
+                        "led": {
+                          "default": 0,
+                          "enum": [
+                            0,
+                            1,
+                            2
+                          ],
+                          "type": "integer"
+                        },
+                        "on_finish": {
+                          "default": "hold",
+                          "enum": [
+                            "off",
+                            "hold"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "led",
+                        "on_finish"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "color": {
+                          "pattern": "^#[0-9a-f]{6}$",
+                          "type": "string"
+                        },
+                        "duration_ms": {
+                          "maximum": 600000,
+                          "minimum": 10,
+                          "multipleOf": 10,
+                          "type": "integer"
+                        },
+                        "kind": {
+                          "const": "fade",
+                          "type": "string"
+                        },
+                        "led": {
+                          "default": 0,
+                          "enum": [
+                            0,
+                            1,
+                            2
+                          ],
+                          "type": "integer"
+                        },
+                        "on_finish": {
+                          "default": "hold",
+                          "enum": [
+                            "off",
+                            "hold"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "color",
+                        "duration_ms",
+                        "kind",
+                        "led",
+                        "on_finish"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "color": {
+                          "pattern": "^#[0-9a-f]{6}$",
+                          "type": "string"
+                        },
+                        "cycles": {
+                          "default": 1,
+                          "maximum": 10000,
+                          "minimum": 1,
+                          "type": "integer"
+                        },
+                        "kind": {
+                          "const": "blink",
+                          "type": "string"
+                        },
+                        "led": {
+                          "default": 0,
+                          "enum": [
+                            0,
+                            1,
+                            2
+                          ],
+                          "type": "integer"
+                        },
+                        "off_ms": {
+                          "default": 250,
+                          "maximum": 3600000,
+                          "minimum": 10,
+                          "type": "integer"
+                        },
+                        "on_finish": {
+                          "default": "off",
+                          "enum": [
+                            "off",
+                            "hold"
+                          ],
+                          "type": "string"
+                        },
+                        "on_ms": {
+                          "default": 250,
+                          "maximum": 3600000,
+                          "minimum": 10,
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "color",
+                        "cycles",
+                        "kind",
+                        "led",
+                        "off_ms",
+                        "on_finish",
+                        "on_ms"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "color": {
+                          "pattern": "^#[0-9a-f]{6}$",
+                          "type": "string"
+                        },
+                        "cycles": {
+                          "default": 1,
+                          "maximum": 10000,
+                          "minimum": 1,
+                          "type": "integer"
+                        },
+                        "kind": {
+                          "const": "breathe",
+                          "type": "string"
+                        },
+                        "led": {
+                          "default": 0,
+                          "enum": [
+                            0,
+                            1,
+                            2
+                          ],
+                          "type": "integer"
+                        },
+                        "on_finish": {
+                          "default": "off",
+                          "enum": [
+                            "off",
+                            "hold"
+                          ],
+                          "type": "string"
+                        },
+                        "period_ms": {
+                          "default": 2000,
+                          "maximum": 1200000,
+                          "minimum": 330,
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "color",
+                        "cycles",
+                        "kind",
+                        "led",
+                        "on_finish",
+                        "period_ms"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "attack_ms": {
+                          "default": 60,
+                          "maximum": 600000,
+                          "minimum": 10,
+                          "multipleOf": 10,
+                          "type": "integer"
+                        },
+                        "color": {
+                          "pattern": "^#[0-9a-f]{6}$",
+                          "type": "string"
+                        },
+                        "cycles": {
+                          "default": 1,
+                          "maximum": 10000,
+                          "minimum": 1,
+                          "type": "integer"
+                        },
+                        "decay_ms": {
+                          "default": 240,
+                          "maximum": 600000,
+                          "minimum": 10,
+                          "multipleOf": 10,
+                          "type": "integer"
+                        },
+                        "kind": {
+                          "const": "pulse",
+                          "type": "string"
+                        },
+                        "led": {
+                          "default": 0,
+                          "enum": [
+                            0,
+                            1,
+                            2
+                          ],
+                          "type": "integer"
+                        },
+                        "on_finish": {
+                          "default": "off",
+                          "enum": [
+                            "off",
+                            "hold"
+                          ],
+                          "type": "string"
+                        },
+                        "rest_ms": {
+                          "default": 700,
+                          "maximum": 3600000,
+                          "minimum": 0,
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "attack_ms",
+                        "color",
+                        "cycles",
+                        "decay_ms",
+                        "kind",
+                        "led",
+                        "on_finish",
+                        "rest_ms"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "allOf": [
+                        {
+                          "if": {
+                            "properties": {
+                              "transition": {
+                                "enum": [
+                                  "linear",
+                                  "sine",
+                                  "orbit"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "transition"
+                            ]
+                          },
+                          "then": {
+                            "properties": {
+                              "cycles": {
+                                "default": 1,
+                                "maximum": 15,
+                                "minimum": 1,
+                                "type": "integer"
+                              },
+                              "period_ms": {
+                                "default": 2000,
+                                "maximum": 1200000,
+                                "minimum": 1300,
+                                "type": "integer"
+                              }
+                            }
+                          }
+                        }
+                      ],
+                      "properties": {
+                        "colors": {
+                          "items": {
+                            "pattern": "^#[0-9a-f]{6}$",
+                            "type": "string"
+                          },
+                          "maxItems": 2,
+                          "minItems": 2,
+                          "type": "array"
+                        },
+                        "cycles": {
+                          "default": 1,
+                          "maximum": 10000,
+                          "minimum": 1,
+                          "type": "integer"
+                        },
+                        "kind": {
+                          "const": "alternate",
+                          "type": "string"
+                        },
+                        "leds": {
+                          "default": [
+                            1,
+                            2
+                          ],
+                          "items": {
+                            "enum": [
+                              1,
+                              2
+                            ],
+                            "type": "integer"
+                          },
+                          "maxItems": 2,
+                          "minItems": 2,
+                          "type": "array",
+                          "uniqueItems": true
+                        },
+                        "on_finish": {
+                          "default": "off",
+                          "enum": [
+                            "off",
+                            "hold"
+                          ],
+                          "type": "string"
+                        },
+                        "period_ms": {
+                          "default": 2000,
+                          "maximum": 1200000,
+                          "minimum": 40,
+                          "type": "integer"
+                        },
+                        "transition": {
+                          "description": "Omitted or cut keeps the original four steps. Continuous modes use 66 sequential steps per cycle; they do not imply simultaneous LED writes or physical rotation.",
+                          "enum": [
+                            "cut",
+                            "linear",
+                            "sine",
+                            "orbit"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "colors",
+                        "cycles",
+                        "kind",
+                        "leds",
+                        "on_finish",
+                        "period_ms"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "cycles": {
+                          "default": 1,
+                          "maximum": 10000,
+                          "minimum": 1,
+                          "type": "integer"
+                        },
+                        "kind": {
+                          "const": "rainbow",
+                          "type": "string"
+                        },
+                        "led": {
+                          "default": 0,
+                          "enum": [
+                            0,
+                            1,
+                            2
+                          ],
+                          "type": "integer"
+                        },
+                        "on_finish": {
+                          "default": "off",
+                          "enum": [
+                            "off",
+                            "hold"
+                          ],
+                          "type": "string"
+                        },
+                        "period_ms": {
+                          "default": 3000,
+                          "maximum": 1200000,
+                          "minimum": 130,
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "cycles",
+                        "kind",
+                        "led",
+                        "on_finish",
+                        "period_ms"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "allOf": [
+                        {
+                          "else": {
+                            "properties": {
+                              "period_ms": {
+                                "maximum": 2400000
+                              }
+                            }
+                          },
+                          "if": {
+                            "properties": {
+                              "segments": {
+                                "const": 8
+                              }
+                            },
+                            "required": [
+                              "segments"
+                            ]
+                          },
+                          "then": {
+                            "properties": {
+                              "cycles": {
+                                "maximum": 128
+                              },
+                              "period_ms": {
+                                "minimum": 400
+                              }
+                            }
+                          }
+                        }
+                      ],
+                      "description": "Experimental Orbit: 4 simple or 8 detailed paired linear fade segments. Default one cycle, 3000ms. The daemon owns the curve and the 24h total budget; this adapter does not compile effects or prove optical quality.",
+                      "properties": {
+                        "colors": {
+                          "default": [
+                            "#ff0000",
+                            "#0000ff"
+                          ],
+                          "items": {
+                            "pattern": "^#[0-9a-f]{6}$",
+                            "type": "string"
+                          },
+                          "maxItems": 2,
+                          "minItems": 2,
+                          "type": "array"
+                        },
+                        "cycles": {
+                          "default": 1,
+                          "maximum": 256,
+                          "minimum": 1,
+                          "type": "integer"
+                        },
+                        "kind": {
+                          "const": "orbit",
+                          "type": "string"
+                        },
+                        "leds": {
+                          "default": [
+                            1,
+                            2
+                          ],
+                          "items": {
+                            "enum": [
+                              1,
+                              2
+                            ],
+                            "type": "integer"
+                          },
+                          "maxItems": 2,
+                          "minItems": 2,
+                          "type": "array",
+                          "uniqueItems": true
+                        },
+                        "on_finish": {
+                          "default": "off",
+                          "enum": [
+                            "off",
+                            "hold"
+                          ],
+                          "type": "string"
+                        },
+                        "period_ms": {
+                          "default": 3000,
+                          "maximum": 4800000,
+                          "minimum": 200,
+                          "type": "integer"
+                        },
+                        "segments": {
+                          "default": 4,
+                          "enum": [
+                            4,
+                            8
+                          ],
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "colors",
+                        "leds",
+                        "period_ms",
+                        "cycles",
+                        "segments",
+                        "on_finish"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              },
+              "type": "object"
+            }
+          },
+          "required": [
+            "result",
+            "preview"
+          ],
+          "type": "object"
+        },
+        "error": {
+          "additionalProperties": false,
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "http_status": {
+              "type": "integer"
+            },
+            "message": {
+              "type": "string"
+            },
+            "outcome_unknown": {
+              "const": false
+            }
+          },
+          "required": [
+            "code",
+            "message"
+          ],
+          "type": "object"
+        },
+        "kind": {
+          "enum": [
+            "light_preview",
+            "error"
+          ]
+        }
+      },
+      "required": [
+        "kind",
+        "accepted"
+      ],
+      "type": "object"
+    }
+  },
+  "preview_program": {
+    "input": {
+      "additionalProperties": false,
+      "oneOf": [
+        {
+          "not": {
+            "anyOf": [
+              {
+                "required": [
+                  "effect"
+                ]
+              },
+              {
+                "required": [
+                  "pattern_ref"
+                ]
+              }
+            ]
+          },
+          "required": [
+            "program"
+          ]
+        },
+        {
+          "not": {
+            "anyOf": [
+              {
+                "required": [
+                  "program"
+                ]
+              },
+              {
+                "required": [
+                  "pattern_ref"
+                ]
+              }
+            ]
+          },
+          "required": [
+            "effect"
+          ]
+        },
+        {
+          "not": {
+            "anyOf": [
+              {
+                "required": [
+                  "program"
+                ]
+              },
+              {
+                "required": [
+                  "effect"
+                ]
+              }
+            ]
+          },
+          "required": [
+            "pattern_ref"
+          ]
+        }
+      ],
+      "properties": {
+        "effect": {
+          "additionalProperties": false,
+          "oneOf": [
+            {
+              "additionalProperties": false,
+              "properties": {
+                "color": {
+                  "description": "Exact raw device RGB, without implicit gamma",
+                  "pattern": "^#[0-9a-fA-F]{6}$",
+                  "type": "string"
+                },
+                "fade_ms": {
+                  "maximum": 600000,
+                  "minimum": 0,
+                  "multipleOf": 10,
+                  "type": "integer"
+                },
+                "kind": {
+                  "enum": [
+                    "steady"
+                  ],
+                  "type": "string"
+                },
+                "led": {
+                  "enum": [
+                    0,
+                    1,
+                    2
+                  ],
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "kind",
+                "color"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "color": {
+                  "description": "Exact raw device RGB, without implicit gamma",
+                  "pattern": "^#[0-9a-fA-F]{6}$",
+                  "type": "string"
+                },
+                "cycles": {
+                  "maximum": 10000,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "kind": {
+                  "enum": [
+                    "pulse"
+                  ],
+                  "type": "string"
+                },
+                "led": {
+                  "enum": [
+                    0,
+                    1,
+                    2
+                  ],
+                  "type": "integer"
+                },
+                "on_finish": {
+                  "enum": [
+                    "off",
+                    "hold"
+                  ],
+                  "type": "string"
+                },
+                "period_ms": {
+                  "maximum": 1200000,
+                  "minimum": 60,
+                  "multipleOf": 10,
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "kind",
+                "color"
+              ],
+              "type": "object"
+            }
+          ],
+          "properties": {
+            "color": {
+              "description": "Exact raw device RGB, without implicit gamma",
+              "pattern": "^#[0-9a-fA-F]{6}$",
+              "type": "string"
+            },
+            "cycles": {
+              "maximum": 10000,
+              "minimum": 1,
+              "type": "integer"
+            },
+            "fade_ms": {
+              "maximum": 600000,
+              "minimum": 0,
+              "multipleOf": 10,
+              "type": "integer"
+            },
+            "kind": {
+              "enum": [
+                "steady",
+                "pulse"
+              ],
+              "type": "string"
+            },
+            "led": {
+              "enum": [
+                0,
+                1,
+                2
+              ],
+              "type": "integer"
+            },
+            "on_finish": {
+              "enum": [
+                "off",
+                "hold"
+              ],
+              "type": "string"
+            },
+            "period_ms": {
+              "maximum": 1200000,
+              "minimum": 60,
+              "multipleOf": 10,
+              "type": "integer"
+            }
+          },
+          "required": [
+            "kind",
+            "color"
+          ],
+          "type": "object"
+        },
+        "pattern_ref": {
+          "additionalProperties": false,
+          "properties": {
+            "id": {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$",
+              "type": "string"
+            },
+            "revision": {
+              "description": "Complete revision returned by list_patterns/get_pattern; never replace with latest",
+              "pattern": "^sha256:[0-9a-f]{64}$",
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "revision"
+          ],
+          "type": "object"
+        },
+        "program": {
+          "additionalProperties": false,
+          "properties": {
+            "on_finish": {
+              "enum": [
+                "off",
+                "hold"
+              ],
+              "type": "string"
+            },
+            "repeat": {
+              "description": "Omit or use zero to run once; zero does not mean infinite",
+              "maximum": 10000,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "steps": {
+              "items": {
+                "additionalProperties": false,
+                "properties": {
+                  "color": {
+                    "description": "Exact raw device RGB, without implicit gamma",
+                    "pattern": "^#[0-9a-fA-F]{6}$",
+                    "type": "string"
+                  },
+                  "fade_ms": {
+                    "maximum": 600000,
+                    "minimum": 0,
+                    "multipleOf": 10,
+                    "type": "integer"
+                  },
+                  "hold_ms": {
+                    "maximum": 3600000,
+                    "minimum": 0,
+                    "type": "integer"
+                  },
+                  "led": {
+                    "enum": [
+                      0,
+                      1,
+                      2
+                    ],
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "color"
+                ],
+                "type": "object"
+              },
+              "maxItems": 1024,
+              "minItems": 1,
+              "type": "array"
+            }
+          },
+          "required": [
+            "steps"
+          ],
+          "type": "object"
+        },
+        "serial": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_-]+$",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "output": {
+      "additionalProperties": false,
+      "properties": {
+        "accepted": {
+          "type": "boolean"
+        },
+        "data": true,
+        "dry_run": {
+          "type": "boolean"
+        },
+        "error": {
+          "additionalProperties": false,
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "http_status": {
+              "type": "integer"
+            },
+            "message": {
+              "type": "string"
+            },
+            "outcome_unknown": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "code",
+            "message"
+          ],
+          "type": [
+            "null",
+            "object"
+          ]
+        },
+        "instance_binding_verified": {
+          "type": [
+            "null",
+            "boolean"
+          ]
+        },
+        "kind": {
+          "type": "string"
+        },
+        "poll_after_ms": {
+          "type": "integer"
+        },
+        "request_ticket": {
+          "additionalProperties": false,
+          "properties": {
+            "expected_daemon_instance_id": {
+              "type": "string"
+            },
+            "request_id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "request_id",
+            "expected_daemon_instance_id"
+          ],
+          "type": [
+            "null",
+            "object"
+          ]
+        }
+      },
+      "required": [
+        "kind",
+        "accepted"
+      ],
+      "type": "object"
+    }
+  },
+  "resolve_color": {
+    "input": {
+      "additionalProperties": false,
+      "properties": {
+        "color": {
+          "description": "Independent color notation only; does not change existing v1 Program/Effect color fields. String ≤64 decoded bytes; final lexical/semantic validation belongs to the daemon.",
+          "oneOf": [
+            {
+              "maxLength": 64,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "b": {
+                  "maximum": 255,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "g": {
+                  "maximum": 255,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "r": {
+                  "maximum": 255,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "space": {
+                  "enum": [
+                    "rgb8"
+                  ],
+                  "type": "string"
+                }
+              },
+              "required": [
+                "space",
+                "r",
+                "g",
+                "b"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "h_deg": {
+                  "maximum": 360,
+                  "minimum": 0,
+                  "type": "number"
+                },
+                "s_pct": {
+                  "maximum": 100,
+                  "minimum": 0,
+                  "type": "number"
+                },
+                "space": {
+                  "enum": [
+                    "hsv"
+                  ],
+                  "type": "string"
+                },
+                "v_pct": {
+                  "maximum": 100,
+                  "minimum": 0,
+                  "type": "number"
+                }
+              },
+              "required": [
+                "space",
+                "h_deg",
+                "s_pct",
+                "v_pct"
+              ],
+              "type": "object"
+            }
+          ]
+        }
+      },
+      "required": [
+        "color"
+      ],
+      "type": "object"
+    },
+    "output": {
+      "additionalProperties": false,
+      "oneOf": [
+        {
+          "not": {
+            "required": [
+              "error"
+            ]
+          },
+          "properties": {
+            "kind": {
+              "const": "color_resolution"
+            }
+          },
+          "required": [
+            "data"
+          ]
+        },
+        {
+          "not": {
+            "required": [
+              "data"
+            ]
+          },
+          "properties": {
+            "kind": {
+              "const": "error"
+            }
+          },
+          "required": [
+            "error"
+          ]
+        }
+      ],
+      "properties": {
+        "accepted": {
+          "const": false,
+          "type": "boolean"
+        },
+        "data": {
+          "additionalProperties": false,
+          "oneOf": [
+            {
+              "properties": {
+                "input_kind": {
+                  "const": "name"
+                }
+              },
+              "required": [
+                "palette"
+              ]
+            },
+            {
+              "not": {
+                "required": [
+                  "palette"
+                ]
+              },
+              "properties": {
+                "input_kind": {
+                  "enum": [
+                    "hex6",
+                    "hex3",
+                    "rgb8",
+                    "hsv"
+                  ]
+                }
+              }
+            }
+          ],
+          "properties": {
+            "canonical_color": {
+              "pattern": "^#[0-9a-f]{6}$",
+              "type": "string"
+            },
+            "color_contract": {
+              "enum": [
+                "nb1-color-input/v1"
+              ],
+              "type": "string"
+            },
+            "input_kind": {
+              "enum": [
+                "hex6",
+                "hex3",
+                "name",
+                "rgb8",
+                "hsv"
+              ],
+              "type": "string"
+            },
+            "palette": {
+              "enum": [
+                "css-named-2026"
+              ],
+              "type": "string"
+            },
+            "rgb8": {
+              "additionalProperties": false,
+              "properties": {
+                "b": {
+                  "maximum": 255,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "g": {
+                  "maximum": 255,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "r": {
+                  "maximum": 255,
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "r",
+                "g",
+                "b"
+              ],
+              "type": "object"
+            },
+            "schema_version": {
+              "const": 1,
+              "type": "integer"
+            }
+          },
+          "required": [
+            "schema_version",
+            "color_contract",
+            "input_kind",
+            "canonical_color",
+            "rgb8"
+          ],
+          "type": "object"
+        },
+        "error": {
+          "additionalProperties": false,
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "http_status": {
+              "type": "integer"
+            },
+            "message": {
+              "type": "string"
+            },
+            "outcome_unknown": {
+              "const": false,
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "code",
+            "message"
+          ],
+          "type": "object"
+        },
+        "kind": {
+          "enum": [
+            "color_resolution",
+            "error"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "accepted"
+      ],
+      "type": "object"
+    }
+  },
+  "run_light": {
+    "input": {
+      "additionalProperties": false,
+      "oneOf": [
+        {
+          "properties": {
+            "action": {
+              "description": "One action in the unified light namespace. breathe is a symmetric cosine16 envelope; new pulse is fast attack, decay, rest. All actions are finite; daemon enforces \u003c=1024 executed steps/24h. Legacy run_program.effect.pulse is unchanged.",
+              "oneOf": [
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "color": {
+                      "description": "Independent color notation only; does not change existing v1 Program/Effect color fields. String ≤64 decoded bytes; final lexical/semantic validation belongs to the daemon.",
+                      "oneOf": [
+                        {
+                          "maxLength": 64,
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "b": {
+                              "maximum": 255,
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "g": {
+                              "maximum": 255,
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "r": {
+                              "maximum": 255,
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "space": {
+                              "enum": [
+                                "rgb8"
+                              ],
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "space",
+                            "r",
+                            "g",
+                            "b"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "h_deg": {
+                              "maximum": 360,
+                              "minimum": 0,
+                              "type": "number"
+                            },
+                            "s_pct": {
+                              "maximum": 100,
+                              "minimum": 0,
+                              "type": "number"
+                            },
+                            "space": {
+                              "enum": [
+                                "hsv"
+                              ],
+                              "type": "string"
+                            },
+                            "v_pct": {
+                              "maximum": 100,
+                              "minimum": 0,
+                              "type": "number"
+                            }
+                          },
+                          "required": [
+                            "space",
+                            "h_deg",
+                            "s_pct",
+                            "v_pct"
+                          ],
+                          "type": "object"
+                        }
+                      ]
+                    },
+                    "kind": {
+                      "const": "set",
+                      "type": "string"
+                    },
+                    "led": {
+                      "default": 0,
+                      "enum": [
+                        0,
+                        1,
+                        2
+                      ],
+                      "type": "integer"
+                    },
+                    "on_finish": {
+                      "default": "hold",
+                      "enum": [
+                        "off",
+                        "hold"
+                      ],
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "color"
+                  ],
+                  "type": "object"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "kind": {
+                      "const": "off",
+                      "type": "string"
+                    },
+                    "led": {
+                      "default": 0,
+                      "enum": [
+                        0,
+                        1,
+                        2
+                      ],
+                      "type": "integer"
+                    },
+                    "on_finish": {
+                      "default": "hold",
+                      "enum": [
+                        "off",
+                        "hold"
+                      ],
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "kind"
+                  ],
+                  "type": "object"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "color": {
+                      "description": "Independent color notation only; does not change existing v1 Program/Effect color fields. String ≤64 decoded bytes; final lexical/semantic validation belongs to the daemon.",
+                      "oneOf": [
+                        {
+                          "maxLength": 64,
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "b": {
+                              "maximum": 255,
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "g": {
+                              "maximum": 255,
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "r": {
+                              "maximum": 255,
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "space": {
+                              "enum": [
+                                "rgb8"
+                              ],
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "space",
+                            "r",
+                            "g",
+                            "b"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "h_deg": {
+                              "maximum": 360,
+                              "minimum": 0,
+                              "type": "number"
+                            },
+                            "s_pct": {
+                              "maximum": 100,
+                              "minimum": 0,
+                              "type": "number"
+                            },
+                            "space": {
+                              "enum": [
+                                "hsv"
+                              ],
+                              "type": "string"
+                            },
+                            "v_pct": {
+                              "maximum": 100,
+                              "minimum": 0,
+                              "type": "number"
+                            }
+                          },
+                          "required": [
+                            "space",
+                            "h_deg",
+                            "s_pct",
+                            "v_pct"
+                          ],
+                          "type": "object"
+                        }
+                      ]
+                    },
+                    "duration_ms": {
+                      "maximum": 600000,
+                      "minimum": 10,
+                      "multipleOf": 10,
+                      "type": "integer"
+                    },
+                    "kind": {
+                      "const": "fade",
+                      "type": "string"
+                    },
+                    "led": {
+                      "default": 0,
+                      "enum": [
+                        0,
+                        1,
+                        2
+                      ],
+                      "type": "integer"
+                    },
+                    "on_finish": {
+                      "default": "hold",
+                      "enum": [
+                        "off",
+                        "hold"
+                      ],
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "color",
+                    "duration_ms"
+                  ],
+                  "type": "object"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "color": {
+                      "description": "Independent color notation only; does not change existing v1 Program/Effect color fields. String ≤64 decoded bytes; final lexical/semantic validation belongs to the daemon.",
+                      "oneOf": [
+                        {
+                          "maxLength": 64,
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "b": {
+                              "maximum": 255,
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "g": {
+                              "maximum": 255,
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "r": {
+                              "maximum": 255,
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "space": {
+                              "enum": [
+                                "rgb8"
+                              ],
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "space",
+                            "r",
+                            "g",
+                            "b"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "h_deg": {
+                              "maximum": 360,
+                              "minimum": 0,
+                              "type": "number"
+                            },
+                            "s_pct": {
+                              "maximum": 100,
+                              "minimum": 0,
+                              "type": "number"
+                            },
+                            "space": {
+                              "enum": [
+                                "hsv"
+                              ],
+                              "type": "string"
+                            },
+                            "v_pct": {
+                              "maximum": 100,
+                              "minimum": 0,
+                              "type": "number"
+                            }
+                          },
+                          "required": [
+                            "space",
+                            "h_deg",
+                            "s_pct",
+                            "v_pct"
+                          ],
+                          "type": "object"
+                        }
+                      ]
+                    },
+                    "cycles": {
+                      "default": 1,
+                      "maximum": 10000,
+                      "minimum": 1,
+                      "type": "integer"
+                    },
+                    "kind": {
+                      "const": "blink",
+                      "type": "string"
+                    },
+                    "led": {
+                      "default": 0,
+                      "enum": [
+                        0,
+                        1,
+                        2
+                      ],
+                      "type": "integer"
+                    },
+                    "off_ms": {
+                      "default": 250,
+                      "maximum": 3600000,
+                      "minimum": 10,
+                      "type": "integer"
+                    },
+                    "on_finish": {
+                      "default": "off",
+                      "enum": [
+                        "off",
+                        "hold"
+                      ],
+                      "type": "string"
+                    },
+                    "on_ms": {
+                      "default": 250,
+                      "maximum": 3600000,
+                      "minimum": 10,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "color"
+                  ],
+                  "type": "object"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "color": {
+                      "description": "Independent color notation only; does not change existing v1 Program/Effect color fields. String ≤64 decoded bytes; final lexical/semantic validation belongs to the daemon.",
+                      "oneOf": [
+                        {
+                          "maxLength": 64,
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "b": {
+                              "maximum": 255,
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "g": {
+                              "maximum": 255,
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "r": {
+                              "maximum": 255,
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "space": {
+                              "enum": [
+                                "rgb8"
+                              ],
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "space",
+                            "r",
+                            "g",
+                            "b"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "h_deg": {
+                              "maximum": 360,
+                              "minimum": 0,
+                              "type": "number"
+                            },
+                            "s_pct": {
+                              "maximum": 100,
+                              "minimum": 0,
+                              "type": "number"
+                            },
+                            "space": {
+                              "enum": [
+                                "hsv"
+                              ],
+                              "type": "string"
+                            },
+                            "v_pct": {
+                              "maximum": 100,
+                              "minimum": 0,
+                              "type": "number"
+                            }
+                          },
+                          "required": [
+                            "space",
+                            "h_deg",
+                            "s_pct",
+                            "v_pct"
+                          ],
+                          "type": "object"
+                        }
+                      ]
+                    },
+                    "cycles": {
+                      "default": 1,
+                      "maximum": 10000,
+                      "minimum": 1,
+                      "type": "integer"
+                    },
+                    "kind": {
+                      "const": "breathe",
+                      "type": "string"
+                    },
+                    "led": {
+                      "default": 0,
+                      "enum": [
+                        0,
+                        1,
+                        2
+                      ],
+                      "type": "integer"
+                    },
+                    "on_finish": {
+                      "default": "off",
+                      "enum": [
+                        "off",
+                        "hold"
+                      ],
+                      "type": "string"
+                    },
+                    "period_ms": {
+                      "default": 2000,
+                      "maximum": 1200000,
+                      "minimum": 330,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "color"
+                  ],
+                  "type": "object"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "attack_ms": {
+                      "default": 60,
+                      "maximum": 600000,
+                      "minimum": 10,
+                      "multipleOf": 10,
+                      "type": "integer"
+                    },
+                    "color": {
+                      "description": "Independent color notation only; does not change existing v1 Program/Effect color fields. String ≤64 decoded bytes; final lexical/semantic validation belongs to the daemon.",
+                      "oneOf": [
+                        {
+                          "maxLength": 64,
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "b": {
+                              "maximum": 255,
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "g": {
+                              "maximum": 255,
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "r": {
+                              "maximum": 255,
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "space": {
+                              "enum": [
+                                "rgb8"
+                              ],
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "space",
+                            "r",
+                            "g",
+                            "b"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "h_deg": {
+                              "maximum": 360,
+                              "minimum": 0,
+                              "type": "number"
+                            },
+                            "s_pct": {
+                              "maximum": 100,
+                              "minimum": 0,
+                              "type": "number"
+                            },
+                            "space": {
+                              "enum": [
+                                "hsv"
+                              ],
+                              "type": "string"
+                            },
+                            "v_pct": {
+                              "maximum": 100,
+                              "minimum": 0,
+                              "type": "number"
+                            }
+                          },
+                          "required": [
+                            "space",
+                            "h_deg",
+                            "s_pct",
+                            "v_pct"
+                          ],
+                          "type": "object"
+                        }
+                      ]
+                    },
+                    "cycles": {
+                      "default": 1,
+                      "maximum": 10000,
+                      "minimum": 1,
+                      "type": "integer"
+                    },
+                    "decay_ms": {
+                      "default": 240,
+                      "maximum": 600000,
+                      "minimum": 10,
+                      "multipleOf": 10,
+                      "type": "integer"
+                    },
+                    "kind": {
+                      "const": "pulse",
+                      "type": "string"
+                    },
+                    "led": {
+                      "default": 0,
+                      "enum": [
+                        0,
+                        1,
+                        2
+                      ],
+                      "type": "integer"
+                    },
+                    "on_finish": {
+                      "default": "off",
+                      "enum": [
+                        "off",
+                        "hold"
+                      ],
+                      "type": "string"
+                    },
+                    "rest_ms": {
+                      "default": 700,
+                      "maximum": 3600000,
+                      "minimum": 0,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "color"
+                  ],
+                  "type": "object"
+                },
+                {
+                  "additionalProperties": false,
+                  "allOf": [
+                    {
+                      "if": {
+                        "properties": {
+                          "transition": {
+                            "enum": [
+                              "linear",
+                              "sine",
+                              "orbit"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "transition"
+                        ]
+                      },
+                      "then": {
+                        "properties": {
+                          "cycles": {
+                            "default": 1,
+                            "maximum": 15,
+                            "minimum": 1,
+                            "type": "integer"
+                          },
+                          "period_ms": {
+                            "default": 2000,
+                            "maximum": 1200000,
+                            "minimum": 1300,
+                            "type": "integer"
+                          }
+                        }
+                      }
+                    }
+                  ],
+                  "properties": {
+                    "colors": {
+                      "default": [
+                        "red",
+                        "blue"
+                      ],
+                      "items": {
+                        "description": "Independent color notation only; does not change existing v1 Program/Effect color fields. String ≤64 decoded bytes; final lexical/semantic validation belongs to the daemon.",
+                        "oneOf": [
+                          {
+                            "maxLength": 64,
+                            "minLength": 1,
+                            "type": "string"
+                          },
+                          {
+                            "additionalProperties": false,
+                            "properties": {
+                              "b": {
+                                "maximum": 255,
+                                "minimum": 0,
+                                "type": "integer"
+                              },
+                              "g": {
+                                "maximum": 255,
+                                "minimum": 0,
+                                "type": "integer"
+                              },
+                              "r": {
+                                "maximum": 255,
+                                "minimum": 0,
+                                "type": "integer"
+                              },
+                              "space": {
+                                "enum": [
+                                  "rgb8"
+                                ],
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "space",
+                              "r",
+                              "g",
+                              "b"
+                            ],
+                            "type": "object"
+                          },
+                          {
+                            "additionalProperties": false,
+                            "properties": {
+                              "h_deg": {
+                                "maximum": 360,
+                                "minimum": 0,
+                                "type": "number"
+                              },
+                              "s_pct": {
+                                "maximum": 100,
+                                "minimum": 0,
+                                "type": "number"
+                              },
+                              "space": {
+                                "enum": [
+                                  "hsv"
+                                ],
+                                "type": "string"
+                              },
+                              "v_pct": {
+                                "maximum": 100,
+                                "minimum": 0,
+                                "type": "number"
+                              }
+                            },
+                            "required": [
+                              "space",
+                              "h_deg",
+                              "s_pct",
+                              "v_pct"
+                            ],
+                            "type": "object"
+                          }
+                        ]
+                      },
+                      "maxItems": 2,
+                      "minItems": 2,
+                      "type": "array"
+                    },
+                    "cycles": {
+                      "default": 1,
+                      "maximum": 10000,
+                      "minimum": 1,
+                      "type": "integer"
+                    },
+                    "kind": {
+                      "const": "alternate",
+                      "type": "string"
+                    },
+                    "leds": {
+                      "default": [
+                        1,
+                        2
+                      ],
+                      "items": {
+                        "enum": [
+                          1,
+                          2
+                        ],
+                        "type": "integer"
+                      },
+                      "maxItems": 2,
+                      "minItems": 2,
+                      "type": "array",
+                      "uniqueItems": true
+                    },
+                    "on_finish": {
+                      "default": "off",
+                      "enum": [
+                        "off",
+                        "hold"
+                      ],
+                      "type": "string"
+                    },
+                    "period_ms": {
+                      "default": 2000,
+                      "maximum": 1200000,
+                      "minimum": 40,
+                      "type": "integer"
+                    },
+                    "transition": {
+                      "description": "Omitted or cut keeps the original four steps. Continuous modes use 66 sequential steps per cycle; they do not imply simultaneous LED writes or physical rotation.",
+                      "enum": [
+                        "cut",
+                        "linear",
+                        "sine",
+                        "orbit"
+                      ],
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "kind"
+                  ],
+                  "type": "object"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "cycles": {
+                      "default": 1,
+                      "maximum": 10000,
+                      "minimum": 1,
+                      "type": "integer"
+                    },
+                    "kind": {
+                      "const": "rainbow",
+                      "type": "string"
+                    },
+                    "led": {
+                      "default": 0,
+                      "enum": [
+                        0,
+                        1,
+                        2
+                      ],
+                      "type": "integer"
+                    },
+                    "on_finish": {
+                      "default": "off",
+                      "enum": [
+                        "off",
+                        "hold"
+                      ],
+                      "type": "string"
+                    },
+                    "period_ms": {
+                      "default": 3000,
+                      "maximum": 1200000,
+                      "minimum": 130,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "kind"
+                  ],
+                  "type": "object"
+                }
+              ]
+            },
+            "contract": {
+              "const": "nb1-light-action/v1"
+            }
+          }
+        },
+        {
+          "properties": {
+            "action": {
+              "additionalProperties": false,
+              "allOf": [
+                {
+                  "else": {
+                    "properties": {
+                      "period_ms": {
+                        "maximum": 2400000
+                      }
+                    }
+                  },
+                  "if": {
+                    "properties": {
+                      "segments": {
+                        "const": 8
+                      }
+                    },
+                    "required": [
+                      "segments"
+                    ]
+                  },
+                  "then": {
+                    "properties": {
+                      "cycles": {
+                        "maximum": 128
+                      },
+                      "period_ms": {
+                        "minimum": 400
+                      }
+                    }
+                  }
+                }
+              ],
+              "description": "Experimental Orbit: 4 simple or 8 detailed paired linear fade segments. Default one cycle, 3000ms. The daemon owns the curve and the 24h total budget; this adapter does not compile effects or prove optical quality.",
+              "properties": {
+                "colors": {
+                  "default": [
+                    "red",
+                    "blue"
+                  ],
+                  "items": {
+                    "description": "Independent color notation only; does not change existing v1 Program/Effect color fields. String ≤64 decoded bytes; final lexical/semantic validation belongs to the daemon.",
+                    "oneOf": [
+                      {
+                        "maxLength": 64,
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "b": {
+                            "maximum": 255,
+                            "minimum": 0,
+                            "type": "integer"
+                          },
+                          "g": {
+                            "maximum": 255,
+                            "minimum": 0,
+                            "type": "integer"
+                          },
+                          "r": {
+                            "maximum": 255,
+                            "minimum": 0,
+                            "type": "integer"
+                          },
+                          "space": {
+                            "enum": [
+                              "rgb8"
+                            ],
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "space",
+                          "r",
+                          "g",
+                          "b"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "h_deg": {
+                            "maximum": 360,
+                            "minimum": 0,
+                            "type": "number"
+                          },
+                          "s_pct": {
+                            "maximum": 100,
+                            "minimum": 0,
+                            "type": "number"
+                          },
+                          "space": {
+                            "enum": [
+                              "hsv"
+                            ],
+                            "type": "string"
+                          },
+                          "v_pct": {
+                            "maximum": 100,
+                            "minimum": 0,
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "space",
+                          "h_deg",
+                          "s_pct",
+                          "v_pct"
+                        ],
+                        "type": "object"
+                      }
+                    ]
+                  },
+                  "maxItems": 2,
+                  "minItems": 2,
+                  "type": "array"
+                },
+                "cycles": {
+                  "default": 1,
+                  "maximum": 256,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "kind": {
+                  "const": "orbit",
+                  "type": "string"
+                },
+                "leds": {
+                  "default": [
+                    1,
+                    2
+                  ],
+                  "items": {
+                    "enum": [
+                      1,
+                      2
+                    ],
+                    "type": "integer"
+                  },
+                  "maxItems": 2,
+                  "minItems": 2,
+                  "type": "array",
+                  "uniqueItems": true
+                },
+                "on_finish": {
+                  "default": "off",
+                  "enum": [
+                    "off",
+                    "hold"
+                  ],
+                  "type": "string"
+                },
+                "period_ms": {
+                  "default": 3000,
+                  "maximum": 4800000,
+                  "minimum": 200,
+                  "type": "integer"
+                },
+                "segments": {
+                  "default": 4,
+                  "enum": [
+                    4,
+                    8
+                  ],
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "kind"
+              ],
+              "type": "object"
+            },
+            "contract": {
+              "const": "nb1-light-action/experimental-v2"
+            }
+          }
+        }
+      ],
+      "properties": {
+        "action": {
+          "description": "Action shape is selected by the explicit contract in oneOf."
+        },
+        "contract": {
+          "enum": [
+            "nb1-light-action/v1",
+            "nb1-light-action/experimental-v2"
+          ],
+          "type": "string"
+        },
+        "expected_daemon_instance_id": {
+          "description": "Original daemon instance binding; never replace it automatically after a restart",
+          "pattern": "^daemon_[0-9a-f]{32}$",
+          "type": "string"
+        },
+        "policy": {
+          "default": "reject",
+          "enum": [
+            "reject"
+          ],
+          "type": "string"
+        },
+        "request_id": {
+          "description": "Use the prepared request_id unchanged; deadlines are daemon uptime, not wall time",
+          "maxLength": 56,
+          "minLength": 38,
+          "pattern": "^req_[1-9][0-9]{0,18}_[0-9a-f]{32}$",
+          "type": "string"
+        },
+        "serial": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_-]+$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "contract",
+        "action",
+        "serial",
+        "request_id",
+        "expected_daemon_instance_id"
+      ],
+      "type": "object"
+    },
+    "output": {
+      "additionalProperties": false,
+      "properties": {
+        "accepted": {
+          "type": "boolean"
+        },
+        "data": true,
+        "dry_run": {
+          "type": "boolean"
+        },
+        "error": {
+          "additionalProperties": false,
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "http_status": {
+              "type": "integer"
+            },
+            "message": {
+              "type": "string"
+            },
+            "outcome_unknown": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "code",
+            "message"
+          ],
+          "type": [
+            "null",
+            "object"
+          ]
+        },
+        "instance_binding_verified": {
+          "type": [
+            "null",
+            "boolean"
+          ]
+        },
+        "kind": {
+          "type": "string"
+        },
+        "poll_after_ms": {
+          "type": "integer"
+        },
+        "request_ticket": {
+          "additionalProperties": false,
+          "properties": {
+            "expected_daemon_instance_id": {
+              "type": "string"
+            },
+            "request_id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "request_id",
+            "expected_daemon_instance_id"
+          ],
+          "type": [
+            "null",
+            "object"
+          ]
+        }
+      },
+      "required": [
+        "kind",
+        "accepted"
+      ],
+      "type": "object"
+    }
+  },
+  "run_program": {
+    "input": {
+      "additionalProperties": false,
+      "dependentRequired": {
+        "expected_daemon_instance_id": [
+          "request_id"
+        ],
+        "request_id": [
+          "expected_daemon_instance_id"
+        ]
+      },
+      "oneOf": [
+        {
+          "not": {
+            "anyOf": [
+              {
+                "required": [
+                  "effect"
+                ]
+              },
+              {
+                "required": [
+                  "pattern_ref"
+                ]
+              }
+            ]
+          },
+          "required": [
+            "program"
+          ]
+        },
+        {
+          "not": {
+            "anyOf": [
+              {
+                "required": [
+                  "program"
+                ]
+              },
+              {
+                "required": [
+                  "pattern_ref"
+                ]
+              }
+            ]
+          },
+          "required": [
+            "effect"
+          ]
+        },
+        {
+          "not": {
+            "anyOf": [
+              {
+                "required": [
+                  "program"
+                ]
+              },
+              {
+                "required": [
+                  "effect"
+                ]
+              },
+              {
+                "required": [
+                  "dry_run"
+                ]
+              }
+            ]
+          },
+          "properties": {
+            "policy": {
+              "const": "reject"
+            }
+          },
+          "required": [
+            "pattern_ref",
+            "policy",
+            "request_id",
+            "expected_daemon_instance_id"
+          ]
+        }
+      ],
+      "properties": {
+        "dry_run": {
+          "type": "boolean"
+        },
+        "effect": {
+          "additionalProperties": false,
+          "oneOf": [
+            {
+              "additionalProperties": false,
+              "properties": {
+                "color": {
+                  "description": "Exact raw device RGB, without implicit gamma",
+                  "pattern": "^#[0-9a-fA-F]{6}$",
+                  "type": "string"
+                },
+                "fade_ms": {
+                  "maximum": 600000,
+                  "minimum": 0,
+                  "multipleOf": 10,
+                  "type": "integer"
+                },
+                "kind": {
+                  "enum": [
+                    "steady"
+                  ],
+                  "type": "string"
+                },
+                "led": {
+                  "enum": [
+                    0,
+                    1,
+                    2
+                  ],
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "kind",
+                "color"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "color": {
+                  "description": "Exact raw device RGB, without implicit gamma",
+                  "pattern": "^#[0-9a-fA-F]{6}$",
+                  "type": "string"
+                },
+                "cycles": {
+                  "maximum": 10000,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "kind": {
+                  "enum": [
+                    "pulse"
+                  ],
+                  "type": "string"
+                },
+                "led": {
+                  "enum": [
+                    0,
+                    1,
+                    2
+                  ],
+                  "type": "integer"
+                },
+                "on_finish": {
+                  "enum": [
+                    "off",
+                    "hold"
+                  ],
+                  "type": "string"
+                },
+                "period_ms": {
+                  "maximum": 1200000,
+                  "minimum": 60,
+                  "multipleOf": 10,
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "kind",
+                "color"
+              ],
+              "type": "object"
+            }
+          ],
+          "properties": {
+            "color": {
+              "description": "Exact raw device RGB, without implicit gamma",
+              "pattern": "^#[0-9a-fA-F]{6}$",
+              "type": "string"
+            },
+            "cycles": {
+              "maximum": 10000,
+              "minimum": 1,
+              "type": "integer"
+            },
+            "fade_ms": {
+              "maximum": 600000,
+              "minimum": 0,
+              "multipleOf": 10,
+              "type": "integer"
+            },
+            "kind": {
+              "enum": [
+                "steady",
+                "pulse"
+              ],
+              "type": "string"
+            },
+            "led": {
+              "enum": [
+                0,
+                1,
+                2
+              ],
+              "type": "integer"
+            },
+            "on_finish": {
+              "enum": [
+                "off",
+                "hold"
+              ],
+              "type": "string"
+            },
+            "period_ms": {
+              "maximum": 1200000,
+              "minimum": 60,
+              "multipleOf": 10,
+              "type": "integer"
+            }
+          },
+          "required": [
+            "kind",
+            "color"
+          ],
+          "type": "object"
+        },
+        "expected_daemon_instance_id": {
+          "description": "Original daemon instance binding; never replace it automatically after a restart",
+          "pattern": "^daemon_[0-9a-f]{32}$",
+          "type": "string"
+        },
+        "pattern_ref": {
+          "additionalProperties": false,
+          "properties": {
+            "id": {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$",
+              "type": "string"
+            },
+            "revision": {
+              "description": "Complete revision returned by list_patterns/get_pattern; never replace with latest",
+              "pattern": "^sha256:[0-9a-f]{64}$",
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "revision"
+          ],
+          "type": "object"
+        },
+        "policy": {
+          "enum": [
+            "replace",
+            "queue",
+            "reject"
+          ],
+          "type": "string"
+        },
+        "program": {
+          "additionalProperties": false,
+          "properties": {
+            "on_finish": {
+              "enum": [
+                "off",
+                "hold"
+              ],
+              "type": "string"
+            },
+            "repeat": {
+              "description": "Omit or use zero to run once; zero does not mean infinite",
+              "maximum": 10000,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "steps": {
+              "items": {
+                "additionalProperties": false,
+                "properties": {
+                  "color": {
+                    "description": "Exact raw device RGB, without implicit gamma",
+                    "pattern": "^#[0-9a-fA-F]{6}$",
+                    "type": "string"
+                  },
+                  "fade_ms": {
+                    "maximum": 600000,
+                    "minimum": 0,
+                    "multipleOf": 10,
+                    "type": "integer"
+                  },
+                  "hold_ms": {
+                    "maximum": 3600000,
+                    "minimum": 0,
+                    "type": "integer"
+                  },
+                  "led": {
+                    "enum": [
+                      0,
+                      1,
+                      2
+                    ],
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "color"
+                ],
+                "type": "object"
+              },
+              "maxItems": 1024,
+              "minItems": 1,
+              "type": "array"
+            }
+          },
+          "required": [
+            "steps"
+          ],
+          "type": "object"
+        },
+        "request_id": {
+          "description": "Use the prepared request_id unchanged; deadlines are daemon uptime, not wall time",
+          "maxLength": 56,
+          "minLength": 38,
+          "pattern": "^req_[1-9][0-9]{0,18}_[0-9a-f]{32}$",
+          "type": "string"
+        },
+        "serial": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_-]+$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "serial"
+      ],
+      "type": "object"
+    },
+    "output": {
+      "additionalProperties": false,
+      "properties": {
+        "accepted": {
+          "type": "boolean"
+        },
+        "data": true,
+        "dry_run": {
+          "type": "boolean"
+        },
+        "error": {
+          "additionalProperties": false,
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "http_status": {
+              "type": "integer"
+            },
+            "message": {
+              "type": "string"
+            },
+            "outcome_unknown": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "code",
+            "message"
+          ],
+          "type": [
+            "null",
+            "object"
+          ]
+        },
+        "instance_binding_verified": {
+          "type": [
+            "null",
+            "boolean"
+          ]
+        },
+        "kind": {
+          "type": "string"
+        },
+        "poll_after_ms": {
+          "type": "integer"
+        },
+        "request_ticket": {
+          "additionalProperties": false,
+          "properties": {
+            "expected_daemon_instance_id": {
+              "type": "string"
+            },
+            "request_id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "request_id",
+            "expected_daemon_instance_id"
+          ],
+          "type": [
+            "null",
+            "object"
+          ]
+        }
+      },
+      "required": [
+        "kind",
+        "accepted"
+      ],
+      "type": "object"
+    }
+  },
+  "set_device_state": {
+    "input": {
+      "additionalProperties": false,
+      "dependentRequired": {
+        "expected_daemon_instance_id": [
+          "request_id"
+        ],
+        "request_id": [
+          "expected_daemon_instance_id"
+        ]
+      },
+      "properties": {
+        "color": {
+          "description": "Exact raw device RGB, without implicit gamma",
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "type": "string"
+        },
+        "dry_run": {
+          "description": "Validate and return the program without contacting the daemon",
+          "type": "boolean"
+        },
+        "expected_daemon_instance_id": {
+          "description": "Original daemon instance binding; never replace it automatically after a restart",
+          "pattern": "^daemon_[0-9a-f]{32}$",
+          "type": "string"
+        },
+        "fade_ms": {
+          "maximum": 600000,
+          "minimum": 0,
+          "multipleOf": 10,
+          "type": "integer"
+        },
+        "hold_ms": {
+          "maximum": 3600000,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "led": {
+          "description": "0=both, 1=top, 2=bottom",
+          "enum": [
+            0,
+            1,
+            2
+          ],
+          "type": "integer"
+        },
+        "policy": {
+          "enum": [
+            "replace",
+            "queue",
+            "reject"
+          ],
+          "type": "string"
+        },
+        "request_id": {
+          "description": "Use the prepared request_id unchanged; deadlines are daemon uptime, not wall time",
+          "maxLength": 56,
+          "minLength": 38,
+          "pattern": "^req_[1-9][0-9]{0,18}_[0-9a-f]{32}$",
+          "type": "string"
+        },
+        "serial": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_-]+$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "serial",
+        "color"
+      ],
+      "type": "object"
+    },
+    "output": {
+      "additionalProperties": false,
+      "properties": {
+        "accepted": {
+          "type": "boolean"
+        },
+        "data": true,
+        "dry_run": {
+          "type": "boolean"
+        },
+        "error": {
+          "additionalProperties": false,
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "http_status": {
+              "type": "integer"
+            },
+            "message": {
+              "type": "string"
+            },
+            "outcome_unknown": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "code",
+            "message"
+          ],
+          "type": [
+            "null",
+            "object"
+          ]
+        },
+        "instance_binding_verified": {
+          "type": [
+            "null",
+            "boolean"
+          ]
+        },
+        "kind": {
+          "type": "string"
+        },
+        "poll_after_ms": {
+          "type": "integer"
+        },
+        "request_ticket": {
+          "additionalProperties": false,
+          "properties": {
+            "expected_daemon_instance_id": {
+              "type": "string"
+            },
+            "request_id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "request_id",
+            "expected_daemon_instance_id"
+          ],
+          "type": [
+            "null",
+            "object"
+          ]
+        }
+      },
+      "required": [
+        "kind",
+        "accepted"
+      ],
+      "type": "object"
+    }
+  }
+}

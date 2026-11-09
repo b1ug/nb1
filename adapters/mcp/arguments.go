@@ -28,7 +28,7 @@ func rawArgumentsGuard(next mcp.MethodHandler) mcp.MethodHandler {
 			return next(ctx, method, request)
 		}
 		switch params.Name {
-		case "list_devices", "get_device_state", "set_device_state", "run_program", "preview_program", "resolve_color", "preview_light", "run_light", "get_job", "cancel_job", "list_patterns", "get_pattern":
+		case "list_devices", "get_device_state", "set_device_state", "run_program", "preview_program", "resolve_color", "preview_light", "run_light", "get_job", "cancel_job", "list_patterns", "get_pattern", "preview_pattern", "run_pattern", "get_pattern_request", "cancel_pattern_request":
 		default:
 			return next(ctx, method, request)
 		}
@@ -45,6 +45,9 @@ func rawArgumentsGuard(next mcp.MethodHandler) mcp.MethodHandler {
 					err = fmt.Errorf("pattern_ref does not accept dry_run; use preview_program")
 				}
 			}
+		}
+		if (params.Name == "preview_pattern" || params.Name == "run_pattern" || params.Name == "get_pattern_request" || params.Name == "cancel_pattern_request") && len(params.Arguments) > 4096 {
+			err = fmt.Errorf("Pattern arguments exceed 4096 bytes")
 		}
 		if params.Name == "resolve_color" && len(params.Arguments) > maxColorRequestBytes {
 			err = fmt.Errorf("color arguments exceed 4096 bytes")

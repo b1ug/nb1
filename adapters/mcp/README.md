@@ -2,7 +2,7 @@
 
 这是独立的 stdio 服务：Agent → MCP → 本机 HTTP daemon → 每设备执行器 → SDK/GID → USB。MCP 进程不打开 USB，不会抢占设备，也不会在 HTTP 失败时改为直控；多个 Agent 可以连接同一个 daemon。
 
-本文描述本树的接口：固定 Pattern 引用、v1 八动作，以及同名 `preview_light` / `run_light` 的实验 v2 Orbit。先用实际 `tools/list` 和 schema 发现能力，并核对所连接的 daemon；本文不声明某台机器已经安装这些功能。
+本文描述本树的接口：v1 固定 Pattern 引用、实验 v2 Pattern 来源身份、v1 八动作，以及同名 `preview_light` / `run_light` 的实验 v2 Orbit。先用实际 `tools/list` 和 schema 发现能力，并核对所连接的 daemon；本文不声明某台机器已经安装这些功能。
 
 采用官方 [Go MCP SDK v1.8.0](https://github.com/modelcontextprotocol/go-sdk/releases/tag/v1.8.0)，协议协商、stdio framing、输入/输出 schema 验证均由 SDK 处理。该版本的 [go.mod](https://github.com/modelcontextprotocol/go-sdk/blob/v1.8.0/go.mod)要求 Go1.25；因此适配器单独建模块，不改变 GID/设备 SDK 的 Go 下限。支持的协议版本由 SDK 协商，具体范围见其[版本兼容说明](https://github.com/modelcontextprotocol/go-sdk#version-compatibility)。
 
@@ -39,6 +39,10 @@ GOWORK=off go build -o nb1-mcp .
 | `cancel_job` | id 自动选择旧任务或 framejob_ 帧任务路由。请求取消后可能仍是 cancelling，尚不能认为硬件已停止。 |
 | `list_patterns` | 仅空对象 `{}`；一次 `GET /v1/patterns`，返回 `pattern_list`、`accepted:false` 和库信息/有界摘要；不读本机路径、不准备票据、不播放。 |
 | `get_pattern` | 仅 `{id}`；一次 `GET /v1/patterns/{id}`，校验完整冻结 Record 与内容 revision，返回 `pattern_record`、`accepted:false`。不准备票据、不执行、不打开响应中的本机路径。 |
+| `preview_pattern` | 完整 experimental-v2 `pattern_ref`（含 record_contract、id、revision），可选 serial；一次只读固定引用预览。返回 `pattern_ref_preview`，检查冻结执行摘要与缓存设备证据，不创建任务。 |
+| `run_pattern` | serial、完整 v2 引用、显式 replace/queue/reject 和完整原票据；只发一次高级 Pattern POST，不隐式预览，不提交裸 Program/frames。返回保留来源的 `pattern_job` 封套。 |
+| `get_pattern_request` | serial、完整 v2 引用和原票据；可选已知 job_id / execution_digest。一条原回执 GET，不依赖图案库，不重新提交。 |
+| `cancel_pattern_request` | 同上；先读原回执再至多一次携带 confirmed_job_id 的取消 POST。终态或已 cancelling 不补 POST，不给已自然完成的 hold 补关灯。返回 `pattern_cancel` 的 data `{pattern_job,cancel_attempted}`。 |
 
 输入仅接受声明的字段。原 Program/Effect/set 的 `color` 为原始 `#RRGGBB`，不隐式应用 Gamma；`led` 为0（全部）、1或2。原始 `program` 的 `fade_ms` 在0–600000之间且必须是10的倍数；`hold_ms` 在0–3600000之间。程序有1–1024步，repeat为0或省略时运行一次，最大10000次；每步的淡入、保持及10ms固件更新余量计入24小时名义上限，原生 I/O 仍有额外开销。`on_finish` 默认为 `off`，也可指定 `hold`。能力与实际支持型号以 daemon 结果为准，不据协议模拟声称 mk3 已经实测。
 
@@ -337,3 +341,30 @@ GOWORK=off go test -run '^TestLiveEffectsOptIn$' -v
 ```
 
 接口依据为仓库的 `internal/control/types.go`、`internal/control/frame_service.go` 与 `internal/httpapi`。适配器当前保留独立 wire 类型和相同校验，避免导入 HID 模块；今后接口演进需要共享 schema/契约测试，不应单边修改。
+
+## 实验 v2 Pattern：保留高级动作来源
+
+这四个新工具与原 12 个工具并存。旧 `list_patterns` / `get_pattern` / `run_program.pattern_ref` 继续使用 v1；这里的引用必须明确 `record_contract:"nb1-pattern-record/experimental-v2"`，不接受省略版本、latest 或隐式替换 revision。v2 图案的创建、列出和读取目前通过相应 HTTP/CLI 作者接口完成；这片 MCP 不扩充原 v1 读取 schema，也不提供保存工具。
+
+```json
+{
+  "pattern_ref": {
+    "record_contract": "nb1-pattern-record/experimental-v2",
+    "id": "orbit-red-blue",
+    "revision": "sha256:<从已验证记录原样取得的64位小写摘要>"
+  },
+  "serial": "20005601"
+}
+```
+
+这是 `preview_pattern` 的输入示意，摘要占位符必须换成完整原 revision。预览会读取图案库并检查来源、固定 recipe 和冻结执行体；设备信息来自 daemon 缓存，没有 USB 探测。Frame 结果中的 `device.serial/connection` 回显此次选择，软件配置可用与设备可执行是两项独立信息。它不证明视觉效果，也不等同于入场许可。
+
+`run_pattern` 在此输入上加显式 `policy`、`request_id` 和 `expected_daemon_instance_id`。票据先由显式的 `list_devices(prepare_request:true)` 取得并保存。run 不隐式 preview，以使已被接受的同票据请求仍可在图案库丢失后重放原回执；需要检查效果时先显式调用 preview。三种 policy 共用 daemon 的设备 worker，replace 可取消原任务，queue 有容量上限，reject 可用于避免抢占。
+
+成功执行与查询的 `data` 是独立封套 `{pattern_ref,execution_digest,job_kind,job}`；`job_kind` 为 program 或 frame，里面是未加来源字段的原 Job/FrameJob。MCP 严格核对原 Ref、设备、唯一实例回执、POST 的 Location/replayed，并从闭合 typed 执行体重算执行摘要。这个摘要校验不能证明作者 Action 的编译正确性；完整来源、recipe 与 revision 的验证由 daemon 完成，适配器没有第二份高级 compiler。
+
+响应丢失后使用 `get_pattern_request`，传回原 serial/Ref/票据。若已有 job_id 或 execution_digest，可一并给出以进一步绑定；两者的格式和实际值都必须吻合。查询与取消都不读取 Store，也不把图案降成旧 Program。回执是有界内存历史，重启、过期或淘汰后原结果可能仍未知；不得自动准备新票据或重发 run。
+
+取消先 GET 原回执，随后至多一次 POST。`cancel_attempted:true` 仅表示尝试了取消写入；accepted 和 cancelling 均不表示任务已经结束或灯已经熄灭。错误会保留原票据及取消前最后可信 Job，调用者用原 GET 另行恢复。已自然 succeeded 的 hold 保持原颜色，failed 只报告故障；只有实际终态与 daemon 的清理结果可以确认生命周期。HTTP 超时和关闭 MCP 会话不会自动取消任务。
+
+MCP 输入每次最多4096字节，HTTP 响应最多1MiB；重复键、未知字段、null、别名、坏 Unicode、非规范冻结程序、坏实例/摘要/时间/计数响应都会拒绝。POST body 不可自动重放；不重定向、不自动重试、不切换路由或直控硬件。

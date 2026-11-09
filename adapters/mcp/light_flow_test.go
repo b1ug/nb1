@@ -104,7 +104,7 @@ func TestLightFlowOfficialSDKMemoryAndStdio(t *testing.T) {
 				session = connect(t, srv.URL)
 			}
 			tools, err := session.ListTools(context.Background(), nil)
-			if err != nil || len(tools.Tools) != 12 {
+			if err != nil || len(tools.Tools) != 16 {
 				t.Fatalf("expected twelve tools: %v %v", tools, err)
 			}
 			for _, name := range names {

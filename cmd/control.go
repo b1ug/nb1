@@ -59,6 +59,9 @@ func newControlCommand() *cobra.Command {
 		if isLightCommand(cmd) && cmd.Name() == "run" && cmd.Flags().Changed("policy") && options.policy != "reject" {
 			return fmt.Errorf("light run supports only --policy reject")
 		}
+		if isLightCommand(cmd) && cmd.Name() == "preview" && cmd.Flags().Changed("wait") {
+			return fmt.Errorf("light preview is read-only and does not accept --wait")
+		}
 		if (cmd.Name() == "preview" || cmd.Name() == "capabilities" || cmd.Name() == "color") && cmd.Flags().Changed("policy") {
 			return fmt.Errorf("%s is read-only and does not accept --policy", cmd.Name())
 		}
@@ -73,6 +76,15 @@ func newControlCommand() *cobra.Command {
 				return fmt.Errorf("--request-id and --expected-daemon-instance-id must both be nonempty or both omitted")
 			}
 		case "request":
+			if isLightCommand(cmd) {
+				if !requestFlag || !instanceFlag || options.requestID == "" || options.expectedInstance == "" {
+					return fmt.Errorf("light request requires nonempty --request-id and --expected-daemon-instance-id")
+				}
+				if cmd.Flags().Changed("policy") {
+					return fmt.Errorf("light request is read-only and does not accept --policy")
+				}
+				break
+			}
 			if requestFlag || !instanceFlag || options.expectedInstance == "" {
 				return fmt.Errorf("request takes a positional request ID and requires nonempty --expected-daemon-instance-id")
 			}

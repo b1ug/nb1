@@ -44,6 +44,13 @@ func newControlLightCommand(options *controlFlags) *cobra.Command {
 		if err != nil {
 			return err
 		}
+		if isLightV2File(data) {
+			var target *string
+			if cmd.Flags().Changed("serial") {
+				target = &serial
+			}
+			return previewLightV2(cmd, options, data, target)
+		}
 		compiled, err := lightaction.CompileRequest(data)
 		if err != nil {
 			return err
@@ -73,7 +80,7 @@ func newControlLightCommand(options *controlFlags) *cobra.Command {
 		}
 		return printControlJSON(cmd.OutOrStdout(), result)
 	}}
-	preview.Long = "FILE must contain exactly contract nb1-light-action/v1 and action. Default daemon mode sends the original action to the authoritative compiler. --mode direct uses that same pure Go compiler locally, without HTTP, discovery, ownership locks or USB. Optional --serial reads only a configured daemon snapshot. No receipt or policy flags are accepted."
+	preview.Long = "FILE must contain an explicit supported light-action contract and action: v1 or experimental-v2. Default daemon mode sends the original action to the authoritative compiler. --mode direct uses the matching pure Go compiler locally, without HTTP, discovery, ownership locks or USB. Optional --serial reads only a configured daemon snapshot. No receipt or policy flags are accepted."
 	preview.Flags().StringVar(&serial, "serial", "", "optional daemon serial for cached capability validation")
 	parent.AddCommand(preview)
 	run := &cobra.Command{Use: "run SERIAL FILE", Args: cobra.ExactArgs(2), Short: "Run one light action with reject policy and a preserved receipt", RunE: func(cmd *cobra.Command, args []string) error {
@@ -86,6 +93,16 @@ func newControlLightCommand(options *controlFlags) *cobra.Command {
 		data, err := readControlLight(args[1])
 		if err != nil {
 			return err
+		}
+		if isLightV2File(data) {
+			compiled, err := daemonclient.LocalLightV2Preview(data)
+			if err != nil {
+				return err
+			}
+			if options.mode == "direct" {
+				return runLightV2Direct(cmd, options, args[0], compiled.Result)
+			}
+			return runLightV2Daemon(cmd, options, args[0], data)
 		}
 		compiled, err := lightaction.CompileRequest(data)
 		if err != nil {
@@ -101,6 +118,7 @@ func newControlLightCommand(options *controlFlags) *cobra.Command {
 	}}
 	run.Long = "Run accepts a strict contract/action file. Its effective policy is always reject, independent of the legacy commands' replace default; an explicit non-reject policy is refused. Daemon mode prepares one complete request ticket if none was supplied, submits once, and prints the ticket even when an outcome is unknown. --wait polls that original receipt and never cancels or resubmits on timeout. Direct mode waits within this process and reuses the existing ownership and shutdown cleanup."
 	parent.AddCommand(run)
+	parent.AddCommand(newLightV2RequestCommand(options))
 	return parent
 }
 

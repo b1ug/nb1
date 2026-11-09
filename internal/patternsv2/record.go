@@ -11,6 +11,7 @@ import (
 	"github.com/b1ug/nb1/internal/jsoninput"
 	"github.com/b1ug/nb1/internal/lightaction"
 	"github.com/b1ug/nb1/internal/lightactionv2"
+	"github.com/b1ug/nb1/internal/patternidentity"
 )
 
 // NewRecord freezes one known high-level source. There is no ID registry or
@@ -95,7 +96,7 @@ func ExecutionDigest(r Record) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return hash(ExecutionDomain, b), nil
+	return patternidentity.HashExecutionCanonical(b), nil
 }
 
 func InspectRecord(data []byte) (Inspection, error) {
@@ -268,7 +269,7 @@ func inspectNode(n interface{}) (Inspection, error) {
 	if err != nil {
 		return Inspection{}, err
 	}
-	return Inspection{record: cloneRecord(r), support: support, canonical: encoded, executionDigest: hash(ExecutionDomain, eb)}, nil
+	return Inspection{record: cloneRecord(r), support: support, canonical: encoded, executionDigest: patternidentity.HashExecutionCanonical(eb)}, nil
 }
 
 func decodeExecution(n interface{}) (Execution, error) {

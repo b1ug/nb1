@@ -8,12 +8,13 @@ import (
 	"fmt"
 
 	"github.com/b1ug/nb1/internal/control"
+	"github.com/b1ug/nb1/internal/patternidentity"
 )
 
 const (
-	RecordContract  = "nb1-pattern-record/experimental-v2"
+	RecordContract  = patternidentity.RecordContract
 	SnapshotKind    = "nb1-pattern-snapshot/experimental-v2"
-	ExecutionDomain = "nb1-pattern-execution/experimental-v1"
+	ExecutionDomain = patternidentity.ExecutionDomain
 	SchemaVersion   = 2
 	MaxBytes        = 1 << 20
 	MaxRecords      = 128

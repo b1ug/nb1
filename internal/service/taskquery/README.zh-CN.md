@@ -79,14 +79,14 @@ ownership、有限 Scheduler 属性或 failure；没有原始 PowerShell 输出�
 测试二进制可先在普通用户外部 fixture 下执行，协议同样需要显式两个环境变量和
 `-test.run '^TestNativeQueryOptIn$' -test.v`。进程创建、等待退出及 profile/账号清理
 属于外部验收工具的职责，测试不会扩展该工具或替它背书。Mac 软件检查及 Windows
-跨编译不是原生 PowerShell/COM 证据。本次新增协议尚未在 Windows 执行。
+跨编译不是原生 PowerShell/COM 证据。原生执行按独立 CI 的源码与 run 记录，不同版本不互相代替验收。
 
 ## 独立首次/第二次桥接计时
 
 `TestNativeQueryTiming` 是另一个默认跳过的 Windows-only 诊断。它仅在
 `NB1_TASKQUERY_TIMING=1` 和精确的 `NB1_TASKQUERY_EXPECT_SID` 下运行；独立
 普通用户 fixture 应先完成 token 验收并绑定新 profile，随后**首次运行本诊断，
-不先跑三秒产品 Query，也不在预热后声称取得了首次产品验收**。
+不先跑产品 Query，也不在预热后声称取得了首次产品验收**。
 
 ```powershell
 $env:NB1_TASKQUERY_TIMING = '1'

@@ -53,9 +53,9 @@ bin目录只接受预期的一个token文件或两个token/query文件；两份�
 
 ## 独立 timing-only 诊断
 
-`-TimingBinary C:\explicit\taskquery-timing.test.exe` 与 `-QueryBinary` 互斥。独立workflow `windows-query-timing.yml` 只在 `validation/windows-query-timing` 或显式dispatch运行；使用fresh普通profile先完成原token两case和profile归属绑定，然后只跑 `^TestNativeQueryTiming$`，不先调用生产Query、不在预热后补跑Query冒充3秒验收。新增闭集kind为timing-ordinary，env仅系统路径/TEMP/TMP加 `NB1_TASKQUERY_TIMING=1`、`NB1_TASKQUERY_EXPECT_SID`，前缀固定 `NB1_TASKQUERY_TIMING_RESULT `。
+`-TimingBinary C:\explicit\taskquery-timing.test.exe` 与 `-QueryBinary` 互斥。独立workflow `windows-query-timing.yml` 只在 `validation/windows-query-timing` 或显式dispatch运行；使用fresh普通profile先完成原token两case和profile归属绑定，然后只跑 `^TestNativeQueryTiming$`，不先调用生产Query、不在预热后补跑Query冒充首次生产验收。新增闭集kind为timing-ordinary，env仅系统路径/TEMP/TMP加 `NB1_TASKQUERY_TIMING=1`、`NB1_TASKQUERY_EXPECT_SID`，前缀固定 `NB1_TASKQUERY_TIMING_RESULT `。
 
-Go诊断来自1a74b101+272f3674（后者先append样本再原位更新，partial/panic不能隐藏已经invoked的run）。它复用原nativeRunner固定request/script，记录Current/New/trust/bridge/parse毫秒及first/second各25秒context观察；生产Query函数、原3秒预算、脚本和权限均不修改。bridge总时间包含PS启动与COM等，不能伪称已拆成PS启动和COM单项。context超时后仍须实际Run/Wait返回，毫秒数可以超过25秒，不用硬上限替代退出证明；外围直接Go等待仅此mode为90秒，普通Query仍40秒。
+2916/run42572206853时的Go诊断来自1a74b101+272f3674（后者先append样本再原位更新，partial/panic不能隐藏已经invoked的run）。它复用原nativeRunner固定request/script，记录Current/New/trust/bridge/parse毫秒及first/second各25秒context观察；该轮未修改生产Query函数、当时3秒预算、脚本和权限；后续15秒候选独立复验，见下节。bridge总时间包含PS启动与COM等，不能伪称已拆成PS启动和COM单项。context超时后仍须实际Run/Wait返回，毫秒数可以超过25秒，不用硬上限替代退出证明；外围直接Go等待仅此mode为90秒，普通Query仍40秒。
 
 完整终态必须phase=complete、精确freshSID/固定taskpath、production_query_invoked=false、production_acceptance=false、两个按序first/second样本，且每个bridge_invoked/run_returned/private_ps_exit_proven=true、trust_checks=1。完整DIAGNOSTIC_ONLY还须两次都观察到Unknown/not_checked/get_task/0x80070002；这仅是较长预算下的诊断，不是生产QueryPASS。所有字段、有限Status、类型、重复/转义key和大小写冲突均严格验证（8KiB上限），source/arch/Go版本和独立binary hash由workflow绑定。
 

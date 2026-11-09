@@ -68,6 +68,16 @@ jobs:
           go build ./...
           go test -race -count=1 -timeout=3m ./...
           go vet ./...
+      - name: Command notification CLI contract
+        run: |
+          binary="$RUNNER_TEMP/nb1-notify$(go env GOEXE)"
+          go build -o "$binary" ./cli
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            python_cmd=python
+          else
+            python_cmd=python3
+          fi
+          NB1_NOTIFY_TEST_BINARY="$binary" "$python_cmd" -m unittest discover -s cli/examples/command-notify -p 'test_*.py' -v
 
   legacy-cli:
     name: Go 1.18 CLI source / ubuntu-22.04

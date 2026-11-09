@@ -52,6 +52,12 @@ class FakeCLI:
         job = {"id": "job-1", "device": "test-serial", "status": "succeeded", "program": payload}
         if self.mode == "job_failed":
             job.update(status="failed", error="cleanup/readback failed")
+        if self.mode == "undefined_terminal":
+            job["status"] = "completed"
+        if self.mode == "wrong_device":
+            job["device"] = "another-device"
+        if self.mode == "wrong_program":
+            job["program"] = notify.program("#ffffff", 1500)
         return subprocess.CompletedProcess(argv, 1 if self.mode == "job_failed" else 0, json.dumps(job), "")
 
 
@@ -119,6 +125,20 @@ class NotifyTests(unittest.TestCase):
         self.assertEqual(report["notification"]["state"], "not_submitted")
         self.assertFalse(report["notification"]["outcome_unknown"])
         self.assertEqual(len(cli.calls), 2)
+
+    def test_unknown_terminal_or_mismatched_job_does_not_confirm_off(self):
+        for mode in ("undefined_terminal", "wrong_device", "wrong_program"):
+            with self.subTest(mode=mode):
+                if self.report.exists():
+                    self.report.unlink()
+                _, report, cli, _ = self.execute(mode)
+                notification = report["notification"]
+                self.assertEqual(notification["state"], "unknown")
+                self.assertTrue(notification["outcome_unknown"])
+                self.assertEqual(notification["binding"], BINDING)
+                self.assertEqual(notification["final_off"], "not_confirmed")
+                self.assertEqual(len(cli.programs), 1)
+                self.assertEqual(len(cli.calls), 3)
 
     def test_terminal_failure_does_not_claim_confirmed_off(self):
         code, report, cli, _ = self.execute("job_failed")

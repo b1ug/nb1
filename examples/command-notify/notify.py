@@ -119,9 +119,9 @@ def notify(options, report, report_path):
         if (isinstance(job, dict) and isinstance(job.get("id"), str) and job["id"]
                 and job.get("device") == options.serial
                 and job.get("program") == notification["program"]
-                and job.get("status") in ("succeeded", "completed", "failed", "cancelled")):
+                and job.get("status") in ("succeeded", "failed", "cancelled")):
             notification.update(job=job, outcome_unknown=False)
-            if result.returncode == 0 and job["status"] in ("succeeded", "completed"):
+            if result.returncode == 0 and job["status"] == "succeeded":
                 notification.update(state="succeeded", final_off="daemon_job_confirmed")
             else:
                 notification.update(state="failed", final_off="not_confirmed")

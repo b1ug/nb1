@@ -67,8 +67,8 @@ func frameProgramFacts(p FrameProgram) (frameFacts, error) {
 	return f, nil
 }
 
-// PreviewFrameProgram describes a validated experimental schedule only. The
-// constant unavailable result is intentional: no frame executor is wired yet.
+// PreviewFrameProgram describes a validated experimental schedule only. It does not
+// select an Engine or device, so execution availability remains unchecked.
 // Actual tail waiting must use last native Set return times, not this nominal
 // arithmetic. Native I/O, timer lateness, readback and cleanup add wall time.
 func PreviewFrameProgram(input FrameProgram) (FramePreview, error) {
@@ -89,6 +89,6 @@ func PreviewFrameProgram(input FrameProgram) (FramePreview, error) {
 		TotalFrames: int(f.totalFrames), StoredTargetWrites: int(f.storedTargetWrites), PlannedTargetWrites: int(f.plannedTargetWrites),
 		CycleDurationMS: f.cycle, NominalInitialMS: f.initial, NominalTailMS: f.tail, NominalDurationMS: f.duration,
 		TimingBasis: "host-nominal-excludes-native-io", RequiredCapabilities: required,
-		Execution: FrameExecutionAvailability{Available: false, Reason: "frame_executor_not_integrated"},
+		Execution: FrameExecutionAvailability{Available: false, Reason: "execution_not_checked"},
 	}, nil
 }

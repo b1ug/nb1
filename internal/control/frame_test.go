@@ -165,7 +165,7 @@ func TestFramePreviewInitializationRepeatAndTail(t *testing.T) {
 	if got.TotalFrames != 24 || got.StoredTargetWrites != 18 || got.PlannedTargetWrites != 50 || got.CycleDurationMS != 3000 || got.NominalInitialMS != 20 || got.NominalTailMS != 25 || got.NominalDurationMS != 9045 {
 		t.Fatalf("initial/tail was repeated or writes were omitted: %#v", got)
 	}
-	if got.Execution.Available || got.Execution.Reason != "frame_executor_not_integrated" || got.TimingBasis != "host-nominal-excludes-native-io" {
+	if got.Execution.Available || got.Execution.Reason != "execution_not_checked" || got.TimingBasis != "host-nominal-excludes-native-io" {
 		t.Fatalf("pure preview claims hardware execution: %#v", got)
 	}
 	wantCaps := []string{"set", "raw-rgb", FrameExecutorCapability}
@@ -284,6 +284,37 @@ func TestFrameParallelPreviewDoesNotMutateSharedInput(t *testing.T) {
 	wg.Wait()
 	if p.Frames[0].Targets[0].Color != "#000099" {
 		t.Fatal("concurrent preview mutated source")
+	}
+}
+
+func TestFrameExecutionCachedAvailabilityDoesNotClaimAdmission(t *testing.T) {
+	tests := []struct {
+		name   string
+		state  *DeviceState
+		want   bool
+		reason string
+	}{
+		{"not-selected", nil, false, "not_selected"},
+		{"offline", &DeviceState{Connection: "offline"}, false, "device_not_online"},
+		{"missing-profile", &DeviceState{Connection: "online", DeviceInfo: DeviceInfo{Capabilities: []string{"set", "raw-rgb"}}}, false, "missing_capabilities"},
+		{"missing-set", &DeviceState{Connection: "online", DeviceInfo: DeviceInfo{Capabilities: []string{"mk2-basic", "raw-rgb"}}}, false, "missing_capabilities"},
+		{"missing-raw", &DeviceState{Connection: "online", DeviceInfo: DeviceInfo{Capabilities: []string{"set", "mk2-basic"}}}, false, "missing_capabilities"},
+		{"busy-is-separate", &DeviceState{Connection: "online", ActiveJob: "already-running", QueueDepth: 3, DeviceInfo: DeviceInfo{Capabilities: []string{"set", "raw-rgb", "mk2-basic"}}}, true, "cached_profile_supported"},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			var before DeviceState
+			if test.state != nil {
+				before = cloneState(*test.state)
+			}
+			got := FrameExecutionForDevice(test.state)
+			if got.Available != test.want || got.Reason != test.reason {
+				t.Fatalf("availability=%#v", got)
+			}
+			if test.state != nil && !reflect.DeepEqual(before, cloneState(*test.state)) {
+				t.Fatal("cached capability check changed device state")
+			}
+		})
 	}
 }
 

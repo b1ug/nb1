@@ -12,10 +12,16 @@ import (
 )
 
 type record struct {
-	job       Job
-	cancel    chan struct{}
-	cancelled bool
-	receipt   *receiptEntry
+	kind                                       recordKind
+	state                                      recordState
+	program                                    *Program
+	frames                                     *FrameProgram
+	completedSteps, totalSteps                 int
+	completedFrames, totalFrames               int
+	completedTargetWrites, plannedTargetWrites int
+	cancel                                     chan struct{}
+	cancelled                                  bool
+	receipt                                    *receiptEntry
 }
 
 type worker struct {
@@ -212,10 +218,10 @@ func (e *Engine) Job(id string) (Job, error) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	r, ok := e.jobs[id]
-	if !ok {
+	if !ok || r.kind != recordSequential {
 		return Job{}, ErrNotFound
 	}
-	return cloneJob(r.job), nil
+	return r.legacySnapshot(), nil
 }
 
 func Normalize(p Program) (Program, error) {
@@ -275,7 +281,7 @@ func (e *Engine) Submit(ctx context.Context, serial string, program Program, pol
 		return Job{}, err
 	}
 	e.publishLocked(w, r, policy)
-	return cloneJob(r.job), nil
+	return r.legacySnapshot(), nil
 }
 
 func normalizeSubmission(program Program, policy string) (Program, string, error) {
@@ -330,7 +336,7 @@ func (e *Engine) publishLocked(w *worker, r *record, policy string) {
 		}
 		w.queue = nil
 	}
-	e.jobs[r.job.ID] = r
+	e.jobs[r.state.ID] = r
 	w.queue = append(w.queue, r)
 	w.state.QueueDepth = len(w.queue)
 	select {
@@ -340,22 +346,22 @@ func (e *Engine) publishLocked(w *worker, r *record, policy string) {
 }
 
 func (e *Engine) cancelLocked(r *record) {
-	if r.job.FinishedAt != nil || r.cancelled {
+	if r.state.FinishedAt != nil || r.cancelled {
 		return
 	}
 	r.cancelled = true
 	close(r.cancel)
-	r.job.Status = "cancelling"
+	r.state.Status = "cancelling"
 }
 func (e *Engine) finishLocked(r *record, status string, err error) {
-	if r.job.FinishedAt != nil {
+	if r.state.FinishedAt != nil {
 		return
 	}
 	now := time.Now().UTC()
-	r.job.Status = status
-	r.job.FinishedAt = &now
+	r.state.Status = status
+	r.state.FinishedAt = &now
 	if err != nil {
-		r.job.Error = err.Error()
+		r.state.Error = err.Error()
 	}
 	if r.receipt != nil {
 		r.receipt.expiresAtMS = e.receipts.nowMS() + e.receipts.retentionMS
@@ -363,7 +369,7 @@ func (e *Engine) finishLocked(r *record, status string, err error) {
 			r.receipt.expiresAtMS = r.receipt.acceptUntilMS
 		}
 	}
-	e.history = append(e.history, r.job.ID)
+	e.history = append(e.history, r.state.ID)
 	for len(e.history) > e.options.MaxHistory {
 		id := e.history[0]
 		e.history = e.history[1:]
@@ -377,13 +383,18 @@ func (e *Engine) Cancel(ctx context.Context, id string) (Job, error) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	r, ok := e.jobs[id]
-	if !ok {
+	if !ok || r.kind != recordSequential {
 		return Job{}, ErrNotFound
 	}
-	if r.job.FinishedAt != nil {
-		return cloneJob(r.job), nil
+	e.cancelRecordLocked(r)
+	return r.legacySnapshot(), nil
+}
+
+func (e *Engine) cancelRecordLocked(r *record) {
+	if r.state.FinishedAt != nil {
+		return
 	}
-	w := e.workers[r.job.Device]
+	w := e.workers[r.state.Device]
 	if w.active == r {
 		e.cancelLocked(r)
 	} else {
@@ -396,7 +407,6 @@ func (e *Engine) Cancel(ctx context.Context, id string) (Job, error) {
 		w.state.QueueDepth = len(w.queue)
 		e.finishLocked(r, "cancelled", nil)
 	}
-	return cloneJob(r.job), nil
 }
 
 func (w *worker) offline(err error) {
@@ -504,10 +514,10 @@ func (w *worker) loop() {
 			w.queue = w.queue[1:]
 			w.state.QueueDepth = len(w.queue)
 			w.active = r
-			w.state.ActiveJob = r.job.ID
+			w.state.ActiveJob = r.state.ID
 			now := time.Now().UTC()
-			r.job.StartedAt = &now
-			r.job.Status = "running"
+			r.state.StartedAt = &now
+			r.state.Status = "running"
 			e.mu.Unlock()
 			w.execute(r)
 			continue
@@ -531,13 +541,17 @@ func (w *worker) loop() {
 }
 
 func (w *worker) execute(r *record) {
+	if r.kind == recordFrames {
+		w.executeFrames(r)
+		return
+	}
 	e := w.engine
 	// Device discovery and monitoring do not change output. First quiesce any
 	// autonomous activity only when an actual control job takes ownership.
 	runErr := w.backend.Stop("hold")
 	cancelled := false
-	for repeat := 0; repeat < r.job.Program.Repeat && runErr == nil && !cancelled; repeat++ {
-		for _, step := range r.job.Program.Steps {
+	for repeat := 0; repeat < r.program.Repeat && runErr == nil && !cancelled; repeat++ {
+		for _, step := range r.program.Steps {
 			select {
 			case <-r.cancel:
 				cancelled = true
@@ -563,10 +577,16 @@ func (w *worker) execute(r *record) {
 				break
 			}
 			e.mu.Lock()
-			r.job.CompletedSteps++
+			r.completedSteps++
 			e.mu.Unlock()
 		}
 	}
+	w.finishExecution(r, runErr, cancelled)
+}
+
+// Both record kinds share the same cleanup, cancellation and lifetime rules.
+func (w *worker) finishExecution(r *record, runErr error, cancelled bool) {
+	e := w.engine
 	// A cancellation arriving while native Set was in flight must still clean
 	// up with off, even if the program's normal finish policy is hold.
 	e.mu.Lock()
@@ -577,7 +597,7 @@ func (w *worker) execute(r *record) {
 	}
 	e.mu.Unlock()
 	for {
-		mode := r.job.Program.OnFinish
+		mode := r.finishMode()
 		if cancelled || runErr != nil {
 			mode = "off"
 		}

@@ -1,8 +1,8 @@
 package control
 
-// FrameContract is an experimental, internal authoring contract. No current
-// Service, worker, HTTP route or capability catalog accepts or executes it.
-// Qualifying the executor and its physical timing precedes any stable release.
+// FrameContract is an experimental authoring contract with an opt-in
+// FrameService executor. The legacy Service and its capability catalog remain
+// unchanged. Physical qualification precedes any stable contract release.
 const FrameContract = "nb1-frame-program/experimental-v1"
 
 const (
@@ -30,8 +30,9 @@ type FrameTarget struct {
 }
 
 // Frame describes overlapping device fades followed by one host interval.
-// The future executor must wait only the remainder of IntervalMS after writes,
-// not FadeMS separately for each target. Timing is currently specification only.
+// The executor must wait only the remainder of IntervalMS after writes,
+// not FadeMS separately for each target. Device qualification remains separate
+// from these host-side scheduling semantics.
 type Frame struct {
 	Targets    []FrameTarget `json:"targets"`
 	FadeMS     int           `json:"fade_ms"`

@@ -117,9 +117,9 @@ func (s *receiptState) checkNewDeadline(deadline, now int64) error {
 // entries are pinned; removing a terminal receipt never cancels its job.
 func (s *receiptState) prune(now int64) {
 	for key, entry := range s.entries {
-		if entry.record.job.FinishedAt != nil && entry.expiresAtMS <= now {
+		if entry.record.state.FinishedAt != nil && entry.expiresAtMS <= now {
 			delete(s.entries, key)
-			s.steps -= len(entry.record.job.Program.Steps)
+			s.steps -= entry.record.retainedCost()
 			entry.record.receipt = nil
 		}
 	}
@@ -141,7 +141,10 @@ func (e *Engine) Request(serial, requestID, expectedDaemonInstanceID string) (Jo
 	now := s.nowMS()
 	s.prune(now)
 	if entry := s.entries[receiptKey{serial, requestID}]; entry != nil {
-		return cloneJob(entry.record.job), nil
+		if entry.record.kind != recordSequential {
+			return Job{}, ErrNotFound
+		}
+		return entry.record.legacySnapshot(), nil
 	}
 	if err := s.checkNewDeadline(deadline, now); err != nil {
 		return Job{}, err
@@ -183,10 +186,10 @@ func (e *Engine) SubmitWithReceipt(ctx context.Context, serial string, program P
 	s.prune(now)
 	key := receiptKey{serial, input.RequestID}
 	if entry := s.entries[key]; entry != nil {
-		if entry.digest != digest {
+		if entry.record.kind != recordSequential || entry.digest != digest {
 			return ReceiptResult{}, ErrRequestConflict
 		}
-		return ReceiptResult{Job: cloneJob(entry.record.job), Replayed: true, DaemonInstanceID: s.instanceID}, nil
+		return ReceiptResult{Job: entry.record.legacySnapshot(), Replayed: true, DaemonInstanceID: s.instanceID}, nil
 	}
 	if err := s.checkNewDeadline(deadline, now); err != nil {
 		return ReceiptResult{}, err
@@ -207,30 +210,38 @@ func (e *Engine) SubmitWithReceipt(ctx context.Context, serial string, program P
 	s.entries[key] = entry
 	s.steps += len(p.Steps)
 	e.publishLocked(w, r, policy)
-	return ReceiptResult{Job: cloneJob(r.job), DaemonInstanceID: s.instanceID}, nil
+	return ReceiptResult{Job: r.legacySnapshot(), DaemonInstanceID: s.instanceID}, nil
 }
 
-func (e *Engine) newRecordLocked(serial string, p Program) (*record, error) {
+func (e *Engine) newRecordStateLocked(serial, prefix string) (recordState, error) {
 	for attempt := 0; attempt < 4; attempt++ {
-		id, err := randomID(e.receipts.random, "job_")
+		id, err := randomID(e.receipts.random, prefix)
 		if err != nil {
-			return nil, err
+			return recordState{}, err
 		}
 		if _, exists := e.jobs[id]; exists {
 			continue
 		}
 		collision := false
 		for _, entry := range e.receipts.entries {
-			if entry.record.job.ID == id {
+			if entry.record.state.ID == id {
 				collision = true
 				break
 			}
 		}
 		if !collision {
-			return &record{job: Job{ID: id, Device: serial, Status: "queued", Program: p, TotalSteps: len(p.Steps) * p.Repeat, CreatedAt: time.Now().UTC()}, cancel: make(chan struct{})}, nil
+			return recordState{ID: id, Device: serial, Status: "queued", CreatedAt: time.Now().UTC()}, nil
 		}
 	}
-	return nil, errors.New("random job ID collision limit exceeded")
+	return recordState{}, errors.New("random job ID collision limit exceeded")
+}
+
+func (e *Engine) newRecordLocked(serial string, p Program) (*record, error) {
+	state, err := e.newRecordStateLocked(serial, "job_")
+	if err != nil {
+		return nil, err
+	}
+	return &record{kind: recordSequential, state: state, program: &p, totalSteps: len(p.Steps) * p.Repeat, cancel: make(chan struct{})}, nil
 }
 
 var _ ReceiptService = (*Engine)(nil)

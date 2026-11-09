@@ -26,7 +26,7 @@ type frameClock interface {
 	NewTimer(time.Duration) frameTimer
 }
 
-// These adapters remain private and unused by the existing device worker.
+// These adapters remain private to the owning worker's frame execution path.
 type wallFrameClock struct{}
 type wallFrameTimer struct{ timer *time.Timer }
 
@@ -42,7 +42,7 @@ type frameScheduleProgress struct {
 	CompletedTargetWrites int
 }
 
-// runFrameSchedule is an unintegrated scheduling primitive, not a Service or
+// runFrameSchedule is a scheduling primitive, not a Service or
 // device owner. It validates the entire program before any Set. Progress means
 // a host frame interval elapsed, not that optical settling/cleanup completed.
 // No timer or context can interrupt a synchronous native Set already in flight.

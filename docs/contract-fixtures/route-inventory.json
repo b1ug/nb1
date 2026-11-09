@@ -7,9 +7,9 @@
       "scope": "Source inventory, not a fresh daemon probe"
     },
     "development": {
-      "commit": "4d625891cc421c037807e2e6a193174016c05c71",
-      "source_worktree": "validation/nb1-ecosystem-next",
-      "scope": "P1/P2/authoring+P3 storage handlers; not installed; no Pattern v2 execution API"
+      "commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
+      "source_worktree": "validation/nb1-pattern-v2-public",
+      "scope": "P1..P6, independent default lazy StoreV2 and four public fixed-reference execution operations; not installed"
     }
   },
   "routes": [
@@ -20,7 +20,7 @@
       "level": "discovery",
       "status": {
         "daily_1d89": "implemented",
-        "development_4d62589": "same as daily"
+        "development_f8bb267": "same as daily"
       },
       "input": {
         "body": "none",
@@ -49,7 +49,7 @@
       "level": "discovery",
       "status": {
         "daily_1d89": "implemented",
-        "development_4d62589": "same as daily"
+        "development_f8bb267": "same as daily"
       },
       "input": {
         "body": "none",
@@ -82,7 +82,7 @@
       "level": "receipt",
       "status": {
         "daily_1d89": "implemented",
-        "development_4d62589": "same as daily"
+        "development_f8bb267": "same as daily"
       },
       "input": {
         "body": "none",
@@ -114,7 +114,7 @@
       "level": "diagnostic",
       "status": {
         "daily_1d89": "implemented",
-        "development_4d62589": "same as daily"
+        "development_f8bb267": "same as daily"
       },
       "input": {
         "body": "none",
@@ -145,7 +145,7 @@
       "level": "low-state",
       "status": {
         "daily_1d89": "implemented",
-        "development_4d62589": "same as daily"
+        "development_f8bb267": "same as daily"
       },
       "input": {
         "body": "none",
@@ -174,7 +174,7 @@
       "level": "low-state",
       "status": {
         "daily_1d89": "implemented",
-        "development_4d62589": "same as daily"
+        "development_f8bb267": "same as daily"
       },
       "input": {
         "body": "none",
@@ -207,7 +207,7 @@
       "level": "low-program",
       "status": {
         "daily_1d89": "implemented",
-        "development_4d62589": "same as daily"
+        "development_f8bb267": "same as daily"
       },
       "input": {
         "body": "Exactly one of program:Program / effect:Effect / pattern_ref:{id,revision}; optional serial",
@@ -241,7 +241,7 @@
       "level": "low-program",
       "status": {
         "daily_1d89": "implemented",
-        "development_4d62589": "same as daily"
+        "development_f8bb267": "same as daily"
       },
       "input": {
         "body": "Exactly one program:Program / effect:Effect / pattern_ref:{id,revision}, policy; request_id and expected_daemon_instance_id both present or both absent for raw Program/Effect",
@@ -284,7 +284,7 @@
       "level": "receipt",
       "status": {
         "daily_1d89": "implemented",
-        "development_4d62589": "same as daily"
+        "development_f8bb267": "same as daily"
       },
       "input": {
         "body": "documented none",
@@ -319,7 +319,7 @@
       "level": "low-job",
       "status": {
         "daily_1d89": "implemented",
-        "development_4d62589": "same as daily"
+        "development_f8bb267": "same as daily"
       },
       "input": {
         "body": "none",
@@ -350,7 +350,7 @@
       "level": "low-job",
       "status": {
         "daily_1d89": "implemented",
-        "development_4d62589": "same as daily"
+        "development_f8bb267": "same as daily"
       },
       "input": {
         "body": "empty or {} only; no source/instance/ticket fields",
@@ -384,7 +384,7 @@
       "level": "color",
       "status": {
         "daily_1d89": "implemented",
-        "development_4d62589": "same as daily"
+        "development_f8bb267": "same as daily"
       },
       "input": {
         "body": "{color:ColorInput}",
@@ -421,7 +421,7 @@
       "level": "low-frame",
       "status": {
         "daily_1d89": "implemented",
-        "development_4d62589": "same as daily"
+        "development_f8bb267": "same as daily"
       },
       "input": {
         "body": "none",
@@ -451,7 +451,7 @@
       "level": "low-frame",
       "status": {
         "daily_1d89": "implemented",
-        "development_4d62589": "same as daily"
+        "development_f8bb267": "same as daily"
       },
       "input": {
         "body": "{program:FrameProgram,serial?:string}",
@@ -485,7 +485,7 @@
       "level": "low-frame",
       "status": {
         "daily_1d89": "implemented",
-        "development_4d62589": "same as daily"
+        "development_f8bb267": "same as daily"
       },
       "input": {
         "body": "{program:FrameProgram,policy:\"reject\",request_id,expected_daemon_instance_id}",
@@ -523,7 +523,7 @@
       "level": "receipt",
       "status": {
         "daily_1d89": "implemented",
-        "development_4d62589": "same as daily"
+        "development_f8bb267": "same as daily"
       },
       "input": {
         "body": "none",
@@ -556,7 +556,7 @@
       "level": "low-job",
       "status": {
         "daily_1d89": "implemented",
-        "development_4d62589": "same as daily"
+        "development_f8bb267": "same as daily"
       },
       "input": {
         "body": "none",
@@ -587,7 +587,7 @@
       "level": "low-job",
       "status": {
         "daily_1d89": "implemented",
-        "development_4d62589": "same as daily"
+        "development_f8bb267": "same as daily"
       },
       "input": {
         "body": "empty / {} legacy; optional nonempty expected_daemon_instance_id binds instance; explicit null/blank/wrong type/unknown/duplicate fields rejected",
@@ -625,7 +625,7 @@
       "level": "high-action",
       "status": {
         "daily_1d89": "implemented",
-        "development_4d62589": "same as daily"
+        "development_f8bb267": "same as daily"
       },
       "input": {
         "body": "{contract:\"nb1-light-action/v1\",action:{kind:set/off/fade/blink/breathe/pulse/alternate/rainbow,...},serial?:string}",
@@ -658,7 +658,7 @@
       "level": "high-action",
       "status": {
         "daily_1d89": "implemented",
-        "development_4d62589": "same as daily"
+        "development_f8bb267": "same as daily"
       },
       "input": {
         "body": "{contract:\"nb1-light-action/v1\",action:{...},policy:\"reject\",request_id,expected_daemon_instance_id}",
@@ -698,7 +698,7 @@
       "level": "high-action",
       "status": {
         "daily_1d89": "implemented",
-        "development_4d62589": "same as daily"
+        "development_f8bb267": "same as daily"
       },
       "input": {
         "body": "{contract:\"nb1-light-action/experimental-v2\",action:{kind:orbit only,...},serial?:string}",
@@ -732,7 +732,7 @@
       "level": "high-action",
       "status": {
         "daily_1d89": "implemented",
-        "development_4d62589": "same as daily"
+        "development_f8bb267": "same as daily"
       },
       "input": {
         "body": "{contract:\"nb1-light-action/experimental-v2\",action:{...},policy:\"reject\",request_id,expected_daemon_instance_id}",
@@ -773,7 +773,7 @@
       "level": "pattern-library",
       "status": {
         "daily_1d89": "implemented",
-        "development_4d62589": "same as daily"
+        "development_f8bb267": "same as daily"
       },
       "input": {
         "body": "none",
@@ -805,7 +805,7 @@
       "level": "pattern-library",
       "status": {
         "daily_1d89": "implemented",
-        "development_4d62589": "same as daily"
+        "development_f8bb267": "same as daily"
       },
       "input": {
         "body": "none",
@@ -837,7 +837,7 @@
       "level": "pattern-library",
       "status": {
         "daily_1d89": "implemented",
-        "development_4d62589": "same as daily"
+        "development_f8bb267": "same as daily"
       },
       "input": {
         "body": "v1 author package or frozen snapshot accepted by Store.Import; not advanced Action source",
@@ -870,7 +870,7 @@
       "level": "pattern-library",
       "status": {
         "daily_1d89": "absent",
-        "development_4d62589": "handler implemented; storage operations require explicit Go StoreV2 injection"
+        "development_f8bb267": "implemented; daemon selects independent default lazy v2 store; Go handler storage requires option"
       },
       "input": {
         "body": "none",
@@ -893,7 +893,7 @@
         "internal/httpapi/patterns_v2_test.go"
       ],
       "notes": [
-        "v2 default daemon has no StoreV2 injection; normal storage request returns501. Unknown valid records make library read_only and remain readable/exportable."
+        "pattern_execution is wiring only; true pattern_service_configured; false service_unsupported/library_unconfigured/library_configuration_error with pattern_ prefixes; zero Store call to report status."
       ]
     },
     {
@@ -903,7 +903,7 @@
       "level": "pattern-library",
       "status": {
         "daily_1d89": "absent",
-        "development_4d62589": "handler implemented; storage operations require explicit Go StoreV2 injection"
+        "development_f8bb267": "implemented; daemon selects independent default lazy v2 store; Go handler storage requires option"
       },
       "input": {
         "body": "none",
@@ -926,7 +926,8 @@
         "internal/httpapi/patterns_v2_test.go"
       ],
       "notes": [
-        "GET preview/import/export/capabilities are ordinary IDs, not operation routes. Unknown source/recipe is explicit unverified read-only data, not executable."
+        "GET preview/import/preview-ref/export/capabilities are ordinary IDs, not operation routes. Unknown source/recipe is explicit unverified read-only data, not executable.",
+        "pattern_execution is wiring only; true pattern_service_configured; false service_unsupported/library_unconfigured/library_configuration_error with pattern_ prefixes; zero Store call to report status."
       ]
     },
     {
@@ -936,7 +937,7 @@
       "level": "pattern-library",
       "status": {
         "daily_1d89": "absent",
-        "development_4d62589": "handler implemented; storage operations require explicit Go StoreV2 injection"
+        "development_f8bb267": "implemented; daemon selects independent default lazy v2 store; Go handler storage requires option"
       },
       "input": {
         "body": "Full verified canonical-compatible v2 frozen Snapshot; no authoring body",
@@ -961,7 +962,9 @@
       "tests": [
         "internal/httpapi/patterns_v2_test.go"
       ],
-      "notes": []
+      "notes": [
+        "pattern_execution is wiring only; true pattern_service_configured; false service_unsupported/library_unconfigured/library_configuration_error with pattern_ prefixes; zero Store call to report status."
+      ]
     },
     {
       "id": "v2-pattern-preview",
@@ -970,7 +973,7 @@
       "level": "pattern-authoring",
       "status": {
         "daily_1d89": "absent",
-        "development_4d62589": "handler implemented; storage operations require explicit Go StoreV2 injection"
+        "development_f8bb267": "implemented; pure author preview zero Store calls"
       },
       "input": {
         "body": "{id,title,source:{kind:\"light_action\",contract,action}}; no serial/policy/ticket/expected_revision/program",
@@ -979,7 +982,7 @@
       },
       "output": {
         "status": 200,
-        "shape": "{schema_version:2,contract,record,verification,execution_digest,preview,pattern_execution:{available:false,reason:\"pattern_identity_admission_not_integrated\"}}"
+        "shape": "{schema_version:2,contract,record,verification,execution_digest,preview,pattern_execution:{available,reason}}"
       },
       "success_headers": [],
       "io_and_execution": "Pure codec only; Store zero calls including Path; Service zero calls; no USB.",
@@ -994,7 +997,9 @@
       "tests": [
         "internal/httpapi/patterns_v2_test.go"
       ],
-      "notes": []
+      "notes": [
+        "pattern_execution is wiring only; true pattern_service_configured; false service_unsupported/library_unconfigured/library_configuration_error with pattern_ prefixes; zero Store call to report status."
+      ]
     },
     {
       "id": "v2-pattern-save",
@@ -1003,7 +1008,7 @@
       "level": "pattern-authoring",
       "status": {
         "daily_1d89": "absent",
-        "development_4d62589": "handler implemented; storage operations require explicit Go StoreV2 injection"
+        "development_f8bb267": "implemented; daemon selects independent default lazy v2 store; Go handler storage requires option"
       },
       "input": {
         "body": "Same author source + expected_revision matching full freshly built candidate; create-only",
@@ -1033,7 +1038,157 @@
       "tests": [
         "internal/httpapi/patterns_v2_test.go"
       ],
-      "notes": []
+      "notes": [
+        "pattern_execution is wiring only; true pattern_service_configured; false service_unsupported/library_unconfigured/library_configuration_error with pattern_ prefixes; zero Store call to report status."
+      ]
+    },
+    {
+      "id": "pattern-v2-preview-ref",
+      "method": "POST",
+      "path": "/v2/patterns/preview-ref",
+      "level": "pattern-execution",
+      "status": {
+        "daily_1d89": "absent",
+        "development_f8bb267": "implemented; not installed"
+      },
+      "input": {
+        "body": "{pattern_ref,serial?}",
+        "query": "none including empty ?",
+        "max_body_bytes": 4096
+      },
+      "output": {
+        "status": 200,
+        "shape": "PatternRefPreviewV2"
+      },
+      "success_headers": [],
+      "io_and_execution": "P5 exact Resolve and verification, pure Program/Frame facts; serial optionally one cached Device; no Job/receipt/USB.",
+      "receipt": "none",
+      "errors": [
+        "global",
+        "pattern_execution_v2",
+        "library_v2"
+      ],
+      "source": "internal/httpapi/pattern_execution_v2.go",
+      "tests": [
+        "internal/httpapi/pattern_execution_v2_test.go",
+        "internal/httpapi/pattern_execution_v2_engine_test.go"
+      ],
+      "notes": [
+        "Resolve once; no Path/other Store call.",
+        "Strict raw POST4096B, valid UTF8, all fields closed ASCII; duplicate/unknown/null/ForceQuery rejected."
+      ]
+    },
+    {
+      "id": "pattern-v2-submit",
+      "method": "POST",
+      "path": "/v2/devices/{serial}/pattern-jobs",
+      "level": "pattern-execution",
+      "status": {
+        "daily_1d89": "absent",
+        "development_f8bb267": "implemented; not installed"
+      },
+      "input": {
+        "body": "{pattern_ref,policy,request_id,expected_daemon_instance_id}",
+        "query": "none including empty ?",
+        "max_body_bytes": 4096
+      },
+      "output": {
+        "status": 202,
+        "shape": "PatternJobEnvelopeV2"
+      },
+      "success_headers": [
+        "X-NB1-Daemon-Instance-ID: exactly one original instance",
+        "X-NB1-Replayed: exactly one true|false",
+        "Location: original Pattern receipt path + four URL encoded query fields"
+      ],
+      "io_and_execution": "Core new-receipt lazy Resolve then source-bound admission; accepted replay skips Store/config; worker uses existing execution.",
+      "receipt": "Original serial/request_id/instance + full Ref + explicit replace/queue/reject.",
+      "errors": [
+        "global",
+        "pattern_execution_v2"
+      ],
+      "source": "internal/httpapi/pattern_execution_v2.go",
+      "tests": [
+        "internal/httpapi/pattern_execution_v2_test.go",
+        "internal/httpapi/pattern_execution_v2_engine_test.go"
+      ],
+      "notes": [
+        "No Store precheck; no client Program/Action/digest.",
+        "Strict raw POST4096B, valid UTF8, all fields closed ASCII; duplicate/unknown/null/ForceQuery rejected."
+      ]
+    },
+    {
+      "id": "pattern-v2-request",
+      "method": "GET",
+      "path": "/v2/devices/{serial}/pattern-requests/{request_id}",
+      "level": "pattern-execution",
+      "status": {
+        "daily_1d89": "absent",
+        "development_f8bb267": "implemented; not installed"
+      },
+      "input": {
+        "body": "none",
+        "query": "exactly expected_daemon_instance_id,record_contract,pattern_id,revision, once each nonempty"
+      },
+      "output": {
+        "status": 200,
+        "shape": "PatternJobEnvelopeV2"
+      },
+      "success_headers": [
+        "X-NB1-Daemon-Instance-ID: exactly one original instance"
+      ],
+      "io_and_execution": "Core original receipt lookup only; zero Store/config/USB.",
+      "receipt": "Original path request_id + four exact scalar query fields.",
+      "errors": [
+        "global",
+        "pattern_execution_v2"
+      ],
+      "source": "internal/httpapi/pattern_execution_v2.go",
+      "tests": [
+        "internal/httpapi/pattern_execution_v2_test.go",
+        "internal/httpapi/pattern_execution_v2_engine_test.go"
+      ],
+      "notes": [
+        "No history/legacy Job fallback; retained terminal receipts remain queryable after Engine close.",
+        "Strict raw POST4096B, valid UTF8, all fields closed ASCII; duplicate/unknown/null/ForceQuery rejected."
+      ]
+    },
+    {
+      "id": "pattern-v2-cancel",
+      "method": "POST",
+      "path": "/v2/devices/{serial}/pattern-requests/{request_id}/cancel",
+      "level": "pattern-execution",
+      "status": {
+        "daily_1d89": "absent",
+        "development_f8bb267": "implemented; not installed"
+      },
+      "input": {
+        "body": "{pattern_ref,expected_daemon_instance_id,confirmed_job_id?}",
+        "query": "none including empty ?",
+        "max_body_bytes": 4096
+      },
+      "output": {
+        "status": 202,
+        "shape": "PatternJobEnvelopeV2"
+      },
+      "success_headers": [
+        "X-NB1-Daemon-Instance-ID: exactly one original instance"
+      ],
+      "io_and_execution": "Core bound cancel; zero Store/config lookup. Active cleanup is existing worker behavior.",
+      "receipt": "Original request_id/path, instance, full Ref; optional confirmed Job ID.",
+      "errors": [
+        "global",
+        "pattern_execution_v2"
+      ],
+      "source": "internal/httpapi/pattern_execution_v2.go",
+      "tests": [
+        "internal/httpapi/pattern_execution_v2_test.go",
+        "internal/httpapi/pattern_execution_v2_engine_test.go"
+      ],
+      "notes": [
+        "202 may still cancelling/terminal; terminal hold not turned off; no implicit GET.",
+        "Strict raw POST4096B, valid UTF8, all fields closed ASCII; duplicate/unknown/null/ForceQuery rejected."
+      ]
     },
     {
       "id": "web-demo",
@@ -1042,7 +1197,7 @@
       "level": "embedded-web",
       "status": {
         "daily_1d89": "implemented",
-        "development_4d62589": "same as daily"
+        "development_f8bb267": "same as daily"
       },
       "input": {
         "body": "none",
@@ -1074,7 +1229,7 @@
       "level": "embedded-web",
       "status": {
         "daily_1d89": "implemented",
-        "development_4d62589": "same as daily"
+        "development_f8bb267": "same as daily"
       },
       "input": {
         "body": "none",
@@ -1109,7 +1264,7 @@
       "level": "embedded-web",
       "status": {
         "daily_1d89": "implemented",
-        "development_4d62589": "same as daily"
+        "development_f8bb267": "same as daily"
       },
       "input": {
         "body": "none",
@@ -1144,7 +1299,7 @@
       "level": "embedded-web",
       "status": {
         "daily_1d89": "implemented",
-        "development_4d62589": "same as daily"
+        "development_f8bb267": "same as daily"
       },
       "input": {
         "body": "none",
@@ -1179,7 +1334,7 @@
       "level": "embedded-web",
       "status": {
         "daily_1d89": "implemented",
-        "development_4d62589": "same as daily"
+        "development_f8bb267": "same as daily"
       },
       "input": {
         "body": "none",
@@ -1214,7 +1369,7 @@
       "level": "embedded-web",
       "status": {
         "daily_1d89": "implemented",
-        "development_4d62589": "same as daily"
+        "development_f8bb267": "same as daily"
       },
       "input": {
         "body": "none",
@@ -1249,7 +1404,7 @@
       "level": "embedded-web",
       "status": {
         "daily_1d89": "implemented",
-        "development_4d62589": "same as daily"
+        "development_f8bb267": "same as daily"
       },
       "input": {
         "body": "none",

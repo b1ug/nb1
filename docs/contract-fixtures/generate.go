@@ -1,7 +1,8 @@
 // Command contract-fixtures generates documentation examples from pure codecs
-// and a no-service HTTP handler. It never creates an Engine, Store, listener,
-// device, receipt, actual Job, or verified P1 Record. One explicitly synthetic
-// FrameJob struct literal checks wire shape only, without admission/execution.
+// and no-service HTTP handlers, including an exact in-memory record resolver.
+// It never creates an Engine, filesystem Store, listener, device, admission
+// receipt or actual Job. P1 records come from the pure source verifier; all
+// synthetic Job/Envelope examples are explicitly wire-shape-only.
 package main
 
 import (
@@ -19,9 +20,12 @@ import (
 	"github.com/b1ug/nb1/internal/httpapi"
 	"github.com/b1ug/nb1/internal/lightaction"
 	"github.com/b1ug/nb1/internal/lightactionv2"
+	"github.com/b1ug/nb1/internal/patternidentity"
+	"github.com/b1ug/nb1/internal/patternstore"
+	"github.com/b1ug/nb1/internal/patternsv2"
 )
 
-const sourceBase = "4d625891cc421c037807e2e6a193174016c05c71"
+const sourceBase = "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae"
 
 type source struct {
 	Kind          string `json:"kind"`
@@ -56,6 +60,8 @@ func generate() error {
 		samples = append(samples, sample{name, schema, source{Kind: "pure-codec", BaseCommit: sourceBase, Function: function, RequestSample: request}, value})
 	}
 	handler := httpapi.New(nil)
+	httpKind := "httptest-no-service"
+	httpFunction := "httpapi.New(nil).ServeHTTP + httptest.NewRecorder"
 	addHTTP := func(name, schema, method, path, request string, body []byte) ([]byte, error) {
 		r := httptest.NewRequest(method, "http://127.0.0.1"+path, bytes.NewReader(body))
 		if body != nil {
@@ -78,7 +84,7 @@ func generate() error {
 			return nil, fmt.Errorf("%s: handler returned invalid JSON", name)
 		}
 		samples = append(samples, sample{name, schema,
-			source{Kind: "httptest-no-service", BaseCommit: sourceBase, Function: "httpapi.New(nil).ServeHTTP + httptest.NewRecorder", Method: method, Path: path, RequestSample: request},
+			source{Kind: httpKind, BaseCommit: sourceBase, Function: httpFunction, Method: method, Path: path, RequestSample: request},
 			json.RawMessage(responseBody)})
 		return responseBody, nil
 	}
@@ -212,8 +218,68 @@ func generate() error {
 		},
 	})
 
-	if len(samples) != 38 {
-		return fmt.Errorf("generated %d samples, expected 38", len(samples))
+	// New P6 samples use source-verified records in memory, not a filesystem
+	// library. A nil service proves preview never needs an Engine or ticket.
+	for _, kind := range []string{"program", "frame"} {
+		contract, action := lightaction.Contract, `{"kind":"set","color":"lime","on_finish":"hold"}`
+		if kind == "frame" {
+			contract, action = lightactionv2.Contract, `{"kind":"orbit","colors":["red","blue"],"period_ms":3000,"segments":4,"cycles":1,"on_finish":"hold"}`
+		}
+		record, err := patternsv2.NewRecord("doc-"+kind, "文档纯来源夹具", patternsv2.Source{Kind: "light_action", Contract: contract, Action: json.RawMessage(action)})
+		if err != nil {
+			return fmt.Errorf("P6 %s source: %w", kind, err)
+		}
+		ref := patternidentity.Ref{RecordContract: record.Contract, ID: record.ID, Revision: record.Revision}
+		digest, err := patternsv2.ExecutionDigest(record)
+		if err != nil {
+			return err
+		}
+		pure("pattern-ref-"+kind, "PatternRefV2", "patternsv2.NewRecord exact identity", "", ref)
+		previewBody := map[string]interface{}{"pattern_ref": ref}
+		pure("pattern-ref-preview-request-"+kind, "PatternRefPreviewRequestV2", "P6 typed request from source-verified Ref", "pattern-ref-"+kind, previewBody)
+		pure("pattern-submit-request-"+kind, "PatternSubmitRequestV2", "P6 request wire only; syntactic ticket not prepared/admitted", "pattern-ref-"+kind, map[string]interface{}{"pattern_ref": ref, "policy": "queue", "request_id": "req_60000_00000000000000000000000000000001", "expected_daemon_instance_id": "daemon_00000000000000000000000000000001"})
+		pure("pattern-cancel-request-"+kind, "PatternCancelRequestV2", "P6 request wire only; no actual receipt/cancellation", "pattern-ref-"+kind, map[string]interface{}{"pattern_ref": ref, "expected_daemon_instance_id": "daemon_00000000000000000000000000000001", "confirmed_job_id": map[string]string{"program": "job_00000000000000000000000000000001", "frame": "framejob_00000000000000000000000000000001"}[kind]})
+		fixture := &recordFixture{record: record}
+		handler = httpapi.New(nil, httpapi.WithPatternStoreV2(fixture))
+		httpKind = "httptest-in-memory-verified-record-no-service"
+		httpFunction = "patternsv2.NewRecord + in-memory exact Resolve + httpapi.New(nil).ServeHTTP + Recorder; no FS/Engine"
+		for _, target := range []bool{false, true} {
+			name := "pattern-ref-preview-" + kind
+			body := map[string]interface{}{"pattern_ref": ref}
+			if target {
+				body["serial"] = "fixture-device"
+				name += "-selected"
+			}
+			b, err := json.Marshal(body)
+			if err != nil {
+				return err
+			}
+			if _, err = addHTTP(name, "PatternRefPreviewV2", http.MethodPost, "/v2/patterns/preview-ref", "pattern-ref-preview-request-"+kind, b); err != nil {
+				return err
+			}
+		}
+		if fixture.calls != 2 {
+			return fmt.Errorf("P6 preview resolved %d times", fixture.calls)
+		}
+		envelope := control.PatternJobEnvelope{PatternRef: ref, ExecutionDigest: digest, JobKind: kind}
+		if kind == "program" {
+			preview, err := control.Preview(record.Compiled.Execution.Program, nil)
+			if err != nil {
+				return err
+			}
+			envelope.ProgramJob = &control.Job{ID: "job_00000000000000000000000000000001", Device: "fixture-device", Status: "failed", Program: preview.Program, TotalSteps: preview.TotalSteps, CreatedAt: created, StartedAt: &started, FinishedAt: &finished, Error: "Synthetic Pattern wire envelope only; no actual receipt/admission/execution"}
+		} else {
+			preview, err := control.PreviewFrameProgram(*record.Compiled.Execution.FrameProgram)
+			if err != nil {
+				return err
+			}
+			envelope.FrameJob = &control.FrameJob{ID: "framejob_00000000000000000000000000000001", Device: "fixture-device", Status: "failed", Program: preview.Program, TotalFrames: preview.TotalFrames, PlannedTargetWrites: preview.PlannedTargetWrites, CreatedAt: created, StartedAt: &started, FinishedAt: &finished, Error: "Synthetic Pattern wire envelope only; no actual receipt/admission/execution"}
+		}
+		samples = append(samples, sample{Name: "pattern-envelope-synthetic-" + kind, Schema: "PatternJobEnvelopeV2", Source: source{Kind: "synthetic-Go-wire-envelope", BaseCommit: sourceBase, Function: "control.PatternJobEnvelope struct literal from pure verified P1 record; no admission", RequestSample: "pattern-ref-" + kind}, Value: envelope})
+	}
+
+	if len(samples) != 52 {
+		return fmt.Errorf("generated %d samples, expected 52", len(samples))
 	}
 	seen := make(map[string]bool)
 	for _, s := range samples {
@@ -234,6 +300,22 @@ func generate() error {
 	if err := os.WriteFile(path, append(output, '\n'), 0644); err != nil {
 		return err
 	}
-	fmt.Printf("generated %d samples (37 pure/no-service, 1 synthetic wire struct) at %s\n", len(samples), path)
+	fmt.Printf("generated %d samples (38 prior + 14 P6; all Job/envelope snapshots explicitly synthetic) at %s\n", len(samples), path)
 	return nil
+}
+
+// recordFixture exposes only exact in-memory resolution. Any unexpected Path,
+// list/get/export/import call dispatches to a nil embedded interface and fails.
+type recordFixture struct {
+	httpapi.PatternStoreV2
+	record patternsv2.Record
+	calls  int
+}
+
+func (f *recordFixture) Resolve(id, revision string) (patternsv2.Record, error) {
+	f.calls++
+	if id != f.record.ID || revision != f.record.Revision {
+		return patternsv2.Record{}, patternstore.ErrNotFound
+	}
+	return f.record, nil
 }

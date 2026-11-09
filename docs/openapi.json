@@ -4,7 +4,7 @@
   "info": {
     "title": "nb1 本地设备执行 API",
     "version": "0.1.0-local",
-    "description": "当前本地候选实现，未发布。仅loopback HTTP，无用户认证；拒绝非本地Host及跨源浏览器控制。请求使用规范小写字段名；未知字段、非规范字段大小写、重复对象键、显式null、尾随JSON和超过64层的嵌套被拒绝。原低层Program可省略默认字段，repeat=0规范为1；Frame HTTP及高级Action有各自严格默认/显式零值规则。可选request_id/expected_daemon_instance_id绑定仅在同一daemon实例的有限回执内去重；旧提交无需准备步骤，客户端无自动重试，不提供跨重启exactly-once。 上述默认规则属于原低层Program；Frame HTTP与作者Action显式0/空值规则分别定义。此文档同时列出日常1d89和未安装开发4d62589；状态见每操作x-availability。JSON Schema仅验证结构，不证明SHA/来源、原始数字词法、无重复键、Unicode scalar、设备支持或物理效果。"
+    "description": "当前本地候选实现，未发布。仅loopback HTTP，无用户认证；拒绝非本地Host及跨源浏览器控制。请求使用规范小写字段名；未知字段、非规范字段大小写、重复对象键、显式null、尾随JSON和超过64层的嵌套被拒绝。原低层Program可省略默认字段，repeat=0规范为1；Frame HTTP及高级Action有各自严格默认/显式零值规则。可选request_id/expected_daemon_instance_id绑定仅在同一daemon实例的有限回执内去重；旧提交无需准备步骤，客户端无自动重试，不提供跨重启exactly-once。 上述默认规则属于原低层Program；Frame HTTP与作者Action显式0/空值规则分别定义。此文档同时列出日常1d89和未安装开发f8bb267；状态见每操作x-availability。JSON Schema仅验证结构，不证明SHA/来源、原始数字词法、无重复键、Unicode scalar、设备支持或物理效果。 P4身份准入、P5完整来源resolver、P6固定Ref预览/提交/查停与独立v2默认库已在开发源码完成；日常1d89未安装。"
   },
   "servers": [
     {
@@ -77,7 +77,7 @@
             "status": "implemented"
           },
           "development": {
-            "source_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+            "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
             "status": "implemented"
           },
           "deployment": "daily_source_available",
@@ -127,7 +127,7 @@
             "status": "implemented"
           },
           "development": {
-            "source_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+            "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
             "status": "implemented"
           },
           "deployment": "daily_source_available",
@@ -191,7 +191,7 @@
             "status": "implemented"
           },
           "development": {
-            "source_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+            "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
             "status": "implemented"
           },
           "deployment": "daily_source_available",
@@ -319,7 +319,7 @@
             "status": "implemented"
           },
           "development": {
-            "source_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+            "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
             "status": "implemented"
           },
           "deployment": "daily_source_available",
@@ -384,7 +384,7 @@
             "status": "implemented"
           },
           "development": {
-            "source_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+            "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
             "status": "implemented"
           },
           "deployment": "daily_source_available",
@@ -470,7 +470,7 @@
             "status": "implemented"
           },
           "development": {
-            "source_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+            "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
             "status": "implemented"
           },
           "deployment": "daily_source_available",
@@ -521,7 +521,7 @@
             "status": "implemented"
           },
           "development": {
-            "source_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+            "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
             "status": "implemented"
           },
           "deployment": "daily_source_available",
@@ -580,7 +580,7 @@
             "status": "implemented"
           },
           "development": {
-            "source_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+            "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
             "status": "implemented"
           },
           "deployment": "daily_source_available",
@@ -687,7 +687,7 @@
             "status": "implemented"
           },
           "development": {
-            "source_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+            "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
             "status": "implemented"
           },
           "deployment": "daily_source_available",
@@ -735,7 +735,7 @@
             "status": "implemented"
           },
           "development": {
-            "source_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+            "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
             "status": "implemented"
           },
           "deployment": "daily_source_available",
@@ -826,7 +826,7 @@
             "status": "implemented"
           },
           "development": {
-            "source_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+            "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
             "status": "implemented"
           },
           "deployment": "daily_source_available",
@@ -929,7 +929,7 @@
             "status": "implemented"
           },
           "development": {
-            "source_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+            "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
             "status": "implemented"
           },
           "deployment": "daily_source_available",
@@ -1008,7 +1008,7 @@
             "status": "implemented"
           },
           "development": {
-            "source_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+            "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
             "status": "implemented"
           },
           "deployment": "daily_source_available",
@@ -1142,7 +1142,7 @@
             "status": "implemented"
           },
           "development": {
-            "source_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+            "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
             "status": "implemented"
           },
           "deployment": "daily_source_available",
@@ -1221,7 +1221,7 @@
             "status": "implemented"
           },
           "development": {
-            "source_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+            "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
             "status": "implemented"
           },
           "deployment": "daily_source_available",
@@ -1310,7 +1310,7 @@
             "status": "implemented"
           },
           "development": {
-            "source_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+            "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
             "status": "implemented"
           },
           "deployment": "daily_source_available",
@@ -1386,7 +1386,7 @@
             "status": "implemented"
           },
           "development": {
-            "source_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+            "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
             "status": "implemented"
           },
           "deployment": "daily_source_available",
@@ -1464,7 +1464,7 @@
             "status": "implemented"
           },
           "development": {
-            "source_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+            "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
             "status": "implemented"
           },
           "deployment": "daily_source_available",
@@ -1495,7 +1495,7 @@
             "status": "implemented"
           },
           "development": {
-            "source_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+            "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
             "status": "implemented"
           },
           "deployment": "daily_source_available",
@@ -1548,7 +1548,7 @@
             "status": "implemented"
           },
           "development": {
-            "source_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+            "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
             "status": "implemented"
           },
           "deployment": "daily_source_available",
@@ -1624,7 +1624,7 @@
             "status": "implemented"
           },
           "development": {
-            "source_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+            "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
             "status": "implemented"
           },
           "deployment": "daily_source_available",
@@ -1754,7 +1754,7 @@
             "status": "implemented"
           },
           "development": {
-            "source_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+            "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
             "status": "implemented"
           },
           "deployment": "daily_source_available",
@@ -1866,7 +1866,7 @@
             "status": "implemented"
           },
           "development": {
-            "source_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+            "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
             "status": "implemented"
           },
           "deployment": "daily_source_available",
@@ -1939,7 +1939,7 @@
             "status": "implemented"
           },
           "development": {
-            "source_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+            "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
             "status": "implemented"
           },
           "deployment": "daily_source_available",
@@ -2044,7 +2044,7 @@
             "status": "implemented"
           },
           "development": {
-            "source_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+            "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
             "status": "implemented"
           },
           "deployment": "daily_source_available",
@@ -2121,7 +2121,7 @@
             "status": "implemented"
           },
           "development": {
-            "source_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+            "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
             "status": "implemented"
           },
           "deployment": "daily_source_available",
@@ -2251,7 +2251,7 @@
             "status": "not_implemented"
           },
           "development": {
-            "source_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+            "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
             "status": "implemented"
           },
           "deployment": "development_not_installed",
@@ -2300,11 +2300,12 @@
         "x-max-body-bytes": 1048576,
         "x-runtime-validation": [
           "Common loopback Host/same-origin Origin, no CORS; preserve exact request on uncertainty",
-          "Strict route-specific body/media/query checks; unknown/null/duplicate/trailing values rejected"
+          "Strict route-specific body/media/query checks; unknown/null/duplicate/trailing values rejected",
+          "valid write entering transaction may create directory even if later publication/close fails; absent library reads and pure preview do not create it"
         ],
         "x-no-execution": true,
         "x-max-json-depth": 32,
-        "description": " P3保存/读取不运行；无Job/receipt/daemon绑定。未注入v2 store时存储操作501，纯preview不受影响。合法未知项可读/导出但不能写；Schema不替代canonical/SHA/source验证。",
+        "description": "P3保存/读取不运行，不建Job/执行票据；daemon默认独立懒选patterns-v2，--pattern-v2-dir/NB1_PATTERN_V2_DIR不影响旧库。Go handler未配置时存储501，配置错误503；纯作者preview零Store。合法unknown可只读/导出；schema不代替SHA/来源验证。",
         "x-error-codes": {
           "400": [
             "invalid_pattern_request"
@@ -2345,8 +2346,8 @@
             "status": "not_implemented"
           },
           "development": {
-            "source_commit": "4d625891cc421c037807e2e6a193174016c05c71",
-            "status": "requires_explicit_store_injection"
+            "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
+            "status": "implemented_with_default_lazy_v2_store"
           },
           "deployment": "development_not_installed",
           "hardware_qualification": "not_established_by_openapi",
@@ -2405,11 +2406,12 @@
         ],
         "x-runtime-validation": [
           "Common loopback Host/same-origin Origin, no CORS; preserve exact request on uncertainty",
-          "Strict route-specific body/media/query checks; unknown/null/duplicate/trailing values rejected"
+          "Strict route-specific body/media/query checks; unknown/null/duplicate/trailing values rejected",
+          "valid write entering transaction may create directory even if later publication/close fails; absent library reads and pure preview do not create it"
         ],
         "x-no-execution": true,
         "x-max-json-depth": 32,
-        "description": "GET treats this literal operation-looking name as an ordinary ID.  P3保存/读取不运行；无Job/receipt/daemon绑定。未注入v2 store时存储操作501，纯preview不受影响。合法未知项可读/导出但不能写；Schema不替代canonical/SHA/source验证。",
+        "description": "P3保存/读取不运行，不建Job/执行票据；daemon默认独立懒选patterns-v2，--pattern-v2-dir/NB1_PATTERN_V2_DIR不影响旧库。Go handler未配置时存储501，配置错误503；纯作者preview零Store。合法unknown可只读/导出；schema不代替SHA/来源验证。",
         "x-canonical-snapshot-response": "format=snapshot returns exact bytes with no added newline; unknown preserved",
         "x-error-codes": {
           "400": [
@@ -2459,8 +2461,8 @@
             "status": "not_implemented"
           },
           "development": {
-            "source_commit": "4d625891cc421c037807e2e6a193174016c05c71",
-            "status": "requires_explicit_store_injection"
+            "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
+            "status": "implemented_with_default_lazy_v2_store"
           },
           "deployment": "development_not_installed",
           "hardware_qualification": "not_established_by_openapi",
@@ -2516,11 +2518,12 @@
         ],
         "x-runtime-validation": [
           "Common loopback Host/same-origin Origin, no CORS; preserve exact request on uncertainty",
-          "Strict route-specific body/media/query checks; unknown/null/duplicate/trailing values rejected"
+          "Strict route-specific body/media/query checks; unknown/null/duplicate/trailing values rejected",
+          "valid write entering transaction may create directory even if later publication/close fails; absent library reads and pure preview do not create it"
         ],
         "x-no-execution": true,
         "x-max-json-depth": 32,
-        "description": " P3保存/读取不运行；无Job/receipt/daemon绑定。未注入v2 store时存储操作501，纯preview不受影响。合法未知项可读/导出但不能写；Schema不替代canonical/SHA/source验证。",
+        "description": "P3保存/读取不运行，不建Job/执行票据；daemon默认独立懒选patterns-v2，--pattern-v2-dir/NB1_PATTERN_V2_DIR不影响旧库。Go handler未配置时存储501，配置错误503；纯作者preview零Store。合法unknown可只读/导出；schema不代替SHA/来源验证。",
         "x-canonical-snapshot-response": "format=snapshot returns exact bytes with no added newline; unknown preserved",
         "x-error-codes": {
           "400": [
@@ -2564,8 +2567,8 @@
             "status": "not_implemented"
           },
           "development": {
-            "source_commit": "4d625891cc421c037807e2e6a193174016c05c71",
-            "status": "requires_explicit_store_injection"
+            "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
+            "status": "implemented_with_default_lazy_v2_store"
           },
           "deployment": "development_not_installed",
           "hardware_qualification": "not_established_by_openapi",
@@ -2646,11 +2649,12 @@
         "x-max-body-bytes": 1048576,
         "x-runtime-validation": [
           "Common loopback Host/same-origin Origin, no CORS; preserve exact request on uncertainty",
-          "Strict route-specific body/media/query checks; unknown/null/duplicate/trailing values rejected"
+          "Strict route-specific body/media/query checks; unknown/null/duplicate/trailing values rejected",
+          "valid write entering transaction may create directory even if later publication/close fails; absent library reads and pure preview do not create it"
         ],
         "x-no-execution": true,
         "x-max-json-depth": 32,
-        "description": " P3保存/读取不运行；无Job/receipt/daemon绑定。未注入v2 store时存储操作501，纯preview不受影响。合法未知项可读/导出但不能写；Schema不替代canonical/SHA/source验证。",
+        "description": "P3保存/读取不运行，不建Job/执行票据；daemon默认独立懒选patterns-v2，--pattern-v2-dir/NB1_PATTERN_V2_DIR不影响旧库。Go handler未配置时存储501，配置错误503；纯作者preview零Store。合法unknown可只读/导出；schema不代替SHA/来源验证。",
         "x-error-codes": {
           "400": [
             "invalid_pattern_request"
@@ -2706,8 +2710,8 @@
             "status": "not_implemented"
           },
           "development": {
-            "source_commit": "4d625891cc421c037807e2e6a193174016c05c71",
-            "status": "requires_explicit_store_injection"
+            "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
+            "status": "implemented_with_default_lazy_v2_store"
           },
           "deployment": "development_not_installed",
           "hardware_qualification": "not_established_by_openapi",
@@ -2775,11 +2779,12 @@
         ],
         "x-runtime-validation": [
           "Common loopback Host/same-origin Origin, no CORS; preserve exact request on uncertainty",
-          "Strict route-specific body/media/query checks; unknown/null/duplicate/trailing values rejected"
+          "Strict route-specific body/media/query checks; unknown/null/duplicate/trailing values rejected",
+          "valid write entering transaction may create directory even if later publication/close fails; absent library reads and pure preview do not create it"
         ],
         "x-no-execution": true,
         "x-max-json-depth": 32,
-        "description": " P3保存/读取不运行；无Job/receipt/daemon绑定。未注入v2 store时存储操作501，纯preview不受影响。合法未知项可读/导出但不能写；Schema不替代canonical/SHA/source验证。",
+        "description": "P3保存/读取不运行，不建Job/执行票据；daemon默认独立懒选patterns-v2，--pattern-v2-dir/NB1_PATTERN_V2_DIR不影响旧库。Go handler未配置时存储501，配置错误503；纯作者preview零Store。合法unknown可只读/导出；schema不代替SHA/来源验证。",
         "x-canonical-snapshot-response": "format=snapshot returns exact bytes with no added newline; unknown preserved",
         "x-error-codes": {
           "400": [
@@ -2828,8 +2833,8 @@
             "status": "not_implemented"
           },
           "development": {
-            "source_commit": "4d625891cc421c037807e2e6a193174016c05c71",
-            "status": "requires_explicit_store_injection"
+            "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
+            "status": "implemented_with_default_lazy_v2_store"
           },
           "deployment": "development_not_installed",
           "hardware_qualification": "not_established_by_openapi",
@@ -2884,11 +2889,12 @@
         "x-max-body-bytes": 1048576,
         "x-runtime-validation": [
           "Common loopback Host/same-origin Origin, no CORS; preserve exact request on uncertainty",
-          "Strict route-specific body/media/query checks; unknown/null/duplicate/trailing values rejected"
+          "Strict route-specific body/media/query checks; unknown/null/duplicate/trailing values rejected",
+          "valid write entering transaction may create directory even if later publication/close fails; absent library reads and pure preview do not create it"
         ],
         "x-no-execution": true,
         "x-max-json-depth": 32,
-        "description": " P3保存/读取不运行；无Job/receipt/daemon绑定。未注入v2 store时存储操作501，纯preview不受影响。合法未知项可读/导出但不能写；Schema不替代canonical/SHA/source验证。",
+        "description": "P3保存/读取不运行，不建Job/执行票据；daemon默认独立懒选patterns-v2，--pattern-v2-dir/NB1_PATTERN_V2_DIR不影响旧库。Go handler未配置时存储501，配置错误503；纯作者preview零Store。合法unknown可只读/导出；schema不代替SHA/来源验证。",
         "x-error-codes": {
           "400": [
             "invalid_pattern_request"
@@ -2940,8 +2946,8 @@
             "status": "not_implemented"
           },
           "development": {
-            "source_commit": "4d625891cc421c037807e2e6a193174016c05c71",
-            "status": "requires_explicit_store_injection"
+            "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
+            "status": "implemented_with_default_lazy_v2_store"
           },
           "deployment": "development_not_installed",
           "hardware_qualification": "not_established_by_openapi",
@@ -3000,11 +3006,12 @@
         ],
         "x-runtime-validation": [
           "Common loopback Host/same-origin Origin, no CORS; preserve exact request on uncertainty",
-          "Strict route-specific body/media/query checks; unknown/null/duplicate/trailing values rejected"
+          "Strict route-specific body/media/query checks; unknown/null/duplicate/trailing values rejected",
+          "valid write entering transaction may create directory even if later publication/close fails; absent library reads and pure preview do not create it"
         ],
         "x-no-execution": true,
         "x-max-json-depth": 32,
-        "description": "GET treats this literal operation-looking name as an ordinary ID.  P3保存/读取不运行；无Job/receipt/daemon绑定。未注入v2 store时存储操作501，纯preview不受影响。合法未知项可读/导出但不能写；Schema不替代canonical/SHA/source验证。",
+        "description": "P3保存/读取不运行，不建Job/执行票据；daemon默认独立懒选patterns-v2，--pattern-v2-dir/NB1_PATTERN_V2_DIR不影响旧库。Go handler未配置时存储501，配置错误503；纯作者preview零Store。合法unknown可只读/导出；schema不代替SHA/来源验证。",
         "x-canonical-snapshot-response": "format=snapshot returns exact bytes with no added newline; unknown preserved",
         "x-error-codes": {
           "400": [
@@ -3053,7 +3060,7 @@
             "status": "implemented"
           },
           "development": {
-            "source_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+            "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
             "status": "implemented"
           },
           "deployment": "daily_source_available",
@@ -3107,7 +3114,7 @@
             "status": "implemented"
           },
           "development": {
-            "source_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+            "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
             "status": "implemented"
           },
           "deployment": "daily_source_available",
@@ -3173,7 +3180,7 @@
             "status": "implemented"
           },
           "development": {
-            "source_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+            "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
             "status": "implemented"
           },
           "deployment": "daily_source_available",
@@ -3239,7 +3246,7 @@
             "status": "implemented"
           },
           "development": {
-            "source_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+            "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
             "status": "implemented"
           },
           "deployment": "daily_source_available",
@@ -3305,7 +3312,7 @@
             "status": "implemented"
           },
           "development": {
-            "source_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+            "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
             "status": "implemented"
           },
           "deployment": "daily_source_available",
@@ -3371,7 +3378,7 @@
             "status": "implemented"
           },
           "development": {
-            "source_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+            "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
             "status": "implemented"
           },
           "deployment": "daily_source_available",
@@ -3437,7 +3444,7 @@
             "status": "implemented"
           },
           "development": {
-            "source_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+            "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
             "status": "implemented"
           },
           "deployment": "daily_source_available",
@@ -3488,6 +3495,789 @@
             "internal/httpapi/light_test.go"
           ]
         }
+      }
+    },
+    "/v2/patterns/preview-ref": {
+      "post": {
+        "operationId": "previewPatternRefV2",
+        "summary": "复验固定完整Ref并纯预览，可选设备只读缓存",
+        "tags": [
+          "patterns-v2"
+        ],
+        "x-api-level": "pattern-execution",
+        "x-availability": {
+          "daily": {
+            "source_commit": "1d89eae92278f24a68fff1a34e3c1e696a962c3c",
+            "status": "not_implemented"
+          },
+          "development": {
+            "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
+            "status": "implemented"
+          },
+          "deployment": "development_not_installed",
+          "hardware_qualification": "not_established_by_openapi"
+        },
+        "responses": {
+          "200": {
+            "description": "只表示该操作成功，不证明物理效果。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PatternRefPreviewV2"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "405": {
+            "$ref": "#/components/responses/405"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "413": {
+            "$ref": "#/components/responses/413"
+          },
+          "415": {
+            "$ref": "#/components/responses/415"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          },
+          "501": {
+            "$ref": "#/components/responses/501"
+          },
+          "503": {
+            "$ref": "#/components/responses/503"
+          }
+        },
+        "x-store-dependency": "Resolve exactly once; zero Path/other store operations; no admission",
+        "x-runtime-validation": [
+          "common loopback Host/same-origin Origin, no CORS; preserve original ticket/Ref on uncertainty",
+          "typed resolver classification precedes core sentinel mapping; unknown I/O fails closed",
+          "no history/legacy bare Job fallback; receipt/digest/source integrity not certified by schema"
+        ],
+        "x-error-codes": {
+          "400": [
+            "invalid_pattern_request",
+            "invalid_request"
+          ],
+          "403": [
+            "local_only"
+          ],
+          "404": [
+            "not_found",
+            "pattern_not_found",
+            "request_not_found"
+          ],
+          "405": [
+            "method_not_allowed"
+          ],
+          "409": [
+            "idempotency_conflict",
+            "daemon_instance_changed",
+            "queue_full",
+            "busy",
+            "pattern_revision_conflict",
+            "pattern_library_busy"
+          ],
+          "413": [
+            "body_too_large"
+          ],
+          "415": [
+            "json_required"
+          ],
+          "500": [
+            "internal_error",
+            "pattern_integrity_error"
+          ],
+          "501": [
+            "pattern_execution_unsupported",
+            "pattern_library_unsupported",
+            "pattern_source_unsupported"
+          ],
+          "503": [
+            "unavailable",
+            "pattern_library_unavailable",
+            "pattern_library_format_mismatch"
+          ]
+        },
+        "x-source-evidence": {
+          "source": "internal/httpapi/pattern_execution_v2.go",
+          "tests": [
+            "internal/httpapi/pattern_execution_v2_test.go",
+            "internal/httpapi/pattern_execution_v2_engine_test.go"
+          ]
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PatternRefPreviewRequestV2"
+              }
+            }
+          }
+        },
+        "x-max-body-bytes": 4096,
+        "x-max-json-depth": 64,
+        "x-no-execution": true,
+        "description": "与作者preview不同，此操作先Resolve完整已存记录并验证来源。GET同路径仍读普通ID preview-ref。无prepare/Job/回执，选serial缓存最多一次。"
+      },
+      "get": {
+        "operationId": "getV2PreviewRefID",
+        "summary": "读取普通ID preview-ref",
+        "tags": [
+          "patterns-v2"
+        ],
+        "x-api-level": "pattern-library",
+        "x-availability": {
+          "daily": {
+            "source_commit": "1d89eae92278f24a68fff1a34e3c1e696a962c3c",
+            "status": "not_implemented"
+          },
+          "development": {
+            "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
+            "status": "implemented_with_default_lazy_v2_store"
+          },
+          "deployment": "development_not_installed",
+          "hardware_qualification": "not_established_by_openapi",
+          "store_configuration": "Go WithPatternStoreV2 only; CLI does not select a v2 store; valid storage operations default to501; pure preview needs none"
+        },
+        "responses": {
+          "200": {
+            "description": "成功；不等同设备已完成或物理验收。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/PatternRecordResponseV2"
+                    },
+                    {
+                      "$ref": "#/components/schemas/PatternSnapshotV2Read"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "405": {
+            "$ref": "#/components/responses/405"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "501": {
+            "$ref": "#/components/responses/501"
+          },
+          "503": {
+            "$ref": "#/components/responses/503"
+          }
+        },
+        "parameters": [
+          {
+            "name": "format",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "const": "snapshot"
+            },
+            "description": "Exactly one if present; v2 rejects empty? and unknown/duplicate query."
+          }
+        ],
+        "x-runtime-validation": [
+          "Common loopback Host/same-origin Origin, no CORS; preserve exact request on uncertainty",
+          "Strict route-specific body/media/query checks; unknown/null/duplicate/trailing values rejected",
+          "valid write entering transaction may create directory even if later publication/close fails; absent library reads and pure preview do not create it"
+        ],
+        "x-no-execution": true,
+        "x-max-json-depth": 32,
+        "description": "GET该路径仍选普通合法ID preview-ref；只有POST是Ref预览操作。",
+        "x-canonical-snapshot-response": "format=snapshot returns exact bytes with no added newline; unknown preserved",
+        "x-error-codes": {
+          "400": [
+            "invalid_pattern_request"
+          ],
+          "403": [
+            "local_only"
+          ],
+          "405": [
+            "method_not_allowed"
+          ],
+          "501": [
+            "pattern_library_unsupported"
+          ],
+          "503": [
+            "pattern_library_unavailable",
+            "pattern_library_format_mismatch",
+            "pattern_commit_uncertain"
+          ],
+          "409": [
+            "pattern_library_busy"
+          ],
+          "404": [
+            "pattern_not_found"
+          ]
+        },
+        "x-alias-of": "GET /v2/patterns/{id}",
+        "x-source-evidence": {
+          "source": "internal/httpapi/patterns_v2.go",
+          "tests": [
+            "internal/httpapi/patterns_v2_test.go"
+          ]
+        }
+      }
+    },
+    "/v2/devices/{serial}/pattern-jobs": {
+      "post": {
+        "operationId": "submitPatternV2",
+        "summary": "按完整来源身份和原票据提交，三policy显式选择",
+        "tags": [
+          "patterns-v2"
+        ],
+        "x-api-level": "pattern-execution",
+        "x-availability": {
+          "daily": {
+            "source_commit": "1d89eae92278f24a68fff1a34e3c1e696a962c3c",
+            "status": "not_implemented"
+          },
+          "development": {
+            "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
+            "status": "implemented"
+          },
+          "deployment": "development_not_installed",
+          "hardware_qualification": "not_established_by_openapi"
+        },
+        "responses": {
+          "202": {
+            "description": "原绑定成功响应；202不表示执行或清理已完成。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PatternJobEnvelopeV2"
+                }
+              }
+            },
+            "headers": {
+              "X-NB1-Daemon-Instance-ID": {
+                "description": "唯一一值，确认原daemon实例。",
+                "schema": {
+                  "type": "string",
+                  "pattern": "^daemon_[0-9a-f]{32}$",
+                  "description": "原daemon实例绑定；实例改变时旧结果仍可能未知，不可自动换绑。"
+                }
+              },
+              "X-NB1-Replayed": {
+                "description": "唯一一值，新建false/原回执重放true；均202。",
+                "schema": {
+                  "enum": [
+                    "true",
+                    "false"
+                  ]
+                }
+              },
+              "Location": {
+                "description": "唯一一值，原Pattern receipt GET；保留四query字段，PathEscape+url.Values.Encode。",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "405": {
+            "$ref": "#/components/responses/405"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "410": {
+            "$ref": "#/components/responses/410"
+          },
+          "413": {
+            "$ref": "#/components/responses/413"
+          },
+          "415": {
+            "$ref": "#/components/responses/415"
+          },
+          "429": {
+            "$ref": "#/components/responses/429"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          },
+          "501": {
+            "$ref": "#/components/responses/501"
+          },
+          "503": {
+            "$ref": "#/components/responses/503"
+          }
+        },
+        "x-store-dependency": "lazy only on new receipt miss; accepted exact receipt zero Store/config preflight",
+        "x-runtime-validation": [
+          "common loopback Host/same-origin Origin, no CORS; preserve original ticket/Ref on uncertainty",
+          "typed resolver classification precedes core sentinel mapping; unknown I/O fails closed",
+          "no history/legacy bare Job fallback; receipt/digest/source integrity not certified by schema"
+        ],
+        "x-error-codes": {
+          "400": [
+            "invalid_pattern_request",
+            "invalid_request"
+          ],
+          "403": [
+            "local_only"
+          ],
+          "404": [
+            "not_found",
+            "pattern_not_found",
+            "request_not_found"
+          ],
+          "405": [
+            "method_not_allowed"
+          ],
+          "409": [
+            "idempotency_conflict",
+            "daemon_instance_changed",
+            "queue_full",
+            "busy",
+            "pattern_revision_conflict",
+            "pattern_library_busy"
+          ],
+          "410": [
+            "request_expired"
+          ],
+          "413": [
+            "body_too_large"
+          ],
+          "415": [
+            "json_required"
+          ],
+          "429": [
+            "idempotency_capacity"
+          ],
+          "500": [
+            "internal_error",
+            "pattern_integrity_error"
+          ],
+          "501": [
+            "pattern_execution_unsupported",
+            "pattern_library_unsupported",
+            "pattern_source_unsupported"
+          ],
+          "503": [
+            "unavailable",
+            "pattern_library_unavailable",
+            "pattern_library_format_mismatch"
+          ]
+        },
+        "x-source-evidence": {
+          "source": "internal/httpapi/pattern_execution_v2.go",
+          "tests": [
+            "internal/httpapi/pattern_execution_v2_test.go",
+            "internal/httpapi/pattern_execution_v2_engine_test.go"
+          ]
+        },
+        "parameters": [
+          {
+            "name": "serial",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,128}$",
+              "description": "明确配置的真实序列号；无索引或别名解析。"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PatternSubmitRequestV2"
+              }
+            }
+          }
+        },
+        "x-max-body-bytes": 4096,
+        "x-max-json-depth": 64,
+        "description": "保持原Ref/票据/实例，query/cancel与accepted replay不依赖Store。取消202可仍cancelling/terminal；终态hold不补关灯。新Pattern支持replace/queue/reject，不改变旧light/raw Frame仅reject限制。"
+      }
+    },
+    "/v2/devices/{serial}/pattern-requests/{request_id}": {
+      "get": {
+        "operationId": "getPatternRequestV2",
+        "summary": "以完整Ref和原票据查询，不依赖库",
+        "tags": [
+          "patterns-v2"
+        ],
+        "x-api-level": "pattern-execution",
+        "x-availability": {
+          "daily": {
+            "source_commit": "1d89eae92278f24a68fff1a34e3c1e696a962c3c",
+            "status": "not_implemented"
+          },
+          "development": {
+            "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
+            "status": "implemented"
+          },
+          "deployment": "development_not_installed",
+          "hardware_qualification": "not_established_by_openapi"
+        },
+        "responses": {
+          "200": {
+            "description": "只表示该操作成功，不证明物理效果。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PatternJobEnvelopeV2"
+                }
+              }
+            },
+            "headers": {
+              "X-NB1-Daemon-Instance-ID": {
+                "description": "唯一一值，确认原daemon实例。",
+                "schema": {
+                  "type": "string",
+                  "pattern": "^daemon_[0-9a-f]{32}$",
+                  "description": "原daemon实例绑定；实例改变时旧结果仍可能未知，不可自动换绑。"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "405": {
+            "$ref": "#/components/responses/405"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "410": {
+            "$ref": "#/components/responses/410"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          },
+          "501": {
+            "$ref": "#/components/responses/501"
+          }
+        },
+        "x-store-dependency": "none including configuration/Path/Resolve",
+        "x-runtime-validation": [
+          "common loopback Host/same-origin Origin, no CORS; preserve original ticket/Ref on uncertainty",
+          "typed resolver classification precedes core sentinel mapping; unknown I/O fails closed",
+          "no history/legacy bare Job fallback; receipt/digest/source integrity not certified by schema"
+        ],
+        "x-error-codes": {
+          "400": [
+            "invalid_pattern_request",
+            "invalid_request"
+          ],
+          "403": [
+            "local_only"
+          ],
+          "404": [
+            "not_found",
+            "pattern_not_found",
+            "request_not_found"
+          ],
+          "405": [
+            "method_not_allowed"
+          ],
+          "409": [
+            "idempotency_conflict",
+            "daemon_instance_changed",
+            "queue_full",
+            "busy",
+            "pattern_revision_conflict",
+            "pattern_library_busy"
+          ],
+          "410": [
+            "request_expired"
+          ],
+          "500": [
+            "internal_error",
+            "pattern_integrity_error"
+          ],
+          "501": [
+            "pattern_execution_unsupported",
+            "pattern_library_unsupported",
+            "pattern_source_unsupported"
+          ]
+        },
+        "x-source-evidence": {
+          "source": "internal/httpapi/pattern_execution_v2.go",
+          "tests": [
+            "internal/httpapi/pattern_execution_v2_test.go",
+            "internal/httpapi/pattern_execution_v2_engine_test.go"
+          ]
+        },
+        "parameters": [
+          {
+            "name": "serial",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,128}$",
+              "description": "明确配置的真实序列号；无索引或别名解析。"
+            }
+          },
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^req_[1-9][0-9]{0,18}_[0-9a-f]{32}$",
+              "description": "服务端request_id_prefix追加128bit小写hex nonce。截止点是daemon单调uptime毫秒；服务端另查int64溢出、过期及最大60000ms准入窗口。"
+            }
+          },
+          {
+            "name": "expected_daemon_instance_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^daemon_[0-9a-f]{32}$",
+              "description": "原daemon实例绑定；实例改变时旧结果仍可能未知，不可自动换绑。"
+            }
+          },
+          {
+            "name": "record_contract",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "const": "nb1-pattern-record/experimental-v2"
+            }
+          },
+          {
+            "name": "pattern_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$"
+            }
+          },
+          {
+            "name": "revision",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^sha256:[0-9a-f]{64}$"
+            }
+          }
+        ],
+        "description": "保持原Ref/票据/实例，query/cancel与accepted replay不依赖Store。取消202可仍cancelling/terminal；终态hold不补关灯。新Pattern支持replace/queue/reject，不改变旧light/raw Frame仅reject限制。"
+      }
+    },
+    "/v2/devices/{serial}/pattern-requests/{request_id}/cancel": {
+      "post": {
+        "operationId": "cancelPatternRequestV2",
+        "summary": "以原票据和可选确认Job取消，不依赖库",
+        "tags": [
+          "patterns-v2"
+        ],
+        "x-api-level": "pattern-execution",
+        "x-availability": {
+          "daily": {
+            "source_commit": "1d89eae92278f24a68fff1a34e3c1e696a962c3c",
+            "status": "not_implemented"
+          },
+          "development": {
+            "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
+            "status": "implemented"
+          },
+          "deployment": "development_not_installed",
+          "hardware_qualification": "not_established_by_openapi"
+        },
+        "responses": {
+          "202": {
+            "description": "原绑定成功响应；202不表示执行或清理已完成。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PatternJobEnvelopeV2"
+                }
+              }
+            },
+            "headers": {
+              "X-NB1-Daemon-Instance-ID": {
+                "description": "唯一一值，确认原daemon实例。",
+                "schema": {
+                  "type": "string",
+                  "pattern": "^daemon_[0-9a-f]{32}$",
+                  "description": "原daemon实例绑定；实例改变时旧结果仍可能未知，不可自动换绑。"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "405": {
+            "$ref": "#/components/responses/405"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "410": {
+            "$ref": "#/components/responses/410"
+          },
+          "413": {
+            "$ref": "#/components/responses/413"
+          },
+          "415": {
+            "$ref": "#/components/responses/415"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          },
+          "501": {
+            "$ref": "#/components/responses/501"
+          },
+          "503": {
+            "$ref": "#/components/responses/503"
+          }
+        },
+        "x-store-dependency": "none including configuration/Path/Resolve",
+        "x-runtime-validation": [
+          "common loopback Host/same-origin Origin, no CORS; preserve original ticket/Ref on uncertainty",
+          "typed resolver classification precedes core sentinel mapping; unknown I/O fails closed",
+          "no history/legacy bare Job fallback; receipt/digest/source integrity not certified by schema"
+        ],
+        "x-error-codes": {
+          "400": [
+            "invalid_pattern_request",
+            "invalid_request"
+          ],
+          "403": [
+            "local_only"
+          ],
+          "404": [
+            "not_found",
+            "pattern_not_found",
+            "request_not_found"
+          ],
+          "405": [
+            "method_not_allowed"
+          ],
+          "409": [
+            "idempotency_conflict",
+            "daemon_instance_changed",
+            "queue_full",
+            "busy",
+            "pattern_revision_conflict",
+            "pattern_library_busy"
+          ],
+          "410": [
+            "request_expired"
+          ],
+          "413": [
+            "body_too_large"
+          ],
+          "415": [
+            "json_required"
+          ],
+          "500": [
+            "internal_error",
+            "pattern_integrity_error"
+          ],
+          "501": [
+            "pattern_execution_unsupported",
+            "pattern_library_unsupported",
+            "pattern_source_unsupported"
+          ],
+          "503": [
+            "unavailable",
+            "pattern_library_unavailable",
+            "pattern_library_format_mismatch"
+          ]
+        },
+        "x-source-evidence": {
+          "source": "internal/httpapi/pattern_execution_v2.go",
+          "tests": [
+            "internal/httpapi/pattern_execution_v2_test.go",
+            "internal/httpapi/pattern_execution_v2_engine_test.go"
+          ]
+        },
+        "parameters": [
+          {
+            "name": "serial",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,128}$",
+              "description": "明确配置的真实序列号；无索引或别名解析。"
+            }
+          },
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^req_[1-9][0-9]{0,18}_[0-9a-f]{32}$",
+              "description": "服务端request_id_prefix追加128bit小写hex nonce。截止点是daemon单调uptime毫秒；服务端另查int64溢出、过期及最大60000ms准入窗口。"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PatternCancelRequestV2"
+              }
+            }
+          }
+        },
+        "x-max-body-bytes": 4096,
+        "x-max-json-depth": 64,
+        "description": "保持原Ref/票据/实例，query/cancel与accepted replay不依赖Store。取消202可仍cancelling/terminal；终态hold不补关灯。新Pattern支持replace/queue/reject，不改变旧light/raw Frame仅reject限制。"
       }
     }
   },
@@ -4030,7 +4820,9 @@
                   "frame_unsupported",
                   "pattern_source_unsupported",
                   "pattern_library_read_only",
-                  "pattern_library_format_mismatch"
+                  "pattern_library_format_mismatch",
+                  "pattern_execution_unsupported",
+                  "pattern_integrity_error"
                 ]
               },
               "message": {
@@ -6758,7 +7550,7 @@
           "request_id",
           "expected_daemon_instance_id"
         ],
-        "description": "当前HTTP与Go Frame core均只允许reject+完整票据；仅Program低层支持replace/queue/reject。P4将来的多policy来源准入尚未实现。"
+        "description": "legacy raw Frame HTTP及其Frame core入口仍只允许reject+完整票据。新Pattern v2路由已支持三policy准入冻结帧；不改变此旧请求schema或High light的限制。"
       },
       "FrameCancelRequest": {
         "type": "object",
@@ -7314,7 +8106,7 @@
           "id",
           "revision"
         ],
-        "description": "精确数据身份；目前P3读摘要，不存在Pattern v2运行/查停入口。"
+        "description": "完整作者记录的固定身份；revision绑定来源、recipe与冻结执行，不能用execution_digest替代，不隐式选择latest。P6所有执行/查停操作均保留完整Ref。"
       },
       "PatternOpaqueJSON": {
         "oneOf": [
@@ -7877,20 +8669,45 @@
         ]
       },
       "PatternExecutionAvailabilityV2": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "available": {
-            "const": false
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "available": {
+                "const": true
+              },
+              "reason": {
+                "const": "pattern_service_configured"
+              }
+            },
+            "required": [
+              "available",
+              "reason"
+            ]
           },
-          "reason": {
-            "const": "pattern_identity_admission_not_integrated"
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "available": {
+                "const": false
+              },
+              "reason": {
+                "enum": [
+                  "pattern_service_unsupported",
+                  "pattern_library_unconfigured",
+                  "pattern_library_configuration_error"
+                ]
+              }
+            },
+            "required": [
+              "available",
+              "reason"
+            ]
           }
-        },
-        "required": [
-          "available",
-          "reason"
-        ]
+        ],
+        "description": "只报告PatternService+resolver配置接线，检查状态不调用Store；不证明库健康、记录存在、设备支持或准入成功，也不阻断已接受原回执重放/查询/取消。"
       },
       "PatternRecordResponseV2": {
         "type": "object",
@@ -8258,6 +9075,264 @@
           "save has one record and status201(created)/200(existing); import success always200",
           "commit uncertain returns only error, no records/Location, never auto retry"
         ]
+      },
+      "PatternRefPreviewRequestV2": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "pattern_ref": {
+            "$ref": "#/components/schemas/PatternRefV2"
+          },
+          "serial": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{1,128}$",
+            "description": "明确配置的真实序列号；无索引或别名解析。"
+          }
+        },
+        "required": [
+          "pattern_ref"
+        ],
+        "x-runtime-validation": [
+          "4096 raw bytes; one application/json; no query including empty ?",
+          "strict UTF-8/object/duplicate/unknown/null/trailing; all scalars closed ASCII grammar; no lone surrogate replacement acceptance"
+        ]
+      },
+      "PatternSubmitRequestV2": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "pattern_ref": {
+            "$ref": "#/components/schemas/PatternRefV2"
+          },
+          "policy": {
+            "enum": [
+              "replace",
+              "queue",
+              "reject"
+            ]
+          },
+          "request_id": {
+            "type": "string",
+            "pattern": "^req_[1-9][0-9]{0,18}_[0-9a-f]{32}$",
+            "description": "服务端request_id_prefix追加128bit小写hex nonce。截止点是daemon单调uptime毫秒；服务端另查int64溢出、过期及最大60000ms准入窗口。"
+          },
+          "expected_daemon_instance_id": {
+            "type": "string",
+            "pattern": "^daemon_[0-9a-f]{32}$",
+            "description": "原daemon实例绑定；实例改变时旧结果仍可能未知，不可自动换绑。"
+          }
+        },
+        "required": [
+          "pattern_ref",
+          "policy",
+          "request_id",
+          "expected_daemon_instance_id"
+        ],
+        "description": "完整原票据，policy必须显式传；仅新key才Resolve，不提前Store/config preflight。不接受Program/Action/client digest或verified声明。",
+        "x-runtime-validation": [
+          "request deadline parsed as positive int64, core checks current admission window and original receipt",
+          "4096 raw bytes, exact JSON content type, no query/null/duplicate/unknown fields"
+        ]
+      },
+      "PatternCancelRequestV2": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "pattern_ref": {
+            "$ref": "#/components/schemas/PatternRefV2"
+          },
+          "expected_daemon_instance_id": {
+            "type": "string",
+            "pattern": "^daemon_[0-9a-f]{32}$",
+            "description": "原daemon实例绑定；实例改变时旧结果仍可能未知，不可自动换绑。"
+          },
+          "confirmed_job_id": {
+            "type": "string",
+            "pattern": "^(job|framejob)_[0-9a-f]{32}$"
+          }
+        },
+        "required": [
+          "pattern_ref",
+          "expected_daemon_instance_id"
+        ],
+        "description": "request_id来自路径，省略confirmed_job_id才不加Job ID约束；显式空或null拒绝。query/cancel从不访问Store。"
+      },
+      "PatternJobEnvelopeV2": {
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "pattern_ref": {
+                "$ref": "#/components/schemas/PatternRefV2"
+              },
+              "execution_digest": {
+                "type": "string",
+                "pattern": "^sha256:[0-9a-f]{64}$"
+              },
+              "job_kind": {
+                "const": "program"
+              },
+              "job": {
+                "$ref": "#/components/schemas/Job"
+              }
+            },
+            "required": [
+              "pattern_ref",
+              "execution_digest",
+              "job_kind",
+              "job"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "pattern_ref": {
+                "$ref": "#/components/schemas/PatternRefV2"
+              },
+              "execution_digest": {
+                "type": "string",
+                "pattern": "^sha256:[0-9a-f]{64}$"
+              },
+              "job_kind": {
+                "const": "frame"
+              },
+              "job": {
+                "$ref": "#/components/schemas/FrameJob"
+              }
+            },
+            "required": [
+              "pattern_ref",
+              "execution_digest",
+              "job_kind",
+              "job"
+            ]
+          }
+        ],
+        "description": "core原回执来源外壳；旧Job/FrameJob schema不改。拒绝客户端把此响应当执行输入。JSONSchema不证明Ref/digest/Program对应或已接受。",
+        "x-runtime-validation": [
+          "exact original Ref, execution digest, selected typed job and receipt/serial/instance binding",
+          "no legacy bare Job/history fallback for Pattern-origin records"
+        ]
+      },
+      "PatternRefPreviewV2": {
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "schema_version": {
+                "const": 1
+              },
+              "contract": {
+                "const": "nb1-pattern-ref-preview/experimental-v1"
+              },
+              "pattern_ref": {
+                "$ref": "#/components/schemas/PatternRefV2"
+              },
+              "execution_digest": {
+                "type": "string",
+                "pattern": "^sha256:[0-9a-f]{64}$"
+              },
+              "execution": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "kind": {
+                    "const": "program"
+                  },
+                  "contract": {
+                    "const": "nb1-program-effect/v1"
+                  },
+                  "program": {
+                    "$ref": "#/components/schemas/Program"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "contract",
+                  "program"
+                ]
+              },
+              "preview": {
+                "$ref": "#/components/schemas/PreviewResult"
+              },
+              "pattern_execution": {
+                "$ref": "#/components/schemas/PatternExecutionAvailabilityV2"
+              }
+            },
+            "required": [
+              "schema_version",
+              "contract",
+              "pattern_ref",
+              "execution_digest",
+              "execution",
+              "preview",
+              "pattern_execution"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "schema_version": {
+                "const": 1
+              },
+              "contract": {
+                "const": "nb1-pattern-ref-preview/experimental-v1"
+              },
+              "pattern_ref": {
+                "$ref": "#/components/schemas/PatternRefV2"
+              },
+              "execution_digest": {
+                "type": "string",
+                "pattern": "^sha256:[0-9a-f]{64}$"
+              },
+              "execution": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "kind": {
+                    "const": "frame_program"
+                  },
+                  "contract": {
+                    "const": "nb1-frame-program/experimental-v1"
+                  },
+                  "program": {
+                    "$ref": "#/components/schemas/FrameProgram"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "contract",
+                  "program"
+                ]
+              },
+              "preview": {
+                "$ref": "#/components/schemas/FramePreview"
+              },
+              "pattern_execution": {
+                "$ref": "#/components/schemas/PatternExecutionAvailabilityV2"
+              }
+            },
+            "required": [
+              "schema_version",
+              "contract",
+              "pattern_ref",
+              "execution_digest",
+              "execution",
+              "preview",
+              "pattern_execution"
+            ]
+          }
+        ],
+        "description": "完整来源验证后只做纯预览；选serial最多读取一次缓存Device，Program/Frame均回显所选serial/connection，未选省略device。无票据/Job/USB。Frame hold额外要求缓存hold；preview不是准入或物理验收。",
+        "x-runtime-validation": [
+          "P5 revalidates author source, recipe, exact frozen execution/revision and digest",
+          "execution kind/contract/program exactly matches preview program and computed facts; selected device echo required",
+          "caller context checked after successful store/cache operations; no good result masks cancellation"
+        ]
       }
     },
     "responses": {
@@ -8332,7 +9407,7 @@
         }
       },
       "500": {
-        "description": "服务/原生调用错误；读取error.message。传输层没有有效HTTP响应时，不能据此推断接受结果。",
+        "description": "内部服务错误或Pattern完整性拒绝；按error.code区分。传输或context不确定时保留原票据，不推断未接受。",
         "content": {
           "application/json": {
             "schema": {
@@ -8372,7 +9447,7 @@
         }
       },
       "501": {
-        "description": "所需Receipt/Frame服务不可用，或v2存储未配置/平台不支持，或作者来源契约不支持；精确code区分，禁止降级执行。",
+        "description": "所需Receipt/Frame/Pattern服务不可用，v2 Store未配置/不支持，或来源/recipe验证器不可用；精确code区分，禁止降级。",
         "content": {
           "application/json": {
             "schema": {
@@ -8387,25 +9462,25 @@
     "date": "2026-11-10",
     "scope": "Offline source inventory, structural schema and fixture checks only; no daemon installation or fresh hardware observation claim",
     "daily_source": "1d89eae92278f24a68fff1a34e3c1e696a962c3c",
-    "development_source": "4d625891cc421c037807e2e6a193174016c05c71",
+    "development_source": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
     "reproduce": "docs/contract-fixtures/README.zh-CN.md",
     "limits": [
       "No new USB/MK3/visual qualification",
       "JSON Schema does not verify canonical SHA/source compilation, lexical JSON or aggregate hardware timing",
-      "P4 Pattern execution is planned, not registered by these sources"
+      "No daily daemon install or live service probe; new Pattern CLI/MCP/Web client integration is separate"
     ]
   },
   "x-specification-source": "https://spec.openapis.org/oas/v3.2.1.html",
   "x-source-baselines": {
     "daily": "1d89eae92278f24a68fff1a34e3c1e696a962c3c",
-    "development": "4d625891cc421c037807e2e6a193174016c05c71",
-    "inventory": "artifacts/api-complete-20261110/low-http-inventory.json"
+    "development": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
+    "inventory": "docs/api-http-inventory.json"
   },
   "x-not-implemented": [
-    "Pattern v2 run/query/cancel and atomic source admission",
     "generic high sequence/compose/spin",
     "USB raw report/flash upload HTTP endpoints",
-    "separate HTTP /state or /set routes"
+    "separate HTTP /state or /set routes",
+    "Pattern v2 execution CLI/MCP/Web clients absent from f8bb source baseline; separate local CLI authoring candidate listed in x-related-local-candidates"
   ],
   "x-runtime-validation": {
     "raw_json": [
@@ -8421,5 +9496,19 @@
       "known dictionary colors, Unicode scalar validity, raw byte/depth limits cannot be certified by this schema"
     ],
     "runtime_errors": "Error code/message and method/body/query checks are versioned per operation; no automatic retry or device fallback"
+  },
+  "x-related-local-candidates": {
+    "cli_pattern_v2_authoring": {
+      "source_commit": "eee1eb952f01bab521d5514b74b60a5fa45d6e1d",
+      "status": "implemented_local_candidate_not_installed_outside_http_f8bb_baseline",
+      "commands": [
+        "control patterns-v2 get ID",
+        "control patterns-v2 preview-draft FILE",
+        "control patterns-v2 save FILE"
+      ],
+      "scope": "daemon only, authoring not execution; no prepare/policy/wait, save retains original Ref and publication confirmation/uncertainty"
+    },
+    "mcp_documented_tools": 12,
+    "mcp_scope": "daily/f8bb schema only; pending new candidate not documented as installed"
   }
 }

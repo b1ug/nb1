@@ -4,7 +4,7 @@
     "schema": "LightActionSet",
     "source": {
       "kind": "pure-codec",
-      "base_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+      "base_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
       "function": "lightaction.CompileJSON input"
     },
     "value": {
@@ -17,7 +17,7 @@
     "schema": "NormalizedLightActionSet",
     "source": {
       "kind": "pure-codec",
-      "base_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+      "base_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
       "function": "lightaction.CompileJSON.Action",
       "request_sample": "light-action-set"
     },
@@ -33,7 +33,7 @@
     "schema": "LightCompilation",
     "source": {
       "kind": "pure-codec",
-      "base_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+      "base_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
       "function": "lightaction.CompileJSON + control.Preview",
       "request_sample": "light-action-set"
     },
@@ -74,7 +74,7 @@
     "schema": "LightActionOff",
     "source": {
       "kind": "pure-codec",
-      "base_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+      "base_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
       "function": "lightaction.CompileJSON input"
     },
     "value": {
@@ -86,7 +86,7 @@
     "schema": "NormalizedLightActionOff",
     "source": {
       "kind": "pure-codec",
-      "base_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+      "base_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
       "function": "lightaction.CompileJSON.Action",
       "request_sample": "light-action-off"
     },
@@ -101,7 +101,7 @@
     "schema": "LightCompilation",
     "source": {
       "kind": "pure-codec",
-      "base_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+      "base_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
       "function": "lightaction.CompileJSON + control.Preview",
       "request_sample": "light-action-off"
     },
@@ -141,7 +141,7 @@
     "schema": "LightActionFade",
     "source": {
       "kind": "pure-codec",
-      "base_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+      "base_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
       "function": "lightaction.CompileJSON input"
     },
     "value": {
@@ -155,7 +155,7 @@
     "schema": "NormalizedLightActionFade",
     "source": {
       "kind": "pure-codec",
-      "base_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+      "base_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
       "function": "lightaction.CompileJSON.Action",
       "request_sample": "light-action-fade"
     },
@@ -172,7 +172,7 @@
     "schema": "LightCompilation",
     "source": {
       "kind": "pure-codec",
-      "base_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+      "base_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
       "function": "lightaction.CompileJSON + control.Preview",
       "request_sample": "light-action-fade"
     },
@@ -214,7 +214,7 @@
     "schema": "LightActionBlink",
     "source": {
       "kind": "pure-codec",
-      "base_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+      "base_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
       "function": "lightaction.CompileJSON input"
     },
     "value": {
@@ -230,7 +230,7 @@
     "schema": "NormalizedLightActionBlink",
     "source": {
       "kind": "pure-codec",
-      "base_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+      "base_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
       "function": "lightaction.CompileJSON.Action",
       "request_sample": "light-action-blink"
     },
@@ -249,7 +249,7 @@
     "schema": "LightCompilation",
     "source": {
       "kind": "pure-codec",
-      "base_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+      "base_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
       "function": "lightaction.CompileJSON + control.Preview",
       "request_sample": "light-action-blink"
     },
@@ -298,7 +298,7 @@
     "schema": "LightActionBreathe",
     "source": {
       "kind": "pure-codec",
-      "base_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+      "base_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
       "function": "lightaction.CompileJSON input"
     },
     "value": {
@@ -313,7 +313,7 @@
     "schema": "NormalizedLightActionBreathe",
     "source": {
       "kind": "pure-codec",
-      "base_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+      "base_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
       "function": "lightaction.CompileJSON.Action",
       "request_sample": "light-action-breathe"
     },
@@ -331,7 +331,7 @@
     "schema": "LightCompilation",
     "source": {
       "kind": "pure-codec",
-      "base_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+      "base_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
       "function": "lightaction.CompileJSON + control.Preview",
       "request_sample": "light-action-breathe"
     },
@@ -469,7 +469,7 @@
     "schema": "LightPreviewResponse",
     "source": {
       "kind": "httptest-no-service",
-      "base_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+      "base_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
       "function": "httpapi.New(nil).ServeHTTP + httptest.NewRecorder",
       "method": "POST",
       "path": "/v1/light/preview",
@@ -735,7 +735,7 @@
     "schema": "LightActionPulse",
     "source": {
       "kind": "pure-codec",
-      "base_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+      "base_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
       "function": "lightaction.CompileJSON input"
     },
     "value": {
@@ -757,7 +757,7 @@
     "schema": "NormalizedLightActionPulse",
     "source": {
       "kind": "pure-codec",
-      "base_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+      "base_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
       "function": "lightaction.CompileJSON.Action",
       "request_sample": "light-action-pulse"
     },
@@ -777,7 +777,7 @@
     "schema": "LightCompilation",
     "source": {
       "kind": "pure-codec",
-      "base_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+      "base_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
       "function": "lightaction.CompileJSON + control.Preview",
       "request_sample": "light-action-pulse"
     },
@@ -833,7 +833,7 @@
     "schema": "LightActionAlternate",
     "source": {
       "kind": "pure-codec",
-      "base_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+      "base_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
       "function": "lightaction.CompileJSON input"
     },
     "value": {
@@ -861,7 +861,7 @@
     "schema": "NormalizedLightActionAlternate",
     "source": {
       "kind": "pure-codec",
-      "base_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+      "base_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
       "function": "lightaction.CompileJSON.Action",
       "request_sample": "light-action-alternate"
     },
@@ -886,7 +886,7 @@
     "schema": "LightCompilation",
     "source": {
       "kind": "pure-codec",
-      "base_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+      "base_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
       "function": "lightaction.CompileJSON + control.Preview",
       "request_sample": "light-action-alternate"
     },
@@ -1325,7 +1325,7 @@
     "schema": "LightActionRainbow",
     "source": {
       "kind": "pure-codec",
-      "base_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+      "base_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
       "function": "lightaction.CompileJSON input"
     },
     "value": {
@@ -1341,7 +1341,7 @@
     "schema": "NormalizedLightActionRainbow",
     "source": {
       "kind": "pure-codec",
-      "base_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+      "base_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
       "function": "lightaction.CompileJSON.Action",
       "request_sample": "light-action-rainbow"
     },
@@ -1358,7 +1358,7 @@
     "schema": "LightCompilation",
     "source": {
       "kind": "pure-codec",
-      "base_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+      "base_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
       "function": "lightaction.CompileJSON + control.Preview",
       "request_sample": "light-action-rainbow"
     },
@@ -1436,7 +1436,7 @@
     "schema": "OrbitAction",
     "source": {
       "kind": "pure-codec",
-      "base_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+      "base_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
       "function": "lightactionv2.CompileJSON input"
     },
     "value": {
@@ -1465,7 +1465,7 @@
     "schema": "NormalizedOrbitAction",
     "source": {
       "kind": "pure-codec",
-      "base_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+      "base_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
       "function": "lightactionv2.CompileJSON.Action",
       "request_sample": "orbit-segments4-action"
     },
@@ -1490,7 +1490,7 @@
     "schema": "OrbitCompilation",
     "source": {
       "kind": "pure-codec",
-      "base_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+      "base_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
       "function": "lightactionv2.CompileJSON + control.PreviewFrameProgram",
       "request_sample": "orbit-segments4-action"
     },
@@ -1603,7 +1603,7 @@
     "schema": "OrbitPreviewResponse",
     "source": {
       "kind": "httptest-no-service",
-      "base_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+      "base_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
       "function": "httpapi.New(nil).ServeHTTP + httptest.NewRecorder",
       "method": "POST",
       "path": "/v2/light/preview",
@@ -1814,7 +1814,7 @@
     "schema": "OrbitAction",
     "source": {
       "kind": "pure-codec",
-      "base_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+      "base_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
       "function": "lightactionv2.CompileJSON input"
     },
     "value": {
@@ -1843,7 +1843,7 @@
     "schema": "NormalizedOrbitAction",
     "source": {
       "kind": "pure-codec",
-      "base_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+      "base_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
       "function": "lightactionv2.CompileJSON.Action",
       "request_sample": "orbit-segments8-action"
     },
@@ -1868,7 +1868,7 @@
     "schema": "OrbitCompilation",
     "source": {
       "kind": "pure-codec",
-      "base_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+      "base_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
       "function": "lightactionv2.CompileJSON + control.PreviewFrameProgram",
       "request_sample": "orbit-segments8-action"
     },
@@ -2037,7 +2037,7 @@
     "schema": "OrbitPreviewResponse",
     "source": {
       "kind": "httptest-no-service",
-      "base_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+      "base_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
       "function": "httpapi.New(nil).ServeHTTP + httptest.NewRecorder",
       "method": "POST",
       "path": "/v2/light/preview",
@@ -2360,7 +2360,7 @@
     "schema": "FrameProgramRequest",
     "source": {
       "kind": "pure-codec",
-      "base_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+      "base_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
       "function": "control.PreviewFrameProgram input; omitted repeat/on_finish"
     },
     "value": {
@@ -2390,7 +2390,7 @@
     "schema": "FrameProgram",
     "source": {
       "kind": "pure-codec",
-      "base_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+      "base_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
       "function": "control.PreviewFrameProgram.Program",
       "request_sample": "frame-program-request"
     },
@@ -2423,7 +2423,7 @@
     "schema": "FramePreview",
     "source": {
       "kind": "httptest-no-service",
-      "base_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+      "base_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
       "function": "httpapi.New(nil).ServeHTTP + httptest.NewRecorder",
       "method": "POST",
       "path": "/v1/frame-programs/preview",
@@ -2478,7 +2478,7 @@
     "schema": "FrameCapabilities",
     "source": {
       "kind": "httptest-no-service",
-      "base_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+      "base_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
       "function": "httpapi.New(nil).ServeHTTP + httptest.NewRecorder",
       "method": "GET",
       "path": "/v1/frame-capabilities"
@@ -2511,7 +2511,7 @@
     "schema": "FrameJob",
     "source": {
       "kind": "synthetic-Go-wire-struct",
-      "base_commit": "4d625891cc421c037807e2e6a193174016c05c71",
+      "base_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
       "function": "control.FrameJob struct literal; synthetic wire shape only, no Engine or submission",
       "request_sample": "frame-program-normalized"
     },
@@ -2550,6 +2550,838 @@
       "started_at": "2026-11-09T19:00:01Z",
       "finished_at": "2026-11-09T19:00:02Z",
       "error": "Synthetic wire-shape example only; no Engine, submission or execution occurred"
+    }
+  },
+  {
+    "name": "pattern-ref-program",
+    "schema": "PatternRefV2",
+    "source": {
+      "kind": "pure-codec",
+      "base_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
+      "function": "patternsv2.NewRecord exact identity"
+    },
+    "value": {
+      "record_contract": "nb1-pattern-record/experimental-v2",
+      "id": "doc-program",
+      "revision": "sha256:b0f74cccae22649510dc78bbd34a500a80f78042ccf09f45382b682f2109e87d"
+    }
+  },
+  {
+    "name": "pattern-ref-preview-request-program",
+    "schema": "PatternRefPreviewRequestV2",
+    "source": {
+      "kind": "pure-codec",
+      "base_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
+      "function": "P6 typed request from source-verified Ref",
+      "request_sample": "pattern-ref-program"
+    },
+    "value": {
+      "pattern_ref": {
+        "record_contract": "nb1-pattern-record/experimental-v2",
+        "id": "doc-program",
+        "revision": "sha256:b0f74cccae22649510dc78bbd34a500a80f78042ccf09f45382b682f2109e87d"
+      }
+    }
+  },
+  {
+    "name": "pattern-submit-request-program",
+    "schema": "PatternSubmitRequestV2",
+    "source": {
+      "kind": "pure-codec",
+      "base_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
+      "function": "P6 request wire only; syntactic ticket not prepared/admitted",
+      "request_sample": "pattern-ref-program"
+    },
+    "value": {
+      "expected_daemon_instance_id": "daemon_00000000000000000000000000000001",
+      "pattern_ref": {
+        "record_contract": "nb1-pattern-record/experimental-v2",
+        "id": "doc-program",
+        "revision": "sha256:b0f74cccae22649510dc78bbd34a500a80f78042ccf09f45382b682f2109e87d"
+      },
+      "policy": "queue",
+      "request_id": "req_60000_00000000000000000000000000000001"
+    }
+  },
+  {
+    "name": "pattern-cancel-request-program",
+    "schema": "PatternCancelRequestV2",
+    "source": {
+      "kind": "pure-codec",
+      "base_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
+      "function": "P6 request wire only; no actual receipt/cancellation",
+      "request_sample": "pattern-ref-program"
+    },
+    "value": {
+      "confirmed_job_id": "job_00000000000000000000000000000001",
+      "expected_daemon_instance_id": "daemon_00000000000000000000000000000001",
+      "pattern_ref": {
+        "record_contract": "nb1-pattern-record/experimental-v2",
+        "id": "doc-program",
+        "revision": "sha256:b0f74cccae22649510dc78bbd34a500a80f78042ccf09f45382b682f2109e87d"
+      }
+    }
+  },
+  {
+    "name": "pattern-ref-preview-program",
+    "schema": "PatternRefPreviewV2",
+    "source": {
+      "kind": "httptest-in-memory-verified-record-no-service",
+      "base_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
+      "function": "patternsv2.NewRecord + in-memory exact Resolve + httpapi.New(nil).ServeHTTP + Recorder; no FS/Engine",
+      "method": "POST",
+      "path": "/v2/patterns/preview-ref",
+      "request_sample": "pattern-ref-preview-request-program"
+    },
+    "value": {
+      "schema_version": 1,
+      "contract": "nb1-pattern-ref-preview/experimental-v1",
+      "pattern_ref": {
+        "record_contract": "nb1-pattern-record/experimental-v2",
+        "id": "doc-program",
+        "revision": "sha256:b0f74cccae22649510dc78bbd34a500a80f78042ccf09f45382b682f2109e87d"
+      },
+      "execution_digest": "sha256:dff00989c97a572ec4bb05ec9f3c185c808d5f43ee4dbf6691d84de6191d5c55",
+      "execution": {
+        "contract": "nb1-program-effect/v1",
+        "kind": "program",
+        "program": {
+          "on_finish": "hold",
+          "repeat": 1,
+          "steps": [
+            {
+              "color": "#00ff00",
+              "fade_ms": 0,
+              "hold_ms": 0,
+              "led": 0
+            }
+          ]
+        }
+      },
+      "preview": {
+        "schema_version": 1,
+        "compile_contract": "nb1-program-effect/v1",
+        "input_kind": "program",
+        "program": {
+          "steps": [
+            {
+              "led": 0,
+              "color": "#00ff00",
+              "fade_ms": 0,
+              "hold_ms": 0
+            }
+          ],
+          "repeat": 1,
+          "on_finish": "hold"
+        },
+        "nominal_duration_ms": 10,
+        "total_steps": 1,
+        "required_capabilities": [
+          "set",
+          "program",
+          "raw-rgb",
+          "hold"
+        ],
+        "validation": {
+          "program": "valid",
+          "device": "not_requested"
+        }
+      },
+      "pattern_execution": {
+        "available": false,
+        "reason": "pattern_service_unsupported"
+      }
+    }
+  },
+  {
+    "name": "pattern-ref-preview-program-selected",
+    "schema": "PatternRefPreviewV2",
+    "source": {
+      "kind": "httptest-in-memory-verified-record-no-service",
+      "base_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
+      "function": "patternsv2.NewRecord + in-memory exact Resolve + httpapi.New(nil).ServeHTTP + Recorder; no FS/Engine",
+      "method": "POST",
+      "path": "/v2/patterns/preview-ref",
+      "request_sample": "pattern-ref-preview-request-program"
+    },
+    "value": {
+      "schema_version": 1,
+      "contract": "nb1-pattern-ref-preview/experimental-v1",
+      "pattern_ref": {
+        "record_contract": "nb1-pattern-record/experimental-v2",
+        "id": "doc-program",
+        "revision": "sha256:b0f74cccae22649510dc78bbd34a500a80f78042ccf09f45382b682f2109e87d"
+      },
+      "execution_digest": "sha256:dff00989c97a572ec4bb05ec9f3c185c808d5f43ee4dbf6691d84de6191d5c55",
+      "execution": {
+        "contract": "nb1-program-effect/v1",
+        "kind": "program",
+        "program": {
+          "on_finish": "hold",
+          "repeat": 1,
+          "steps": [
+            {
+              "color": "#00ff00",
+              "fade_ms": 0,
+              "hold_ms": 0,
+              "led": 0
+            }
+          ]
+        }
+      },
+      "preview": {
+        "schema_version": 1,
+        "compile_contract": "nb1-program-effect/v1",
+        "input_kind": "program",
+        "program": {
+          "steps": [
+            {
+              "led": 0,
+              "color": "#00ff00",
+              "fade_ms": 0,
+              "hold_ms": 0
+            }
+          ],
+          "repeat": 1,
+          "on_finish": "hold"
+        },
+        "nominal_duration_ms": 10,
+        "total_steps": 1,
+        "required_capabilities": [
+          "set",
+          "program",
+          "raw-rgb",
+          "hold"
+        ],
+        "validation": {
+          "program": "valid",
+          "device": "unknown",
+          "reason": "not_configured"
+        },
+        "device": {
+          "serial": "fixture-device",
+          "capabilities": []
+        }
+      },
+      "pattern_execution": {
+        "available": false,
+        "reason": "pattern_service_unsupported"
+      }
+    }
+  },
+  {
+    "name": "pattern-envelope-synthetic-program",
+    "schema": "PatternJobEnvelopeV2",
+    "source": {
+      "kind": "synthetic-Go-wire-envelope",
+      "base_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
+      "function": "control.PatternJobEnvelope struct literal from pure verified P1 record; no admission",
+      "request_sample": "pattern-ref-program"
+    },
+    "value": {
+      "pattern_ref": {
+        "record_contract": "nb1-pattern-record/experimental-v2",
+        "id": "doc-program",
+        "revision": "sha256:b0f74cccae22649510dc78bbd34a500a80f78042ccf09f45382b682f2109e87d"
+      },
+      "execution_digest": "sha256:dff00989c97a572ec4bb05ec9f3c185c808d5f43ee4dbf6691d84de6191d5c55",
+      "job_kind": "program",
+      "job": {
+        "id": "job_00000000000000000000000000000001",
+        "device": "fixture-device",
+        "status": "failed",
+        "program": {
+          "steps": [
+            {
+              "led": 0,
+              "color": "#00ff00",
+              "fade_ms": 0,
+              "hold_ms": 0
+            }
+          ],
+          "repeat": 1,
+          "on_finish": "hold"
+        },
+        "completed_steps": 0,
+        "total_steps": 1,
+        "created_at": "2026-11-09T19:00:00Z",
+        "started_at": "2026-11-09T19:00:01Z",
+        "finished_at": "2026-11-09T19:00:02Z",
+        "error": "Synthetic Pattern wire envelope only; no actual receipt/admission/execution"
+      }
+    }
+  },
+  {
+    "name": "pattern-ref-frame",
+    "schema": "PatternRefV2",
+    "source": {
+      "kind": "pure-codec",
+      "base_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
+      "function": "patternsv2.NewRecord exact identity"
+    },
+    "value": {
+      "record_contract": "nb1-pattern-record/experimental-v2",
+      "id": "doc-frame",
+      "revision": "sha256:08b239f9f2aa0db78d4fb1acc197d3ecc08763082b772efbd81053d805ce1f40"
+    }
+  },
+  {
+    "name": "pattern-ref-preview-request-frame",
+    "schema": "PatternRefPreviewRequestV2",
+    "source": {
+      "kind": "pure-codec",
+      "base_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
+      "function": "P6 typed request from source-verified Ref",
+      "request_sample": "pattern-ref-frame"
+    },
+    "value": {
+      "pattern_ref": {
+        "record_contract": "nb1-pattern-record/experimental-v2",
+        "id": "doc-frame",
+        "revision": "sha256:08b239f9f2aa0db78d4fb1acc197d3ecc08763082b772efbd81053d805ce1f40"
+      }
+    }
+  },
+  {
+    "name": "pattern-submit-request-frame",
+    "schema": "PatternSubmitRequestV2",
+    "source": {
+      "kind": "pure-codec",
+      "base_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
+      "function": "P6 request wire only; syntactic ticket not prepared/admitted",
+      "request_sample": "pattern-ref-frame"
+    },
+    "value": {
+      "expected_daemon_instance_id": "daemon_00000000000000000000000000000001",
+      "pattern_ref": {
+        "record_contract": "nb1-pattern-record/experimental-v2",
+        "id": "doc-frame",
+        "revision": "sha256:08b239f9f2aa0db78d4fb1acc197d3ecc08763082b772efbd81053d805ce1f40"
+      },
+      "policy": "queue",
+      "request_id": "req_60000_00000000000000000000000000000001"
+    }
+  },
+  {
+    "name": "pattern-cancel-request-frame",
+    "schema": "PatternCancelRequestV2",
+    "source": {
+      "kind": "pure-codec",
+      "base_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
+      "function": "P6 request wire only; no actual receipt/cancellation",
+      "request_sample": "pattern-ref-frame"
+    },
+    "value": {
+      "confirmed_job_id": "framejob_00000000000000000000000000000001",
+      "expected_daemon_instance_id": "daemon_00000000000000000000000000000001",
+      "pattern_ref": {
+        "record_contract": "nb1-pattern-record/experimental-v2",
+        "id": "doc-frame",
+        "revision": "sha256:08b239f9f2aa0db78d4fb1acc197d3ecc08763082b772efbd81053d805ce1f40"
+      }
+    }
+  },
+  {
+    "name": "pattern-ref-preview-frame",
+    "schema": "PatternRefPreviewV2",
+    "source": {
+      "kind": "httptest-in-memory-verified-record-no-service",
+      "base_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
+      "function": "patternsv2.NewRecord + in-memory exact Resolve + httpapi.New(nil).ServeHTTP + Recorder; no FS/Engine",
+      "method": "POST",
+      "path": "/v2/patterns/preview-ref",
+      "request_sample": "pattern-ref-preview-request-frame"
+    },
+    "value": {
+      "schema_version": 1,
+      "contract": "nb1-pattern-ref-preview/experimental-v1",
+      "pattern_ref": {
+        "record_contract": "nb1-pattern-record/experimental-v2",
+        "id": "doc-frame",
+        "revision": "sha256:08b239f9f2aa0db78d4fb1acc197d3ecc08763082b772efbd81053d805ce1f40"
+      },
+      "execution_digest": "sha256:8e04407de7e1c6f0a19f00f382866af2a8ab8a6962ef9d2be2c9bcdfbe387db5",
+      "execution": {
+        "contract": "nb1-frame-program/experimental-v1",
+        "kind": "frame_program",
+        "program": {
+          "contract": "nb1-frame-program/experimental-v1",
+          "frames": [
+            {
+              "fade_ms": 750,
+              "interval_ms": 750,
+              "targets": [
+                {
+                  "color": "#800080",
+                  "led": 1
+                },
+                {
+                  "color": "#1a001a",
+                  "led": 2
+                }
+              ]
+            },
+            {
+              "fade_ms": 750,
+              "interval_ms": 750,
+              "targets": [
+                {
+                  "color": "#000099",
+                  "led": 1
+                },
+                {
+                  "color": "#990000",
+                  "led": 2
+                }
+              ]
+            },
+            {
+              "fade_ms": 750,
+              "interval_ms": 750,
+              "targets": [
+                {
+                  "color": "#1a001a",
+                  "led": 1
+                },
+                {
+                  "color": "#800080",
+                  "led": 2
+                }
+              ]
+            },
+            {
+              "fade_ms": 750,
+              "interval_ms": 750,
+              "targets": [
+                {
+                  "color": "#990000",
+                  "led": 1
+                },
+                {
+                  "color": "#000099",
+                  "led": 2
+                }
+              ]
+            }
+          ],
+          "initial": [
+            {
+              "color": "#990000",
+              "led": 1
+            },
+            {
+              "color": "#000099",
+              "led": 2
+            }
+          ],
+          "on_finish": "hold",
+          "repeat": 1
+        }
+      },
+      "preview": {
+        "contract": "nb1-frame-program/experimental-v1",
+        "program": {
+          "contract": "nb1-frame-program/experimental-v1",
+          "initial": [
+            {
+              "led": 1,
+              "color": "#990000"
+            },
+            {
+              "led": 2,
+              "color": "#000099"
+            }
+          ],
+          "frames": [
+            {
+              "targets": [
+                {
+                  "led": 1,
+                  "color": "#800080"
+                },
+                {
+                  "led": 2,
+                  "color": "#1a001a"
+                }
+              ],
+              "fade_ms": 750,
+              "interval_ms": 750
+            },
+            {
+              "targets": [
+                {
+                  "led": 1,
+                  "color": "#000099"
+                },
+                {
+                  "led": 2,
+                  "color": "#990000"
+                }
+              ],
+              "fade_ms": 750,
+              "interval_ms": 750
+            },
+            {
+              "targets": [
+                {
+                  "led": 1,
+                  "color": "#1a001a"
+                },
+                {
+                  "led": 2,
+                  "color": "#800080"
+                }
+              ],
+              "fade_ms": 750,
+              "interval_ms": 750
+            },
+            {
+              "targets": [
+                {
+                  "led": 1,
+                  "color": "#990000"
+                },
+                {
+                  "led": 2,
+                  "color": "#000099"
+                }
+              ],
+              "fade_ms": 750,
+              "interval_ms": 750
+            }
+          ],
+          "repeat": 1,
+          "on_finish": "hold"
+        },
+        "total_frames": 4,
+        "stored_target_writes": 10,
+        "planned_target_writes": 10,
+        "cycle_duration_ms": 3000,
+        "nominal_initial_ms": 20,
+        "nominal_tail_ms": 20,
+        "nominal_duration_ms": 3040,
+        "timing_basis": "host-nominal-excludes-native-io",
+        "required_capabilities": [
+          "set",
+          "raw-rgb",
+          "frame-program-experimental-v1",
+          "hold"
+        ],
+        "execution": {
+          "available": false,
+          "reason": "pattern_service_unsupported"
+        }
+      },
+      "pattern_execution": {
+        "available": false,
+        "reason": "pattern_service_unsupported"
+      }
+    }
+  },
+  {
+    "name": "pattern-ref-preview-frame-selected",
+    "schema": "PatternRefPreviewV2",
+    "source": {
+      "kind": "httptest-in-memory-verified-record-no-service",
+      "base_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
+      "function": "patternsv2.NewRecord + in-memory exact Resolve + httpapi.New(nil).ServeHTTP + Recorder; no FS/Engine",
+      "method": "POST",
+      "path": "/v2/patterns/preview-ref",
+      "request_sample": "pattern-ref-preview-request-frame"
+    },
+    "value": {
+      "schema_version": 1,
+      "contract": "nb1-pattern-ref-preview/experimental-v1",
+      "pattern_ref": {
+        "record_contract": "nb1-pattern-record/experimental-v2",
+        "id": "doc-frame",
+        "revision": "sha256:08b239f9f2aa0db78d4fb1acc197d3ecc08763082b772efbd81053d805ce1f40"
+      },
+      "execution_digest": "sha256:8e04407de7e1c6f0a19f00f382866af2a8ab8a6962ef9d2be2c9bcdfbe387db5",
+      "execution": {
+        "contract": "nb1-frame-program/experimental-v1",
+        "kind": "frame_program",
+        "program": {
+          "contract": "nb1-frame-program/experimental-v1",
+          "frames": [
+            {
+              "fade_ms": 750,
+              "interval_ms": 750,
+              "targets": [
+                {
+                  "color": "#800080",
+                  "led": 1
+                },
+                {
+                  "color": "#1a001a",
+                  "led": 2
+                }
+              ]
+            },
+            {
+              "fade_ms": 750,
+              "interval_ms": 750,
+              "targets": [
+                {
+                  "color": "#000099",
+                  "led": 1
+                },
+                {
+                  "color": "#990000",
+                  "led": 2
+                }
+              ]
+            },
+            {
+              "fade_ms": 750,
+              "interval_ms": 750,
+              "targets": [
+                {
+                  "color": "#1a001a",
+                  "led": 1
+                },
+                {
+                  "color": "#800080",
+                  "led": 2
+                }
+              ]
+            },
+            {
+              "fade_ms": 750,
+              "interval_ms": 750,
+              "targets": [
+                {
+                  "color": "#990000",
+                  "led": 1
+                },
+                {
+                  "color": "#000099",
+                  "led": 2
+                }
+              ]
+            }
+          ],
+          "initial": [
+            {
+              "color": "#990000",
+              "led": 1
+            },
+            {
+              "color": "#000099",
+              "led": 2
+            }
+          ],
+          "on_finish": "hold",
+          "repeat": 1
+        }
+      },
+      "preview": {
+        "contract": "nb1-frame-program/experimental-v1",
+        "program": {
+          "contract": "nb1-frame-program/experimental-v1",
+          "initial": [
+            {
+              "led": 1,
+              "color": "#990000"
+            },
+            {
+              "led": 2,
+              "color": "#000099"
+            }
+          ],
+          "frames": [
+            {
+              "targets": [
+                {
+                  "led": 1,
+                  "color": "#800080"
+                },
+                {
+                  "led": 2,
+                  "color": "#1a001a"
+                }
+              ],
+              "fade_ms": 750,
+              "interval_ms": 750
+            },
+            {
+              "targets": [
+                {
+                  "led": 1,
+                  "color": "#000099"
+                },
+                {
+                  "led": 2,
+                  "color": "#990000"
+                }
+              ],
+              "fade_ms": 750,
+              "interval_ms": 750
+            },
+            {
+              "targets": [
+                {
+                  "led": 1,
+                  "color": "#1a001a"
+                },
+                {
+                  "led": 2,
+                  "color": "#800080"
+                }
+              ],
+              "fade_ms": 750,
+              "interval_ms": 750
+            },
+            {
+              "targets": [
+                {
+                  "led": 1,
+                  "color": "#990000"
+                },
+                {
+                  "led": 2,
+                  "color": "#000099"
+                }
+              ],
+              "fade_ms": 750,
+              "interval_ms": 750
+            }
+          ],
+          "repeat": 1,
+          "on_finish": "hold"
+        },
+        "total_frames": 4,
+        "stored_target_writes": 10,
+        "planned_target_writes": 10,
+        "cycle_duration_ms": 3000,
+        "nominal_initial_ms": 20,
+        "nominal_tail_ms": 20,
+        "nominal_duration_ms": 3040,
+        "timing_basis": "host-nominal-excludes-native-io",
+        "required_capabilities": [
+          "set",
+          "raw-rgb",
+          "frame-program-experimental-v1",
+          "hold"
+        ],
+        "execution": {
+          "available": false,
+          "reason": "pattern_service_unsupported"
+        },
+        "device": {
+          "serial": "fixture-device",
+          "connection": "missing"
+        }
+      },
+      "pattern_execution": {
+        "available": false,
+        "reason": "pattern_service_unsupported"
+      }
+    }
+  },
+  {
+    "name": "pattern-envelope-synthetic-frame",
+    "schema": "PatternJobEnvelopeV2",
+    "source": {
+      "kind": "synthetic-Go-wire-envelope",
+      "base_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
+      "function": "control.PatternJobEnvelope struct literal from pure verified P1 record; no admission",
+      "request_sample": "pattern-ref-frame"
+    },
+    "value": {
+      "pattern_ref": {
+        "record_contract": "nb1-pattern-record/experimental-v2",
+        "id": "doc-frame",
+        "revision": "sha256:08b239f9f2aa0db78d4fb1acc197d3ecc08763082b772efbd81053d805ce1f40"
+      },
+      "execution_digest": "sha256:8e04407de7e1c6f0a19f00f382866af2a8ab8a6962ef9d2be2c9bcdfbe387db5",
+      "job_kind": "frame",
+      "job": {
+        "id": "framejob_00000000000000000000000000000001",
+        "device": "fixture-device",
+        "status": "failed",
+        "program": {
+          "contract": "nb1-frame-program/experimental-v1",
+          "initial": [
+            {
+              "led": 1,
+              "color": "#990000"
+            },
+            {
+              "led": 2,
+              "color": "#000099"
+            }
+          ],
+          "frames": [
+            {
+              "targets": [
+                {
+                  "led": 1,
+                  "color": "#800080"
+                },
+                {
+                  "led": 2,
+                  "color": "#1a001a"
+                }
+              ],
+              "fade_ms": 750,
+              "interval_ms": 750
+            },
+            {
+              "targets": [
+                {
+                  "led": 1,
+                  "color": "#000099"
+                },
+                {
+                  "led": 2,
+                  "color": "#990000"
+                }
+              ],
+              "fade_ms": 750,
+              "interval_ms": 750
+            },
+            {
+              "targets": [
+                {
+                  "led": 1,
+                  "color": "#1a001a"
+                },
+                {
+                  "led": 2,
+                  "color": "#800080"
+                }
+              ],
+              "fade_ms": 750,
+              "interval_ms": 750
+            },
+            {
+              "targets": [
+                {
+                  "led": 1,
+                  "color": "#990000"
+                },
+                {
+                  "led": 2,
+                  "color": "#000099"
+                }
+              ],
+              "fade_ms": 750,
+              "interval_ms": 750
+            }
+          ],
+          "repeat": 1,
+          "on_finish": "hold"
+        },
+        "completed_frames": 0,
+        "total_frames": 4,
+        "completed_target_writes": 0,
+        "planned_target_writes": 10,
+        "created_at": "2026-11-09T19:00:00Z",
+        "started_at": "2026-11-09T19:00:01Z",
+        "finished_at": "2026-11-09T19:00:02Z",
+        "error": "Synthetic Pattern wire envelope only; no actual receipt/admission/execution"
+      }
     }
   }
 ]

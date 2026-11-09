@@ -13,11 +13,11 @@
 | High level · light v1 | `set`、`off`、`fade`、`blink`、`breathe`、`pulse`、`alternate`、`rainbow` | 八动作已经实现，HTTP/CLI/MCP/Web 共用核心编译器 | 动作命名最终定稿、更多艺术动作与组合语法 |
 | High level · Orbit v2 | `orbit`，4/8 段成对长渐变；颜色、相位、周期、轮数、结束规则 | 日常版本已可用；Web、CLI、MCP 各有有限 Mac/MK2 验证 | 不是稳定视觉标准；不保证任意参数完全无闪烁 |
 | 记忆 · Pattern v1 | 电脑端保存 Program/旧 Effect、导入导出、精确 revision 引用 | 已接 Web、HTTP、CLI、MCP | 不能直接保存新的 FrameProgram/Orbit 来源 |
-| 记忆 · Pattern v2 | 同时保存原始高级来源、规范动作、recipe、冻结执行体与内容摘要 | 开发分支已实现 codec、独立 Store、严格创作接口、HTTP 预览/保存/读取/导入导出；尚未安装到日常服务 | 来源准入核心整合、新运行/查询/取消入口，以及 MCP/CLI/Web 接入 |
+| 记忆 · Pattern v2 | 同时保存原始高级来源、规范动作、recipe、冻结执行体与内容摘要 | 开发源码已完成 codec、独立 Store、严格创作、来源身份准入、验证 resolver，以及 HTTP 固定引用预览/运行/原票据查停；尚未安装到日常服务 | 新 v2 执行/查停客户端、Web接入与安装验证；CLI作者已有独立候选见第13节 |
 
-日常运行来源是 `1d89eae92278f24a68fff1a34e3c1e696a962c3c`；本手册还覆盖开发来源 `4d625891cc421c037807e2e6a193174016c05c71` 的非执行 Pattern v2 HTTP。后者的整合测试对应 `17fc1b9`，其后仅改了一处文档示例。日常硬件为 MK2 / FW204；这不证明 MK3 或 Windows/Linux 实物 USB 已验收。
+日常运行来源是 `1d89eae92278f24a68fff1a34e3c1e696a962c3c`；本手册还覆盖开发源码 `f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae` 的 P1–P6 图案功能与独立 v2 库配置。后者尚未安装，不能把开发源码能力当成正在运行的 daemon 能力。日常硬件为 MK2 / FW204；这不证明 MK3 或 Windows/Linux 实物 USB 已验收。
 
-新版 Web 真机验证包括 Pulse 完成、Orbit 完成与运行中取消；CLI/MCP 的实机证据单独绑定 `c4147ce`。开发分支全套 Go 测试通过 2,259 个节点，另有两项平台/显式 opt-in 测试跳过。测试、RGB 读回和摄像观测分别记录。
+新版 Web 真机验证包括 Pulse 完成、Orbit 完成与运行中取消；CLI/MCP 的实机证据单独绑定 `c4147ce`。P6 相关六包 current/Go1.18 各 1412 测试节点、339 顶层通过，race 四包1097/263通过；新 P6 用 Recorder、内存驱动和临时库，既有整包回归可能用私有 loopback fixture listener。它们不构成新实体设备验收，RGB读回和摄像观测证据仍单独记录。
 
 ## 2. High level 与 Low level 的职责
 
@@ -347,11 +347,11 @@ HTTP接受/查询返回的是Job本身；CLI结果通常放在job字段，MCP放
 
 ## 11. 调度策略与当前不对称
 
-| 策略 | 普通Program jobs | 当前light/Frame入口 | 新Pattern执行计划 |
+| 策略 | 普通Program jobs | 当前light/Frame入口 | 开发Pattern v2 HTTP（未安装） |
 | --- | --- | --- | --- |
-| replace | 已实现；旧CLI默认 | 不接受 | 正在实现完整复用 |
-| queue | 已实现，有界队列 | 不接受 | 正在实现完整复用 |
-| reject | 已实现 | 必须显式使用，或由高级CLI/MCP明确选用 | 正在实现完整复用 |
+| replace | 已实现；旧CLI默认 | 不接受 | 已实现，必须显式传入 |
+| queue | 已实现，有界队列 | 不接受 | 已实现，必须显式传入 |
+| reject | 已实现 | 必须显式使用，或由高级CLI/MCP明确选用 | 已实现，必须显式传入 |
 
 这是当前真实状态，不是三套执行器。每设备仍只有一个worker，Program与Frame共享所有权。现有高级入口的策略限制尚未统一；不能在文档里先声称High/Low所有功能完全对等。
 
@@ -383,13 +383,41 @@ Web、CLI、HTTP、MCP已经接入；MCP只有list/get和固定引用预览/运�
 
 `execution_digest`只绑定冻结执行体；不同作者写法可以有相同执行摘要，但不同revision。revision确认完整记录，二者不能互相代替。未知且完整性合法的source/recipe可以只读展示/导出，不能新导入执行；库中存在未知项时整个库只读。
 
-P3实际路由有preview/save/list/get/export/import，见完整HTTP索引。**当前日常1d89没有这些新路由；开发handler也只在显式WithPatternStoreV2注入后开放存储。** cmd/server尚未配置v2默认库：未配置时存储操作501，纯preview仍可用。不会偷用旧pattern-dir。
+P3 提供作者 preview、条件 save、list/get、冻结快照 export/import；保存201/200与执行202分别处理。开发 daemon 已显式启用独立懒创建的 `UserConfigDir()/nb1/patterns-v2`，可用 `--pattern-v2-dir` / `NB1_PATTERN_V2_DIR` 选择；旧 `--pattern-dir` / `NB1_PATTERN_DIR` 只管 v1，自定义旧库路径不会隐式改选 v2。只构造 handler、纯作者预览与读取缺失库不创建目录；有效保存/导入进入写事务时才可能创建，后续发布失败也可能留下目录；既有库读取可能创建锁文件。路径配置错误不迁移、不回退、不覆盖旧库。Go handler 未注入 v2 option 时库操作仍501；配置错误503；纯作者 preview 始终零 Store。
 
-来源随任务原子入场和原票据查询/取消已形成独立核心软件片`5100665`，报告的相关current/Go1.18/race各1453测试节点通过；它尚待主审整合，不属于本册4d62589已开放HTTP面。新运行HTTP、Store适配及MCP/CLI/Web接入尚未完成；不允许把v2冻结体丢到裸Program路由来绕过来源管理。
+P4 严格 typed 身份/摘要与原子准入、P5 完整来源 resolver、P6 公开引用执行均已在本册开发源码完成。resolver 复验 source、recipe、冻结执行和 revision，核心再校验 typed execution/digest/Ref，并与原票据原子绑定。不能把图案冻结体交给裸 Program 路由来冒充来源管理。
+
+| P6 操作 | 输入与语义 |
+| --- | --- |
+| POST `/v2/patterns/preview-ref` | 完整 `pattern_ref`，可选 serial；复验已存来源后返回冻结 execution 与 Program/Frame 预览，选择设备时回显 serial/connection，只读一次缓存，不建 Job/票据。 |
+| POST `/v2/devices/{serial}/pattern-jobs` | 完整 Ref、显式 replace/queue/reject、原 request_id/expected_daemon_instance_id；202 返回 PatternJobEnvelope，唯一 instance/replayed/Location。 |
+| GET `/v2/devices/{serial}/pattern-requests/{request_id}` | 唯一四 query：expected_daemon_instance_id、record_contract、pattern_id、revision；200 原 Envelope，不依赖图案库。 |
+| POST `/v2/devices/{serial}/pattern-requests/{request_id}/cancel` | Ref、expected_daemon_instance_id、可选 confirmed_job_id；省略才不加 ID 约束，空/null 非法；202 可仍 cancelling/terminal，不依赖库。 |
+
+提交不能在核心回执查询前检查 Store。新 key 才调用惰性 verifier；精确旧回执在库丢失、配置失败或 Engine 关闭后仍可按核心规则重放/查询/取消。不要因库不可用就丢掉原票据，也不要自动换新票据重发。响应 Envelope 为 `{pattern_ref,execution_digest,job_kind,job}`；Job/FrameJob 本身未加字段，旧裸 Job getter 隐藏 Pattern 来源，不能退回历史猜结果。Location 已将完整 Ref 和原实例 URL 编码，可原样 GET。终态 hold 再取消不会关灯。
+
+`pattern_execution.available` 只报告 PatternService 与 resolver 接线，检查状态零 Store 调用。true reason=`pattern_service_configured`；false reason=`pattern_service_unsupported`、`pattern_library_unconfigured` 或 `pattern_library_configuration_error`。true 不证明库健康、设备支持或本次准入成功；false 不阻断原回执恢复。Frame hold 的新 Pattern 准入额外要求缓存 hold，不能推广成旧 Frame helper 已做同样检查。
+
+P6 新 POST 原始报文限4096字节，单个 application/json，无 query，严格 UTF8/duplicate/unknown/null，全部身份标量为闭合 ASCII；GET 四参数必须唯一、非空、无未知或空分隔段且无 body。revision/摘要语法不是来源验证，JSON Schema 无法证明哈希和票据绑定。当前日常1d89没有 P3/P6 新路由；本册f8bb HTTP基线不含这些客户端。另有独立本地CLI作者候选 `eee1eb952f01bab521d5514b74b60a5fa45d6e1d` 提供get/preview-draft/save（第13节）；执行/查停、list/导入导出与Web仍分片推进，现有12个 MCP 工具不会因 HTTP 增加而自动扩展。
+
+固定引用预览可从实际 GET 记录提取 Ref；以下是安装新开发版之后的只读示例，`PATTERN_ID` 必须是已保存记录。它不会播放：
+
+```sh
+NB1_ORIGIN=http://127.0.0.1:8931
+PATTERN_ID=orbit-red-blue
+record=$(curl --fail --silent "$NB1_ORIGIN/v2/patterns/$PATTERN_ID")
+ref=$(printf '%s' "$record" | jq -c '.record | {record_contract,id,revision}')
+jq -n --argjson pattern_ref "$ref" '{pattern_ref:$pattern_ref}' |
+  curl --fail --silent -H 'Content-Type: application/json' --data-binary @- "$NB1_ORIGIN/v2/patterns/preview-ref"
+```
+
+运行仍需从真实 `/v1/instance` 准备一次原票据；保留完整 Ref/原票据/Location 后再按请求合同一次提交。网络失败或 context 结束不等于未接受，不能自动换票据补播。
 
 电脑Pattern库、任务短期回执、设备RAM播放槽与硬件Flash是不同概念。当前记忆方案不默认自动重播，也不默认写硬件Flash；MK2并不妨碍在电脑保存高级图案。
 
 ## 13. CLI与MCP入口对照
+
+本表既有CLI/MCP入口对应日常基线；MCP仍是实际已安装的12工具。独立本地CLI作者候选 `eee1eb952f01bab521d5514b74b60a5fa45d6e1d`（本册f8bb运行源码之外，未安装）另提供 `control patterns-v2 get ID`、`control patterns-v2 preview-draft FILE`、`control patterns-v2 save FILE`。它仅daemon模式，保留完整作者来源，save输出原Ref和publication_confirmed/publication_unknown；不播放、不准备票据，无policy/wait。新v2运行/查停、list/导入导出仍在后续片，不与旧 `control patterns` 混用。
 
 | 目的 | CLI | MCP |
 | --- | --- | --- |
@@ -427,16 +455,16 @@ run_light必须有serial、原票据，仅reject。get_job按ID前缀区分旧/�
 
 ## 14. 完整HTTP索引与错误
 
-以下索引逐项来自路由实现，包含运行、只读计算、存储和静态资源。`/v2`并非所有接口整体升级：light v2是实验Orbit；patterns v2是新存储语义；旧路径与合同继续保留。
+以下索引逐项来自路由实现，包含运行、只读计算、存储和静态资源。`/v2`并非所有接口整体升级：light v2是实验Orbit；patterns v2是高级来源记录与固定引用执行语义；旧路径与合同继续保留。
 
-路径中的`{id}`、`{jobId}`是占位变量名；同一位置表示同一个任务ID，不是两条不同路由。OpenAPI另显式列出GET普通ID为preview/import时的三个路径别名，不代表新增能力。
+路径中的`{id}`、`{jobId}`是占位变量名；同一位置表示同一个任务ID，不是两条不同路由。OpenAPI另显式列出GET普通ID为preview/import/preview-ref时的四个路径别名，不代表新增能力。
 
 
 所有路径先经过 loopback Host/同源 Origin，返回 no-store、nosniff；未开放 CORS、公网鉴权或云控端点。下列错误引用同名分组，详见文末。
 
 ### GET /healthz
 
-**版本：** 日常1d89与开发4d62589均已实现。
+**版本：** 日常1d89与开发f8bb267均已实现。
 
 **输入：** none。Query：none in documented canonical use。
 
@@ -452,7 +480,7 @@ run_light必须有serial、原票据，仅reject。get_job按ID前缀区分旧/�
 
 ### GET /v1/capabilities
 
-**版本：** 日常1d89与开发4d62589均已实现。
+**版本：** 日常1d89与开发f8bb267均已实现。
 
 **输入：** none。Query：RawQuery must be empty。
 
@@ -470,7 +498,7 @@ run_light必须有serial、原票据，仅reject。get_job按ID前缀区分旧/�
 
 ### GET /v1/instance
 
-**版本：** 日常1d89与开发4d62589均已实现。
+**版本：** 日常1d89与开发f8bb267均已实现。
 
 **输入：** none。Query：none in documented canonical use。
 
@@ -488,7 +516,7 @@ run_light必须有serial、原票据，仅reject。get_job按ID前缀区分旧/�
 
 ### GET /v1/transport-metrics
 
-**版本：** 日常1d89与开发4d62589均已实现。
+**版本：** 日常1d89与开发f8bb267均已实现。
 
 **输入：** none。Query：none in documented canonical use。
 
@@ -506,7 +534,7 @@ run_light必须有serial、原票据，仅reject。get_job按ID前缀区分旧/�
 
 ### GET /v1/devices
 
-**版本：** 日常1d89与开发4d62589均已实现。
+**版本：** 日常1d89与开发f8bb267均已实现。
 
 **输入：** none。Query：none in documented canonical use。
 
@@ -522,7 +550,7 @@ run_light必须有serial、原票据，仅reject。get_job按ID前缀区分旧/�
 
 ### GET /v1/devices/{serial}
 
-**版本：** 日常1d89与开发4d62589均已实现。
+**版本：** 日常1d89与开发f8bb267均已实现。
 
 **输入：** none。Query：none in documented canonical use。
 
@@ -540,7 +568,7 @@ run_light必须有serial、原票据，仅reject。get_job按ID前缀区分旧/�
 
 ### POST /v1/programs/preview
 
-**版本：** 日常1d89与开发4d62589均已实现。
+**版本：** 日常1d89与开发f8bb267均已实现。
 
 **输入：** Exactly one of program:Program / effect:Effect / pattern_ref:{id,revision}; optional serial。Query：RawQuery must be empty。 上限 1048576B。
 
@@ -556,7 +584,7 @@ run_light必须有serial、原票据，仅reject。get_job按ID前缀区分旧/�
 
 ### POST /v1/devices/{serial}/jobs
 
-**版本：** 日常1d89与开发4d62589均已实现。
+**版本：** 日常1d89与开发f8bb267均已实现。
 
 **输入：** Exactly one program:Program / effect:Effect / pattern_ref:{id,revision}, policy; request_id and expected_daemon_instance_id both present or both absent for raw Program/Effect。Query：Canonical use has none; legacy raw branch does not explicitly reject all query/body extras beyond strict JSON schema。 上限 1048576B。
 
@@ -570,13 +598,13 @@ run_light必须有serial、原票据，仅reject。get_job按ID前缀区分旧/�
 
 **成功头：** keyed: X-NB1-Daemon-Instance-ID；keyed: X-NB1-Replayed true|false；Location: keyed original request URI; unkeyed /v1/jobs/{id}。
 
-**边界：** Raw policy empty defaults replace; accepts replace/queue/reject. New callers should explicitly choose policy and ticket.；CLI control set is a one-Step Program with on_finish:hold sent here; there is no separate /set HTTP route.；v1 Pattern returns frozen Program Job and does not retain v2 provenance.
+**边界：** Raw policy empty defaults replace; accepts replace/queue/reject. New callers should explicitly choose policy and ticket. CLI control set is a one-Step Program with on_finish:hold sent here; there is no separate /set HTTP route. v1 Pattern returns frozen Program Job and does not retain v2 provenance.
 
 来源：[internal/httpapi/httpapi.go](../internal/httpapi/httpapi.go)；测试：[receipt_test.go](../internal/httpapi/receipt_test.go)、[effects_test.go](../internal/httpapi/effects_test.go)、[patterns_execution_test.go](../internal/httpapi/patterns_execution_test.go)。
 
 ### GET /v1/devices/{serial}/requests/{request_id}
 
-**版本：** 日常1d89与开发4d62589均已实现。
+**版本：** 日常1d89与开发f8bb267均已实现。
 
 **输入：** documented none。Query：Exactly one nonempty expected_daemon_instance_id。
 
@@ -596,7 +624,7 @@ run_light必须有serial、原票据，仅reject。get_job按ID前缀区分旧/�
 
 ### GET /v1/jobs/{id}
 
-**版本：** 日常1d89与开发4d62589均已实现。
+**版本：** 日常1d89与开发f8bb267均已实现。
 
 **输入：** none。Query：none in documented canonical use。
 
@@ -612,7 +640,7 @@ run_light必须有serial、原票据，仅reject。get_job按ID前缀区分旧/�
 
 ### POST /v1/jobs/{id}/cancel
 
-**版本：** 日常1d89与开发4d62589均已实现。
+**版本：** 日常1d89与开发f8bb267均已实现。
 
 **输入：** empty or {} only; no source/instance/ticket fields。Query：canonical none; old branch does not explicitly reject all query parameters。
 
@@ -630,7 +658,7 @@ run_light必须有serial、原票据，仅reject。get_job按ID前缀区分旧/�
 
 ### POST /v1/colors/resolve
 
-**版本：** 日常1d89与开发4d62589均已实现。
+**版本：** 日常1d89与开发f8bb267均已实现。
 
 **输入：** {color:ColorInput}。Query：none, including empty ?。 上限 4096B。
 
@@ -648,7 +676,7 @@ run_light必须有serial、原票据，仅reject。get_job按ID前缀区分旧/�
 
 ### GET /v1/frame-capabilities
 
-**版本：** 日常1d89与开发4d62589均已实现。
+**版本：** 日常1d89与开发f8bb267均已实现。
 
 **输入：** none。Query：none including empty ?。
 
@@ -664,7 +692,7 @@ run_light必须有serial、原票据，仅reject。get_job按ID前缀区分旧/�
 
 ### POST /v1/frame-programs/preview
 
-**版本：** 日常1d89与开发4d62589均已实现。
+**版本：** 日常1d89与开发f8bb267均已实现。
 
 **输入：** {program:FrameProgram,serial?:string}。Query：none including empty ?。 上限 1048576B。
 
@@ -682,7 +710,7 @@ run_light必须有serial、原票据，仅reject。get_job按ID前缀区分旧/�
 
 ### POST /v1/devices/{serial}/frame-jobs
 
-**版本：** 日常1d89与开发4d62589均已实现。
+**版本：** 日常1d89与开发f8bb267均已实现。
 
 **输入：** {program:FrameProgram,policy:"reject",request_id,expected_daemon_instance_id}。Query：none including empty ?。 上限 1048576B。
 
@@ -700,7 +728,7 @@ run_light必须有serial、原票据，仅reject。get_job按ID前缀区分旧/�
 
 ### GET /v1/devices/{serial}/frame-requests/{request_id}
 
-**版本：** 日常1d89与开发4d62589均已实现。
+**版本：** 日常1d89与开发f8bb267均已实现。
 
 **输入：** none。Query：Exactly one nonempty expected_daemon_instance_id。
 
@@ -718,7 +746,7 @@ run_light必须有serial、原票据，仅reject。get_job按ID前缀区分旧/�
 
 ### GET /v1/frame-jobs/{id}
 
-**版本：** 日常1d89与开发4d62589均已实现。
+**版本：** 日常1d89与开发f8bb267均已实现。
 
 **输入：** none。Query：none including empty ?。
 
@@ -734,7 +762,7 @@ run_light必须有serial、原票据，仅reject。get_job按ID前缀区分旧/�
 
 ### POST /v1/frame-jobs/{id}/cancel
 
-**版本：** 日常1d89与开发4d62589均已实现。
+**版本：** 日常1d89与开发f8bb267均已实现。
 
 **输入：** empty / {} legacy; optional nonempty expected_daemon_instance_id binds instance; explicit null/blank/wrong type/unknown/duplicate fields rejected。Query：none including empty ?。
 
@@ -748,13 +776,13 @@ run_light必须有serial、原票据，仅reject。get_job按ID前缀区分旧/�
 
 **成功头：** X-NB1-Daemon-Instance-ID only when conditional instance branch succeeds。
 
-**边界：** CLI high v2 cancel first validates original Action+receipt, then uses this conditional cancel once; no dedicated HTTP action-cancel route.；Current Web/MCP generic cancel uses existing ID-only branch; do not claim equal cross-instance protection.
+**边界：** CLI high v2 cancel first validates original Action+receipt, then uses this conditional cancel once; no dedicated HTTP action-cancel route. Current Web/MCP generic cancel uses existing ID-only branch; do not claim equal cross-instance protection.
 
 来源：[internal/httpapi/frames.go](../internal/httpapi/frames.go)；测试：[frame_cancel_bound_test.go](../internal/httpapi/frame_cancel_bound_test.go)、[frames_test.go](../internal/httpapi/frames_test.go)。
 
 ### POST /v1/light/preview
 
-**版本：** 日常1d89与开发4d62589均已实现。
+**版本：** 日常1d89与开发f8bb267均已实现。
 
 **输入：** {contract:"nb1-light-action/v1",action:{kind:set/off/fade/blink/breathe/pulse/alternate/rainbow,...},serial?:string}。Query：none including empty ?。 上限 65536B。
 
@@ -770,7 +798,7 @@ run_light必须有serial、原票据，仅reject。get_job按ID前缀区分旧/�
 
 ### POST /v1/devices/{serial}/light
 
-**版本：** 日常1d89与开发4d62589均已实现。
+**版本：** 日常1d89与开发f8bb267均已实现。
 
 **输入：** {contract:"nb1-light-action/v1",action:{...},policy:"reject",request_id,expected_daemon_instance_id}。Query：none including empty ?。 上限 65536B。
 
@@ -790,7 +818,7 @@ run_light必须有serial、原票据，仅reject。get_job按ID前缀区分旧/�
 
 ### POST /v2/light/preview
 
-**版本：** 日常1d89与开发4d62589均已实现。
+**版本：** 日常1d89与开发f8bb267均已实现。
 
 **输入：** {contract:"nb1-light-action/experimental-v2",action:{kind:orbit only,...},serial?:string}。Query：none including empty ?。 上限 65536B。
 
@@ -806,7 +834,7 @@ run_light必须有serial、原票据，仅reject。get_job按ID前缀区分旧/�
 
 ### POST /v2/devices/{serial}/light
 
-**版本：** 日常1d89与开发4d62589均已实现。
+**版本：** 日常1d89与开发f8bb267均已实现。
 
 **输入：** {contract:"nb1-light-action/experimental-v2",action:{...},policy:"reject",request_id,expected_daemon_instance_id}。Query：none including empty ?。 上限 65536B。
 
@@ -826,7 +854,7 @@ run_light必须有serial、原票据，仅reject。get_job按ID前缀区分旧/�
 
 ### GET /v1/patterns
 
-**版本：** 日常1d89与开发4d62589均已实现。
+**版本：** 日常1d89与开发f8bb267均已实现。
 
 **输入：** none。Query：none or exactly format=snapshot。
 
@@ -844,7 +872,7 @@ run_light必须有serial、原票据，仅reject。get_job按ID前缀区分旧/�
 
 ### GET /v1/patterns/{id}
 
-**版本：** 日常1d89与开发4d62589均已实现。
+**版本：** 日常1d89与开发f8bb267均已实现。
 
 **输入：** none。Query：none or exactly format=snapshot; IDs ASCII1–64。
 
@@ -862,7 +890,7 @@ run_light必须有serial、原票据，仅reject。get_job按ID前缀区分旧/�
 
 ### POST /v1/patterns/import
 
-**版本：** 日常1d89与开发4d62589均已实现。
+**版本：** 日常1d89与开发f8bb267均已实现。
 
 **输入：** v1 author package or frozen snapshot accepted by Store.Import; not advanced Action source。Query：none including empty ?。 上限 1048576B。
 
@@ -878,7 +906,7 @@ run_light必须有serial、原票据，仅reject。get_job按ID前缀区分旧/�
 
 ### GET /v2/patterns
 
-**版本：** 仅开发4d62589；日常1d89不存在。
+**版本：** 仅开发f8bb267；日常1d89不存在，未安装。
 
 **输入：** none。Query：none or exactly format=snapshot。
 
@@ -890,13 +918,13 @@ run_light必须有serial、原票据，仅reject。get_job按ID前缀区分旧/�
 
 **错误分组/代码：** global, library, library_v2。
 
-**边界：** v2 default daemon has no StoreV2 injection; normal storage request returns501. Unknown valid records make library read_only and remain readable/exportable.
+**边界：** pattern_execution is wiring only; true pattern_service_configured; false service_unsupported/library_unconfigured/library_configuration_error with pattern_ prefixes; zero Store call to report status.
 
 来源：[internal/httpapi/patterns_v2.go](../internal/httpapi/patterns_v2.go)；测试：[patterns_v2_test.go](../internal/httpapi/patterns_v2_test.go)。
 
 ### GET /v2/patterns/{id}
 
-**版本：** 仅开发4d62589；日常1d89不存在。
+**版本：** 仅开发f8bb267；日常1d89不存在，未安装。
 
 **输入：** none。Query：none or exactly format=snapshot; IDs ASCII1–64。
 
@@ -908,13 +936,13 @@ run_light必须有serial、原票据，仅reject。get_job按ID前缀区分旧/�
 
 **错误分组/代码：** global, library, library_v2。
 
-**边界：** GET preview/import/export/capabilities are ordinary IDs, not operation routes. Unknown source/recipe is explicit unverified read-only data, not executable.
+**边界：** GET preview/import/preview-ref/export/capabilities are ordinary IDs, not operation routes. Unknown source/recipe is explicit unverified read-only data, not executable. pattern_execution is wiring only; true pattern_service_configured; false service_unsupported/library_unconfigured/library_configuration_error with pattern_ prefixes; zero Store call to report status.
 
 来源：[internal/httpapi/patterns_v2.go](../internal/httpapi/patterns_v2.go)；测试：[patterns_v2_test.go](../internal/httpapi/patterns_v2_test.go)。
 
 ### POST /v2/patterns/import
 
-**版本：** 仅开发4d62589；日常1d89不存在。
+**版本：** 仅开发f8bb267；日常1d89不存在，未安装。
 
 **输入：** Full verified canonical-compatible v2 frozen Snapshot; no authoring body。Query：none including empty ?。 上限 1048576B。
 
@@ -926,15 +954,17 @@ run_light必须有serial、原票据，仅reject。get_job按ID前缀区分旧/�
 
 **错误分组/代码：** global, 415 json_required, 413 pattern_package_too_large, library, library_v2。
 
+**边界：** pattern_execution is wiring only; true pattern_service_configured; false service_unsupported/library_unconfigured/library_configuration_error with pattern_ prefixes; zero Store call to report status.
+
 来源：[internal/httpapi/patterns_v2.go](../internal/httpapi/patterns_v2.go)；测试：[patterns_v2_test.go](../internal/httpapi/patterns_v2_test.go)。
 
 ### POST /v2/patterns/preview
 
-**版本：** 仅开发4d62589；日常1d89不存在。
+**版本：** 仅开发f8bb267；日常1d89不存在，未安装。
 
 **输入：** {id,title,source:{kind:"light_action",contract,action}}; no serial/policy/ticket/expected_revision/program。Query：none including empty ?。 上限 1048576B。
 
-**成功：** 200；{schema_version:2,contract,record,verification,execution_digest,preview,pattern_execution:{available:false,reason:"pattern_identity_admission_not_integrated"}}。
+**成功：** 200；{schema_version:2,contract,record,verification,execution_digest,preview,pattern_execution:{available,reason}}。
 
 **I/O / 执行：** Pure codec only; Store zero calls including Path; Service zero calls; no USB.
 
@@ -942,15 +972,17 @@ run_light必须有serial、原票据，仅reject。get_job按ID前缀区分旧/�
 
 **错误分组/代码：** global, 415 json_required, 413 pattern_package_too_large, library_v2。
 
+**边界：** pattern_execution is wiring only; true pattern_service_configured; false service_unsupported/library_unconfigured/library_configuration_error with pattern_ prefixes; zero Store call to report status.
+
 来源：[internal/httpapi/patterns_v2.go](../internal/httpapi/patterns_v2.go)；测试：[patterns_v2_test.go](../internal/httpapi/patterns_v2_test.go)。
 
 ### POST /v2/patterns
 
-**版本：** 仅开发4d62589；日常1d89不存在。
+**版本：** 仅开发f8bb267；日常1d89不存在，未安装。
 
 **输入：** Same author source + expected_revision matching full freshly built candidate; create-only。Query：none including empty ?。 上限 1048576B。
 
-**成功：** [201, 200]；{schema_version:2,contract,records,created,existing,total}; 201 new ID,200 identical existing。
+**成功：** 201/200；{schema_version:2,contract,records,created,existing,total}; 201 new ID,200 identical existing。
 
 **I/O / 执行：** Rebuild/verify pure candidate, then exactly one Store.Import; no execution/service/USB.
 
@@ -960,11 +992,91 @@ run_light必须有serial、原票据，仅reject。get_job按ID前缀区分旧/�
 
 **成功头：** Location: /v2/patterns/{id}。
 
+**边界：** pattern_execution is wiring only; true pattern_service_configured; false service_unsupported/library_unconfigured/library_configuration_error with pattern_ prefixes; zero Store call to report status.
+
 来源：[internal/httpapi/patterns_v2.go](../internal/httpapi/patterns_v2.go)；测试：[patterns_v2_test.go](../internal/httpapi/patterns_v2_test.go)。
+
+### POST /v2/patterns/preview-ref
+
+**版本：** 仅开发f8bb267；日常1d89不存在，未安装。
+
+**输入：** {pattern_ref,serial?}。Query：none including empty ?。 上限 4096B。
+
+**成功：** 200；PatternRefPreviewV2。
+
+**I/O / 执行：** P5 exact Resolve and verification, pure Program/Frame facts; serial optionally one cached Device; no Job/receipt/USB.
+
+**票据：** none
+
+**错误分组/代码：** global, pattern_execution_v2, library_v2。
+
+**边界：** Resolve once; no Path/other Store call. Strict raw POST4096B, valid UTF8, all fields closed ASCII; duplicate/unknown/null/ForceQuery rejected.
+
+来源：[internal/httpapi/pattern_execution_v2.go](../internal/httpapi/pattern_execution_v2.go)；测试：[pattern_execution_v2_test.go](../internal/httpapi/pattern_execution_v2_test.go)、[pattern_execution_v2_engine_test.go](../internal/httpapi/pattern_execution_v2_engine_test.go)。
+
+### POST /v2/devices/{serial}/pattern-jobs
+
+**版本：** 仅开发f8bb267；日常1d89不存在，未安装。
+
+**输入：** {pattern_ref,policy,request_id,expected_daemon_instance_id}。Query：none including empty ?。 上限 4096B。
+
+**成功：** 202；PatternJobEnvelopeV2。
+
+**I/O / 执行：** Core new-receipt lazy Resolve then source-bound admission; accepted replay skips Store/config; worker uses existing execution.
+
+**票据：** Original serial/request_id/instance + full Ref + explicit replace/queue/reject.
+
+**错误分组/代码：** global, pattern_execution_v2。
+
+**成功头：** X-NB1-Daemon-Instance-ID: exactly one original instance；X-NB1-Replayed: exactly one true|false；Location: original Pattern receipt path + four URL encoded query fields。
+
+**边界：** No Store precheck; no client Program/Action/digest. Strict raw POST4096B, valid UTF8, all fields closed ASCII; duplicate/unknown/null/ForceQuery rejected.
+
+来源：[internal/httpapi/pattern_execution_v2.go](../internal/httpapi/pattern_execution_v2.go)；测试：[pattern_execution_v2_test.go](../internal/httpapi/pattern_execution_v2_test.go)、[pattern_execution_v2_engine_test.go](../internal/httpapi/pattern_execution_v2_engine_test.go)。
+
+### GET /v2/devices/{serial}/pattern-requests/{request_id}
+
+**版本：** 仅开发f8bb267；日常1d89不存在，未安装。
+
+**输入：** none。Query：exactly expected_daemon_instance_id,record_contract,pattern_id,revision, once each nonempty。
+
+**成功：** 200；PatternJobEnvelopeV2。
+
+**I/O / 执行：** Core original receipt lookup only; zero Store/config/USB.
+
+**票据：** Original path request_id + four exact scalar query fields.
+
+**错误分组/代码：** global, pattern_execution_v2。
+
+**成功头：** X-NB1-Daemon-Instance-ID: exactly one original instance。
+
+**边界：** No history/legacy Job fallback; retained terminal receipts remain queryable after Engine close. Strict raw POST4096B, valid UTF8, all fields closed ASCII; duplicate/unknown/null/ForceQuery rejected.
+
+来源：[internal/httpapi/pattern_execution_v2.go](../internal/httpapi/pattern_execution_v2.go)；测试：[pattern_execution_v2_test.go](../internal/httpapi/pattern_execution_v2_test.go)、[pattern_execution_v2_engine_test.go](../internal/httpapi/pattern_execution_v2_engine_test.go)。
+
+### POST /v2/devices/{serial}/pattern-requests/{request_id}/cancel
+
+**版本：** 仅开发f8bb267；日常1d89不存在，未安装。
+
+**输入：** {pattern_ref,expected_daemon_instance_id,confirmed_job_id?}。Query：none including empty ?。 上限 4096B。
+
+**成功：** 202；PatternJobEnvelopeV2。
+
+**I/O / 执行：** Core bound cancel; zero Store/config lookup. Active cleanup is existing worker behavior.
+
+**票据：** Original request_id/path, instance, full Ref; optional confirmed Job ID.
+
+**错误分组/代码：** global, pattern_execution_v2。
+
+**成功头：** X-NB1-Daemon-Instance-ID: exactly one original instance。
+
+**边界：** 202 may still cancelling/terminal; terminal hold not turned off; no implicit GET. Strict raw POST4096B, valid UTF8, all fields closed ASCII; duplicate/unknown/null/ForceQuery rejected.
+
+来源：[internal/httpapi/pattern_execution_v2.go](../internal/httpapi/pattern_execution_v2.go)；测试：[pattern_execution_v2_test.go](../internal/httpapi/pattern_execution_v2_test.go)、[pattern_execution_v2_engine_test.go](../internal/httpapi/pattern_execution_v2_engine_test.go)。
 
 ### GET /demo
 
-**版本：** 日常1d89与开发4d62589均已实现。
+**版本：** 日常1d89与开发f8bb267均已实现。
 
 **输入：** none。Query：none including empty ?。
 
@@ -980,7 +1092,7 @@ run_light必须有serial、原票据，仅reject。get_job按ID前缀区分旧/�
 
 ### GET /demo/
 
-**版本：** 日常1d89与开发4d62589均已实现。
+**版本：** 日常1d89与开发f8bb267均已实现。
 
 **输入：** none。Query：none including empty ?。
 
@@ -998,7 +1110,7 @@ run_light必须有serial、原票据，仅reject。get_job按ID前缀区分旧/�
 
 ### GET /demo/demo.js
 
-**版本：** 日常1d89与开发4d62589均已实现。
+**版本：** 日常1d89与开发f8bb267均已实现。
 
 **输入：** none。Query：none including empty ?。
 
@@ -1016,7 +1128,7 @@ run_light必须有serial、原票据，仅reject。get_job按ID前缀区分旧/�
 
 ### GET /demo/demo.css
 
-**版本：** 日常1d89与开发4d62589均已实现。
+**版本：** 日常1d89与开发f8bb267均已实现。
 
 **输入：** none。Query：none including empty ?。
 
@@ -1034,7 +1146,7 @@ run_light必须有serial、原票据，仅reject。get_job按ID前缀区分旧/�
 
 ### GET /demo/orbit.html
 
-**版本：** 日常1d89与开发4d62589均已实现。
+**版本：** 日常1d89与开发f8bb267均已实现。
 
 **输入：** none。Query：none including empty ?。
 
@@ -1052,7 +1164,7 @@ run_light必须有serial、原票据，仅reject。get_job按ID前缀区分旧/�
 
 ### GET /demo/orbit.js
 
-**版本：** 日常1d89与开发4d62589均已实现。
+**版本：** 日常1d89与开发f8bb267均已实现。
 
 **输入：** none。Query：none including empty ?。
 
@@ -1070,7 +1182,7 @@ run_light必须有serial、原票据，仅reject。get_job按ID前缀区分旧/�
 
 ### GET /demo/orbit.css
 
-**版本：** 日常1d89与开发4d62589均已实现。
+**版本：** 日常1d89与开发f8bb267均已实现。
 
 **输入：** none。Query：none including empty ?。
 
@@ -1088,13 +1200,13 @@ run_light必须有serial、原票据，仅reject。get_job按ID前缀区分旧/�
 
 ## 开发版 Pattern v2 的额外限制
 
-4d62589 新增5个 method/path：preview、条件save、list、get、import；两个GET可format=snapshot。它们只管来源记录与存储。没有 run/query/cancel，不生成执行票据或 Job。
+相对日常1d89，开发 f8bb267 新增9个规范method/path：P3的5个作者/存储操作与P6的4个固定引用预览/执行/查停操作。总库存41个规范操作；OpenAPI 为避免静态路径掩盖普通ID GET另列4个别名，共45个operation/40个path。这不是45套独立能力。
 
-v2 存储**仅由Go层 WithPatternStoreV2显式注入**；现有 cmd/server 仍只传 WithPatternDirectory(v1)，没有 v2 CLI flag/env/默认选库。开发版正常 daemon 的 v2 save/list/get/export/import 会返回501 pattern_library_unsupported；纯 preview 不需要Store，可以使用。不要把测试中显式注入的 Store 当成日常服务已经配置。
+server 默认独立懒选 v2 库，Go handler 仍可不配库。纯作者preview零Store；引用preview需要Resolve来源；submit只在新key探库；query/cancel零Store/config。默认路径、flag/env、创建边界见第12节。P4/P5/P6已完成源码接线，未安装到日常daemon；新v2执行客户端能力不由HTTP文档自动获得；独立CLI作者候选eee见第13节。
 
-保存重新构造来源候选并核对 expected_revision，再一次 create-only Import。revision不匹配是409、Store零调用；保存201/200都不是执行202。unknown source/recipe 可只读检查和导出，但不能新导入或执行；库含合法unknown项即read_only。publication uncertain只读核对原ID/完整记录，不自动重发。
+保存重新构造来源候选并核对expected_revision，之后一次create-only Import；不匹配409且Store零调用。unknown完整合法记录可读/导出但不能新导入或执行；库含unknown使写操作read_only，已知单条仍可验证执行。publication uncertain只读核对原ID/完整记录，不自动重发。新submit失败不得替换旧活动任务，已接受原回执独立于后续库状态。
 
-依据：[开发版正式README](../internal/httpapi/README.patterns-v2.zh-CN.md)、[实际 server 接线](../cmd/server.go)。
+依据：[作者与存储README](../internal/httpapi/README.patterns-v2.zh-CN.md)、[固定引用执行README](../internal/httpapi/README.pattern-execution-v2.zh-CN.md)、[server接线](../cmd/server.go)、[准入核心](../internal/control/README.pattern-admission.zh-CN.md)、[来源resolver](../internal/patternresolver/README.zh-CN.md)。
 
 ## 错误外壳与分组
 
@@ -1156,15 +1268,28 @@ v2 存储**仅由Go层 WithPatternStoreV2显式注入**；现有 cmd/server 仍�
 | 501 | pattern_source_unsupported or unconfigured pattern_library_unsupported |
 | 503 | pattern_library_format_mismatch / pattern_commit_uncertain; uncertain response has no partial result/Location |
 
+### pattern_execution_v2
+
+| HTTP | code / 语义 |
+| --- | --- |
+| 400 | invalid_pattern_request；核心缓存能力 ErrInvalid 仍是 invalid_request |
+| 404 | pattern_not_found / request_not_found / not_found |
+| 409 | 原票据/实例/policy冲突、队列忙、pattern_revision_conflict / pattern_library_busy |
+| 410 / 429 | request_expired / idempotency_capacity |
+| 413 / 415 | body_too_large（4096B，关闭连接）/ json_required |
+| 500 | pattern_integrity_error / internal_error；来源或冻结内容损坏不能包装成输入400 |
+| 501 | pattern_execution_unsupported / pattern_library_unsupported / pattern_source_unsupported |
+| 503 | unavailable / pattern_library_unavailable / pattern_library_format_mismatch；保留原票据，不等于未接受 |
+
 ## 兼容与证据限制
 
 - All routes share loopback Host/same-origin Origin, no-store,nosniff. No authenticated public/cloud API or CORS relaxation.
 - Strict JSON decoders reject unknown/duplicate/null/trailing fields; newer Action/Frame/Pattern codec additionally preserves nested numeric/Unicode grammar. Do not generalize every newest codec guarantee to all legacy routes.
 - New Light/Frame/Color/Pattern routes reject query including empty ? where code checks ForceQuery; several old root/job routes do not uniformly reject query/body. Prefer documented canonical paths; this inventory does not claim missing guards are implemented.
 - GET state is cached and may be stale while frame runs; latest sampled_at is evidence. Desired target, successful Job, readback and optical capture are different facts.
-- OpenAPI file at these baselines is older v1 subset; do not treat it as complete inventory.
+- OpenAPI覆盖本册41个规范操作与4个GET别名；JSONSchema不能证明原始词法、来源SHA或实际设备效果。
 
-源码/测试只读核对；没有运行测试、HTTP请求、daemon、USB、摄像头或安装。完整结构化库存见 [low-http-inventory.json](api-http-inventory.json)，固定请求例子见 [low-http-examples.json](api-low-examples.json)。本稿不替代完整 SDK 签名；legacy CLI/SDK 可继续参考 [设备backend说明](../internal/devicebackend/README.md) 与 [SDK设备命令](https://github.com/b1ug/blink1-go/blob/b3f2586cc73073a7a0432889ea14a18c13247f46/device_cmd.go)。
+本册依据固定源码、隔离软件测试、实际纯编译/Recorder样例与结构schema校验；未操作日常daemon、USB、摄像头或安装。完整结构化库存见 [low-http-inventory.json](api-http-inventory.json)，固定请求例子见 [low-http-examples.json](api-low-examples.json)。本稿不替代完整 SDK 签名；legacy CLI/SDK 可继续参考 [设备backend说明](../internal/devicebackend/README.md) 与 [SDK设备命令](https://github.com/b1ug/blink1-go/blob/b3f2586cc73073a7a0432889ea14a18c13247f46/device_cmd.go)。
 
 
 ## 15. 设计评估与下一步
@@ -1173,7 +1298,7 @@ v2 存储**仅由Go层 WithPatternStoreV2显式注入**；现有 cmd/server 仍�
 
 需要继续完善的地方也很明确：
 
-1. 完成高级Pattern的来源身份与任务原子绑定，再接运行、MCP、CLI和Web；不能把保存成功等同于已经能播放。
+1. P4来源身份准入、P5验证resolver、P6 HTTP已完成；CLI作者片另已有get/preview-draft/save候选；继续接新v2运行/查停的MCP、CLI和Web，再在明确安装版本后验证。保存成功、已接受任务和实体效果仍分别判断。
 2. 保持艺术动作可区分：blink是亮灭，breathe是对称起伏，pulse是attack/decay/rest，alternate是换位，rainbow是色相循环，orbit是两点相位/明暗流动。
 3. 评审高级入口与低层入口的策略差异、pulse名义周期多出的30ms、hold的最后输出语义。当前文档如实写差异，未来只能通过明确新版本调整。
 4. 新命名、组合/序列、用户palette、自动恢复和同步属于后续能力，不能让AI猜一个看似自然的词就执行。

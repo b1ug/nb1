@@ -50,7 +50,7 @@ def check(name,schema,value,expected=True,source=''):
     results.append(dict(name=name,schema=schema,accepted=accepted,expected=expected,source=source))
 samples=json.loads((HERE/'actual-samples.json').read_text())
 for sample in samples:
-    assert sample['source']['base_commit']=='4d625891cc421c037807e2e6a193174016c05c71'
+    assert sample['source']['base_commit']=='f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae'
     check(sample['name'],sample['schema'],sample['value'],source=sample['source']['kind'])
 fixture=WORK/'internal/httpapi/testdata/pattern-v2'
 mapping={
@@ -99,13 +99,35 @@ inventory=json.loads((HERE/'route-inventory.json').read_text())
 shape=lambda key:re.sub(r'\{[^}]+\}','{}',key)
 expected={r['method']+' '+r['path'] for r in inventory['routes']}
 assert {shape(k) for k in set(operations)-set(aliases)}=={shape(k) for k in expected}
-assert len(operations)==40 and len(expected)==37 and len(aliases)==3
+assert len(operations)==45 and len(expected)==41 and len(aliases)==4
 assert not any('/run' in p or '/query' in p or '/state' in p or '/set' in p for p in document['paths'])
 for key,operation in operations.items():
+    assert operation['x-availability']['development']['source_commit']=='f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae'
     if key.split(' ',1)[1].startswith('/v2/patterns'):
         assert operation['x-availability']['daily']['status']=='not_implemented'
         assert operation['x-no-execution'] is True
-        assert operation['x-availability']['development']['status']==('implemented' if key=='POST /v2/patterns/preview' else 'requires_explicit_store_injection')
+        wanted='implemented' if key in ('POST /v2/patterns/preview','POST /v2/patterns/preview-ref') else 'implemented_with_default_lazy_v2_store'
+        assert operation['x-availability']['development']['status']==wanted,(key,wanted)
+    if operation.get('operationId') in ('getPatternRequestV2','cancelPatternRequestV2'):
+        assert operation['x-store-dependency']=='none including configuration/Path/Resolve'
+for name,available in [('pattern_service_configured',True),('pattern_service_unsupported',False),('pattern_library_unconfigured',False),('pattern_library_configuration_error',False)]:
+    check('availability '+name,'PatternExecutionAvailabilityV2',{'available':available,'reason':name})
+    check('availability wrong bool '+name,'PatternExecutionAvailabilityV2',{'available':not available,'reason':name},False)
+check('availability old P3 constant not new contract','PatternExecutionAvailabilityV2',{'available':False,'reason':'pattern_identity_admission_not_integrated'},False)
+submit=next(copy.deepcopy(x['value']) for x in samples if x['schema']=='PatternSubmitRequestV2')
+for key in ('policy','pattern_ref','request_id','expected_daemon_instance_id'):
+    bad=copy.deepcopy(submit);del bad[key];check('P6 missing '+key,'PatternSubmitRequestV2',bad,False)
+for key,value in [('program',{}),('execution_digest','sha256:'+'0'*64),('policy',''),('pattern_ref',None)]:
+    bad=copy.deepcopy(submit);bad[key]=value;check('P6 forbidden or empty '+key,'PatternSubmitRequestV2',bad,False)
+cancel=next(copy.deepcopy(x['value']) for x in samples if x['schema']=='PatternCancelRequestV2')
+for value in ('',None,'job_bad'):
+    bad=copy.deepcopy(cancel);bad['confirmed_job_id']=value;check('P6 invalid confirmed job '+str(value),'PatternCancelRequestV2',bad,False)
+preview=next(copy.deepcopy(x['value']) for x in samples if x['schema']=='PatternRefPreviewV2')
+bad=copy.deepcopy(preview);bad['execution']['kind']='frame_program';check('P6 crossed preview union','PatternRefPreviewV2',bad,False)
+# A valid SHA spelling does not bind an HTTP response to a source/receipt;
+# full source/digest consistency belongs to P5/core/client runtime verification.
+bad=copy.deepcopy(preview);bad['execution_digest']='sha256:'+'0'*64
+check('P6 runtime-only digest mismatch','PatternRefPreviewV2',bad,True,'schema shape only; runtime/client must recompute and reject')
 report={'status':'PASS_OPENAPI_DOCUMENTATION_CHECK','openapi':document['openapi'],'jsonschema':importlib.metadata.version('jsonschema'),
         'paths':len(document['paths']),'operations':len(operations),'canonical_operations':len(expected),'id_alias_operations':aliases,
         'schemas':len(schemas),'local_refs_checked':len(refs),'examples_checked':len(results),'checks':results,

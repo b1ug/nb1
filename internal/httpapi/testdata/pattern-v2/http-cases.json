@@ -1,0 +1,435 @@
+{
+  "status": "proposal_only_no_http_handler_implemented",
+  "message_assertion": "Error code and status are proposed contracts; message text is a bounded human-readable example, not a byte-stable platform error contract.",
+  "cases": [
+    {
+      "name": "pure Orbit preview",
+      "method": "POST",
+      "path": "/v2/patterns/preview",
+      "response_status": 200,
+      "response_body_file": "responses/preview-orbit-red-blue.json",
+      "store_calls": [],
+      "engine_calls": 0,
+      "request_body_file": "requests/preview-orbit-red-blue.json",
+      "request_headers": {
+        "Content-Type": "application/json"
+      },
+      "response_headers": {
+        "Content-Type": "application/json; charset=utf-8",
+        "Cache-Control": "no-store",
+        "X-Content-Type-Options": "nosniff"
+      }
+    },
+    {
+      "name": "pure v1 Action preview",
+      "method": "POST",
+      "path": "/v2/patterns/preview",
+      "response_status": 200,
+      "response_body_file": "responses/preview-pulse-lime.json",
+      "store_calls": [],
+      "engine_calls": 0,
+      "request_body_file": "requests/preview-pulse-lime.json",
+      "request_headers": {
+        "Content-Type": "application/json"
+      },
+      "response_headers": {
+        "Content-Type": "application/json; charset=utf-8",
+        "Cache-Control": "no-store",
+        "X-Content-Type-Options": "nosniff"
+      }
+    },
+    {
+      "name": "new record",
+      "method": "POST",
+      "path": "/v2/patterns",
+      "response_status": 201,
+      "response_body_file": "responses/save-created.json",
+      "store_calls": [
+        "Import once"
+      ],
+      "engine_calls": 0,
+      "request_body_file": "requests/save-orbit-red-blue.json",
+      "request_headers": {
+        "Content-Type": "application/json"
+      },
+      "response_headers": {
+        "Content-Type": "application/json; charset=utf-8",
+        "Cache-Control": "no-store",
+        "X-Content-Type-Options": "nosniff"
+      },
+      "location": "/v2/patterns/orbit-red-blue"
+    },
+    {
+      "name": "same record already exists",
+      "method": "POST",
+      "path": "/v2/patterns",
+      "response_status": 200,
+      "response_body_file": "responses/save-existing.json",
+      "store_calls": [
+        "Import once"
+      ],
+      "engine_calls": 0,
+      "request_body_file": "requests/save-orbit-red-blue.json",
+      "request_headers": {
+        "Content-Type": "application/json"
+      },
+      "response_headers": {
+        "Content-Type": "application/json; charset=utf-8",
+        "Cache-Control": "no-store",
+        "X-Content-Type-Options": "nosniff"
+      },
+      "location": "/v2/patterns/orbit-red-blue"
+    },
+    {
+      "name": "wrong preview confirmation",
+      "method": "POST",
+      "path": "/v2/patterns",
+      "response_status": 409,
+      "response_body_file": "responses/errors/revision_mismatch.json",
+      "store_calls": [],
+      "engine_calls": 0,
+      "request_body_file": "requests/save-revision-mismatch.json",
+      "request_headers": {
+        "Content-Type": "application/json"
+      },
+      "response_headers": {
+        "Content-Type": "application/json; charset=utf-8",
+        "Cache-Control": "no-store",
+        "X-Content-Type-Options": "nosniff"
+      }
+    },
+    {
+      "name": "missing confirmation",
+      "method": "POST",
+      "path": "/v2/patterns",
+      "response_status": 400,
+      "response_body_file": "responses/errors/invalid_request.json",
+      "store_calls": [],
+      "engine_calls": 0,
+      "request_body_file": "requests/save-missing-revision.json",
+      "request_headers": {
+        "Content-Type": "application/json"
+      },
+      "response_headers": {
+        "Content-Type": "application/json; charset=utf-8",
+        "Cache-Control": "no-store",
+        "X-Content-Type-Options": "nosniff"
+      }
+    },
+    {
+      "name": "caller cannot supply frozen execution",
+      "method": "POST",
+      "path": "/v2/patterns",
+      "response_status": 400,
+      "response_body_file": "responses/errors/invalid_request.json",
+      "store_calls": [],
+      "engine_calls": 0,
+      "request_body_file": "requests/save-forbidden-execution.json",
+      "request_headers": {
+        "Content-Type": "application/json"
+      },
+      "response_headers": {
+        "Content-Type": "application/json; charset=utf-8",
+        "Cache-Control": "no-store",
+        "X-Content-Type-Options": "nosniff"
+      }
+    },
+    {
+      "name": "preview does not choose a device",
+      "method": "POST",
+      "path": "/v2/patterns/preview",
+      "response_status": 400,
+      "response_body_file": "responses/errors/invalid_request.json",
+      "store_calls": [],
+      "engine_calls": 0,
+      "request_body_file": "requests/preview-forbidden-serial.json",
+      "request_headers": {
+        "Content-Type": "application/json"
+      },
+      "response_headers": {
+        "Content-Type": "application/json; charset=utf-8",
+        "Cache-Control": "no-store",
+        "X-Content-Type-Options": "nosniff"
+      }
+    },
+    {
+      "name": "strict author lexeme lone-surrogate.json.txt",
+      "method": "POST",
+      "path": "/v2/patterns/preview",
+      "response_status": 400,
+      "response_body_file": "responses/errors/invalid_request.json",
+      "store_calls": [],
+      "engine_calls": 0,
+      "request_body_file": "requests/preview-lone-surrogate.json.txt",
+      "request_headers": {
+        "Content-Type": "application/json"
+      },
+      "response_headers": {
+        "Content-Type": "application/json; charset=utf-8",
+        "Cache-Control": "no-store",
+        "X-Content-Type-Options": "nosniff"
+      }
+    },
+    {
+      "name": "strict author lexeme duplicate-title.json.txt",
+      "method": "POST",
+      "path": "/v2/patterns/preview",
+      "response_status": 400,
+      "response_body_file": "responses/errors/invalid_request.json",
+      "store_calls": [],
+      "engine_calls": 0,
+      "request_body_file": "requests/preview-duplicate-title.json.txt",
+      "request_headers": {
+        "Content-Type": "application/json"
+      },
+      "response_headers": {
+        "Content-Type": "application/json; charset=utf-8",
+        "Cache-Control": "no-store",
+        "X-Content-Type-Options": "nosniff"
+      }
+    },
+    {
+      "name": "strict author lexeme fractional-time.json",
+      "method": "POST",
+      "path": "/v2/patterns/preview",
+      "response_status": 400,
+      "response_body_file": "responses/errors/invalid_request.json",
+      "store_calls": [],
+      "engine_calls": 0,
+      "request_body_file": "requests/preview-fractional-time.json",
+      "request_headers": {
+        "Content-Type": "application/json"
+      },
+      "response_headers": {
+        "Content-Type": "application/json; charset=utf-8",
+        "Cache-Control": "no-store",
+        "X-Content-Type-Options": "nosniff"
+      }
+    },
+    {
+      "name": "strict author lexeme null.json",
+      "method": "POST",
+      "path": "/v2/patterns/preview",
+      "response_status": 400,
+      "response_body_file": "responses/errors/invalid_request.json",
+      "store_calls": [],
+      "engine_calls": 0,
+      "request_body_file": "requests/preview-null.json",
+      "request_headers": {
+        "Content-Type": "application/json"
+      },
+      "response_headers": {
+        "Content-Type": "application/json; charset=utf-8",
+        "Cache-Control": "no-store",
+        "X-Content-Type-Options": "nosniff"
+      }
+    },
+    {
+      "name": "read ready library",
+      "method": "GET",
+      "path": "/v2/patterns",
+      "response_status": 200,
+      "response_body_file": "responses/list-ready.json",
+      "store_calls": [
+        "List once"
+      ],
+      "engine_calls": 0,
+      "response_headers": {
+        "Content-Type": "application/json; charset=utf-8",
+        "Cache-Control": "no-store",
+        "X-Content-Type-Options": "nosniff"
+      }
+    },
+    {
+      "name": "read library with unsupported item",
+      "method": "GET",
+      "path": "/v2/patterns",
+      "response_status": 200,
+      "response_body_file": "responses/list-read-only.json",
+      "store_calls": [
+        "List once"
+      ],
+      "engine_calls": 0,
+      "response_headers": {
+        "Content-Type": "application/json; charset=utf-8",
+        "Cache-Control": "no-store",
+        "X-Content-Type-Options": "nosniff"
+      }
+    },
+    {
+      "name": "read missing library without creating",
+      "method": "GET",
+      "path": "/v2/patterns",
+      "response_status": 200,
+      "response_body_file": "responses/list-empty.json",
+      "store_calls": [
+        "List once"
+      ],
+      "engine_calls": 0,
+      "response_headers": {
+        "Content-Type": "application/json; charset=utf-8",
+        "Cache-Control": "no-store",
+        "X-Content-Type-Options": "nosniff"
+      }
+    },
+    {
+      "name": "read known record",
+      "method": "GET",
+      "path": "/v2/patterns/orbit-red-blue",
+      "response_status": 200,
+      "response_body_file": "responses/get-orbit-red-blue.json",
+      "store_calls": [
+        "Get once"
+      ],
+      "engine_calls": 0,
+      "response_headers": {
+        "Content-Type": "application/json; charset=utf-8",
+        "Cache-Control": "no-store",
+        "X-Content-Type-Options": "nosniff"
+      }
+    },
+    {
+      "name": "read unsupported record",
+      "method": "GET",
+      "path": "/v2/patterns/orbit-red-blue",
+      "response_status": 200,
+      "response_body_file": "responses/get-unknown-recipe.json",
+      "store_calls": [
+        "Get once"
+      ],
+      "engine_calls": 0,
+      "response_headers": {
+        "Content-Type": "application/json; charset=utf-8",
+        "Cache-Control": "no-store",
+        "X-Content-Type-Options": "nosniff"
+      }
+    },
+    {
+      "name": "export known snapshot",
+      "method": "GET",
+      "path": "/v2/patterns?format=snapshot",
+      "response_status": 200,
+      "response_body_file": "responses/export-known.snapshot.json",
+      "store_calls": [
+        "Export once"
+      ],
+      "engine_calls": 0,
+      "response_headers": {
+        "Content-Type": "application/json; charset=utf-8",
+        "Cache-Control": "no-store",
+        "X-Content-Type-Options": "nosniff"
+      },
+      "canonical_bytes_exact": true
+    },
+    {
+      "name": "export read-only snapshot",
+      "method": "GET",
+      "path": "/v2/patterns?format=snapshot",
+      "response_status": 200,
+      "response_body_file": "responses/export-read-only.snapshot.json",
+      "store_calls": [
+        "Export once"
+      ],
+      "engine_calls": 0,
+      "response_headers": {
+        "Content-Type": "application/json; charset=utf-8",
+        "Cache-Control": "no-store",
+        "X-Content-Type-Options": "nosniff"
+      },
+      "canonical_bytes_exact": true
+    },
+    {
+      "name": "export unsupported record",
+      "method": "GET",
+      "path": "/v2/patterns/orbit-red-blue?format=snapshot",
+      "response_status": 200,
+      "response_body_file": "responses/export-single-unknown.snapshot.json",
+      "store_calls": [
+        "Get once"
+      ],
+      "engine_calls": 0,
+      "response_headers": {
+        "Content-Type": "application/json; charset=utf-8",
+        "Cache-Control": "no-store",
+        "X-Content-Type-Options": "nosniff"
+      },
+      "canonical_bytes_exact": true
+    },
+    {
+      "name": "import complete verified snapshot",
+      "method": "POST",
+      "path": "/v2/patterns/import",
+      "response_status": 200,
+      "response_body_file": "responses/import-created.json",
+      "store_calls": [
+        "Import once"
+      ],
+      "engine_calls": 0,
+      "request_body_file": "requests/import-known.snapshot.json",
+      "request_headers": {
+        "Content-Type": "application/json"
+      },
+      "response_headers": {
+        "Content-Type": "application/json; charset=utf-8",
+        "Cache-Control": "no-store",
+        "X-Content-Type-Options": "nosniff"
+      }
+    },
+    {
+      "name": "read-only blocks save",
+      "method": "POST",
+      "path": "/v2/patterns",
+      "response_status": 409,
+      "response_body_file": "responses/errors/read_only.json",
+      "store_calls": [
+        "Import once"
+      ],
+      "engine_calls": 0,
+      "request_body_file": "requests/save-orbit-red-blue.json",
+      "request_headers": {
+        "Content-Type": "application/json"
+      },
+      "response_headers": {
+        "Content-Type": "application/json; charset=utf-8",
+        "Cache-Control": "no-store",
+        "X-Content-Type-Options": "nosniff"
+      }
+    },
+    {
+      "name": "publication result unknown",
+      "method": "POST",
+      "path": "/v2/patterns",
+      "response_status": 503,
+      "response_body_file": "responses/errors/commit_uncertain.json",
+      "store_calls": [
+        "Import once"
+      ],
+      "engine_calls": 0,
+      "request_body_file": "requests/save-orbit-red-blue.json",
+      "request_headers": {
+        "Content-Type": "application/json"
+      },
+      "response_headers": {
+        "Content-Type": "application/json; charset=utf-8",
+        "Cache-Control": "no-store",
+        "X-Content-Type-Options": "nosniff"
+      }
+    },
+    {
+      "name": "mismatched directory format",
+      "method": "GET",
+      "path": "/v2/patterns",
+      "response_status": 503,
+      "response_body_file": "responses/errors/format_mismatch.json",
+      "store_calls": [
+        "List once"
+      ],
+      "engine_calls": 0,
+      "response_headers": {
+        "Content-Type": "application/json; charset=utf-8",
+        "Cache-Control": "no-store",
+        "X-Content-Type-Options": "nosniff"
+      }
+    }
+  ]
+}

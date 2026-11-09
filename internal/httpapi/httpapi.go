@@ -41,6 +41,7 @@ type handler struct {
 	patterns    PatternStore
 	patternPath string
 	patternErr  error
+	patternsV2  PatternStoreV2
 }
 
 func New(service control.Service, options ...Option) http.Handler {
@@ -66,7 +67,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if h.serveFrames(w, r) || h.serveLightV2(w, r) || h.serveLight(w, r) {
 		return
 	}
-	if h.servePatterns(w, r) {
+	if h.servePatternsV2(w, r) || h.servePatterns(w, r) {
 		return
 	}
 	parts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")

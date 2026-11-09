@@ -1,0 +1,6 @@
+{
+  "error": {
+    "code": "invalid_pattern_request",
+    "message": "The authoring request has missing, duplicate, unknown or invalid fields."
+  }
+}

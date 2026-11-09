@@ -1,0 +1,6 @@
+{
+  "error": {
+    "code": "pattern_library_format_mismatch",
+    "message": "The selected directory contains another snapshot format; it was not overwritten."
+  }
+}

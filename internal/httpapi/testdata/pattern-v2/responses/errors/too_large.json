@@ -1,0 +1,6 @@
+{
+  "error": {
+    "code": "pattern_package_too_large",
+    "message": "The request exceeds the 1 MiB byte limit."
+  }
+}

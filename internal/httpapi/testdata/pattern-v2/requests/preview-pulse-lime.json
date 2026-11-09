@@ -1,0 +1,17 @@
+{
+  "id": "pulse-lime",
+  "source": {
+    "kind": "light_action",
+    "contract": "nb1-light-action/v1",
+    "action": {
+      "attack_ms": 60,
+      "color": "lime",
+      "cycles": 2,
+      "decay_ms": 240,
+      "kind": "pulse",
+      "on_finish": "off",
+      "rest_ms": 700
+    }
+  },
+  "title": "绿色脉冲"
+}

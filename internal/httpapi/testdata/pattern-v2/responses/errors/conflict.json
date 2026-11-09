@@ -1,0 +1,6 @@
+{
+  "error": {
+    "code": "pattern_conflict",
+    "message": "The ID already contains different canonical content; no overwrite was attempted."
+  }
+}

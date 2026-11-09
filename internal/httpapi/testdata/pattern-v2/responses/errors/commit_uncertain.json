@@ -1,0 +1,6 @@
+{
+  "error": {
+    "code": "pattern_commit_uncertain",
+    "message": "Publication may have succeeded; read the original ID and compare its revision before another save."
+  }
+}

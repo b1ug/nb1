@@ -144,7 +144,7 @@ namespace Nb1TokenFixture {
   public static void DeleteProfile(string sid) {
    if(!DeleteProfileW(sid,null,null)) throw new Win32Exception(Marshal.GetLastWin32Error(),"exact fixture profile removal failed");
   }
-  public static string[] LocalGroups(string user) {
+  public static string[] LocalGroupNames(string user) {
    IntPtr buffer=IntPtr.Zero; uint read,total;
    int result=NetUserGetLocalGroups(null,user,0,1,out buffer,65536,out read,out total);
    try {
@@ -153,8 +153,7 @@ namespace Nb1TokenFixture {
     for(int i=0;i<(int)read;i++) {
      IntPtr name=Marshal.ReadIntPtr(buffer,i*IntPtr.Size);
      string group=Marshal.PtrToStringUni(name);
-     NTAccount account=new NTAccount(Environment.MachineName,group);
-     values.Add(((SecurityIdentifier)account.Translate(typeof(SecurityIdentifier))).Value);
+     values.Add(group);
     }
     return values.ToArray();
    } finally { if(buffer!=IntPtr.Zero && NetApiBufferFree(buffer)!=0) throw new InvalidOperationException("group buffer release failed"); }
@@ -180,6 +179,23 @@ function Get-Nb1LocalUser([string]$Name) {
         if ($_.FullyQualifiedErrorId.StartsWith('UserNotFound,', [StringComparison]::Ordinal)) { return $null }
         throw
     }
+}
+
+function Resolve-Nb1LocalGroupSIDs([string[]]$Names, [scriptblock]$Lookup) {
+    # NetUserGetLocalGroups returns local alias names, including BUILTIN aliases.
+    # Resolve on the local SAM through Get-LocalGroup; never invent a machine domain.
+    if ($null -eq $Names) { return }
+    if ($Names.Count -gt 64) { throw 'fresh user local group count is unknown' }
+    foreach ($name in $Names) {
+        if ([string]::IsNullOrEmpty($name)) { throw 'fresh user local group name is unknown' }
+        $groups = @(& $Lookup $name)
+        if ($groups.Count -ne 1 -or $groups[0].Name -ine $name -or $groups[0].SID.Value -cnotmatch '^S-1-5-(32-\d+|21-\d+-\d+-\d+-\d+)$') { throw 'fresh user local group lookup is not exact' }
+        Write-Output $groups[0].SID.Value
+    }
+}
+
+function Assert-Nb1UsersOnly([string[]]$SIDs) {
+    if ($null -eq $SIDs -or $SIDs.Count -ne 1 -or $SIDs[0] -cne 'S-1-5-32-545') { throw 'fresh user belongs to unexpected groups; no policy/group fallback' }
 }
 
 function Get-Nb1Snapshot([string]$Path, [switch]$Directory) {
@@ -363,13 +379,14 @@ function New-Nb1NativeOps {
         }
         EnsureGroups = {
             param($s,$r)
-            $groups = @([Nb1TokenFixture.Native]::LocalGroups($s.Name))
+            $lookup = { param($name) Get-LocalGroup -Name $name -ErrorAction Stop }
+            $groups = @(Resolve-Nb1LocalGroupSIDs -Names @([Nb1TokenFixture.Native]::LocalGroupNames($s.Name)) -Lookup $lookup)
             if ($groups.Count -eq 0) {
                 $users = Get-LocalGroup -SID (New-Object Security.Principal.SecurityIdentifier('S-1-5-32-545')) -ErrorAction Stop
                 Add-LocalGroupMember -Group $users -Member (Get-LocalUser -SID (New-Object Security.Principal.SecurityIdentifier($s.SID))) -ErrorAction Stop
-                $groups = @([Nb1TokenFixture.Native]::LocalGroups($s.Name))
+                $groups = @(Resolve-Nb1LocalGroupSIDs -Names @([Nb1TokenFixture.Native]::LocalGroupNames($s.Name)) -Lookup $lookup)
             }
-            if ($groups.Count -ne 1 -or $groups[0] -cne 'S-1-5-32-545') { throw 'fresh user belongs to unexpected groups; no policy/group fallback' }
+            Assert-Nb1UsersOnly $groups
             $r.fixture_user['local_group_sids'] = $groups
         }
         StageFixture = {

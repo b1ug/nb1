@@ -21,6 +21,8 @@
 
 随机账户名为19字符，Description marker为 `nb1-token-` 加32位GUID共42字符；在任何创建意图前纯检查格式和长度，满足New-LocalUser的Name最多20字符、Description最多48字符限制。[官方参数说明](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.localaccounts/new-localuser?view=powershell-5.1)。首次隔离原生run42562093831证实两ABI管理员拒绝通过，随后旧49字符marker在参数验证失败；普通用户用例尚未开始，整体保留FAIL_CLEANUP，不作为ordinary PASS。
 
+run42562610395中账户创建/marker/SID归属及全部清理通过，groups阶段因将BUILTIN alias错误拼为机器域而IdentityNotMapped，普通用户与profile仍未观察。现在NetUserGetLocalGroups只返回本地alias名称，再用Get-LocalGroup按原名称解析精确本地SAM SID；不做NTAccount域猜测，不继承域权限，不接受查询失败/多结果/名称不符/未知SID。仍只允许唯一Users SID545，其他组失败，不移除它们。[本地组名称结构](https://learn.microsoft.com/en-us/windows/win32/api/lmaccess/ns-lmaccess-localgroup_users_info_0)、[Get-LocalGroup](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.localaccounts/get-localgroup?view=powershell-5.1)。
+
 普通进程用 `ProcessStartInfo.UserName/Domain/Password(SecureString)`、`UseShellExecute=false`、`LoadUserProfile=true` 启动同一SHA256的test binary。只设置固定Go test参数，无shell。EnvironmentVariables先Clear，仅放SystemRoot/WINDIR、System32 PATH、私有TEMP/TMP及三项native协议env；不继承任何runner token、GitHub凭据、SUDO、用户profile或其它环境。三个变量是 `NB1_TASKUSER_NATIVE=1`、`NB1_TASKUSER_EXPECT=ordinary|administrator-rejected`、`NB1_TASKUSER_EXPECT_SID`。每次必须恰有一行固定 `NB1_TASKUSER_NATIVE_RESULT ` 加JSON，原生Go fixture仍是判断Current/句柄语义的权威。
 
 所有启动尝试保留私有Process对象；stdout/stderr同时异步排空，退出后仅接受每路不超过131072字符的证据（不是流内存硬上限）。Start返回后的40秒进程等待超时不会算PASS，只尝试终止该已知私有Process并等待真实退出；启动结果未知或仍存活时绝不删除profile/account。不会按文本找PID、killall、重新制造会话、开启服务、改UAC/登录权限/ACL策略或换另一种登录方式作为fallback。New-LocalUser和Process.Start的同步OS调用不宣称可取消；整个job另有15分钟超时，超时不是清理成功或验收成功。不能满足普通交互token的环境保持FAIL/UNAVAILABLE。

@@ -300,6 +300,35 @@ try {
     $results += @{ case = 'generated-identity-limits'; status = 'PASS'; samples = 100; scope = 'RNG identity strings only' }
 } catch { $results += @{ case = 'generated-identity-limits'; status = 'FAIL'; error = $_.Exception.Message } }
 
+$groupCases = @('builtin-alias', 'localized-alias', 'empty-membership', 'unmapped-alias', 'ambiguous-alias', 'different-alias', 'invalid-sid', 'enabled-administrators', 'additional-group')
+foreach ($groupCase in $groupCases) {
+    try {
+        $names = @('Users')
+        if ($groupCase -eq 'localized-alias') { $names = @('LocalUsersAlias') }
+        if ($groupCase -eq 'empty-membership') { $names = @() }
+        if ($groupCase -eq 'additional-group') { $names = @('Users','Administrators') }
+        $lookup = {
+            param($name)
+            Assert-Nb1Fake (-not $name.Contains('\')) 'NetAPI local alias must not acquire an invented machine domain'
+            if ($groupCase -eq 'unmapped-alias') { throw 'fake local SAM lookup failed' }
+            $sid = 'S-1-5-32-545'
+            if ($groupCase -eq 'enabled-administrators' -or $name -eq 'Administrators') { $sid = 'S-1-5-32-544' }
+            if ($groupCase -eq 'invalid-sid') { $sid = 'unknown' }
+            $returnedName = $name
+            if ($groupCase -eq 'different-alias') { $returnedName = 'DifferentLocalAlias' }
+            [pscustomobject]@{ Name = $returnedName; SID = [pscustomobject]@{ Value = $sid } }
+            if ($groupCase -eq 'ambiguous-alias') { [pscustomobject]@{ Name = $name; SID = [pscustomobject]@{ Value = $sid } } }
+        }
+        $rejected = $false
+        try {
+            $sids = @(Resolve-Nb1LocalGroupSIDs -Names $names -Lookup $lookup)
+            Assert-Nb1UsersOnly $sids
+        } catch { $rejected = $true }
+        Assert-Nb1Fake ($rejected -eq ($groupCase -notin @('builtin-alias','localized-alias'))) 'group resolution or Users-only gate is incorrect'
+        $results += @{ case = ('local-group-' + $groupCase); status = 'PASS'; rejected = $rejected; scope = 'Injected local group lookup only' }
+    } catch { $results += @{ case = ('local-group-' + $groupCase); status = 'FAIL'; error = $_.Exception.Message } }
+}
+
 $failed = @($results | Where-Object { $_.status -ne 'PASS' })
 $summary = [ordered]@{
     schema_version = 1
@@ -310,6 +339,7 @@ $summary = [ordered]@{
     protocol_case_count = $protocolCases.Count
     path_case_count = $pathCases.Count
     identity_case_count = $identityCases.Count + 1
+    local_group_case_count = $groupCases.Count
     passed = $results.Count - $failed.Count
     failed = $failed.Count
     results = $results

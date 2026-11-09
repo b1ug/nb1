@@ -49,6 +49,15 @@ func (c *Client) Preview(ctx context.Context, input httpapi.PreviewRequest) (con
 	if err := control.ValidatePreviewResult(result, kind, input.Serial); err != nil {
 		return control.PreviewResult{}, &DecodeError{Status: http.StatusOK, Err: err}
 	}
+	if input.Program != nil {
+		// A self-consistent response must also describe this request. Reuse
+		// Normalize so omitted defaults and RGB case stay equivalent; effects
+		// remain compiled only by the daemon's authoritative compiler.
+		expected, err := control.Normalize(*input.Program)
+		if err != nil || !reflect.DeepEqual(result.Program, expected) {
+			return control.PreviewResult{}, &DecodeError{Status: http.StatusOK, Err: fmt.Errorf("daemon preview changed the original normalized program")}
+		}
+	}
 	return result, nil
 }
 

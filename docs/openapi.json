@@ -509,6 +509,89 @@
           }
         }
       }
+    },
+    "/v1/capabilities": {
+      "get": {
+        "operationId": "getCapabilities",
+        "summary": "只读软件编译能力目录",
+        "description": "不接受查询参数或请求体。HTTP200；不调用设备/任务/回执服务。",
+        "responses": {
+          "200": {
+            "description": "软件能力目录",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CapabilityCatalog"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "405": {
+            "$ref": "#/components/responses/405"
+          }
+        }
+      }
+    },
+    "/v1/programs/preview": {
+      "post": {
+        "operationId": "previewProgram",
+        "summary": "权威软件编译预览，不执行设备操作",
+        "description": "无查询参数。严格JSON，与提交共用编译器；可选serial只读已配置设备快照。不是Job提交、不返回202、不创建票据、不改变设备占用或灯光。旧daemon不支持时客户端明确报告，不能回退USB或把MCP结构dry_run当编译。",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PreviewRequest"
+              },
+              "example": {
+                "effect": {
+                  "kind": "pulse",
+                  "color": "#00a000",
+                  "cycles": 2,
+                  "period_ms": 800
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "规范化程序和有限快照检查；不是执行证明",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreviewResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "405": {
+            "$ref": "#/components/responses/405"
+          },
+          "413": {
+            "$ref": "#/components/responses/413"
+          },
+          "415": {
+            "$ref": "#/components/responses/415"
+          },
+          "503": {
+            "$ref": "#/components/responses/503"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1222,6 +1305,350 @@
           }
         ],
         "description": "权威control.CompileEffect编译为普通规范化Program。JSON边界仍拒绝null、重复键、字段别名与未知字段。"
+      },
+      "PreviewRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [],
+        "properties": {
+          "program": {
+            "$ref": "#/components/schemas/ProgramRequest"
+          },
+          "effect": {
+            "$ref": "#/components/schemas/Effect"
+          },
+          "serial": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9_-]+$"
+          }
+        },
+        "oneOf": [
+          {
+            "required": [
+              "program"
+            ],
+            "not": {
+              "required": [
+                "effect"
+              ]
+            }
+          },
+          {
+            "required": [
+              "effect"
+            ],
+            "not": {
+              "required": [
+                "program"
+              ]
+            }
+          }
+        ],
+        "description": "纯软件编译，program/effect恰好一种；serial仅查询已有缓存快照。不接收policy、回执或pattern_ref；不创建Job、不开USB、不prepare回执。"
+      },
+      "PreviewValidation": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "program",
+          "device"
+        ],
+        "properties": {
+          "program": {
+            "const": "valid",
+            "type": "string"
+          },
+          "device": {
+            "type": "string",
+            "enum": [
+              "not_requested",
+              "supported",
+              "unsupported",
+              "unknown"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "not_configured",
+              "not_online",
+              "capabilities_unavailable",
+              "capabilities_missing"
+            ]
+          },
+          "missing_capabilities": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "uniqueItems": true,
+            "minItems": 1
+          }
+        },
+        "description": "supported仅指当前缓存中声明的能力名称齐全，不是实物/准入/严格时间保证；离线或没有能力信息为unknown。"
+      },
+      "PreviewDevice": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "serial",
+          "capabilities"
+        ],
+        "properties": {
+          "serial": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9_-]+$"
+          },
+          "connection": {
+            "type": "string",
+            "minLength": 1
+          },
+          "capabilities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "PreviewResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "schema_version",
+          "compile_contract",
+          "input_kind",
+          "program",
+          "nominal_duration_ms",
+          "total_steps",
+          "required_capabilities",
+          "validation"
+        ],
+        "properties": {
+          "schema_version": {
+            "const": 1,
+            "type": "integer"
+          },
+          "compile_contract": {
+            "const": "nb1-program-effect/v1",
+            "type": "string"
+          },
+          "input_kind": {
+            "type": "string",
+            "enum": [
+              "program",
+              "effect"
+            ]
+          },
+          "program": {
+            "$ref": "#/components/schemas/Program"
+          },
+          "nominal_duration_ms": {
+            "type": "integer",
+            "minimum": 10,
+            "maximum": 86400000
+          },
+          "total_steps": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10240000
+          },
+          "required_capabilities": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "uniqueItems": true,
+            "minItems": 3
+          },
+          "validation": {
+            "$ref": "#/components/schemas/PreviewValidation"
+          },
+          "device": {
+            "$ref": "#/components/schemas/PreviewDevice"
+          }
+        },
+        "description": "标准Program与执行共用CompileEffect/Normalize；nominal_duration_ms含每步骤10ms更新余量，不含原生I/O及调度/清理额外耗时，不是硬实时承诺。无target时device省略且validation.device=not_requested。目标不在配置中仍200/program有效、device未知。"
+      },
+      "ProgramLimits": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "max_steps",
+          "max_repeat",
+          "max_fade_ms",
+          "fade_quantum_ms",
+          "max_hold_ms",
+          "max_nominal_duration_ms",
+          "step_overhead_ms"
+        ],
+        "properties": {
+          "max_steps": {
+            "const": 1024,
+            "type": "integer"
+          },
+          "max_repeat": {
+            "const": 10000,
+            "type": "integer"
+          },
+          "max_fade_ms": {
+            "const": 600000,
+            "type": "integer"
+          },
+          "fade_quantum_ms": {
+            "const": 10,
+            "type": "integer"
+          },
+          "max_hold_ms": {
+            "const": 3600000,
+            "type": "integer"
+          },
+          "max_nominal_duration_ms": {
+            "const": 86400000,
+            "type": "integer"
+          },
+          "step_overhead_ms": {
+            "const": 10,
+            "type": "integer"
+          }
+        }
+      },
+      "EffectLimits": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "min_pulse_period_ms",
+          "max_pulse_period_ms",
+          "max_pulse_cycles"
+        ],
+        "properties": {
+          "min_pulse_period_ms": {
+            "const": 60,
+            "type": "integer"
+          },
+          "max_pulse_period_ms": {
+            "const": 1200000,
+            "type": "integer"
+          },
+          "max_pulse_cycles": {
+            "const": 10000,
+            "type": "integer"
+          }
+        }
+      },
+      "CapabilityCatalog": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "schema_version",
+          "api_version",
+          "compile_contract",
+          "supported_inputs",
+          "effects",
+          "policies",
+          "color_model",
+          "led_selectors",
+          "preview_path",
+          "pattern_library",
+          "hardware_pattern_upload",
+          "program_limits",
+          "effect_limits",
+          "max_request_bytes"
+        ],
+        "properties": {
+          "schema_version": {
+            "const": 1,
+            "type": "integer"
+          },
+          "api_version": {
+            "const": "v1",
+            "type": "string"
+          },
+          "compile_contract": {
+            "const": "nb1-program-effect/v1",
+            "type": "string"
+          },
+          "supported_inputs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "uniqueItems": true,
+            "minItems": 2
+          },
+          "effects": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "uniqueItems": true,
+            "minItems": 2
+          },
+          "policies": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "uniqueItems": true,
+            "minItems": 3
+          },
+          "color_model": {
+            "const": "raw-rgb",
+            "type": "string"
+          },
+          "led_selectors": {
+            "type": "array",
+            "prefixItems": [
+              {
+                "const": 0,
+                "type": "integer"
+              },
+              {
+                "const": 1,
+                "type": "integer"
+              },
+              {
+                "const": 2,
+                "type": "integer"
+              }
+            ],
+            "minItems": 3,
+            "maxItems": 3
+          },
+          "preview_path": {
+            "const": "/v1/programs/preview",
+            "type": "string"
+          },
+          "pattern_library": {
+            "type": "boolean",
+            "description": "本版false；是daemon的软件能力声明，不授予新工具或写权限。"
+          },
+          "hardware_pattern_upload": {
+            "type": "boolean",
+            "description": "本版false；读取该声明不触发硬件写入。"
+          },
+          "program_limits": {
+            "$ref": "#/components/schemas/ProgramLimits"
+          },
+          "effect_limits": {
+            "$ref": "#/components/schemas/EffectLimits"
+          },
+          "max_request_bytes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1048576
+          }
+        },
+        "description": "软件能力与编译契约，非设备实物验证。当前输入program/effect、效果steady/pulse、策略replace/queue/reject；保留已知编译契约时未来目录可以追加能力名称或声明新feature。设备启用能力仍来自已有GET /v1/devices快照，不扫描/不试写。"
       }
     },
     "responses": {

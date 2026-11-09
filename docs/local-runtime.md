@@ -312,3 +312,23 @@ HTTP仅绑定loopback，没有用户认证或远程访问模式；浏览器跨�
 当前本机验收包含精确原始RGB、直控保留颜色、只读查询、daemon启动保留输出、新旧直控占用保护、HTTP设色、非法请求无硬件改动、程序取消、正常退出熄灯与模式前后一致。相机用于定性观察，未作光学校准。
 
 仍需继续验证真实拔插、非响应设备的原生超时、Windows/Linux原生USB、mk3与多设备实物场景。内核、HTTP和CLI的模拟/单元测试，不能替代这些真机结论。后续系统服务、MCP与消息输入的交付状态分别记录，不以这里的接口说明冒充已安装或已完成。
+
+## 只读编译预览与能力目录
+
+`GET /v1/capabilities` 返回软件编译契约 `nb1-program-effect/v1`、可用输入/效果、精确限制和颜色语义。它不扫描设备；每台设备实际启用的能力仍看已有设备缓存快照。本版命名 Pattern 库和硬件 Pattern 上传均为 `false`。
+
+`POST /v1/programs/preview` 接受 `program` 或 `effect` 恰好一种，可选 `serial`。它调用实际 `CompileEffect`/`Normalize`，返回规范化 Program、总步骤、名义时长和所需能力，不创建 Job、不准备回执、不拿设备锁、不打开 USB。预览不接受执行策略、票据或尚未实现的 `pattern_ref`。
+
+```json
+{"effect":{"kind":"pulse","color":"#00a000","cycles":2,"period_ms":800}}
+```
+
+此例展开三步骤（淡入/淡出 380/390ms），重复两次，共六步骤，名义时长 1600ms，结束熄灯。名义时长包含每步骤 10ms 更新余量，不包括原生 I/O、调度和前后清理的额外耗时。
+
+省略 `serial` 时只编译；提供时只读取一个已配置设备的缓存：在线且声明的所需能力齐全为 `supported`，已知缺少为 `unsupported`，不在配置/离线/能力信息不足为 `unknown`。这些结果不是执行、任务准入或硬实时保证；忙碌、只读运行模式和后续断开仍可能使提交失败。
+
+CLI 默认通过 daemon：`nb1 control capabilities`、`nb1 control preview --effect effect.json` 或 `--program program.json`，可选 `--serial 20005601`。显式 `--mode direct` 的预览/目录只运行本机编译器，不打开设备；设备快照检查必须使用 daemon。旧 daemon 没有该能力时明确报不支持，不自动回退直控。
+
+MCP 使用新的只读 `preview_program`，可选 `list_devices` 的 `include_capabilities:true` 读取目录。原六工具与原 `dry_run` 行为保留：Effect 的旧 dry_run 只校验结构，不访问 daemon，也不能证明完整编译成功。新预览成功是 HTTP200 和 `program_preview`，不是接受 Job；即使 HTTP 超时也没有任务被该接口提交，不自动重试。
+
+这是命名 Pattern 持久化之前的共同编译基础。软件库、历史持久化、重启恢复与设备 RAM/Flash 各自独立，不因增加预览接口而开放。

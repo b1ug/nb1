@@ -17,7 +17,7 @@ import (
 	"github.com/b1ug/nb1/internal/lightaction"
 )
 
-//go:embed demo/index.html demo/demo.js demo/demo.css
+//go:embed demo/index.html demo/demo.js demo/demo.css demo/orbit.html demo/orbit.js demo/orbit.css
 var lightDemoFiles embed.FS
 
 type lightPreviewRequest struct {
@@ -252,6 +252,12 @@ func (h *handler) serveLightDemo(w http.ResponseWriter, r *http.Request) {
 		file, contentType = "demo/demo.js", "text/javascript; charset=utf-8"
 	case "/demo/demo.css":
 		file, contentType = "demo/demo.css", "text/css; charset=utf-8"
+	case "/demo/orbit.html":
+		file, contentType = "demo/orbit.html", "text/html; charset=utf-8"
+	case "/demo/orbit.js":
+		file, contentType = "demo/orbit.js", "text/javascript; charset=utf-8"
+	case "/demo/orbit.css":
+		file, contentType = "demo/orbit.css", "text/css; charset=utf-8"
 	default:
 		writeError(w, http.StatusNotFound, "not_found", "unknown demo resource")
 		return

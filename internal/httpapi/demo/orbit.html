@@ -45,7 +45,7 @@
       </div>
     </section>
 
-    <section class="panel frozen" aria-labelledby="frozen-title"><div class="section-title"><div><p class="eyebrow">03 / 低层帧程序</p><h2 id="frozen-title">同一次预览，冻结成明确的指令</h2></div><button id="copy" type="button" disabled>复制帧程序</button></div><p class="hint">JSON 由 nb1 编译返回。页面不自行生成颜色曲线，也不逐帧驱动设备。</p><textarea id="program" readonly spellcheck="false" aria-label="冻结的 FrameProgram" placeholder="点击只预览后，在这里查看帧程序。"></textarea></section>
+    <section class="panel frozen" aria-labelledby="frozen-title"><div class="section-title"><div><p class="eyebrow">03 / 低层帧程序</p><h2 id="frozen-title">同一次预览，冻结成明确的指令</h2></div><button id="copy" type="button" disabled>复制帧程序</button></div><p class="hint">网页一次提交高级动作 → nb1 编译并逐阶段调度 → 设备完成每段硬件渐变。这里的 JSON 用于查看或精确控制，普通使用不必自己编排。</p><textarea id="program" readonly spellcheck="false" aria-label="冻结的 FrameProgram" placeholder="点击只预览后，在这里查看帧程序。"></textarea></section>
     <details class="panel transport"><summary>请求、回执和技术细节</summary><p class="hint">请求 ID 绑定一次提交，daemon ID 防止把旧票据误发给重启后的服务。不确定的写入结果只核对原请求，不自动重新播放。</p><pre id="wire">尚无请求。</pre></details>
   </main>
   <footer class="shell">nb1 / 本机控制 · 先观察实物，再决定效果</footer>

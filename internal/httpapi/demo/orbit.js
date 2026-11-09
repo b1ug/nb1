@@ -31,7 +31,7 @@
     $("preview").disabled = locked;
     $("play").disabled = locked || !softwareSupported || !isSerial($("device").value);
     $("refresh").disabled = locked;
-    $("cancel").disabled = busy || phase === "unknown" || !active;
+    $("cancel").disabled = busy || !pending?.confirmed || !active;
     $("recover").hidden = phase !== "unknown";
     $("recover").disabled = busy;
     $("copy").disabled = !lastPreview;
@@ -40,6 +40,15 @@
       $("job-progress").max = job.total_frames;
       $("job-progress").value = job.completed_frames;
       $("job-detail").textContent = `${job.completed_frames} / ${job.total_frames} 帧 · ${job.completed_target_writes} / ${job.planned_target_writes} 次颜色写入${job.error ? " · " + job.error : ""}`;
+      if (job.started_at) {
+        const elapsed = ((Date.parse(job.finished_at) || Date.now()) - Date.parse(job.started_at)) / 1000;
+        $("job-detail").textContent += ` · ${job.finished_at ? "实际运行" : "已运行"} ${elapsed.toFixed(3)} 秒`;
+      }
+    } else {
+      $("job-status").textContent = pending ? "待确认" : "尚未播放";
+      $("job-progress").max = 1;
+      $("job-progress").value = 0;
+      $("job-detail").textContent = pending ? "等待 daemon 确认原请求。" : "点击“预览并播放”才会发送控制请求。";
     }
     $("wire").textContent = JSON.stringify({phase, ticket: pending ? {request_id:pending.requestID, expected_daemon_instance_id:pending.instance, receipt_path:pending.location, confirmed:pending.confirmed} : null, exchanges}, null, 2);
   }
@@ -142,6 +151,10 @@
     if (response.status === code) return;
     const message = response.data?.error?.message;
     throw new Error(typeof message === "string" ? message.slice(0, 500) : `服务返回 HTTP ${response.status}。`);
+  }
+  function definiteAdmissionRejection(response) {
+    const codes = {400:["invalid_json", "invalid_request", "invalid_light_action"], 403:["local_only"], 404:["not_found"], 405:["method_not_allowed"], 409:["busy", "queue_full"], 413:["body_too_large"], 415:["json_required"], 429:["idempotency_capacity"], 501:["frame_unsupported"], 503:["unavailable"]};
+    return exact(response.data, ["error"]) && exact(response.data.error, ["code", "message"]) && typeof response.data.error.message === "string" && Boolean(codes[response.status]?.includes(response.data.error.code));
   }
   function programFacts(program) {
     if (!exact(program, ["contract", "initial", "frames", "repeat", "on_finish"]) || program.contract !== frameContract || !Array.isArray(program.initial) || program.initial.length !== 2 || !Array.isArray(program.frames) || program.frames.length < 1 || program.frames.length > 1024 || !isInt(program.repeat, 1, 10000) || !["off", "hold"].includes(program.on_finish)) throw new Error("服务返回不支持的 FrameProgram。");
@@ -289,11 +302,19 @@
       const body = {contract, action:snapshot.value.result.action, policy:"reject", request_id:requestID, expected_daemon_instance_id:pending.instance};
       changePhase("submitting"); submitted = true;
       const response = await request(`/v2/devices/${encodeURIComponent(pending.serial)}/light`, "POST", body);
+      if (definiteAdmissionRejection(response)) {
+        const error = new Error(response.data.error.message);
+        error.admissionRejected = true;
+        throw error;
+      }
       requireStatus(response, 202);
       if (!["true", "false"].includes(response.headers.get("X-NB1-Replayed")) || response.headers.get("X-NB1-Daemon-Instance-ID") !== pending.instance || response.headers.get("Location") !== pending.location) throw new Error("提交回执头未绑定原票据。");
       acceptJob(response.data);
     } catch (error) {
-      if (submitted) unknown(error);
+      if (submitted && error.admissionRejected) {
+        pending = null; job = null; changePhase("idle");
+        note(`请求被明确拒绝，没有创建新任务：${error.message}`, true);
+      } else if (submitted) unknown(error);
       else { changePhase("idle"); note(error.message, true); }
     }
   }
@@ -318,7 +339,7 @@
     } catch (error) { unknown(error); }
   }
   async function cancel() {
-    if (phase !== "running" || !job || terminal(job.status)) return;
+    if (!["running", "unknown"].includes(phase) || !pending?.confirmed || !job || terminal(job.status)) return;
     stopPolling(); changePhase("cancelling");
     try {
       const response = await request(`/v1/frame-jobs/${encodeURIComponent(job.id)}/cancel`, "POST", {});
@@ -357,6 +378,7 @@
   function deviceLabel() {
     const device = devices.find(item => item.serial === $("device").value);
     $("device-state").textContent = device ? `缓存状态：${device.connection} · 实际提交前会重新预览能力。` : "未选择设备时只能做纯预览。";
+    if (device?.observed?.sampled_at && timestamp(device.observed.sampled_at)) $("device-state").textContent += ` 最近读回：${device.observed.sampled_at}`;
   }
   const palette = [["红","#ff0000"], ["蓝","#0000ff"], ["橙","#ffa500"], ["绿","#00ff00"], ["青","#00ffff"], ["紫","#800080"], ["白","#ffffff"], ["黑","#000000"]];
   for (const suffix of ["one", "two"]) {

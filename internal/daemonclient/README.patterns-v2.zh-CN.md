@@ -11,3 +11,5 @@
 公共 JSON 检查器仅对显式 `json.RawMessage` 字段允许域内未知键，仍递归拒绝重复键、null 和过深结构。随后 P1 验证该字段完整的版本化结构；普通 typed 请求的反射字段检查不变。
 
 保存不做 Prepare、提交任务或自动重试；禁用 POST GetBody 与重定向。失败沿用 publication-only `PatternImportError`：仅已知错误码与约定状态的明确拒绝可报告 `PublicationUnknown=false`；网络失败、不可信确认、意外状态/错误码或服务端失败保留不确定性。调用方应保留原 ID/revision，读取并比较完整记录后再决定是否重存。保存确认不意味着已经播放。
+
+固定Ref的preview/run/request/cancel与CLI执行、等待及取消不确定性规则见[执行篇](README.pattern-execution-v2.zh-CN.md)。三个作者命令保持原语义，不隐式播放。

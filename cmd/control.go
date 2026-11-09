@@ -46,12 +46,7 @@ func newControlCommand() *cobra.Command {
 			return fmt.Errorf("--policy must be replace, queue or reject")
 		}
 		if isPatternV2Command(cmd) {
-			if options.mode != "daemon" {
-				return fmt.Errorf("experimental Pattern v2 library commands require --mode daemon")
-			}
-			if cmd.Flags().Changed("policy") || cmd.Flags().Changed("wait") || cmd.Flags().Changed("request-id") || cmd.Flags().Changed("expected-daemon-instance-id") {
-				return fmt.Errorf("Pattern v2 authoring commands do not accept policy, wait or execution receipt flags")
-			}
+			return patternV2Flags(cmd, options)
 		}
 		if isPatternCommand(cmd) {
 			if options.mode != "daemon" {

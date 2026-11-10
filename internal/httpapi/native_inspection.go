@@ -9,10 +9,15 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/b1ug/nb1/internal/devicesequence"
 	"github.com/b1ug/nb1/internal/nativeinspection"
 )
+
+// Bound HTTP waiting independently of a caller-supplied deadline. The engine
+// retains its worker/handle until synchronous native I/O actually returns.
+const nativeInspectionWaitTimeout = 5 * time.Second
 
 // Native inspection is deliberately optional. Older services keep their
 // existing interface and never fall back to opening another device handle.
@@ -54,7 +59,9 @@ func (h *handler) serveNativeInspection(w http.ResponseWriter, r *http.Request) 
 		serviceError(w, err)
 		return true
 	}
-	result, err := service.InspectNative(r.Context(), parts[2], request.Clone())
+	waitContext, stopWaiting := context.WithTimeout(r.Context(), nativeInspectionWaitTimeout)
+	defer stopWaiting()
+	result, err := service.InspectNative(waitContext, parts[2], request.Clone())
 	if result.Contract == "" && result.StartedAt.IsZero() && err != nil {
 		nativeInspectionError(w, err)
 		return true
@@ -132,7 +139,7 @@ func nativeInspectionError(w http.ResponseWriter, err error) {
 	case errors.Is(err, nativeinspection.ErrUnsupported):
 		writeError(w, http.StatusNotImplemented, "native_inspection_unsupported", err.Error())
 	case errors.Is(err, context.Canceled), errors.Is(err, context.DeadlineExceeded):
-		writeError(w, http.StatusServiceUnavailable, "unavailable", "native inspection did not enter collection before the request ended")
+		writeError(w, http.StatusServiceUnavailable, "unavailable", "native inspection wait ended; an in-flight native operation may still be running")
 	default:
 		serviceError(w, err)
 	}

@@ -11,7 +11,7 @@
 | light Action v1 | `nb1-light-action/v1`：set/off/fade/blink/breathe/pulse/alternate/rainbow；MCP preview_light/run_light，CLI control light |
 | light Action v2 | `nb1-light-action/experimental-v2`：高级 orbit；同一 MCP 工具及 CLI 命令按明确合同分派 |
 | 原 Program / Effect | 精确 steps，或 steady/旧对称 pulse；preview_program/run_program 与原 CLI，不改变旧语义 |
-| Pattern | 主机库中的冻结 v1 记录与精确 revision；get_pattern 读取，pattern_ref 预览/执行 |
+| Pattern v1 / v2 | 兼容Program/Effect库与独立高级来源库；按各自格式与精确Ref读取、预览、执行 |
 
 高级请求仍传 `contract + action`。v2 的 FrameProgram 是 nb1 编译结果，不要求调用者手写底层帧。`frame/sequence/spin/compose` 不是现有 action.kind；也不能把旧 Program 当成新的高级动作。
 
@@ -125,7 +125,7 @@ nb1 control light cancel "$SELECTED_SERIAL" orbit.action.json \
 
 取消可能先返回 cancelling；等 cancelled 才代表执行器确认清理，清理失败则是 failed。任务若已成功并 hold，取消不会清除保留颜色；需要熄灯时另发经过授权的 off 动作。原 `control cancel ID` 的旧 Program 行为保持不变。
 
-## 已存 Pattern
+## 兼容v1已存 Pattern
 
 现有库继续保存 v1 Program/Effect；全部 `control patterns` 命令仅 daemon 模式。import 不亮灯，export 不覆盖已有文件或自动建父目录。命令细节见[Pattern CLI 合同](patterns-cli.md)。
 
@@ -147,6 +147,8 @@ MK3 未实机验收，软件兼容与物理效果分别验证。轻量动森风�
 
 历史日常1d89的12工具快照保留；开发c37f7fc新增preview_pattern、run_pattern、get_pattern_request、cancel_pattern_request，共16。先以实际会话tools/list确认，96a已整合这些工具；原片软件与96a实物证据分别保留。完整输入/输出与独立历史快照见[mcp-tools.schema.json](mcp-tools.schema.json)与[mcp-tools.daily-1d89.schema.json](mcp-tools.daily-1d89.schema.json)。
 
-使用完整PatternRef（record_contract/id/revision），不猜latest。run必须显式policy和原票据，一次POST，无隐式preview、Prepare、重试或旧Program回退；daemon保持高级来源。原票据query/cancel不依赖库；cancel先GET绑定再至多一次POST，已终态/cancelling不再POST，坏响应保留原票据和最后可信快照。没有MCP v2存储读写工具。CLI作者候选支持patterns-v2 get/preview-draft/save，独立执行候选 `4eac5293bbad413e90ff19e6c8700628a1a4a8ee` 已新增固定Ref preview/run/request/cancel，均daemon-only且已整合96a，实际部署看API手册第1节。新run有效默认reject，显式三policy；无票据Prepare一次，有原票据零Prepare，单POST无库preflight。wait只读原回执，取消先GET再最多一次确认POST，坏响应不自动GET掩盖。CLI list/import/export仍在后续片；96a已整合高级图案书Web，细节见[分版CLI合同](patterns-cli.md)。
+使用完整PatternRef（record_contract/id/revision），不猜latest。run必须显式policy和原票据，一次POST，无隐式preview、Prepare、重试或旧Program回退；daemon保持高级来源。原票据query/cancel不依赖库；cancel先GET绑定再至多一次POST，已终态/cancelling不再POST，坏响应保留原票据和最后可信快照。没有MCP v2存储读写工具。CLI作者候选支持patterns-v2 get/preview-draft/save，独立执行候选 `4eac5293bbad413e90ff19e6c8700628a1a4a8ee` 已新增固定Ref preview/run/request/cancel，均daemon-only且已整合96a，实际部署看API手册第1节。新run有效默认reject，显式三policy；无票据Prepare一次，有原票据零Prepare，单POST无库preflight。wait只读原回执，取消先GET再最多一次确认POST，坏响应不自动GET掩盖。96a仍是七命令；开发候选已增加第八个list并有限真机验证，snapshot导入/导出仍后续；96a已整合高级图案书Web，细节见[分版CLI合同](patterns-cli.md)。
 
 MCP679bdfc错误头补片保持16工具形状；c37原始schema/软件stdio证据保留，96a安装后真实tools/list与16项完整schema相等，新实机及只读证据单列。Web host56c4aef只支持闭合基础/扩展bundle，基础产物下/demo/patterns.html/js/css返回404；96a已导入f90ef8扩展dist（10项manifest.files，含manifest共208132B），三个新资源200；56c的404仍是历史基础bundle证据。96a本机MK2的7任务/3取消与恢复1d89见手册第1节，工作区现已推广96a，宿主注册和OS服务仍未进行，不把静态资源当新增硬件API。
+
+项目Skill已同步[高级主机图案工作流](../skills/blink1-control/references/patterns.md)：MK2可保存高级来源，主机库与Flash分开；相机先确认灯在画面，再定义ROI，不用背景亮度宣称灯效通过。

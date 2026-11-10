@@ -1,46 +1,26 @@
-# nb1：blink(1) 本地控制
+# nb1: local blink(1) control
 
-nb1 提供高级灯光动作、CLI、MCP 和本机 HTTP。MCP 通过官方 SDK 实现真实 stdio 协议，直接请求 HTTP；高级动作由 nb1 核心编译。先确认实际 tools/list、schema、CLI 帮助和 daemon 能力，源码文档不代表当前安装版本。
+Read actual CLI help, MCP tools/list, schemas, and daemon capabilities before using a feature. Source support is not installed support. This index grants no additional permissions.
 
-## 优先使用高级动作
+## Expressions
 
-- `nb1-light-action/v1`：set、off、fade、blink、breathe、pulse、alternate、rainbow，保留原 Program 语义。
-- `nb1-light-action/experimental-v2`：独立的高级 orbit，4 段简单候选或 8 段细节选项，返回实验 FrameProgram。CLI 和同名 MCP preview_light/run_light 支持明确合同分派；调用者无需手写帧。
-- v2 Orbit 不等于旧 v1 alternate.transition=orbit，不自动迁移旧动作或图案。新 pulse 为 attack/decay/rest，旧 Effect pulse 仍是 period_ms 对称渐变。颜色是 raw RGB，不隐式加 Gamma。
+High-level light v1 supports set/off/fade/blink/breathe/pulse/alternate/rainbow. Experimental light v2 supports orbit, compiled by nb1 into paired long fades. Old alternate.transition=orbit and legacy Effect pulse retain their separate semantics. ColorInput supports names, Hex3/6, RGB8, and HSV, with no implicit gamma. Low-level Program/FrameProgram use exact Hex6 execution targets and the same per-device worker.
 
-## 原请求与恢复
+MCP is real stdio to local HTTP, not a CLI wrapper or USB owner. Preview does not play. Before a run, preserve the original intent, selected serial, request_id, and expected_daemon_instance_id. MCP run_light requires an original ticket and explicit reject; run_pattern requires an explicit policy. Each sends at most one execution POST. Accepted is not completed. On uncertainty, query the original receipt without a new ticket or replay. Cancelling is not terminal; cancelling completed hold does not turn the device off.
 
-MCP 播放前用 list_devices({prepare_request:true}) 取得并保存原票据，run_light 传 serial、contract/action、原 request_id / expected_daemon_instance_id 和 reject。内部一次目标预览、至多一次执行 POST，不自动重试或换票。202 / accepted 不是完成。
+## Host patterns
 
-已知 Job ID 时用 get_job({id})；仅有 v2 票据时明确 get_job({serial,job_kind:"frame",...ticket})。省略 job_kind 是旧 Program 回执；不能与 id 混传。超时、坏响应、过期和重启后保留原票据，不改键重播。
+Legacy list_patterns/get_pattern remain v1 Program/Effect storage. Advanced host Pattern v2 preserves source, normalized action, recipe, frozen execution, revision, and execution_digest. MK2 can use this computer-side library; device RAM/flash and task receipts are different. No automatic migration, replay, or flash write.
 
-CLI 默认 daemon：control light preview FILE / run SERIAL FILE；direct 预览纯本地，direct run 复用同一 Engine 和设备锁。v2 daemon 恢复使用 control light request SERIAL FILE --request-id ID --expected-daemon-instance-id INSTANCE，可加 --job-id 和 --wait；只查询，不创建或重播任务。
+Installed baseline96a has seven advanced CLI commands: get/preview-draft/save/preview/run/request/cancel, and MCP16 including preview_pattern/run_pattern/get_pattern_request/cancel_pattern_request. A later CLI candidate adds list. Four advanced MCP authoring tools are being qualified; do not assume they are installed. Preserve publication_unknown separately from execution outcome_unknown. Library paths are display metadata, not client file-access instructions.
 
-v2 取消使用 control light cancel SERIAL FILE 加同一对原票据，可选 --job-id / --wait，仅 daemon。先核对原动作与回执，再至多一次带原实例条件的取消 POST 和原回执确认；已终态/取消中不再发 POST。不重试，cancelling 不代表清理已完成；已完成的 hold 任务不会因此熄灯。
+## References
 
-## 读取资料
+- [Agent skill](skills/blink1-control/SKILL.md): expression selection, receipts, recovery, and host patterns.
+- [OpenAPI](docs/openapi.json): machine-readable structure and route availability; existing prose localization is in progress.
+- [Actual MCP schemas](docs/mcp-tools.schema.json): captured16-tool baseline; actual tools/list remains authoritative.
+- [MCP adapter](adapters/mcp/README.md): protocol and transport behavior.
+- [Examples](docs/examples/api/): author files and pure preview inputs, not automatic execution.
+- [Localized API manual](docs/api-reference.zh-CN.md) and [localized agent guide](docs/agent-guide.zh-CN.md).
 
-- [Agent 使用指南](docs/agent-guide.zh-CN.md)：高级动作、MCP/CLI 工作流、恢复及验证边界。
-- [项目 Skill](skills/blink1-control/SKILL.md)：项目内指导，不全局安装或注册工具。
-- [v1 动作契约](internal/lightaction/README.zh-CN.md)：八动作、旧过渡与兼容语义。
-- [实验 Orbit 契约](internal/lightactionv2/README.zh-CN.md)：颜色、4/8 段、周期和实验限制。
-- [MCP 合同](adapters/mcp/README.md)：真实工具 schema、返回值、job_kind 和回执路径。
-- [Pattern CLI 合同](docs/patterns-cli.md)：import/list/get/export/preview/run 与固定 revision。
-- [颜色输入](docs/color-input.zh-CN.md)：名字、Hex3/Hex6、RGB8、HSV。
-- [完整中文API手册](docs/api-reference.zh-CN.md)：High/Low职责、参数、当前状态、全部HTTP操作、CLI/MCP和记忆边界。
-- [HTTP OpenAPI](docs/openapi.json)：版本化机器合同；按x-availability区分日常接口与需显式启用的开发接口，仍须核对实际daemon。
-- [实际MCP工具schema](docs/mcp-tools.schema.json)：开发16个工具的已采集输入/输出；历史1d89为12；当前工作区96a为16，按实际tools/list判断。
-
-## 图案与边界
-
-旧v1 Pattern库保存Program/Effect。MCP 用 list_patterns/get_pattern 读取，preview_program/run_program 传固定 pattern_ref；不提供 MCP 导入。v1 Action 可保存其冻结 result.program，不能保存 source.action。v2 FrameProgram不能导入该v1库；96a独立v2库可保留Orbit高级来源与冻结Frame执行。不要降成手写steps冒充完整来源保存。
-
-区分软件预览、Job 终态、带 sampled_at 的设备读回和相机观测。MK3 未实机验收；没有自动重放或硬件 Flash 承诺。同源debug Web已内嵌历史基线1d89；整合候选96a另已嵌入高级Pattern图案书（Web f90ef8，9个公开资源+LICENSE，manifest另计）。Starlark/StarCLI和Codex通知仍在后续开发。本文不保证 Agent 自动读取，也不授予额外权限。
-
-## 开发：保留高级来源的Pattern v2
-
-开发MCP c37f7fc新增preview_pattern/run_pattern/get_pattern_request/cancel_pattern_request四工具，共16，现已整合并工作区安装96a；历史1d89为12工具。原12schema不变。全部使用完整pattern_ref={record_contract,id,revision}；run显式policy+原票据，仅一次POST，无隐式preview/Get/Prepare或重试；query/cancel仅原receipt，不依赖库。cancel先GET再至多一次confirmed_job_id POST，terminal/cancelling不POST；unknown保留Ref/票据/最后可信Job。
-
-高级source/recipe验证属于daemon，MCP只验证返回typed执行摘要与身份。v2列表/读取/保存工具未提供，旧list_patterns/get_pattern仍为v1。96a已整合CLI七命令control patterns-v2 get/preview-draft/save/preview/run/request/cancel与高级图案书Web。CLI run有效默认reject，可显式三policy；缺票据仅Prepare一次，提供原票据零Prepare，单POST无库预查。request/cancel/wait仅原回执，超时不取消/重投，坏响应保留最后可信状态；CLI list/import/export仍未提供。完整参数、输出和版本界限见API手册与MCP schema。
-
-96a1f92a8a2fcf836129797e4c3a82602a4e7ffc已在本机MK2/FW204有限窗口完成CLI3/MCP2/Web2共7任务、3取消及新鲜双黑读回，验收后曾恢复1d89，随后已工作区推广96a并完成33项只读复核；不是全局MCP注册、OS服务安装、MK3或Windows/Linux实体USB验收。录像有过曝；USB6次retry、0最终失败，不宣称完美旋转或无闪。完整证据范围见手册第1节，实际安装仍须确认。
+Report software preview, trusted terminal state, timestamped RGB readback, and camera observation separately. An out-of-frame lamp cannot be optically qualified from background pixels. Current Mac/MK2 evidence does not establish MK3, other-OS USB, long-running reliability, perfect rotation, or flicker-free operation. Public default documentation/UI/messages are English; Chinese is for internal reports or explicit localization. Do not change global MCP, startup services, or system permissions merely to use these files.

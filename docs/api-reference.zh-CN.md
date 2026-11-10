@@ -52,7 +52,7 @@
 ### 当前已安装6ca（原1e记录保留为历史）
 
 <!-- deployment-state:start -->
-固定runtime `6ca5a14e9f7fec8a5766e79f5bdef3fafef66d8f`已独立完成受控四文件推广，57项安装后只读检查通过：四文件来源/哈希、CLI十命令、真实stdio20个完整工具对象、11个公开Web资源/隐藏404、单一健康owner、新鲜idle/双黑及只读窗口内应用变更调用增量0。SDK b3/GID37及用户主机库保留。内嵌Web来源`1e1b1ddf2a985dea00e494761eed592183755c1d`，13文件/260151字节，manifest `a35beb8fb17aa3a9e6751e006e0c7b6524d197b83cd679a25528a99134ce6460`；三页默认英文，可显式切中文。另有4项隔离只读浏览器检查通过，覆盖语言互通/EN回切、原JSON/标题/原session票据不变、同实例及无非GET/外部/变更请求；不证明动画、光学或新硬件能力。
+固定runtime `6ca5a14e9f7fec8a5766e79f5bdef3fafef66d8f`已独立完成受控四文件推广，57项安装后只读检查通过：四文件来源/哈希、CLI十命令、真实stdio20个完整工具对象、11个公开Web资源/隐藏404、单一健康owner、新鲜idle/双黑及只读窗口内应用变更调用增量0。SDK b3/GID37及用户主机库保留。旧owner收到一次普通SIGTERM；停止观测出现身份变化警告，随后确认原PID已退出／zombie且无监听才发布，没有追加信号，警告原因尚未确定。内嵌Web来源`1e1b1ddf2a985dea00e494761eed592183755c1d`，13文件/260151字节，manifest `a35beb8fb17aa3a9e6751e006e0c7b6524d197b83cd679a25528a99134ce6460`；三页默认英文，可显式切中文。另有4项隔离只读浏览器检查通过，覆盖语言互通/EN回切、原JSON/标题/原session票据不变、同实例及无外部／应用变更请求尝试；网络守卫允许GET和HEAD，浏览器原件保存断言而非完整请求／counter前后明细；不证明动画、光学或新硬件能力。
 
 证据是本地`artifacts/bilingual-suite-upgrade-20261110/execution-6ca-approved/result.json`、`artifacts/bilingual-suite-upgrade-20261110/execution-6ca-approved/post-install/result.json`与`artifacts/bilingual-suite-upgrade-20261110/execution-6ca-approved/browser-read-only/result.json`。本稿源码库存46个规范操作只比历史1e多两个静态GET，OpenAPI50操作/45路径，111模型/14 JSON例/20完整MCP对象不变。文档过程不执行HTTP/USB/服务/浏览器/安装；未发布Release、注册全局MCP或安装OS启动服务，MK3/Flash/其他OS实体USB仍无新增资格。
 

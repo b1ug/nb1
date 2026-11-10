@@ -25,7 +25,7 @@ GOWORK=off go build -o nb1-mcp .
 
 ## 工具
 
-The locally installed 96a adapter exposes 16 tools over actual stdio: the 12 compatible tools below and four experimental Pattern execution tools. This source candidate adds four high-level Pattern authoring tools (20 total); it is not installed. Software v2 is unrelated to hardware MK2/MK3. The older 1d89 12-tool catalog remains a historical snapshot. No binary is registered with a host by installation alone: inspect tools/list in the actual session. See the [complete API reference](../../docs/api-reference.zh-CN.md) for source and local qualification boundaries.
+The locally installed1e2e765 adapter exposes 20 tools over actual stdio: the 12 compatible tools below, four experimental Pattern execution tools, and four experimental host Pattern authoring tools. The previous96a16 complete tool objects are preserved unchanged in MCP20 and in [their historical snapshot](../../docs/mcp-tools.daily-96a.schema.json). Software v2 is unrelated to hardware MK2/MK3. The older 1d89 12-tool catalog remains a historical snapshot. No binary is registered with a host by installation alone: inspect tools/list in the actual session. See the [complete API reference](../../docs/api-reference.zh-CN.md) for source and local qualification boundaries.
 
 | 工具 | 输入与结果 |
 | --- | --- |
@@ -372,7 +372,7 @@ GOWORK=off go test -run '^TestLiveEffectsOptIn$' -v
 MCP 输入每次最多4096字节，HTTP 响应最多1MiB；重复键、未知字段、null、别名、坏 Unicode、非规范冻结程序、坏实例/摘要/时间/计数响应都会拒绝。POST body 不可自动重放；不重定向、不自动重试、不切换路由或直控硬件。
 
 
-## Experimental high-level Pattern authoring candidate (four new tools, not installed)
+## Installed experimental high-level Pattern authoring (four additional tools)
 
 | Tool | Arguments | Operation and boundary |
 | --- | --- | --- |
@@ -387,4 +387,4 @@ Complete Records use a canonical record_json string instead of a duplicate gener
 
 Save has an independent output type and schema: accepted is always false; publication_attempted/confirmed/unknown describe storage only. The output retains the original Ref and original_author_json. Confirming 201 created or 200 identical-existing requires the complete matching Record, original source/expected revision and a unique matching Location. Daemon-instance and replay execution headers are forbidden. Ambiguous errors, timeouts, malformed responses and commit_uncertain preserve publication uncertainty without an execution outcome_unknown or ticket, and never trigger another POST. Save the original arguments and Ref before calling: losing the entire MCP session without a result does not prove that nothing was committed. Recover with an explicit get for the same ID and expected_revision. A match proves that the desired content exists now; it does not erase the original diagnostic or identify which historical POST published it.
 
-The first three tools advertise readOnly/idempotent=true; save advertises both false and destructive=false. The complete old 16 schemas and behaviors remain unchanged. New tools do not import the root controller or CGO, or copy the high-level compiler. Software fake-HTTP/stdio qualification and the locally installed tool catalog are recorded separately. This candidate has no physical-device qualification.
+The first three tools advertise readOnly/idempotent=true; save advertises both false and destructive=false. The complete old 16 schemas and behaviors remain unchanged. New tools do not import the root controller or CGO, or copy the high-level compiler. Software fake-HTTP/stdio qualification and the locally installed tool catalog are recorded separately. The installed1e2e765 binary has finite current Mac/MK2 qualification: two bounded windows, five CLI/MCP jobs, and a separate read-only native Web recheck; the original first-window harness failure is preserved. Installation passed38 read-only checks. Authoring itself caused no device mutation. This does not qualify MK3, other-OS physical USB, Flash persistence, or long-running reliability.

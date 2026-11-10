@@ -7,7 +7,7 @@ Identify the format from actual schemas. Do not use latest or disable host stora
 | Legacy v1: Program / old Effect | CLI control patterns; MCP list_patterns/get_pattern | preview_program/run_program with {id,revision} pattern_ref |
 | Advanced v2: source, normalized action, recipe, frozen execution | CLI control patterns-v2; HTTP /v2/patterns | preview_pattern/run_pattern/get_pattern_request/cancel_pattern_request or matching CLI commands |
 
-The installed 96a baseline has seven advanced CLI commands: get, preview-draft, save, preview, run, request, cancel. Its 16-tool MCP supports advanced fixed-reference execution and tracking. A later CLI candidate adds list; four MCP authoring tools are being qualified separately. Do not assume candidates are installed. Help, tools/list, and schemas are authoritative.
+The installed1e2e765 workspace has eight advanced CLI commands: list, get, preview-draft, save, preview, run, request, cancel. Its actual20-tool stdio MCP contains advanced execution/tracking plus list_patterns_v2, get_pattern_v2, preview_pattern_draft_v2 and save_pattern_v2. These four authoring tools remain experimental and do not play a task. Snapshot import/export clients remain future work. Help, actual tools/list, and schemas are authoritative.
 
 ## Save high-level intent without playback
 

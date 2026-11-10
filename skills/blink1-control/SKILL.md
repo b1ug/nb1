@@ -39,7 +39,7 @@ Orbit recovery uses control light request SERIAL FILE with the original --reques
 
 Host v1, host v2, device RAM, hardware flash, and short-lived task receipts are distinct. **MK2 can save Orbit source and frozen FrameProgram records on the computer.** A legacy v1 format limitation is not a hardware prohibition. There is no automatic migration, replay, or flash write.
 
-For storage, fixed references, and publication_unknown, read [pattern workflows](references/patterns.md). Old list_patterns/get_pattern remain v1. Discover authoring tools separately from advanced execution tools.
+For storage, fixed references, and publication_unknown, read [pattern workflows](references/patterns.md). Old list_patterns/get_pattern remain v1. The installed1e2e765 catalog contains 20 tools, including four experimental host authoring tools; discover the actual session before calling them. CLI has eight advanced commands including list. Snapshot import/export clients remain future work; the HTTP storage routes are separate.
 
 Report software preview, terminal receipt, timestamped RGB readback, and camera observation separately. GET may return cached values. Inspect the full camera image before choosing an ROI; background brightness is not lamp evidence. Current Mac/MK2 observations do not establish MK3, other-OS USB, or long-running reliability.
 

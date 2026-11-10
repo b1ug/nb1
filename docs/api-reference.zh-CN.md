@@ -13,23 +13,29 @@
 | High level · light v1 | `set`、`off`、`fade`、`blink`、`breathe`、`pulse`、`alternate`、`rainbow` | 八动作已经实现，HTTP/CLI/MCP/Web 共用核心编译器 | 动作命名最终定稿、更多艺术动作与组合语法 |
 | High level · Orbit v2 | `orbit`，4/8 段成对长渐变；颜色、相位、周期、轮数、结束规则 | 日常版本已可用；Web、CLI、MCP 各有有限 Mac/MK2 验证 | 不是稳定视觉标准；不保证任意参数完全无闪烁 |
 | 记忆 · Pattern v1 | 电脑端保存 Program/旧 Effect、导入导出、精确 revision 引用 | 已接 Web、HTTP、CLI、MCP | 不能直接保存新的 FrameProgram/Orbit 来源 |
-| 记忆 · Pattern v2 | 同时保存原始高级来源、规范动作、recipe、冻结执行体与内容摘要 | 开发源码已完成codec/Store/创作/来源准入/P5/P6；MCP四工具、CLI七命令与高级图案书Web已接入候选96a；本机MK2有限实机验证后已工作区推广；实际stdio16，不自动注册宿主 | CLI list/import/export、更多参数与平台/代际验收 |
+| 记忆 · Pattern v2 | 同时保存原始高级来源、规范动作、recipe、冻结执行体与内容摘要 | 1e2e765已安装：CLI八命令、真实stdio MCP20（四个新增作者工具仍为experimental）、英文动森图案书；主机库可用，不自动注册宿主 | CLI快照import/export、更多参数与平台/代际验收 |
 
-本文保留的历史日常基线是 `1d89eae92278f24a68fff1a34e3c1e696a962c3c`，整合候选为 `96a1f92a8a2fcf836129797e4c3a82602a4e7ffc`（简称96a），包含P1–P6、独立v2库、CLI七命令、MCP16与高级图案书Web。HTTP核心的历史资格来源f8bb267、host准备来源56c4aef、CLI4e及MCPc37/679分别保留；不是各入口仍未整合。96a在单一临时窗口验证后曾恢复1d89，随后完成工作区推广；当前安装见下面独立状态块。日常硬件为 MK2 / FW204；这不证明 MK3 或 Windows/Linux 实物 USB 已验收。
+当前工作区已安装固定1e2e765（完整源码号`1e2e7650e2cff6686d95cb9908953e5fd370f2bc`），具备CLI八命令、MCP20与英文Web。本文保留的历史日常基线是 `1d89eae92278f24a68fff1a34e3c1e696a962c3c`，历史整合候选为 `96a1f92a8a2fcf836129797e4c3a82602a4e7ffc`（简称96a），包含P1–P6、独立v2库、CLI七命令、MCP16与高级图案书Web。HTTP核心的历史资格来源f8bb267、host准备来源56c4aef、CLI4e及MCPc37/679分别保留；不是各入口仍未整合。96a在单一临时窗口验证后曾恢复1d89，随后完成工作区推广；当前安装见下面独立状态块。日常硬件为 MK2 / FW204；这不证明 MK3 或 Windows/Linux 实物 USB 已验收。
 
 历史Web真机验证包括Pulse/Orbit完成与取消；早期CLI/MCP实机证据单独绑定c4147ce。新增96a三入口有限MK2实机证据见下段，不把旧证据改称新版本。P6 相关六包 current/Go1.18 各 1412 测试节点、339 顶层通过，race 四包1097/263通过；新 P6 用 Recorder、内存驱动和临时库，既有整包回归可能用私有 loopback fixture listener。它们不构成新实体设备验收，RGB读回和摄像观测证据仍单独记录。
 
 ### 工作区部署状态（独立于源码资格）
 
 <!-- deployment-state:start -->
-2026-11-10工作区已推广并安装固定96a原生二进制：`bin/nb1`、`bin/nb1-runtime`、`bin/nb1-mcp`，本机daemon为`http://127.0.0.1:8931`。33项只读复核通过：CLI七命令、真实stdio16工具、扩展bundle10项manifest.files（9公开资源+LICENSE）及逐字节匹配、设备online/idle/黑色缓存；没有新增设备变更，原v1快照SHA前后一致。旧1d89备份保留，未创建OS开机服务、注册全局MCP、合并PR或发布Release。
+2026-11-10工作区已推广固定1e2e765二进制：`bin/nb1`、`bin/nb1-runtime`、`bin/nb1-mcp`，daemon为`http://127.0.0.1:8931`。安装后**38项只读检查通过**：四文件来源/哈希、CLI八命令、真实stdio20个完整工具对象、9个英文Web资源哈希与4个隐藏404路径、设备online/idle/双黑缓存、适配器自然EOF、检查期间变更设备调用增量0。Web来源cf5219，包内11文件/210608字节（manifest.files10项，9公开资源+LICENSE）。SDK b3/GID37与主机库保留；trace关闭。旧96a四文件有持久备份。
 
-部署记录为本地`artifacts/pattern-v2-suite-native-20261110/install-result.json`、`promotion.json`、`post-install.json`和`post-install-stdio.json`。MCP16表示已安装适配器的实际stdio会话，宿主既有会话仍须重新发现，不会因文档更新自动注册工具。此后docs-only提交的源码号不改变实机binary资格96a及其SHA。
+本地安装证据为`artifacts/native-english-suite-20261110/promotion/controlled/attempt1/result.json`及其`post-install/result.json`。这些是开发证据路径，不是公开HTTP资源。MCP20是已安装适配器的实际stdio会话，宿主既有会话仍应重新发现，不会自动注册工具。后续源码中9处英文帮助变更未进入这份固定1e二进制，程序旧提示仍有中文。当前没有新Release、PR合并、系统自启或全局MCP变更。
 <!-- deployment-state:end -->
 
 下文“日常1d89”“开发f8bb”或“原片未安装”均指其明确的历史基线；当前工作区部署只按上面这段与实际帮助/会话tools/list核对。源码有能力不等于安装已生效。
 
-### 96a候选的本机实物证据
+### 当前1e2e765的有限Mac/MK2资格
+
+两个有限窗口分别记账：CLI3项、真实stdio MCP2项，共完成3／取消2；作者保存/读取没有设备变更。首窗口因验收脚本误把隐藏LICENSE和direct index当成公开路由而整轮失败，原失败记录保留；第二窗口只补英文Web只读检查（9哈希、4隐藏404、3英文移动页面），不重播已完成任务。产品代码没有因此修改。160对SDK调用全部首次成功、零重试/失败/丢失；5任务均有清理阶段双黑读回。普通SIGTERM的两组trigger/result均观察到，但日志仍为best effort。
+
+实际灯的622帧私有静音录像中，两段完整Orbit内部179／178帧未检出采样层面的整灯黑帧；高亮削顶峰值约24.7%。30fps、压缩与过曝不能认证无闪、Gamma/PWM、出光绝对延迟或360度旋转。零重试样本也不解释历史96a恢复重试或退出原因。当前资格只覆盖这台Mac/MK2 FW204，不覆盖MK3、其他OS实体USB、长期服务、Flash/掉电持久化。新录像和衍生图没有进入站点或公开文档。
+
+### 历史96a候选的本机实物证据
 
 2026-11-10，macOS arm64、MK2/FW204、SDK b3f2586/GID37d7cfd，在隔离v2库和单一设备所有权窗口完成CLI 3项、真实SDK stdio MCP 2项、实际嵌入Web 2项，共7个任务、3次运行中取消。任务通过原Ref/票据查询终态，随后有新鲜双黑RGB读回、无活动/排队；结束后正规停止候选并恢复1d89。CLI作者预览/保存/读取与MCP纯预览没有设备变更。不是安装、发布或全平台验收。
 
@@ -37,9 +43,9 @@
 
 候选nb1 SHA256 `b5a0f116b2f9c1b0047ef43960fb227148e29edd6b293ecee15dc45eecb3f4d3`，MCP SHA256 `8393167a18e7645561dff82b99698615e6e77a4361358af26a593939b0898f1d`；二者clean source均96a。公开脱敏资格为本地 `artifacts/pattern-v2-suite-native-20261110/qualification.json`（状态FINITE_MAC_MK2_SUITE_QUALIFIED_WITH_LIMITS）；原始执行记录为同目录attempt1/report.json，光学分析另存attempt1。raw录像保持私有，不随文档发布；报告的transport通过和光学限制分别保留。
 
-### 后续候选：诊断与高级图案列表
+### 历史bc782诊断窗口（当前1e已集成相关能力）
 
-开发片已增加第8个CLI命令 `control patterns-v2 list` 及默认关闭的 `server --transport-trace`，当前安装96a仍是七命令且没有此诊断flag。干净候选bc782在临时Mac/MK2窗口完成Pulse、Orbit和运行中取消，196条trace边/98对SDK调用均能对应原Ref和真实位置；零重试、零失败，结束后恢复日常96a并关闭trace。
+当前1e已安装第8个CLI命令 `control patterns-v2 list` 及默认关闭的 `server --transport-trace`。以下保留当时bc782窗口的独立历史证据，不改称当前1e窗口。干净候选bc782在临时Mac/MK2窗口完成Pulse、Orbit和运行中取消，196条trace边/98对SDK调用均能对应原Ref和真实位置；零重试、零失败，结束后恢复日常96a并关闭trace。
 
 名义750ms的Orbit帧起点实测间隔751.059–752.173ms，同帧两颗灯仍先后写入；SDK返回后两目标间隔10.114–12.484ms。整个Orbit任务6080.978ms，包括主机、USB与清理开销。本轮录像里灯在画面外，因此**只验证指令、时序与清理，不作灯效验收**；背景裁剪的亮度统计已撤回。零重试样本也不能解释上一窗口的6次恢复重试。脱敏结果见本地`artifacts/transport-trace-native-20261110/qualification.json`和`summary.zh-CN.md`；原录像与日志保持私有。诊断限制见[本地运行说明](local-runtime.md#后续开发候选的诊断开关)。
 
@@ -430,7 +436,7 @@ P4 严格 typed 身份/摘要与原子准入、P5 完整来源 resolver、P6 公
 
 P6 新 POST 原始报文限4096字节，单个 application/json，无 query，严格 UTF8/duplicate/unknown/null，全部身份标量为闭合 ASCII；GET 四参数必须唯一、非空、无未知或空分隔段且无 body。revision/摘要语法不是来源验证，JSON Schema 无法证明哈希和票据绑定。历史1d89没有 P3/P6 新路由；历史f8bb HTTP基线不含这些客户端，96a整合候选已包含。CLI作者候选 `eee1eb952f01bab521d5514b74b60a5fa45d6e1d` 已有get/preview-draft/save；执行候选 `4eac5293bbad413e90ff19e6c8700628a1a4a8ee` 又新增preview/run/request/cancel（第13节），这些原片已整合并安装96a。CLI list/导入导出仍后续；96a已接高级图案书Web；MCP历史12和当前96a的16单独记录，HTTP能力不会自动扩展已安装工具。
 
-固定引用预览可从实际 GET 记录提取 Ref；以下是已核实96a入口的只读示例，`PATTERN_ID` 必须是已保存记录。它不会播放：
+固定引用预览可从实际 GET 记录提取 Ref；以下是已核实1e入口的只读示例，`PATTERN_ID` 必须是已保存记录。它不会播放：
 
 ```sh
 NB1_ORIGIN=http://127.0.0.1:8931
@@ -447,7 +453,7 @@ jq -n --argjson pattern_ref "$ref" '{pattern_ref:$pattern_ref}' |
 
 ## 13. CLI与MCP入口对照
 
-本表包含旧入口与96a已安装的新入口。历史基线1d89是12工具；16工具原始schema与早期真实stdio软件证据固定 `c37f7fc33d52cc25619b10a5bc477965bf544cc0`；另有错误头校验补片 `679bdfc735a2f011c4c1fbf4fabec80f406f8f18`，工具形状不变。c37/679原片均未注册宿主；96a的真实stdio实机窗口另有上文记录，不能把c37软件证据改称96a或679实测。独立本地CLI作者候选 `eee1eb952f01bab521d5514b74b60a5fa45d6e1d`（历史f8bb HTTP资格之外，已整合96a）另提供 `control patterns-v2 get ID`、`control patterns-v2 preview-draft FILE`、`control patterns-v2 save FILE`。这三个作者命令仅daemon模式，保留完整作者来源，save输出原Ref和publication_confirmed/publication_unknown；不播放、不准备票据，无policy/wait。独立CLI执行候选 `4eac5293bbad413e90ff19e6c8700628a1a4a8ee` 另已完成下面四命令；list/导入导出仍在后续片，不与旧 `control patterns` 混用。
+本表包含旧入口与当前1e已安装的新入口。历史基线1d89是12工具；16工具原始schema与早期真实stdio软件证据固定 `c37f7fc33d52cc25619b10a5bc477965bf544cc0`；另有错误头校验补片 `679bdfc735a2f011c4c1fbf4fabec80f406f8f18`，工具形状不变。c37/679原片均未注册宿主；96a的真实stdio实机窗口另有上文记录，不能把c37软件证据改称96a或679实测。独立本地CLI作者候选 `eee1eb952f01bab521d5514b74b60a5fa45d6e1d`（历史f8bb HTTP资格之外，已整合96a）另提供 `control patterns-v2 get ID`、`control patterns-v2 preview-draft FILE`、`control patterns-v2 save FILE`。这三个作者命令仅daemon模式，保留完整作者来源，save输出原Ref和publication_confirmed/publication_unknown；不播放、不准备票据，无policy/wait。独立CLI执行候选 `4eac5293bbad413e90ff19e6c8700628a1a4a8ee` 另已完成下面四命令；list已进入当前1e；快照导入导出仍在后续片，不与旧 `control patterns` 混用。
 
 | 目的 | CLI | MCP |
 | --- | --- | --- |
@@ -463,7 +469,7 @@ jq -n --argjson pattern_ref "$ref" '{pattern_ref:$pattern_ref}' |
 | 任务读取/停止 | control job ID / control cancel ID | get_job / cancel_job |
 | 旧Pattern库 | control patterns list/get/import/export/preview/run | list_patterns/get_pattern；preview_program/run_program的pattern_ref分支 |
 
-高级文件使用[示例目录](examples/api/)。在仓库/工作区外使用时，先把nb1替换为已核实的二进制路径；本机工作区当前为bin/nb1（固定96a原生字节）。
+高级文件使用[示例目录](examples/api/)。在仓库/工作区外使用时，先把nb1替换为已核实的二进制路径；本机工作区当前为bin/nb1（固定1e原生字节）。
 
 ```sh
 nb1 control --mode direct light preview breathe.action.json
@@ -475,7 +481,7 @@ nb1 control light run 20005601 breathe.action.json --wait
 
 MCP是**真实stdio协议服务**，经HTTP调用daemon，不执行CLI子进程、不直接打开USB。历史1d89的12个工具：cancel_job、get_device_state、get_job、get_pattern、list_devices、list_patterns、preview_light、preview_program、resolve_color、run_light、run_program、set_device_state。
 
-当前96a的16工具完整输入/输出见[mcp-tools.schema.json](mcp-tools.schema.json)，来自干净候选二进制的实际tools/list；[历史1d89的12工具快照](mcp-tools.daily-1d89.schema.json)单独保留，旧12项schema相同。连接时以实际会话tools/list为准。调用示例（原有只预览）：
+当前1e的20工具完整输入/输出见[mcp-tools.schema.json](mcp-tools.schema.json)，与已安装二进制实际tools/list核对；[历史96a的16工具快照](mcp-tools.daily-96a.schema.json)与[历史1d89的12工具快照](mcp-tools.daily-1d89.schema.json)分别保留，旧16个完整对象不变。连接时以实际会话tools/list为准。调用示例（原有只预览）：
 
 ```json
 {"name":"preview_light","arguments":{"contract":"nb1-light-action/v1","action":{"kind":"breathe","color":"lime","period_ms":2000,"cycles":2}}}
@@ -483,7 +489,7 @@ MCP是**真实stdio协议服务**，经HTTP调用daemon，不执行CLI子进程�
 
 run_light必须有serial、原票据，仅reject。get_job按ID前缀区分旧/帧任务；只有票据时Frame必须显式job_kind:frame。MCP不自行展开动画，也不自动重发运行请求。
 
-### CLI：高级Pattern七命令（96a已整合）
+### CLI：高级Pattern八命令（1e已安装）
 
 作者三个命令get/preview-draft/save不变，执行源码固定 `4eac5293bbad413e90ff19e6c8700628a1a4a8ee`。它沿P6 HTTP执行，已整合96a；原4e软件测试与96a有限实物窗口分别记录，工作区部署看第1节。
 
@@ -497,9 +503,9 @@ run_light必须有serial、原票据，仅reject。get_job按ID前缀区分旧/�
 | `patterns-v2 request SERIAL ID --revision SHA --request-id KEY --expected-daemon-instance-id INSTANCE` | 只读原回执；可加--job-id / --execution-digest约束已知身份，绝不读库或换票据。 |
 | `patterns-v2 cancel SERIAL ID --revision SHA --request-id KEY --expected-daemon-instance-id INSTANCE` | 先GET原回执，terminal/cancelling零POST；其它最多一次带confirmed_job_id的取消。可加原Job/摘要约束。 |
 
-SHA为真实记录的完整sha256:64位小写hex，不隐式选latest；record_contract固定实验v2并完整保留在输出。全部只走daemon，--mode direct拒绝。preview/作者命令不接受policy/wait/票据；request/cancel不接受policy且必须提供原票据。已安装96a未提供CLI list/import/export，不猜旧patterns命令会自动处理v2格式。
+SHA为真实记录的完整sha256:64位小写hex，不隐式选latest；record_contract固定实验v2并完整保留在输出。全部只走daemon，--mode direct拒绝。preview/作者命令不接受policy/wait/票据；request/cancel不接受policy且必须提供原票据。当前1e提供CLI list；快照import/export客户端仍未安装，不猜旧patterns命令会自动处理v2格式。
 
-后续开发候选新增第八个 `control patterns-v2 list`（独立资格来源9ba82af，尚未推广）：只发一次GET列出高级库摘要，不逐项取Record、不预览/prepare/播放，也不打开返回路径。合法未知来源/配方照常显示，POSIX/Windows盘符/完整UNC按服务端路径语法解释。列表的verification是服务端广告；缺少完整Record时不能独立复算来源、revision和执行摘要，完整复验仍用get。current/Go1.18/race各两包783节点、167顶层通过；[列表候选的明确边界](../internal/daemonclient/README.pattern-list-v2.zh-CN.md)。快照导入导出CLI仍待补，当前本机命令仍按96a七项核对。
+当前1e已安装第八个 `control patterns-v2 list`（独立历史软件资格来源9ba82af）：只发一次GET列出高级库摘要，不逐项取Record、不预览/prepare/播放，也不打开返回路径。合法未知来源/配方照常显示，POSIX/Windows盘符/完整UNC按服务端路径语法解释。列表的verification是服务端广告；缺少完整Record时不能独立复算来源、revision和执行摘要，完整复验仍用get。current/Go1.18/race各两包783节点、167顶层通过；[列表候选的明确边界](../internal/daemonclient/README.pattern-list-v2.zh-CN.md)。快照导入导出CLI仍待补；当前本机八命令与1e有限实机/38项安装后只读复核单独记账。
 
 run/request/cancel支持--wait，受本次命令`--timeout`约束（默认30s，Prepare/POST/等待共用）；长图案应显式加长或稍后用原票据request恢复。等待只查询原Pattern回执，逐次核对完整typed Program/Frame、Ref、digest、Job ID、创建/启动时间、进度和生命周期；timeout不cancel、不重发、不用历史猜结果。已验证terminal先结束等待，随后caller context结束不把已知终态改成unknown。run/request等待到failed/cancelled可非零退出，仍输出可信终态且outcome_unknown=false；failed的optional错误文案为空也合法。
 
@@ -512,6 +518,7 @@ run/request/cancel支持--wait，受本次命令`--timeout`约束（默认30s，
 下例变量必须来自真实设备与保存记录；只展示命令，不由文档执行：
 
 ```sh
+nb1 control patterns-v2 list
 nb1 control patterns-v2 get orbit-red-blue
 nb1 control patterns-v2 preview orbit-red-blue --revision "$REVISION" --serial "$SERIAL"
 nb1 control patterns-v2 run "$SERIAL" orbit-red-blue --revision "$REVISION" --policy reject --wait
@@ -521,7 +528,7 @@ nb1 control patterns-v2 cancel "$SERIAL" orbit-red-blue --revision "$REVISION" -
 
 客户端只复算返回的闭合执行体摘要与回执绑定，不在run前重建作者source；完整来源/recipe/revision验证仍由daemon P5+core负责。current/Go1.18七包各1818节点/411顶层、race四包1423/320通过；原回执GET同步caller停止场景重复20次通过。4e新增软件测试只用临时库、私有loopback与内存驱动；96a后续有限实机资格另列于第1节，不回写4e软件证据。详见[图案CLI分版说明](patterns-cli.md)、[内部执行客户端说明](../internal/daemonclient/README.pattern-execution-v2.zh-CN.md)。
 
-### MCP：高级Pattern四工具（96a已整合）
+### MCP：高级Pattern执行四工具（1e已安装）
 
 完整来源与编译验证在daemon；MCP只验证闭合执行体、执行摘要与原Ref/票据/Job绑定，不复制高级编译器。新工具不会把Pattern降成旧Program任务。
 
@@ -536,15 +543,15 @@ nb1 control patterns-v2 cancel "$SERIAL" orbit-red-blue --revision "$REVISION" -
 
 成功run的`structuredContent.kind`为`pattern_job`，`data`是完整`{pattern_ref,execution_digest,job_kind,job}`，外层保留`request_ticket`；接受不等于完成。query为`pattern_request`；cancel为`pattern_cancel`，其data含`pattern_job`（最后可信Envelope）与`cancel_attempted`。取消错误仍保留原票据及最后可信快照；`cancel_attempted`只说明是否尝试过唯一一次POST，不证明已熄灯。坏响应、断连、实例变化和回执过期不能触发换键补播；完整性错误不会被后续看似正确的响应掩盖。
 
-c37历史片current/race各816测试节点通过、3项显式live跳过；真实stdio→P6 HTTP→临时StoreV2→内存fake Engine贯通，未访问USB。679仅增加Pattern错误响应头检查，独立软件验证另有归档；此处工具快照/stdio证据仍绑定c37。独立MCP模块沿用Go1.25下限，不能以root Go1.18兼容性替代。日常96a未提供v2库作者工具；后续MCP20候选见本节。导入/导出MCP仍未提供，原list_patterns/get_pattern保持v1语义。
+c37历史片current/race各816测试节点通过、3项显式live跳过；真实stdio→P6 HTTP→临时StoreV2→内存fake Engine贯通，未访问USB。679仅增加Pattern错误响应头检查，独立软件验证另有归档；此处工具快照/stdio证据仍绑定c37。独立MCP模块沿用Go1.25下限，不能以root Go1.18兼容性替代。历史96a未提供v2库作者工具；当前1e已安装的MCP20作者入口见本节。导入/导出MCP仍未提供，原list_patterns/get_pattern保持v1语义。
 
-### 后续候选MCP20：主机高级库作者入口（未安装）
+### 已安装MCP20：实验主机高级库作者入口
 
-开发整合另包含固定来源10cf37f的四个作者工具，旧16完整schema不变。`list_patterns_v2`读取高级摘要；`get_pattern_v2`读取完整Record；`preview_pattern_draft_v2`编译作者草稿；`save_pattern_v2`按expected_revision条件保存。它们不prepare运行票据、不创建Job或播放，不改旧list_patterns/get_pattern的v1含义。实际schema见[候选20工具快照](mcp-tools.candidate-20.schema.json)，本机日常96a仍为16工具。
+当前1e整合固定来源10cf37f的四个实验作者工具，旧16完整schema不变。`list_patterns_v2`读取高级摘要；`get_pattern_v2`读取完整Record；`preview_pattern_draft_v2`编译作者草稿；`save_pattern_v2`按expected_revision条件保存。它们不prepare运行票据、不创建Job或播放，不改旧list_patterns/get_pattern的v1含义。实际schema见[已安装20工具目录](mcp-tools.schema.json)；[原始候选20工具快照](mcp-tools.candidate-20.schema.json)与[历史96a16工具快照](mcp-tools.daily-96a.schema.json)保留来源。
 
 完整记录用record_json字符串传递，保留精确整数；保存不确定时保留original_author_json和原Ref，仅显式GET核对。主机库create-only，修改周期后不能覆盖原ID，应保存为新ID；保留可编辑来源不等于已经有同名版本树。MCP由daemon权威编译，适配器验证Record revision/typed执行摘要，不能称为本地语义复编译。4MiB预算只含适配器构造的CallToolResult，不含SDK自动_meta或JSON-RPC外封套。
 
-固定源current/Go1.25/race各1016节点117顶层通过，3项live跳过；fresh真实stdio→HTTP→临时Store有22请求软件证据，未用USB。候选整合另补MCP race的8分钟有界CI预算；未跑本片hosted矩阵或自动注册宿主。
+固定源current/Go1.25/race各1016节点117顶层通过，3项live跳过；fresh真实stdio→HTTP→临时Store有22请求软件证据，未用USB。整合另补MCP race的8分钟有界CI预算；软件资格与当前1e的真实stdio/主机作者/有限设备任务分别记账。安装后38项只读复核通过，未跑新hosted矩阵或自动注册宿主。
 
 ## 14. 完整HTTP索引与错误
 
@@ -1295,7 +1302,7 @@ Web宿主准备源码固定 `56c4aef153c560c68845e89ebdaa15bc1323eeb2`，保持�
 
 ### GET /demo/patterns.html
 
-**版本：** 日常1d89无此路径；历史host56c/旧fe32507 bundle返回404；当前96a/f90扩展bundle已嵌入并返回200，已工作区安装96a；原1d89备份保留。
+**版本：** 日常1d89无此路径；历史host56c/旧fe32507 bundle返回404；当前1e/cf5219英文扩展bundle已嵌入并返回200，安装后逐资源哈希复核通过；历史96a/f90与1d89证据另存。
 
 **输入：** 无body/query（包括空?），只GET。
 
@@ -1311,7 +1318,7 @@ Web宿主准备源码固定 `56c4aef153c560c68845e89ebdaa15bc1323eeb2`，保持�
 
 ### GET /demo/patterns.js
 
-**版本：** 日常1d89无此路径；历史host56c/旧fe32507 bundle返回404；当前96a/f90扩展bundle已嵌入并返回200，已工作区安装96a；原1d89备份保留。
+**版本：** 日常1d89无此路径；历史host56c/旧fe32507 bundle返回404；当前1e/cf5219英文扩展bundle已嵌入并返回200，安装后逐资源哈希复核通过；历史96a/f90与1d89证据另存。
 
 **输入：** 无body/query（包括空?），只GET。
 
@@ -1327,7 +1334,7 @@ Web宿主准备源码固定 `56c4aef153c560c68845e89ebdaa15bc1323eeb2`，保持�
 
 ### GET /demo/patterns.css
 
-**版本：** 日常1d89无此路径；历史host56c/旧fe32507 bundle返回404；当前96a/f90扩展bundle已嵌入并返回200，已工作区安装96a；原1d89备份保留。
+**版本：** 日常1d89无此路径；历史host56c/旧fe32507 bundle返回404；当前1e/cf5219英文扩展bundle已嵌入并返回200，安装后逐资源哈希复核通过；历史96a/f90与1d89证据另存。
 
 **输入：** 无body/query（包括空?），只GET。
 
@@ -1345,7 +1352,7 @@ Web宿主准备源码固定 `56c4aef153c560c68845e89ebdaa15bc1323eeb2`，保持�
 
 相对日常1d89，P6 f8bb267与Web host56c4aef组合源码新增12个规范method/path：P3的5个作者/存储操作与P6的4个固定引用预览/执行/查停操作；另有3个条件Web资源。总库存44个规范操作（含3个条件Web资源）；OpenAPI 为避免静态路径掩盖普通ID GET另列4个别名，共48个operation/43个path。这不是45套独立能力。
 
-server 默认独立懒选 v2 库，Go handler 仍可不配库。纯作者preview零Store；引用preview需要Resolve来源；submit只在新key探库；query/cancel零Store/config。默认路径、flag/env、创建边界见第12节。P4/P5/P6及客户端已整合96a；历史原片和当前部署分别判断；CLI4e、作者eee和MCP16来源见第13节，当前96a安装状态只按第1节，不把原片软件测试冒作新实机。
+server 默认独立懒选 v2 库，Go handler 仍可不配库。纯作者preview零Store；引用preview需要Resolve来源；submit只在新key探库；query/cancel零Store/config。默认路径、flag/env、创建边界见第12节。P4/P5/P6及客户端已整合96a；历史原片和当前部署分别判断；CLI4e、作者eee和MCP16来源见第13节，当前1e安装状态只按第1节，不把原片软件测试冒作新实机。
 
 保存重新构造来源候选并核对expected_revision，之后一次create-only Import；不匹配409且Store零调用。unknown完整合法记录可读/导出但不能新导入或执行；库含unknown使写操作read_only，已知单条仍可验证执行。publication uncertain只读核对原ID/完整记录，不自动重发。新submit失败不得替换旧活动任务，已接受原回执独立于后续库状态。
 
@@ -1441,7 +1448,7 @@ server 默认独立懒选 v2 库，Go handler 仍可不配库。纯作者preview
 
 需要继续完善的地方也很明确：
 
-1. P4来源身份准入、P5验证resolver、P6 HTTP已完成；MCP16、CLI七命令与高级图案书Web已整合96a，三入口已有本机MK2有限验证；继续CLI list/import/export、USB重试诊断、参数与平台/代际验证。保存成功、已接受任务和实体效果仍分别判断。
+1. P4来源身份准入、P5验证resolver、P6 HTTP已完成；当前1e已安装MCP20、CLI八命令与英文高级图案书；有限Mac/MK2分项资格与38项安装后只读检查单列。继续CLI快照import/export、USB重试诊断、参数与平台/代际验证。保存成功、已接受任务和实体效果仍分别判断。
 2. 保持艺术动作可区分：blink是亮灭，breathe是对称起伏，pulse是attack/decay/rest，alternate是换位，rainbow是色相循环，orbit是两点相位/明暗流动。
 3. 评审高级入口与低层入口的策略差异、pulse名义周期多出的30ms、hold的最后输出语义。当前文档如实写差异，未来只能通过明确新版本调整。
 4. 新命名、组合/序列、用户palette、自动恢复和同步属于后续能力，不能让AI猜一个看似自然的词就执行。

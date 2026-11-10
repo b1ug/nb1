@@ -7,12 +7,12 @@
       "commit": "1d89eae92278f24a68fff1a34e3c1e696a962c3c",
       "source_worktree": "validation/nb1-web-embed",
       "installation_evidence": "artifacts/nb1-web-design/final-status.json",
-      "scope": "Historical former-daily1d89 source inventory; compatibility field retained, not current installed version. See baselines.installed96a."
+      "scope": "Historical former-daily1d89 source inventory; compatibility field retained, not current installed version. See baselines.installed."
     },
     "development": {
       "commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
       "source_worktree": "validation/nb1-pattern-v2-public",
-      "scope": "P1..P6, independent default lazy StoreV2 and four public fixed-reference execution operations; not installed"
+      "scope": "Historical P1..P6 source qualification; these features are integrated in the current installed1e2e765. This field is retained for provenance."
     },
     "web_host": {
       "commit": "56c4aef153c560c68845e89ebdaa15bc1323eeb2",
@@ -20,18 +20,36 @@
       "scope": "Source supports closed basic/extended static bundle; old dist retained at this source; no install/USB claim"
     },
     "integrated_candidate": {
-      "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
+      "source_commit": "1e2e7650e2cff6686d95cb9908953e5fd370f2bc",
       "status": "installed_workspace_only",
-      "web_source_commit": "f90ef8d6143acd55c059b94ecf961ec65a1bb646",
-      "web_manifest_sha256": "9f9c039abd50c65bf8ebc2e2a74954092e7cd0fff0871021666028adc9a2519d",
+      "web_source_commit": "cf5219ba7c7da8e1f5db58dade22643aaa8c0861",
+      "web_manifest_sha256": "3cf7e88161a21d19edb056d2929b27da17b4b9958a8d2a18b2cbffc3992a8811",
       "manifest_files": 10,
       "public_assets": 9,
       "api_contracts": 4,
-      "dist_bytes_including_manifest": 208132,
-      "native_evidence": "artifacts/pattern-v2-suite-native-20261110/attempt1/report.json",
-      "native_scope": "macOS arm64 MK2/FW204; CLI3/MCP2/Web2, 7jobs/3cancel; restored daily1d89; 6USBretries/0finalfailure; optical limits, no MK3/other-platform qualification"
+      "dist_bytes_including_manifest": 210608,
+      "native_evidence": "artifacts/native-english-suite-20261110/qualification.json",
+      "native_scope": "Current macOS arm64 MK2/FW204 only; two bounded windows, CLI3/MCP2 jobs completed3/cancelled2; original first-window Web harness failure preserved, second read-only Web recheck16 passed; trace160pairs/0retry/failure/loss; optical clipping limits, no MK3/other physical OS/Flash/long-run qualification"
     },
     "installed": {
+      "commit": "1e2e7650e2cff6686d95cb9908953e5fd370f2bc",
+      "worktree": "/Users/vej/Codebase/devel-blink1",
+      "source_worktree": "validation/nb1-ecosystem-next",
+      "binary": "bin/nb1-runtime",
+      "endpoint": "http://127.0.0.1:8931",
+      "evidence": "artifacts/native-english-suite-20261110/promotion/controlled/attempt1/post-install/result.json",
+      "readonly_checks": 38,
+      "additional_hardware_writes": false,
+      "scope": "pinned workspace binaries and owned local daemon only; no OS startup service/global MCP registration/remote Release",
+      "cli_advanced_commands": 8,
+      "mcp_tools": 20,
+      "default_web_language": "English"
+    },
+    "historical_daily": {
+      "commit": "1d89eae92278f24a68fff1a34e3c1e696a962c3c",
+      "meaning": "former workspace daily source; daily/daily_1d89 fields preserved as historical compatibility metadata, not current installation"
+    },
+    "historical_installed96a": {
       "commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
       "worktree": "/Users/vej/Codebase/devel-blink1",
       "source_worktree": "validation/nb1-ecosystem-next",
@@ -43,9 +61,17 @@
       "scope": "pinned workspace binaries and owned local daemon only; no OS startup service/global MCP registration/remote Release",
       "legacy_v1_snapshot": "same SHA before/after promotion"
     },
-    "historical_daily": {
-      "commit": "1d89eae92278f24a68fff1a34e3c1e696a962c3c",
-      "meaning": "former workspace daily source; daily/daily_1d89 fields preserved as historical compatibility metadata, not current installation"
+    "historical_integrated96a": {
+      "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
+      "status": "installed_workspace_only",
+      "web_source_commit": "f90ef8d6143acd55c059b94ecf961ec65a1bb646",
+      "web_manifest_sha256": "9f9c039abd50c65bf8ebc2e2a74954092e7cd0fff0871021666028adc9a2519d",
+      "manifest_files": 10,
+      "public_assets": 9,
+      "api_contracts": 4,
+      "dist_bytes_including_manifest": 208132,
+      "native_evidence": "artifacts/pattern-v2-suite-native-20261110/attempt1/report.json",
+      "native_scope": "macOS arm64 MK2/FW204; CLI3/MCP2/Web2, 7jobs/3cancel; restored daily1d89; 6USBretries/0finalfailure; optical limits, no MK3/other-platform qualification"
     }
   },
   "summary": {
@@ -62,7 +88,7 @@
     "conditional_static_routes": 3,
     "static_routes_including_demo_redirect": 10,
     "current_legacy_bundle_serves_added_pattern_resources": false,
-    "current_legacy_bundle_scope": "historical host56c with Web fe32507; false does not describe integrated96a",
+    "current_legacy_bundle_scope": "historical host56c with Web fe32507; false does not describe installed1e2e765",
     "integrated_candidate_serves_added_pattern_resources": true,
     "installed_method_path_count": 44,
     "historical_daily_method_path_count": 32
@@ -1886,6 +1912,18 @@
     "bundle_budget_bytes": 262144,
     "no_hardware_capability_added": true,
     "integrated_candidate": {
+      "source_commit": "1e2e7650e2cff6686d95cb9908953e5fd370f2bc",
+      "status": "installed_workspace_only",
+      "web_source_commit": "cf5219ba7c7da8e1f5db58dade22643aaa8c0861",
+      "web_manifest_sha256": "3cf7e88161a21d19edb056d2929b27da17b4b9958a8d2a18b2cbffc3992a8811",
+      "manifest_files": 10,
+      "public_assets": 9,
+      "api_contracts": 4,
+      "dist_bytes_including_manifest": 210608,
+      "native_evidence": "artifacts/native-english-suite-20261110/qualification.json",
+      "native_scope": "Current macOS arm64 MK2/FW204 only; two bounded windows, CLI3/MCP2 jobs completed3/cancelled2; original first-window Web harness failure preserved, second read-only Web recheck16 passed; trace160pairs/0retry/failure/loss; optical clipping limits, no MK3/other physical OS/Flash/long-run qualification"
+    },
+    "historical_integrated96a": {
       "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
       "status": "installed_workspace_only",
       "web_source_commit": "f90ef8d6143acd55c059b94ecf961ec65a1bb646",

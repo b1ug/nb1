@@ -12,14 +12,15 @@ MCP is real stdio to local HTTP, not a CLI wrapper or USB owner. Preview does no
 
 Legacy list_patterns/get_pattern remain v1 Program/Effect storage. Advanced host Pattern v2 preserves source, normalized action, recipe, frozen execution, revision, and execution_digest. MK2 can use this computer-side library; device RAM/flash and task receipts are different. No automatic migration, replay, or flash write.
 
-Installed baseline96a has seven advanced CLI commands: get/preview-draft/save/preview/run/request/cancel, and MCP16 including preview_pattern/run_pattern/get_pattern_request/cancel_pattern_request. A later CLI candidate adds list. Four advanced MCP authoring tools are being qualified; do not assume they are installed. Preserve publication_unknown separately from execution outcome_unknown. Library paths are display metadata, not client file-access instructions.
+Installed workspace1e2e765 has eight advanced CLI commands: list/get/preview-draft/save/preview/run/request/cancel. Its actual stdio MCP20 includes the four advanced execution tools plus list_patterns_v2/get_pattern_v2/preview_pattern_draft_v2/save_pattern_v2. The latter four are experimental host authoring tools; CLI and MCP snapshot import/export are not installed. Discover the actual session before calling a tool. Preserve publication_unknown separately from execution outcome_unknown. Library paths are display metadata, not client file-access instructions.
 
 ## References
 
 - [Agent skill](skills/blink1-control/SKILL.md): expression selection, receipts, recovery, and host patterns.
 - [English API reference](docs/api-reference.md): High/Low semantics, 44 canonical HTTP operations, 111 models, and 14 examples.
 - [OpenAPI](docs/openapi.json): machine-readable structure and route availability, with English explanatory prose.
-- [Actual MCP schemas](docs/mcp-tools.schema.json): captured16-tool baseline; actual tools/list remains authoritative.
+- [Actual MCP schemas](docs/mcp-tools.schema.json): captured20-tool installed catalog; actual tools/list remains authoritative.
+- [Previous MCP16 snapshot](docs/mcp-tools.daily-96a.schema.json) and [historical MCP12](docs/mcp-tools.daily-1d89.schema.json) retain exact compatibility objects.
 - [MCP adapter](adapters/mcp/README.md): protocol and transport behavior.
 - [Examples](docs/examples/api/): author files and pure preview inputs, not automatic execution.
 - [Localized API manual](docs/api-reference.zh-CN.md) and [localized agent guide](docs/agent-guide.zh-CN.md).

@@ -15,13 +15,13 @@
   <a class="skip-link" href="#main-content">Skip to light workbench</a>
   <main class="workbench">
     <nav class="workbench-topbar" aria-label="Workbench navigation">
-      <a class="brand" href="./" aria-label="nb1 Local light workbench"><svg class="brand-mark" viewBox="0 0 28 28" aria-hidden="true"><rect x="3" y="8" width="22" height="14" rx="7" fill="#fff8df"/><circle cx="10" cy="15" r="3.5" fill="#a2c979"/><circle cx="19" cy="15" r="3.5" fill="#eeb28b"/><path d="M10 8V4h8v4" fill="none" stroke="#fff8df" stroke-width="3" stroke-linejoin="round"/></svg>nb1 <small>Little light workbench</small></a>
+      <a class="brand" href="./" aria-label="nb1 Local light workbench"><svg class="brand-mark" viewBox="0 0 28 28" aria-hidden="true"><path d="M19 9h6v10h-6" fill="#b9bfb1"/><rect x="3" y="7" width="18" height="15" rx="4" fill="#fff8df"/><path d="M7 19h12" stroke="#bbc1b1" stroke-width="3" stroke-linecap="round"/></svg>nb1 <small>Little light workbench</small></a>
       <div class="top-nav"><a href="./" aria-current="page">Workbench</a><a href="./orbit.html">Orbit lab ↗</a><a href="./patterns.html">Pattern Book</a></div>
     <label class="locale-control" for="locale-select"><span id="locale-label">Language</span><select id="locale-select" aria-labelledby="locale-label"><option value="en" lang="en">English</option><option value="zh-CN" lang="zh-CN">中文</option></select></label>
   </nav>
     <header class="masthead">
       <div><p class="eyebrow">A LITTLE LIGHT, LOCALLY.</p><h1>Give this moment<br><span>a little color.</span></h1><p class="intro">Choose an action and a color you like. Preview the request, then light up the blink(1) on your desk.</p><p class="footnote"><span class="local-badge">Local only · same origin</span></p></div>
-      <div class="hero-art" aria-hidden="true"><svg viewBox="0 0 230 125"><ellipse cx="121" cy="109" rx="72" ry="8" fill="#b6c8a3" opacity=".45"/><rect x="29" y="39" width="35" height="38" rx="6" fill="#c6c6ad" stroke="#9eab91" stroke-width="3"/><path d="M40 43v8m11-8v8" stroke="#eef1df" stroke-width="4" stroke-linecap="round"/><rect x="55" y="23" width="148" height="71" rx="35" fill="#fff9e5" stroke="#b5bfa0" stroke-width="3"/><path d="M79 33h95" stroke="#fffef8" stroke-width="5" stroke-linecap="round"/><circle cx="104" cy="59" r="22" fill="#a6ce97"/><circle cx="158" cy="59" r="22" fill="#edbd95"/><circle cx="98" cy="52" r="6" fill="#e4f0cf"/><circle cx="152" cy="52" r="6" fill="#fff0d3"/><path d="M207 23l8-8m-6 30h12M73 8l-4-7" stroke="#90ae76" stroke-width="4" stroke-linecap="round"/></svg><small>SMALL DEVICE, MANY MOODS</small></div>
+      <div class="hero-art"><svg viewBox="0 0 230 125" aria-hidden="true"><ellipse cx="117" cy="103" rx="76" ry="8" fill="#b6c8a3" opacity=".45"/><rect x="139" y="34" width="57" height="41" rx="3" fill="#c8cac0" stroke="#9fa698" stroke-width="2"/><path d="M163 44h10v7h-10zm16 0h10v7h-10z" fill="#777f73"/><rect x="34" y="31" width="119" height="64" rx="14" fill="#dddcd1" stroke="#a6afa0" stroke-width="2"/><rect x="34" y="24" width="119" height="59" rx="14" fill="#fffdf2" stroke="#b5bfa0" stroke-width="2"/><path d="M54 83h78q13 0 17-12v10q-3 12-17 12H54q-10 0-13-8" fill="#b5b9ad"/><path d="M51 32h82" stroke="#fff" stroke-width="4" stroke-linecap="round"/></svg><small>blink(1) mk2 · simplified housing</small></div>
     </header>
 
     <section class="device-bar" id="main-content" tabindex="-1" aria-labelledby="device-heading">
@@ -104,10 +104,10 @@
       <aside class="panel monitor" aria-labelledby="monitor-heading">
         <div class="section-title"><h2 id="monitor-heading">At the light</h2><span id="connection" class="tag">Disconnected</span></div>
         <p class="readback-label">Device readback · separate from input colors</p>
-        <div class="light-body" aria-label="Device RGB readback illustration"><div class="led" id="led-one"><span>LED 1</span></div><div class="led" id="led-two"><span>LED 2</span></div></div>
+        <div class="readback-swatches" aria-label="Logical LED color samples"><div class="led" id="led-one"><span>LED 1</span></div><div class="led" id="led-two"><span>LED 2</span></div></div>
         <div class="rgb-values"><code id="rgb-one">—</code><code id="rgb-two">—</code></div>
         <p id="sample-time" class="muted centered">Waiting for device data</p>
-        <p class="footnote centered">This shows USB RGB readback, not a camera image or optical calibration.</p>
+        <p class="footnote centered">Logical LED channels, not physical positions. USB RGB readback is not a camera image or optical calibration.</p>
         <dl class="device-facts"><div><dt>Device</dt><dd id="serial">—</dd></div><div><dt>Product / firmware</dt><dd id="product">—</dd></div><div><dt>Current job</dt><dd id="job-status" role="status" aria-live="polite">Not submitted</dd></div><div><dt>Step progress</dt><dd id="job-progress">—</dd></div><div><dt>Job ID</dt><dd><code id="job-id">—</code></dd></div></dl>
         <div class="progress-track" aria-label="Job progress"><div id="job-progress-bar"></div></div>
         <button id="stop" class="danger" disabled>Stop this job and turn off</button>

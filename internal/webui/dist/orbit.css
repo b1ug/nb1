@@ -12,6 +12,7 @@ body.orbit-page { background: radial-gradient(ellipse at 85% 8%, #e1edda, transp
 .orbit-art::before, .orbit-art::after { content: ""; position: absolute; inset: 20px 7px; border: 2px dashed #99b77d; border-radius: 50%; transform: rotate(-23deg); }
 .orbit-art::after { inset: 5px 34px; transform: rotate(33deg); border-color: #c5c792; }
 .orbit-art svg { position: relative; z-index: 1; width: 158px; height: 103px; transform: rotate(-12deg); }
+.orbit-art small { position: absolute; bottom: 14px; padding: 2px 7px; border-radius: 12px; background: var(--cream); font-size: 10px; color: var(--leaf-deep); }
 .dot { display: inline-block; width: 8px; height: 8px; margin-right: 7px; border-radius: 50%; background: #a07931; }
 .orbit-page .workspace { grid-template-columns: minmax(0,1.15fr) minmax(0,.85fr); gap: 25px; }
 .orbit-page .controls { border-top: 8px solid #c8d9af; }

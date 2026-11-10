@@ -130,9 +130,8 @@ button.text-button:hover:enabled { background: #e9efdc; border-color: transparen
 .monitor { position: sticky; top: 22px; border-top: 8px solid #cadab3; }
 .monitor .section-title { margin-bottom: 8px; }
 .readback-label { margin: 18px 0 0; font-size: 11px; text-align: center; color: var(--muted); letter-spacing: .06em; }
-.light-body { display: flex; gap: 20px; justify-content: center; align-items: center; width: 230px; min-height: 120px; margin: 15px auto 16px; padding: 24px; background: #ece8d9; border: 2px solid #b9b5a0; border-radius: 52px; box-shadow: inset 0 4px 0 #fffdf5, 0 5px 0 #d3cbb5, 0 13px 22px #7d693b14; position: relative; }
-.light-body::after { content: ""; position: absolute; left: -17px; top: 43px; width: 18px; height: 32px; border: 2px solid #bab7a4; border-right: 0; border-radius: 5px 0 0 5px; background: #d9d8c8; }
-.led { width: 70px; height: 70px; border-radius: 50%; border: 4px solid #fff9e8; outline: 1px solid #c5c0ad; background: #000; display: grid; place-items: center; transition: background-color 120ms ease; box-shadow: inset 0 3px 9px #00000026; }
+.readback-swatches { display: flex; gap: 20px; justify-content: center; align-items: center; width: 230px; margin: 24px auto 16px; }
+.led { width: 70px; height: 70px; border-radius: 12px; border: 4px solid #fff9e8; outline: 1px solid #c5c0ad; background: #000; display: grid; place-items: center; transition: background-color 120ms ease; box-shadow: inset 0 3px 9px #00000026; }
 .led span { color: #fff; font-size: 10px; font-weight: 750; text-shadow: 0 1px 3px #000, 0 -1px 3px #000; }
 .rgb-values { display: flex; justify-content: center; gap: 29px; font-size: 13px; }
 .rgb-values code { min-width: 84px; text-align: center; }

@@ -1,5 +1,7 @@
 # Embedded bilingual Web in installed6ca
 
+The later [hardware artwork candidate](web-hardware-artwork.md) uses a separately pinned producer. The installation facts below refer to the existing 6ca runtime.
+
 Installed runtime6ca imports the separate `nb1-web` producer commit `1e1b1ddf2a985dea00e494761eed592183755c1d`, with manifest SHA-256 `a35beb8fb17aa3a9e6751e006e0c7b6524d197b83cd679a25528a99134ce6460`. The generated payload is 260,151 bytes across 13 files, including the manifest and license. The 256 KiB bundle limit is unchanged; 1,993 bytes remain.
 
 The three tools at `/demo/`, `/demo/orbit.html`, and `/demo/patterns.html` default to English on first use and offer an explicit English / 中文 selector. A namespaced browser preference carries the user's selection across pages. Browser and OS language do not change the first-use default. Translation catalogs can be extended in the producer; nb1 consumes its fixed runtime assets without requiring Node at build or startup.

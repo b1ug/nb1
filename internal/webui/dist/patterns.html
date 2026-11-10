@@ -1,70 +1,70 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light">
   <meta name="theme-color" content="#fbf6e7">
-  <title>nb1 · 高级图案书</title>
+  <title>nb1 · Pattern Book</title>
   <link rel="stylesheet" href="./demo.css">
   <link rel="stylesheet" href="./patterns.css">
   <script defer src="./patterns.js"></script>
 </head>
 <body class="pattern-book-page">
-<a class="skip-link" href="#book-content">跳到高级图案书</a>
+<a class="skip-link" href="#book-content">Skip to Pattern Book</a>
 <main class="workbench pattern-book">
-  <nav class="workbench-topbar" aria-label="工作台导航">
-    <a class="brand" href="./"><svg class="brand-mark" viewBox="0 0 28 28" aria-hidden="true"><rect x="3" y="8" width="22" height="14" rx="7" fill="#fff8df"/><circle cx="10" cy="15" r="3.5" fill="#a2c979"/><circle cx="19" cy="15" r="3.5" fill="#eeb28b"/><path d="M10 8V4h8v4" fill="none" stroke="#fff8df" stroke-width="3"/></svg>nb1 <small>灯光小工作台</small></a>
-    <div class="top-nav"><a href="./">工作台</a><a href="./orbit.html">Orbit 实验</a><a href="./patterns.html" aria-current="page">高级图案书</a></div>
+  <nav class="workbench-topbar" aria-label="Workbench navigation">
+    <a class="brand" href="./"><svg class="brand-mark" viewBox="0 0 28 28" aria-hidden="true"><rect x="3" y="8" width="22" height="14" rx="7" fill="#fff8df"/><circle cx="10" cy="15" r="3.5" fill="#a2c979"/><circle cx="19" cy="15" r="3.5" fill="#eeb28b"/><path d="M10 8V4h8v4" fill="none" stroke="#fff8df" stroke-width="3"/></svg>nb1 <small>Little light workbench</small></a>
+    <div class="top-nav"><a href="./">Workbench</a><a href="./orbit.html">Orbit lab</a><a href="./patterns.html" aria-current="page">Pattern Book</a></div>
   </nav>
   <header class="book-hero">
-    <div><p class="eyebrow">COLLECT A LITTLE LIGHT.</p><h1>把喜欢的灯光，<br><span>收进图案书。</span></h1><p class="intro">记住一种动作，也留下它的来处。写一份、预览一份，再把确认的版本留在电脑里。</p><p><span class="local-badge">实验 v2 · 本地保存 · 明确播放</span></p></div>
+    <div><p class="eyebrow">COLLECT A LITTLE LIGHT.</p><h1>A little light,<br><span>worth keeping.</span></h1><p class="intro">Keep the action and its source together. Write a draft, preview it, then save the confirmed revision on this computer.</p><p><span class="local-badge">Experimental v2 · local storage · explicit playback</span></p></div>
     <svg class="book-art" viewBox="0 0 240 190" aria-hidden="true"><ellipse cx="127" cy="169" rx="86" ry="9" fill="#d3d9ba"/><path d="M41 36Q82 18 119 40Q161 18 202 36V155Q160 138 119 160Q79 137 41 155Z" fill="#d5e4bb" stroke="#8ba777" stroke-width="4" stroke-linejoin="round"/><path d="M48 31Q86 16 119 36Q159 17 195 31V144Q158 130 119 151Q82 130 48 144Z" fill="#fffaf0" stroke="#bdb592" stroke-width="2"/><path d="M119 38V149M59 49Q86 40 106 51M135 50Q159 41 182 49M61 119h41M139 116h34" fill="none" stroke="#ded3b7" stroke-width="3" stroke-linecap="round"/><rect x="59" y="71" width="44" height="25" rx="12" fill="#e5eecf" stroke="#a5ba88" stroke-width="2"/><circle cx="72" cy="84" r="7" fill="#a6ca81"/><circle cx="90" cy="84" r="7" fill="#ecb591"/><path d="M143 73c30-24 44 20 9 26-26 3-21-20-8-22" fill="none" stroke="#8faf84" stroke-width="5" stroke-linecap="round"/><path d="M163 28v29l8-5 8 6V25" fill="#dfb984"/><path d="M20 59l7-7m183 65 8 3m-13-102 8-7" stroke="#b8be86" stroke-width="3" stroke-linecap="round"/></svg>
   </header>
-  <div id="book-notice" class="notice" role="status" aria-live="polite">正在读取本机图案目录。页面不会自动播放。</div>
-  <div id="offline-banner" class="book-warning" hidden>离线设计预览 · 以下全部是模拟资料，不能保存或操作设备。</div>
+  <div id="book-notice" class="notice" role="status" aria-live="polite">Reading the local Pattern library. Nothing plays automatically.</div>
+  <div id="offline-banner" class="book-warning" hidden>Offline design preview · all data below is simulated. Saving and device control are disabled.</div>
   <div class="book-layout" id="book-content" tabindex="-1">
     <aside class="book-shelf panel" aria-labelledby="shelf-heading">
-      <div class="section-title"><h2 id="shelf-heading">我的图案</h2><span id="book-count" class="book-count">—</span></div>
-      <p class="book-muted">保存在本机的高级动作。选择后只读取，不会亮灯。</p>
-      <button id="refresh-library" type="button" class="secondary">刷新图案目录</button>
-      <p id="library-state" class="book-muted" role="status">正在读取…</p>
-      <div id="pattern-list" class="book-list" role="group" aria-label="已保存图案"></div>
-      <div class="shelf-note"><strong>一份图案，两层记忆。</strong><p>高级动作保留你的想法；冻结程序记录这次实际会执行什么。</p></div>
+      <div class="section-title"><h2 id="shelf-heading">My Patterns</h2><span id="book-count" class="book-count">—</span></div>
+      <p class="book-muted">High-level actions saved locally. Selecting one only reads it.</p>
+      <button id="refresh-library" type="button" class="secondary">Refresh Pattern library</button>
+      <p id="library-state" class="book-muted" role="status">Reading…</p>
+      <div id="pattern-list" class="book-list" role="group" aria-label="Saved Patterns"></div>
+      <div class="shelf-note"><strong>One Pattern, two layers.</strong><p>The high-level source keeps your intent; the frozen program records exactly what will execute.</p></div>
     </aside>
     <section class="panel author-sheet" aria-labelledby="author-heading">
-      <div class="section-title"><h2 id="author-heading"><span class="step-number">01</span>写一份灯光</h2><span id="draft-state" class="tag">新草稿</span></div>
-      <div class="recipe-picker" role="group" aria-label="示例高级动作"><button id="example-pulse" class="recipe-card" type="button"><span class="recipe-symbol">⌁</span><span><strong>一小段脉冲</strong><small>Pulse · 亮起、衰减、停歇</small></span></button><button id="example-orbit" class="recipe-card" type="button"><span class="recipe-symbol">◌</span><span><strong>两束光环绕</strong><small>Orbit · 四段连续淡变</small></span></button></div>
+      <div class="section-title"><h2 id="author-heading"><span class="step-number">01</span>Write a little light</h2><span id="draft-state" class="tag">New draft</span></div>
+      <div class="recipe-picker" role="group" aria-label="High-level examples"><button id="example-pulse" class="recipe-card" type="button"><span class="recipe-symbol">⌁</span><span><strong>A little pulse</strong><small>Pulse · Rise, decay, rest</small></span></button><button id="example-orbit" class="recipe-card" type="button"><span class="recipe-symbol">◌</span><span><strong>Two lights in orbit</strong><small>Orbit · Four overlapping fades</small></span></button></div>
       <fieldset id="author-fields" class="book-fieldset">
-        <div class="book-field-pair"><label for="pattern-id">图案 ID<input id="pattern-id" value="pulse-lime" maxlength="64" autocomplete="off" spellcheck="false"><small>字母或数字开头，可用 - 与 _。</small></label><label for="pattern-title">给它起个名字<input id="pattern-title" value="一小段绿意" maxlength="256" autocomplete="off"></label></div>
-        <div class="book-colors"><label for="source-color-one">第一种颜色<input id="source-color-one" type="color" value="#00ff00"></label><label for="source-color-two">第二种颜色<input id="source-color-two" type="color" value="#0000ff"></label><p>调色板只修改下方来源，不会向灯发送指令。</p></div>
-        <label class="source-label" for="source-json"><span>高级动作来源 <small>source.json · 可直接编辑</small></span></label>
+        <div class="book-field-pair"><label for="pattern-id">Pattern ID<input id="pattern-id" value="pulse-lime" maxlength="64" autocomplete="off" spellcheck="false"><small>Start with a letter or digit; - and _ are allowed.</small></label><label for="pattern-title">Give it a name<input id="pattern-title" value="A little green pulse" maxlength="256" autocomplete="off"></label></div>
+        <div class="book-colors"><label for="source-color-one">First color<input id="source-color-one" type="color" value="#00ff00"></label><label for="source-color-two">Second color<input id="source-color-two" type="color" value="#0000ff"></label><p>The palette edits only the source below. It sends no light commands.</p></div>
+        <label class="source-label" for="source-json"><span>High-level source <small>source.json · Editable JSON</small></span></label>
         <textarea id="source-json" spellcheck="false" autocapitalize="off" aria-describedby="source-help"></textarea>
-        <p id="source-help" class="book-muted">动作由 nb1 编译；颜色可以是名称、hex、rgb8 或 hsv。这里无需手写帧。</p>
+        <p id="source-help" class="book-muted">nb1 compiles the action. Colors accept names, hex, rgb8, or hsv. No handwritten frames needed.</p>
       </fieldset>
-      <div class="book-actions"><button id="preview-source" type="button" class="primary">预览这份草稿</button><button id="edit-copy" type="button" class="secondary" disabled>编辑一个副本</button></div>
+      <div class="book-actions"><button id="preview-source" type="button" class="primary">Preview this draft</button><button id="edit-copy" type="button" class="secondary" disabled>Edit a copy</button></div>
       <div id="candidate-card" class="candidate-card" hidden>
-        <div class="candidate-heading"><span class="book-stamp">预览完成</span><strong id="candidate-facts">—</strong></div><p id="candidate-summary"></p>
-        <label class="confirm-row"><input id="confirm-revision" type="checkbox"><span>确认保存刚才预览的这个版本</span></label>
-        <div class="book-actions"><button id="save-pattern" type="button" class="primary" disabled>把这个版本收好</button><button id="recover-save" type="button" class="secondary" hidden>只读核对原保存</button></div>
+        <div class="candidate-heading"><span class="book-stamp">Preview complete</span><strong id="candidate-facts">—</strong></div><p id="candidate-summary"></p>
+        <label class="confirm-row"><input id="confirm-revision" type="checkbox"><span>Save exactly the revision just previewed</span></label>
+        <div class="book-actions"><button id="save-pattern" type="button" class="primary" disabled>Save this revision</button><button id="recover-save" type="button" class="secondary" hidden>Verify original save</button></div>
         <p id="save-status" class="book-muted" role="status"></p>
       </div>
-      <details class="book-diagnostics"><summary>来源、recipe 与冻结执行详情</summary><pre id="record-detail">先选择图案，或预览一份草稿。</pre></details>
+      <details class="book-diagnostics"><summary>Source, recipe, and frozen execution</summary><pre id="record-detail">Choose a Pattern or preview a draft first.</pre></details>
     </section>
   </div>
   <section class="panel play-desk" aria-labelledby="play-heading">
-    <div class="section-title"><h2 id="play-heading"><span class="step-number">02</span>让确认的版本亮起来</h2><span id="job-phase" class="tag">尚未播放</span></div>
+    <div class="section-title"><h2 id="play-heading"><span class="step-number">02</span>Light up a confirmed revision</h2><span id="job-phase" class="tag">Not playing</span></div>
     <div class="play-grid">
-      <div><h3 id="selected-pattern">尚未选择已保存版本</h3><p id="selected-ref" class="book-muted">从图案目录读取一个版本，或先保存草稿。保存不会自动播放。</p>
-        <fieldset id="play-fields" class="book-fieldset"><div class="book-field-pair"><label for="pattern-device">本地设备<select id="pattern-device"><option value="">正在读取设备…</option></select></label><label for="pattern-policy">遇到已有任务<select id="pattern-policy"><option value="reject">拒绝抢占 · reject</option><option value="queue">排队 · queue</option><option value="replace">替换当前任务 · replace</option></select></label></div></fieldset>
-        <div class="book-actions"><button id="prepare-pattern" type="button" class="secondary" disabled>准备本次播放</button><button id="run-pattern" type="button" class="primary" disabled>播放这个版本</button></div>
-        <p id="prepare-status" class="book-muted">选择设备与固定版本后，明确准备一张本次播放票据。</p>
+      <div><h3 id="selected-pattern">No saved revision selected</h3><p id="selected-ref" class="book-muted">Load a fixed revision or save a draft first. Saving never plays it.</p>
+        <fieldset id="play-fields" class="book-fieldset"><div class="book-field-pair"><label for="pattern-device">Local device<select id="pattern-device"><option value="">Reading devices…</option></select></label><label for="pattern-policy">When another job exists<select id="pattern-policy"><option value="reject">Keep current job · reject</option><option value="queue">Wait in line · queue</option><option value="replace">Replace current job · replace</option></select></label></div></fieldset>
+        <div class="book-actions"><button id="prepare-pattern" type="button" class="secondary" disabled>Prepare this playback</button><button id="run-pattern" type="button" class="primary" disabled>Play this revision</button></div>
+        <p id="prepare-status" class="book-muted">Select a device and fixed revision, then explicitly prepare one playback ticket.</p>
       </div>
-      <div class="receipt-card"><p class="receipt-eyebrow">这一次播放</p><strong id="job-status">还没有任务</strong><p id="job-progress" class="book-muted">接受请求不等于完成；停止可能需要等待设备收束。</p><p id="job-identity" class="book-muted"></p><div class="book-actions"><button id="query-pattern" type="button" class="secondary" disabled>查询原回执</button><button id="cancel-pattern" type="button" class="danger" disabled>停止这次播放</button><button id="new-pattern-task" type="button" class="text-button" hidden>保留回执，准备下一次</button></div><p id="integrity-status" class="book-warning" hidden></p></div>
+      <div class="receipt-card"><p class="receipt-eyebrow">This playback</p><strong id="job-status">No task yet</strong><p id="job-progress" class="book-muted">Acceptance is not completion. Stopping may wait for device cleanup.</p><p id="job-identity" class="book-muted"></p><div class="book-actions"><button id="query-pattern" type="button" class="secondary" disabled>Query original receipt</button><button id="cancel-pattern" type="button" class="danger" disabled>Stop this playback</button><button id="new-pattern-task" type="button" class="text-button" hidden>Keep receipt and prepare another</button></div><p id="integrity-status" class="book-warning" hidden></p></div>
     </div>
-    <details class="book-diagnostics"><summary>完整原票据与请求诊断</summary><pre id="task-detail">完整 daemon ID 仅在这里展示；主界面会短显。</pre><button id="export-receipt" type="button" class="secondary" disabled>下载原任务记录</button><label for="receipt-history">本标签页保留的历史票据<select id="receipt-history"><option value="">尚无历史票据</option></select></label><button id="load-history" type="button" class="secondary" disabled>恢复所选原票据</button><label for="restore-receipt">从之前导出的原任务恢复<input id="restore-receipt" type="file" accept="application/json,.json"></label><p class="book-muted">导入只恢复查询依据，不发播放或停止请求。页面刷新也不会自动重放。</p></details>
+    <details class="book-diagnostics"><summary>Original ticket and diagnostics</summary><pre id="task-detail">The full daemon ID is shown only here; the main view abbreviates it.</pre><button id="export-receipt" type="button" class="secondary" disabled>Download original task</button><label for="receipt-history">Receipt history in this tab<select id="receipt-history"><option value="">No receipt history yet</option></select></label><button id="load-history" type="button" class="secondary" disabled>Restore selected ticket</button><label for="restore-receipt">Restore an exported original task<input id="restore-receipt" type="file" accept="application/json,.json"></label><p class="book-muted">Import restores query context only. It sends no play or stop request. Refreshing does not replay a task.</p></details>
   </section>
-  <footer class="book-footer"><span>nb1 高级图案书 · experimental-v2</span><span>本地网页 → 同源 daemon → 同一个设备执行器</span></footer>
+  <footer class="book-footer"><span>nb1 Pattern Book · experimental-v2</span><span>Local page → same-origin daemon → one device worker</span></footer>
 </main>
 </body>
 </html>

@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -169,36 +168,36 @@ func serveRuntimeWithTrace(parent context.Context, listener net.Listener, engine
 	server := &http.Server{Handler: httpapi.New(engine, options...), ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 10 * time.Second, WriteTimeout: 10 * time.Second, IdleTimeout: 30 * time.Second, MaxHeaderBytes: 16 << 10}
 	served := make(chan error, 1)
 	go func() { served <- server.Serve(listener) }()
-	var cause error
-	logging := startRuntimeLogging(engine, output, map[string]interface{}{"event": "daemon_listening", "url": "http://" + listener.Addr().String(), "api_version": "v1", "devices": engine.Devices()}, recorder)
-	select {
-	case err := <-logging.startupErrors:
-		cause = err
-	case <-parent.Done():
-	case <-engine.Done():
-		if parent.Err() == nil {
-			cause = fmt.Errorf("device runtime stopped")
-		}
-	case err := <-served:
-		if !errors.Is(err, http.ErrServerClosed) {
-			cause = err
-		}
-	}
+	// Exactly two typed records are queued, even if the single log writer is
+	// blocked or has failed. Capacity two means neither send waits on the sink.
+	// The caller never joins the logger as part of native/lease cleanup.
+	lifecycle := make(chan runtimeShutdownRecord, 2)
+	defer close(lifecycle)
+	logging := startRuntimeLoggingWithLifecycle(engine, output, map[string]interface{}{"event": "daemon_listening", "url": "http://" + listener.Addr().String(), "api_version": "v1", "devices": engine.Devices()}, lifecycle, recorder)
+	selected := waitRuntimeShutdown(parent, engine.Done(), served, logging.startupErrors)
+	began := time.Now()
+	instance := engine.Instance().DaemonInstanceID
+	lifecycle <- selected.record(instance, "daemon_shutdown_trigger")
+	cause := selected.cause
 	stopCtx, stop := context.WithTimeout(context.Background(), shutdownTimeout)
 	defer stop()
-	if err := server.Shutdown(stopCtx); err != nil {
+	httpErr := server.Shutdown(stopCtx)
+	if httpErr != nil {
 		_ = server.Close()
 		if cause == nil {
-			cause = err
+			cause = httpErr
 		}
 	}
 	cancel()
-	if err := engine.Close(stopCtx); err != nil {
+	engineErr := engine.Close(stopCtx)
+	if engineErr != nil {
 		if cause != nil {
-			return fmt.Errorf("%v; device cleanup: %w", cause, err)
+			cause = fmt.Errorf("%v; device cleanup: %w", cause, engineErr)
+		} else {
+			cause = fmt.Errorf("device cleanup: %w", engineErr)
 		}
-		return fmt.Errorf("device cleanup: %w", err)
 	}
+	lifecycle <- selected.result(instance, began, httpErr, engineErr, cause, engine.Done())
 	return cause
 }
 

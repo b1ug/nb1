@@ -39,6 +39,10 @@ type runtimeConnectionRecord struct {
 // wait for done as part of hardware shutdown: arbitrary io.Writers cannot be
 // interrupted and may still be blocked after native cleanup has completed.
 func startRuntimeLogging(engine *control.Engine, output io.Writer, announcement interface{}, traces ...*transporttrace.Recorder) *runtimeLogging {
+	return startRuntimeLoggingWithLifecycle(engine, output, announcement, nil, traces...)
+}
+
+func startRuntimeLoggingWithLifecycle(engine *control.Engine, output io.Writer, announcement interface{}, lifecycle <-chan runtimeShutdownRecord, traces ...*transporttrace.Recorder) *runtimeLogging {
 	logging := &runtimeLogging{startupErrors: make(chan error, 1), done: make(chan struct{})}
 	writer := &runtimeJSONWriter{output: output}
 	var recorder *transporttrace.Recorder
@@ -61,8 +65,19 @@ func startRuntimeLogging(engine *control.Engine, output io.Writer, announcement 
 			}
 		}
 		connections := engine.Events()
-		for connections != nil || attempts != nil {
+		for connections != nil || attempts != nil || lifecycle != nil {
 			select {
+			case record, open := <-lifecycle:
+				if !open {
+					lifecycle = nil
+					continue
+				}
+				if err := writer.encode(record); err != nil {
+					if recorder != nil {
+						recorder.NoteWriterError()
+					}
+					return
+				}
 			case event, open := <-connections:
 				if !open {
 					connections = nil

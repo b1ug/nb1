@@ -345,3 +345,5 @@ MCP 使用新的只读 `preview_program`，可选 `list_devices` 的 `include_ca
 本机已安装的96a没有 `--transport-trace`。后续开发源码（独立资格来源d5dd2d8）提供显式 `server --transport-trace`：默认关闭，仅向daemon日志写有界attempt诊断，不新增HTTP/MCP接口或USB调用，不改变原重试策略。开启前正常交接设备所有权，不能让两个daemon同时持有同一设备。
 
 新日志可关联原Job、Pattern ID/revision与真实step/frame/target位置；无法取得typed原生码时省略，不用0或general error文字猜原因。内存环/队列固定，日志最多8MiB；坏日志消费者不阻硬件清理。时钟/拷贝/短锁仍消耗时间，trace本身可能影响Frame余量；摘要仅尽力，缺失不能当零丢弃或无重试。详见[诊断实现与限制](../internal/transporttrace/README.zh-CN.md)。软件验证之外，干净bc782候选已有临时Mac/MK2的Pulse、Orbit和运行中取消诊断窗口：196条连续边/98对SDK尝试，零重试、失败和丢失，来源/位置/目标均对应。结束后恢复日常96a且trace关闭，候选未安装。本轮相机未拍到灯，不能验收灯效，也不能解释此前6次恢复重试；完整脱敏资格见本地artifacts/transport-trace-native-20261110/qualification.json。
+
+后续候选还新增两条有界、尽力输出的停机生命周期日志，分别记录主控制循环观察到的触发分支与HTTP/Engine清理结果；不把连接状态的LastError当退出原因，不猜具体signal。日志sink阻塞或失败不阻硬件清理，缺日志也不能当正常退出。当前已安装96a没有这两条新记录；详见[停机诊断合同与边界](daemon-lifecycle-diagnostics.zh-CN.md)。

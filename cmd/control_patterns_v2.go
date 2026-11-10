@@ -93,5 +93,6 @@ func newControlPatternsV2Command(options *controlFlags) *cobra.Command {
 		return printPatternResult(cmd, out, err)
 	}})
 	addPatternExecutionCommandsV2(parent, options)
+	addPatternSnapshotCommandsV2(parent, options)
 	return parent
 }

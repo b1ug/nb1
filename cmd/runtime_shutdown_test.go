@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -422,3 +423,25 @@ func TestRuntimeShutdownClassifierNeverCallsCustomErrorMethods(t *testing.T) {
 type nonComparableDiagnosticError []int
 
 func (nonComparableDiagnosticError) Error() string { panic("diagnostic called non-comparable Error") }
+
+type changingShutdownContext struct {
+	context.Context
+	calls int32
+}
+
+func (c *changingShutdownContext) Err() error {
+	if atomic.AddInt32(&c.calls, 1) == 1 {
+		return nil
+	}
+	return context.Canceled
+}
+
+func TestRuntimeShutdownEngineContextSampleIsOneObservation(t *testing.T) {
+	parent := &changingShutdownContext{Context: context.Background()}
+	done := make(chan struct{})
+	close(done)
+	selected := waitRuntimeShutdown(parent, done, nil, nil)
+	if selected.trigger != "engine_stopped" || selected.parentContext != "none" || selected.cause == nil || atomic.LoadInt32(&parent.calls) != 1 {
+		t.Fatalf("context was resampled after the original cause decision: %+v, calls=%d", selected, atomic.LoadInt32(&parent.calls))
+	}
+}

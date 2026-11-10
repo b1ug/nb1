@@ -46,7 +46,9 @@ func waitRuntimeShutdown(parent context.Context, engineDone <-chan struct{}, ser
 		result.trigger = "parent_context_done"
 	case <-engineDone:
 		result.trigger = "engine_stopped"
-		if parent.Err() == nil {
+		parentErr := parent.Err()
+		result.parentContext = runtimeErrorClass(parentErr)
+		if parentErr == nil {
 			result.cause = fmt.Errorf("device runtime stopped")
 		}
 	case err := <-served:
@@ -55,7 +57,9 @@ func waitRuntimeShutdown(parent context.Context, engineDone <-chan struct{}, ser
 			result.cause = err
 		}
 	}
-	result.parentContext = runtimeErrorClass(parent.Err())
+	if result.parentContext == "" {
+		result.parentContext = runtimeErrorClass(parent.Err())
+	}
 	return result
 }
 

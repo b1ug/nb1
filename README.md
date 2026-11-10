@@ -29,6 +29,7 @@ Run as an ordinary user with the platform's device access configured. The HTTP s
 - [Shutdown diagnostics](docs/daemon-lifecycle-diagnostics.md) explain the installed runtime's bounded lifecycle logs and their limits.
 - [Agent skill](skills/blink1-control/SKILL.md) and [llms.txt](llms.txt) explain expression selection, original receipts, host-side pattern storage, and recovery.
 - [Advanced Pattern snapshot exchange](docs/pattern-snapshots-v2.md) describes the development CLI's host-only import/export commands and read-only future-recipe backups.
+- [Device-native sequence model](docs/device-native-sequence.md) describes the internal offline draft: explicit placement/playback checks and raw row inspection, without device execution or new API routes.
 - [Chinese reference manual](docs/api-reference.zh-CN.md), [Chinese CLI guide](docs/patterns-cli.md), and [Chinese README](README.zh-CN.md) are localized references.
 
 The installed workspace source `1e2e7650e2cff6686d95cb9908953e5fd370f2bc` includes eight advanced Pattern CLI commands (including list), MCP20, opt-in transport diagnostics, and the pinned English Animal Crossing-inspired Web debugger. Its high-level actions and host Pattern library retain the same per-device core. The prior [96a MCP16 snapshot](docs/mcp-tools.daily-96a.schema.json) remains available; all 16 complete tool objects are unchanged in MCP20, whose four additional authoring tools remain experimental.

@@ -17,9 +17,9 @@ python3 tools/import-web-dist.py /absolute/path/to/dist \
   --source-commit FULL_SOURCE_COMMIT --manifest-sha256 MANIFEST_SHA256
 ```
 
-前两条只读。导入接受两个完整、闭合的产物组合：基础组合为 `index.html`、`demo.css`、`demo.js`、`orbit.html`、`orbit.css`、`orbit.js`、`LICENSE.txt`；扩展组合在此基础上要求全部三个 `patterns.html/js/css`。基础组合必须声明原来的两项 light 合同，扩展组合还必须声明 `nb1-pattern-library/experimental-v2` 与 `nb1-pattern-record/experimental-v2`。不接受只加入一两项新资源或合同，也不接受用已知新资源替换旧文件。
+前两条只读。导入接受三个完整、闭合的产物组合：基础组合为 `index.html`、`demo.css`、`demo.js`、`orbit.html`、`orbit.css`、`orbit.js`、`LICENSE.txt`；扩展组合在此基础上要求全部三个 `patterns.html/js/css`；双语扩展再同时要求`i18n.js`与`locales.js`。基础组合必须声明原来的两项 light 合同，扩展组合还必须声明 `nb1-pattern-library/experimental-v2` 与 `nb1-pattern-record/experimental-v2`。不接受只加入一两项新资源或合同，也不接受用已知新资源替换旧文件。
 
-整个 dist 含 manifest 仍至多 256 KiB。导入检查来源、原 manifest 字节、逐文件大小和摘要，并按 ASCII 路径排序后将 `path + NUL + sha256 + LF` 拼接为 UTF-8，重算七项或十项资源的 `source.tree_sha256`。dirty 来源、未知文件、重复字段、null、符号链接、重解析点与硬链接均拒绝。独立 Web 仓库的源码提交和锁文件仍需由构建方审查；导入器验证的是明确指定的产物，不替代来源可信度判断。
+整个 dist 含 manifest 仍至多 256 KiB。导入检查来源、原 manifest 字节、逐文件大小和摘要，并按 ASCII 路径排序后将 `path + NUL + sha256 + LF` 拼接为 UTF-8，重算七项、十项或十二项资源的 `source.tree_sha256`。dirty 来源、未知文件、重复字段、null、符号链接、重解析点与硬链接均拒绝。独立 Web 仓库的源码提交和锁文件仍需由构建方审查；导入器验证的是明确指定的产物，不替代来源可信度判断。
 
 可在明确重新指定旧来源及摘要后导入完整基础组合用于恢复。有效基础组合没有新页面时，其三个新资源返回404；必需资源缺失或摘要不符仍视为整个bundle校验失败，不以404掩盖。新增页面沿用同源、只允许GET、无query/body、no-store/nosniff、严格CSP与no-referrer。是否实际嵌入新页面，以本二进制的固定dist为准；单独升级host代码不构成新Web功能验收。
 
@@ -31,9 +31,13 @@ python3 tools/import-web-dist.py /absolute/path/to/dist \
 
 页面内部使用同一个 `light` 对象：`set`、`off`、`fade`、`blink`、`breathe`、`pulse`、`alternate`、`rainbow` 和 `run`。它是本页的交互桥接层，不是已经发布的独立 JavaScript SDK。艺术动作在 `internal/lightaction` 的 Go 核心中编译，浏览器不自行生成它们的 Program。
 
-## 高级图案书：96a整合候选
+## 当前双语安装与历史单语版本
 
-候选96a固定Web来源`f90ef8d6143acd55c059b94ecf961ec65a1bb646`；扩展bundle为9个公开页面资源+LICENSE，manifest另计，共208132字节、4合同。`/demo/patterns.html`、`patterns.js`、`patterns.css`已随该构建嵌入并返回200；历史host56c与基础fe32507的三个404保留，合法基础bundle没有这些页面时仍应404。部署状态与本机MK2有限证据看[手册第1节](api-reference.zh-CN.md)，工作区现已安装96a并通过33项只读复核；是否宿主注册/OS服务安装仍须分别核对。
+历史安装1e固定英文Web cf5219，11文件/210608字节、9公开资源。已安装6ca固定双语Web1e1b1dd，13文件/260151字节、11公开资源；额外两个GET仅为同源语言脚本，不增加硬件操作。三页首次默认英文，可显式切换中文；仅用户选择时写本浏览器的命名空间偏好，跨页/刷新保留，不按OS语言自动切换。语言切换不改变表单、原Record/source/recipe/票据，也不触发预览、保存、播放或取消。
+
+## 高级图案书：历史96a整合候选
+
+候选96a固定Web来源`f90ef8d6143acd55c059b94ecf961ec65a1bb646`；扩展bundle为9个公开页面资源+LICENSE，manifest另计，共208132字节、4合同。`/demo/patterns.html`、`patterns.js`、`patterns.css`已随该构建嵌入并返回200；历史host56c与基础fe32507的三个404保留，合法基础bundle没有这些页面时仍应404。部署状态与本机MK2有限证据看[手册第1节](api-reference.zh-CN.md)，历史96a曾安装并通过33项只读复核；历史1e另有38项证据，当前6ca另有57项只读后验及4项只读UI证据；是否宿主注册/OS服务安装仍须分别核对。
 
 打开`/demo/patterns.html`后，可按图案书里的三步操作：
 

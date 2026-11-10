@@ -28,4 +28,4 @@ nb1 doctor
 
 [完整手册](docs/api-reference.zh-CN.md)说明High/Low分别负责什么、当前完成状态、参数与任务语义；[OpenAPI](docs/openapi.json)、[实际MCP schema](docs/mcp-tools.schema.json)和[JSON示例](docs/examples/api/)供机器与调用方核对。开发接口与本机已安装版本分别标记，阅读不操作设备。
 
-96a整合候选已提供High八动作/实验Orbit、Low Program/Frame、独立高级Pattern库、CLI七命令、真实stdio MCP16及动森风格本地图案书。Web来源f90ef8，9公开资源+LICENSE及manifest共208132B；`/demo/patterns.html`只在有效扩展bundle中存在。该版本有本机MK2有限CLI/MCP/Web验证，验收窗口曾恢复1d89后，另完成工作区安装96a与33项只读复核；不等于发布、全局MCP注册、OS服务安装或跨平台实体USB通过，详见手册的版本与证据段。
+当前安装为固定`6ca5a14e9f7fec8a5766e79f5bdef3fafef66d8f`：高级图案CLI十命令（含主机快照import/export）、真实stdio MCP20及默认英文可切中文的三页动森Web。受控推广有57项只读后验；隔离只读浏览器另4项通过，不代表动画或光学验收。46操作仅比历史1e的44多两个静态GET；111模型/14 JSON例/20完整MCP对象不变。旧1e/CLI8/英文Web及96a记录保留为历史，SDK b3/GID37与用户主机库未变；没有Release、全局MCP、OS启动服务或新增MK3/Flash/其他系统实体USB资格。

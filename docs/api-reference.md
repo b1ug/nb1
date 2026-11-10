@@ -13,9 +13,9 @@ GID and blink1-go are separate HID/hardware SDK layers. Their raw-report or Flas
 | High level: light v1 | `set`, `off`, `fade`, `blink`, `breathe`, `pulse`, `alternate`, `rainbow` | HTTP/CLI/MCP/Web share the core compiler. Additional artistic actions and composition syntax are future work. |
 | High level: Orbit v2 | Four/eight paired long-fade segments, colors, phase order, period, cycles, finish rule | Experimental; finite Mac/MK2 evidence across Web/CLI/MCP. No general flicker-free or geometric-rotation guarantee. |
 | Host memory: Pattern v1 | Save Program/legacy Effect, import/export, exact revision references | HTTP/CLI/MCP/Web. Does not directly preserve new FrameProgram/Orbit authoring source. |
-| Host memory: Pattern v2 | Original source, normalized Action, recipe, frozen typed execution, revision, execution digest | Installed1e2e765 includes eight advanced CLI commands, MCP20 with experimental authoring, and the English Pattern Book. Snapshot import/export CLI/MCP clients remain future work; the HTTP routes exist. |
+| Host memory: Pattern v2 | Original source, normalized Action, recipe, frozen typed execution, revision, execution digest | Installed6ca includes ten advanced CLI commands, MCP20 with experimental authoring, and the bilingual English-default Pattern Book. Snapshot import/export is host-only CLI; MCP snapshot clients remain unavailable. |
 
-The installed workspace source is `1e2e7650e2cff6686d95cb9908953e5fd370f2bc` (1e2e765), with pinned native `bin/nb1`, `bin/nb1-runtime`, and `bin/nb1-mcp`. Its local daemon origin is `http://127.0.0.1:8931`. Installation passed **38 read-only checks**: exact binary/manifest identities, eight advanced CLI commands, actual stdio20 complete tool objects, nine English Web asset hashes/four intentionally hidden404 paths, device online/idle/black cache, clean adapter EOF, and zero mutating transport calls during verification. The Web source is `cf5219ba7c7da8e1f5db58dade22643aaa8c0861`, with11 packaged files/210608 bytes including its manifest. This reference does not itself inspect or change devices, installation, global MCP, or OS services.
+The prior installed workspace source was `1e2e7650e2cff6686d95cb9908953e5fd370f2bc` (1e2e765), with pinned native `bin/nb1`, `bin/nb1-runtime`, and `bin/nb1-mcp`. Its local daemon origin is `http://127.0.0.1:8931`. Installation passed **38 read-only checks**: exact binary/manifest identities, eight advanced CLI commands, actual stdio20 complete tool objects, nine English Web asset hashes/four intentionally hidden404 paths, device online/idle/black cache, clean adapter EOF, and zero mutating transport calls during verification. The Web source is `cf5219ba7c7da8e1f5db58dade22643aaa8c0861`, with11 packaged files/210608 bytes including its manifest. This reference does not itself inspect or change devices, installation, global MCP, or OS services.
 
 The candidate's finite macOS arm64/MK2 FW204 evidence spans **two bounded windows**. CLI3/MCP2 tasks completed3/cancelled2, preserving original references and receipts; actual MCP authoring did not mutate the device. The first window remains FAILED overall because the acceptance script incorrectly expected hidden LICENSE and direct index HTTP paths to return200. A second window checked only the correct read-only English Web routes: nine hashes, four404s, three mobile English pages. The product was unchanged and the light tasks were not replayed.160 SDK attempts were paired with zero retries, failures, or trace loss in that sample. Two ordinary owned SIGTERM exits produced observed lifecycle records; logs remain best effort.
 
@@ -23,9 +23,15 @@ Private622-frame/30fps footage showed red/purple/blue handoff on the actual lamp
 
 Installation records are local `artifacts/native-english-suite-20261110/promotion/controlled/attempt1/result.json` and `post-install/result.json`; component qualification and independent review are in the same native evidence directory. These file paths identify development evidence, not publicly downloadable API resources. Host libraries and SDK `b3f2586`/GID `37d7cfd` dependencies were retained. Source-only later English help edits are not installed in this fixed binary; legacy program messages are not all English yet. No release, OS autostart, global MCP registration, or PR merge follows from workspace promotion.
 
-Historical provenance remains separate: former daily `1d89eae92278f24a68fff1a34e3c1e696a962c3c` had32 canonical operations/MCP12. Prior installed96a hadCLI7/MCP16 and33 installation checks, with an older seven-task window/six recovered USB retries. Its [MCP16 snapshot](mcp-tools.daily-96a.schema.json) and [MCP12 snapshot](mcp-tools.daily-1d89.schema.json) remain exact historical bytes. Earlier HTTP qualification `f8bb267` and bundle host `56c4aef` are source baselines, not missing features in the current installation. The current inventory has **44 canonical method/path operations**; four explicit GET aliases give48 OpenAPI operations across43 paths, **111 models**, and **14 JSON example files**. Three canonical operations are conditional static assets.
+Historical provenance remains separate: former daily `1d89eae92278f24a68fff1a34e3c1e696a962c3c` had32 canonical operations/MCP12. Prior installed96a hadCLI7/MCP16 and33 installation checks, with an older seven-task window/six recovered USB retries. Its [MCP16 snapshot](mcp-tools.daily-96a.schema.json) and [MCP12 snapshot](mcp-tools.daily-1d89.schema.json) remain exact historical bytes. Earlier HTTP qualification `f8bb267` and bundle host `56c4aef` are source baselines, not missing features in the current installation. The prior1e baseline had44 canonical operations. The installed source6ca inventory has **46 canonical method/path operations**; four explicit GET aliases give50 OpenAPI operations across45 paths, with the same **111 models** and **14 JSON example files**. Five canonical operations are conditional static assets; the only additions are the two local locale JavaScript GETs.
 
 The SDK SavePattern patch and additive hardware-capability candidate are not pinned by this documentation. Device RAM deployment, Flash persistence, startup, and Notes remain separate proposed nb1 APIs. Host storage works on MK2; device storage limits do not disable the host library.
+
+### Current installed6ca workspace
+
+Fixed runtime `6ca5a14e9f7fec8a5766e79f5bdef3fafef66d8f` is now installed through a separate controlled four-file promotion. Its57 read-only postinstallation checks cover exact binaries/manifest,CLI10,MCP20 complete objects,11 public Web asset hashes and hidden404 routes, healthy single owner/fresh idle dualblack state and zero application-mutation delta. The SDK b3/GID37 dependencies and user host libraries were retained. The embedded bilingual producer is `1e1b1ddf2a985dea00e494761eed592183755c1d` (13 files/260151 bytes; manifest `a35beb8fb17aa3a9e6751e006e0c7b6524d197b83cd679a25528a99134ce6460`). Three pages default to English and explicitly switch to Chinese. A separate four-check isolated browser pass verifies language navigation/roundtrip, raw JSON/titles/original session receipts, same daemon instance and no non-GET/external/mutating requests; it is read-only UI evidence, not animation or optical acceptance.
+
+Evidence is local `artifacts/bilingual-suite-upgrade-20261110/execution-6ca-approved/result.json`, `artifacts/bilingual-suite-upgrade-20261110/execution-6ca-approved/post-install/result.json` and `artifacts/bilingual-suite-upgrade-20261110/execution-6ca-approved/browser-read-only/result.json`. Documentation itself performs no HTTP, USB, service, browser or installation operation. Previous1e/CLI8/English Web and its38-check promotion remain historical. No release, global MCP registration, OS startup change or new MK3/Flash/other-OS physical qualification follows.
 
 ## 2. High level and Low level responsibilities
 
@@ -413,7 +419,7 @@ Execution still needs one actual prepared original ticket. Preserve full Ref/tic
 | Read/cancel Job | control job ID / control cancel ID | get_job / cancel_job |
 | v1 host library | control patterns list/get/import/export/preview/run | list_patterns/get_pattern; preview_program/run_program pattern_ref branch |
 
-MCP is a real stdio protocol adapter to local HTTP. It does not spawn CLI subprocesses or own USB. Historical1d89 has 12 tools: cancel_job/get_device_state/get_job/get_pattern/list_devices/list_patterns/preview_light/preview_program/resolve_color/run_light/run_program/set_device_state. Installed1e2e765 has20; the [current catalog](mcp-tools.schema.json), [previous16 snapshot](mcp-tools.daily-96a.schema.json), and [historical12 snapshot](mcp-tools.daily-1d89.schema.json) are retained. The complete old16 objects remain unchanged in the current catalog. Real session tools/list remains authoritative.
+MCP is a real stdio protocol adapter to local HTTP. It does not spawn CLI subprocesses or own USB. Historical1d89 has 12 tools: cancel_job/get_device_state/get_job/get_pattern/list_devices/list_patterns/preview_light/preview_program/resolve_color/run_light/run_program/set_device_state. Installed6ca5a14 retains the same20 complete objects captured from1e; the [current catalog](mcp-tools.schema.json), [previous16 snapshot](mcp-tools.daily-96a.schema.json), and [historical12 snapshot](mcp-tools.daily-1d89.schema.json) are retained. The complete old16 objects remain unchanged in the current catalog. Real session tools/list remains authoritative.
 
 Use the [example files](examples/api/README.md). Outside the workspace, choose a verified binary path; installed workspace `bin/nb1` is pinned1e2e765. These commands demonstrate local preview, daemon/cache preview, and deliberate run:
 
@@ -425,7 +431,7 @@ nb1 control light run 20005601 breathe.action.json --wait
 
 Advanced CLI can prepare once, or accept the full original pair saved by control prepare. MCP run_light requires selected serial, original ticket, and reject. get_job distinguishes Program/Frame by ID prefix; when only a ticket is known, Frame needs explicit job_kind:frame. MCP does not expand animation or retry execution.
 
-### Eight installed advanced Pattern CLI commands
+### Ten installed advanced Pattern CLI commands
 
 | `control patterns-v2` command | Behavior and bounds |
 | --- | --- |
@@ -437,10 +443,12 @@ Advanced CLI can prepare once, or accept the full original pair saved by control
 | run SERIAL ID --revision SHA | Effective default reject; explicit --policy replace/queue/reject. Prepare once if no pair, zero Prepare with original pair; one execution POST; no implicit Get/preview |
 | request SERIAL ID --revision SHA --request-id KEY --expected-daemon-instance-id INSTANCE | Original receipt only; optional --job-id/--execution-digest constraints; no library read/rebinding |
 | cancel SERIAL ID --revision SHA --request-id KEY --expected-daemon-instance-id INSTANCE | GET/validate original receipt, then at most one cancel POST with confirmed_job_id; terminal/cancelling means no POST; optional original Job/digest constraints |
+| import FILE | Complete bounded snapshot verified locally; original bytes once to create-only host storage; publication uncertainty retained; no playback/ticket |
+| export [ID] [--output FILE] | One integrity-checked host snapshot GET; preserves valid future recipes; stdout or exclusively created0600 file; no overwrite/playback |
 
-SHA must be the real full sha256: 64-lowercase-hex revision; no latest. record_contract is fixed experimental-v2 and retained in output. All eight are daemon-only; direct is rejected. Preview/author commands do not accept policy/wait/tickets. request/cancel require the original pair and reject policy. Installed1e2e765 includes list; advanced snapshot import/export CLI is not installed. The old patterns command does not implicitly understand v2.
+SHA must be the real full sha256: 64-lowercase-hex revision; no latest. record_contract is fixed experimental-v2 and retained in output. All ten are daemon-only; direct is rejected. Preview/author commands do not accept policy/wait/tickets. request/cancel require the original pair and reject policy. Installed6ca includes list/import/export; previous1e had the first eight commands. The old patterns command does not implicitly understand v2.
 
-The installed eighth command `control patterns-v2 list` makes one bounded GET for summaries, without fetching every Record, preview, prepare, run, or opening the reported path. Valid unknown source/recipes remain visible read-only. POSIX/drive/complete UNC paths follow server path syntax. Summary verification is advertised metadata; use get for complete independent Record/source/revision/digest verification. Advanced snapshot CLI import/export remain future work.
+The installed eighth command `control patterns-v2 list` makes one bounded GET for summaries, without fetching every Record, preview, prepare, run, or opening the reported path. Valid unknown source/recipes remain visible read-only. POSIX/drive/complete UNC paths follow server path syntax. Summary verification is advertised metadata; use get for complete independent Record/source/revision/digest verification. Installed6ca includes explicit host-only snapshot import/export; historical1e did not. Import validates a complete snapshot then sends its original bytes once to the existing create-only route, without playback/tickets. Export checks a bounded complete snapshot and writes stdout or an exclusively created0600 output; known and valid future recipes remain distinct. Keep `publication_unknown` and the original snapshot/Refs for read-only reconciliation; never automatically re-import. MCP import/export remains unavailable.
 
 run/request/cancel support --wait within the shared timeout budget (default 30s). Waiting queries only the original Pattern receipt and checks typed Program/Frame, Ref, digest, Job ID, creation/start timestamps, progress, and lifecycle. Timeout does not cancel/resubmit or guess from history. A validated terminal state ends waiting before a subsequent caller-context stop can turn it unknown. run/request may exit nonzero for failed/cancelled while retaining the trusted terminal result and outcome_unknown=false; a failed Job may validly omit error text.
 
@@ -471,29 +479,29 @@ Ref contains record_contract:`nb1-pattern-record/experimental-v2`, ID, and full 
 
 Successful run returns structuredContent.kind=pattern_job, data=`{pattern_ref,execution_digest,job_kind,job}`, and outer request_ticket. Query kind is pattern_request; cancel kind is pattern_cancel with data.pattern_job and cancel_attempted. Cancel errors retain original ticket/last trustworthy snapshot. Unknown outcomes never trigger a new key, and later good responses do not conceal integrity failures.
 
-The 16-tool snapshot provenance is clean `c37f7fc33d52cc25619b10a5bc477965bf544cc0`; `679bdfc735a2f011c4c1fbf4fabec80f406f8f18` adds error-header checks without changing objects. Historical software stdio tests used temporary Store/memory Engine rather than USB. Prior96a physical evidence is separate. The MCP module keeps Go1.25 minimum; root Go1.18 compatibility does not substitute. The installed1e2e765 authoring tools are described below; snapshot import/export MCP is not installed. Legacy list_patterns/get_pattern remain v1.
+The 16-tool snapshot provenance is clean `c37f7fc33d52cc25619b10a5bc477965bf544cc0`; `679bdfc735a2f011c4c1fbf4fabec80f406f8f18` adds error-header checks without changing objects. Historical software stdio tests used temporary Store/memory Engine rather than USB. Prior96a physical evidence is separate. The MCP module keeps Go1.25 minimum; root Go1.18 compatibility does not substitute. The unchanged authoring tools retained in installed6ca are described below; snapshot import/export MCP is not installed. Legacy list_patterns/get_pattern remain v1.
 
 ### Installed MCP20 experimental host authoring
 
-Installed1e2e765 integrates four tools from `10cf37f`: list_patterns_v2/get_pattern_v2/preview_pattern_draft_v2/save_pattern_v2. They list summaries, read full Record, preview source, or conditionally save expected_revision. They neither prepare execution tickets nor create/play Jobs, and do not change old v1 tool meaning. [Current20 schemas](mcp-tools.schema.json) are authoritative for this captured installed binary; the [original candidate20 snapshot](mcp-tools.candidate-20.schema.json) and exact [prior16 snapshot](mcp-tools.daily-96a.schema.json) retain provenance. All16 old objects are unchanged.
+Installed6ca retains four tools first integrated in1e from `10cf37f`: list_patterns_v2/get_pattern_v2/preview_pattern_draft_v2/save_pattern_v2. They list summaries, read full Record, preview source, or conditionally save expected_revision. They neither prepare execution tickets nor create/play Jobs, and do not change old v1 tool meaning. [Current20 schemas](mcp-tools.schema.json) are the exact captured1e objects, independently matched by installed6ca tools/list; the [original candidate20 snapshot](mcp-tools.candidate-20.schema.json) and exact [prior16 snapshot](mcp-tools.daily-96a.schema.json) retain provenance. All16 old objects are unchanged.
 
 Full records travel as record_json strings to preserve exact integers. After uncertain save, retain original_author_json and original Ref and explicitly GET to reconcile, without automatic write retry. The library is create-only; changed content needs a new ID. Daemon compilation is authoritative; adapter Record revision/typed-digest checks are not independent semantic recompilation. The 4MiB budget covers adapter-built CallToolResult only, excluding SDK-added _meta and JSON-RPC envelopes. The earlier1016-node/117-top-level software qualification (three explicit live skips) remains separate from installed1e2e765's actual stdio/authoring/task evidence and38 read-only installation checks. Software evidence alone never establishes physical support.
 
 ## 14. Complete HTTP operation index and errors
 
-The following 44 entries cover execution, pure computation, storage, and static resources. `/v2` does not upgrade everything: light v2 means experimental Orbit, while Pattern v2 means source-preserving records and fixed-Ref execution. `{id}` and `{jobId}` in the same position are placeholder spellings, not separate routes.
+The following46 entries describe installed6ca:44 previous1e operations plus two conditional bilingual JavaScript resources. They cover execution, pure computation, storage, and static resources. `/v2` does not upgrade everything: light v2 means experimental Orbit, while Pattern v2 means source-preserving records and fixed-Ref execution. `{id}` and `{jobId}` in the same position are placeholder spellings, not separate routes.
 
 OpenAPI has four additional explicit ordinary-ID GET aliases: `/v1/patterns/import`, `/v2/patterns/preview`, `/v2/patterns/import`, and `/v2/patterns/preview-ref`. Their GET semantics remain the corresponding `/patterns/{id}` read. They do not add independent capabilities.
 
-The bundle host accepts closed basic/extended profiles: six public assets+LICENSE/two contracts, or nine public assets+LICENSE/four contracts, with manifest counted separately and total dist at most 256KiB. GET /demo redirect is another canonical operation. Historical host 56c with old fe32507 bundle returned 404 for the three Pattern resources. Prior96a embedded Web f90ef8d/208132 bytes. Current1e2e765 embeds English Web cf5219 with10 manifest.files entries and210608 total bytes including manifest; its nine public resources were hash-checked in the native read-only window and after installation. A valid basic bundle still returns 404 for them; missing required files or digest/profile/lock mismatch returns 500. The English bundle changes content without changing routes. See [localized Web debugger details](web-debugger.zh-CN.md).
+The source6ca bundle host accepts three closed profiles: six public assets+LICENSE/two contracts; nine public assets+LICENSE/four contracts; or eleven public assets+LICENSE/the same four contracts. Manifest is counted separately and total dist stays at most256KiB. The bilingual profile adds both i18n.js and locales.js together. Older valid profiles return404 for them; malformed profiles or missing required bytes return500. GET /demo redirect is another canonical operation. Historical host 56c with old fe32507 bundle returned 404 for the three Pattern resources. Prior96a embedded Web f90ef8d/208132 bytes. Current1e2e765 embeds English Web cf5219 with10 manifest.files entries and210608 total bytes including manifest; its nine public resources were hash-checked in the native read-only window and after installation. A valid basic bundle still returns 404 for them; missing required files or digest/profile/lock mismatch returns 500. The English bundle changes content without changing routes. See [localized Web debugger details](web-debugger.zh-CN.md).
 
-All routes share loopback Host/same-origin Origin protection and no-store/nosniff headers. Static pages do not create Jobs on load; explicit later actions call the APIs. Sources and tests below are repository links; their existence does not itself establish physical support. Installed state is1e2e765; per-route historical availability is retained separately in the structured inventory.
+All routes share loopback Host/same-origin Origin protection and no-store/nosniff headers. Static pages do not create Jobs on load; explicit later actions call the APIs. Sources and tests below are repository links; their existence does not itself establish physical support. Installed state is6ca5a14; per-route historical availability is retained separately in the structured inventory.
 
 <!-- canonical-http-operations:start -->
 
 ### GET /healthz
 
-**Availability:** Installed1e2e765; also implemented in historical 1d89.
+**Availability:** Installed6ca5a14; previously1e2e765; also implemented in historical 1d89.
 
 **Input:** none. **Query:** none in documented canonical use.
 
@@ -509,7 +517,7 @@ All routes share loopback Host/same-origin Origin protection and no-store/nosnif
 
 ### GET /v1/capabilities
 
-**Availability:** Installed1e2e765; also implemented in historical 1d89.
+**Availability:** Installed6ca5a14; previously1e2e765; also implemented in historical 1d89.
 
 **Input:** none. **Query:** RawQuery must be empty.
 
@@ -527,7 +535,7 @@ All routes share loopback Host/same-origin Origin protection and no-store/nosnif
 
 ### GET /v1/instance
 
-**Availability:** Installed1e2e765; also implemented in historical 1d89.
+**Availability:** Installed6ca5a14; previously1e2e765; also implemented in historical 1d89.
 
 **Input:** none. **Query:** none in documented canonical use.
 
@@ -545,7 +553,7 @@ All routes share loopback Host/same-origin Origin protection and no-store/nosnif
 
 ### GET /v1/transport-metrics
 
-**Availability:** Installed1e2e765; also implemented in historical 1d89.
+**Availability:** Installed6ca5a14; previously1e2e765; also implemented in historical 1d89.
 
 **Input:** none. **Query:** none in documented canonical use.
 
@@ -563,7 +571,7 @@ All routes share loopback Host/same-origin Origin protection and no-store/nosnif
 
 ### GET /v1/devices
 
-**Availability:** Installed1e2e765; also implemented in historical 1d89.
+**Availability:** Installed6ca5a14; previously1e2e765; also implemented in historical 1d89.
 
 **Input:** none. **Query:** none in documented canonical use.
 
@@ -579,7 +587,7 @@ All routes share loopback Host/same-origin Origin protection and no-store/nosnif
 
 ### GET /v1/devices/{serial}
 
-**Availability:** Installed1e2e765; also implemented in historical 1d89.
+**Availability:** Installed6ca5a14; previously1e2e765; also implemented in historical 1d89.
 
 **Input:** none. **Query:** none in documented canonical use.
 
@@ -597,7 +605,7 @@ All routes share loopback Host/same-origin Origin protection and no-store/nosnif
 
 ### POST /v1/programs/preview
 
-**Availability:** Installed1e2e765; also implemented in historical 1d89.
+**Availability:** Installed6ca5a14; previously1e2e765; also implemented in historical 1d89.
 
 **Input:** Exactly one of program:Program / effect:Effect / pattern_ref:{id,revision}; optional serial. **Query:** RawQuery must be empty. **Raw body limit:** 1048576 bytes.
 
@@ -613,7 +621,7 @@ All routes share loopback Host/same-origin Origin protection and no-store/nosnif
 
 ### POST /v1/devices/{serial}/jobs
 
-**Availability:** Installed1e2e765; also implemented in historical 1d89.
+**Availability:** Installed6ca5a14; previously1e2e765; also implemented in historical 1d89.
 
 **Input:** Exactly one program:Program / effect:Effect / pattern_ref:{id,revision}, policy; request_id and expected_daemon_instance_id both present or both absent for raw Program/Effect. **Query:** Canonical use has none; legacy raw branch does not explicitly reject all query/body extras beyond strict JSON schema. **Raw body limit:** 1048576 bytes.
 
@@ -633,7 +641,7 @@ All routes share loopback Host/same-origin Origin protection and no-store/nosnif
 
 ### GET /v1/devices/{serial}/requests/{request_id}
 
-**Availability:** Installed1e2e765; also implemented in historical 1d89.
+**Availability:** Installed6ca5a14; previously1e2e765; also implemented in historical 1d89.
 
 **Input:** documented none. **Query:** Exactly one nonempty expected_daemon_instance_id.
 
@@ -653,7 +661,7 @@ All routes share loopback Host/same-origin Origin protection and no-store/nosnif
 
 ### GET /v1/jobs/{id}
 
-**Availability:** Installed1e2e765; also implemented in historical 1d89.
+**Availability:** Installed6ca5a14; previously1e2e765; also implemented in historical 1d89.
 
 **Input:** none. **Query:** none in documented canonical use.
 
@@ -669,7 +677,7 @@ All routes share loopback Host/same-origin Origin protection and no-store/nosnif
 
 ### POST /v1/jobs/{id}/cancel
 
-**Availability:** Installed1e2e765; also implemented in historical 1d89.
+**Availability:** Installed6ca5a14; previously1e2e765; also implemented in historical 1d89.
 
 **Input:** empty or {} only; no source/instance/ticket fields. **Query:** canonical none; old branch does not explicitly reject all query parameters.
 
@@ -687,7 +695,7 @@ All routes share loopback Host/same-origin Origin protection and no-store/nosnif
 
 ### POST /v1/colors/resolve
 
-**Availability:** Installed1e2e765; also implemented in historical 1d89.
+**Availability:** Installed6ca5a14; previously1e2e765; also implemented in historical 1d89.
 
 **Input:** {color:ColorInput}. **Query:** none, including empty ?. **Raw body limit:** 4096 bytes.
 
@@ -705,7 +713,7 @@ All routes share loopback Host/same-origin Origin protection and no-store/nosnif
 
 ### GET /v1/frame-capabilities
 
-**Availability:** Installed1e2e765; also implemented in historical 1d89.
+**Availability:** Installed6ca5a14; previously1e2e765; also implemented in historical 1d89.
 
 **Input:** none. **Query:** none including empty ?.
 
@@ -721,7 +729,7 @@ All routes share loopback Host/same-origin Origin protection and no-store/nosnif
 
 ### POST /v1/frame-programs/preview
 
-**Availability:** Installed1e2e765; also implemented in historical 1d89.
+**Availability:** Installed6ca5a14; previously1e2e765; also implemented in historical 1d89.
 
 **Input:** {program:FrameProgram,serial?:string}. **Query:** none including empty ?. **Raw body limit:** 1048576 bytes.
 
@@ -739,7 +747,7 @@ All routes share loopback Host/same-origin Origin protection and no-store/nosnif
 
 ### POST /v1/devices/{serial}/frame-jobs
 
-**Availability:** Installed1e2e765; also implemented in historical 1d89.
+**Availability:** Installed6ca5a14; previously1e2e765; also implemented in historical 1d89.
 
 **Input:** {program:FrameProgram,policy:"reject",request_id,expected_daemon_instance_id}. **Query:** none including empty ?. **Raw body limit:** 1048576 bytes.
 
@@ -757,7 +765,7 @@ All routes share loopback Host/same-origin Origin protection and no-store/nosnif
 
 ### GET /v1/devices/{serial}/frame-requests/{request_id}
 
-**Availability:** Installed1e2e765; also implemented in historical 1d89.
+**Availability:** Installed6ca5a14; previously1e2e765; also implemented in historical 1d89.
 
 **Input:** none. **Query:** Exactly one nonempty expected_daemon_instance_id.
 
@@ -775,7 +783,7 @@ All routes share loopback Host/same-origin Origin protection and no-store/nosnif
 
 ### GET /v1/frame-jobs/{id}
 
-**Availability:** Installed1e2e765; also implemented in historical 1d89.
+**Availability:** Installed6ca5a14; previously1e2e765; also implemented in historical 1d89.
 
 **Input:** none. **Query:** none including empty ?.
 
@@ -791,7 +799,7 @@ All routes share loopback Host/same-origin Origin protection and no-store/nosnif
 
 ### POST /v1/frame-jobs/{id}/cancel
 
-**Availability:** Installed1e2e765; also implemented in historical 1d89.
+**Availability:** Installed6ca5a14; previously1e2e765; also implemented in historical 1d89.
 
 **Input:** empty / {} legacy; optional nonempty expected_daemon_instance_id binds instance; explicit null/blank/wrong type/unknown/duplicate fields rejected. **Query:** none including empty ?.
 
@@ -811,7 +819,7 @@ All routes share loopback Host/same-origin Origin protection and no-store/nosnif
 
 ### POST /v1/light/preview
 
-**Availability:** Installed1e2e765; also implemented in historical 1d89.
+**Availability:** Installed6ca5a14; previously1e2e765; also implemented in historical 1d89.
 
 **Input:** {contract:"nb1-light-action/v1",action:{kind:set/off/fade/blink/breathe/pulse/alternate/rainbow,...},serial?:string}. **Query:** none including empty ?. **Raw body limit:** 65536 bytes.
 
@@ -827,7 +835,7 @@ All routes share loopback Host/same-origin Origin protection and no-store/nosnif
 
 ### POST /v1/devices/{serial}/light
 
-**Availability:** Installed1e2e765; also implemented in historical 1d89.
+**Availability:** Installed6ca5a14; previously1e2e765; also implemented in historical 1d89.
 
 **Input:** {contract:"nb1-light-action/v1",action:{...},policy:"reject",request_id,expected_daemon_instance_id}. **Query:** none including empty ?. **Raw body limit:** 65536 bytes.
 
@@ -847,7 +855,7 @@ All routes share loopback Host/same-origin Origin protection and no-store/nosnif
 
 ### POST /v2/light/preview
 
-**Availability:** Installed1e2e765; also implemented in historical 1d89.
+**Availability:** Installed6ca5a14; previously1e2e765; also implemented in historical 1d89.
 
 **Input:** {contract:"nb1-light-action/experimental-v2",action:{kind:orbit only,...},serial?:string}. **Query:** none including empty ?. **Raw body limit:** 65536 bytes.
 
@@ -863,7 +871,7 @@ All routes share loopback Host/same-origin Origin protection and no-store/nosnif
 
 ### POST /v2/devices/{serial}/light
 
-**Availability:** Installed1e2e765; also implemented in historical 1d89.
+**Availability:** Installed6ca5a14; previously1e2e765; also implemented in historical 1d89.
 
 **Input:** {contract:"nb1-light-action/experimental-v2",action:{...},policy:"reject",request_id,expected_daemon_instance_id}. **Query:** none including empty ?. **Raw body limit:** 65536 bytes.
 
@@ -883,7 +891,7 @@ All routes share loopback Host/same-origin Origin protection and no-store/nosnif
 
 ### GET /v1/patterns
 
-**Availability:** Installed1e2e765; also implemented in historical 1d89.
+**Availability:** Installed6ca5a14; previously1e2e765; also implemented in historical 1d89.
 
 **Input:** none. **Query:** none or exactly format=snapshot.
 
@@ -901,7 +909,7 @@ All routes share loopback Host/same-origin Origin protection and no-store/nosnif
 
 ### GET /v1/patterns/{id}
 
-**Availability:** Installed1e2e765; also implemented in historical 1d89.
+**Availability:** Installed6ca5a14; previously1e2e765; also implemented in historical 1d89.
 
 **Input:** none. **Query:** none or exactly format=snapshot; IDs ASCII1–64.
 
@@ -919,7 +927,7 @@ All routes share loopback Host/same-origin Origin protection and no-store/nosnif
 
 ### POST /v1/patterns/import
 
-**Availability:** Installed1e2e765; also implemented in historical 1d89.
+**Availability:** Installed6ca5a14; previously1e2e765; also implemented in historical 1d89.
 
 **Input:** v1 author package or frozen snapshot accepted by Store.Import; not advanced Action source. **Query:** none including empty ?. **Raw body limit:** 1048576 bytes.
 
@@ -935,7 +943,7 @@ All routes share loopback Host/same-origin Origin protection and no-store/nosnif
 
 ### GET /v2/patterns
 
-**Availability:** Integrated in installed1e2e765; absent from historical 1d89.
+**Availability:** Integrated in installed6ca5a14 and previous1e; absent from historical 1d89.
 
 **Input:** none. **Query:** none or exactly format=snapshot.
 
@@ -953,7 +961,7 @@ All routes share loopback Host/same-origin Origin protection and no-store/nosnif
 
 ### GET /v2/patterns/{id}
 
-**Availability:** Integrated in installed1e2e765; absent from historical 1d89.
+**Availability:** Integrated in installed6ca5a14 and previous1e; absent from historical 1d89.
 
 **Input:** none. **Query:** none or exactly format=snapshot; IDs ASCII1–64.
 
@@ -971,7 +979,7 @@ All routes share loopback Host/same-origin Origin protection and no-store/nosnif
 
 ### POST /v2/patterns/import
 
-**Availability:** Integrated in installed1e2e765; absent from historical 1d89.
+**Availability:** Integrated in installed6ca5a14 and previous1e; absent from historical 1d89.
 
 **Input:** Full verified canonical-compatible v2 frozen Snapshot; no authoring body. **Query:** none including empty ?. **Raw body limit:** 1048576 bytes.
 
@@ -989,7 +997,7 @@ All routes share loopback Host/same-origin Origin protection and no-store/nosnif
 
 ### POST /v2/patterns/preview
 
-**Availability:** Integrated in installed1e2e765; absent from historical 1d89.
+**Availability:** Integrated in installed6ca5a14 and previous1e; absent from historical 1d89.
 
 **Input:** {id,title,source:{kind:"light_action",contract,action}}; no serial/policy/ticket/expected_revision/program. **Query:** none including empty ?. **Raw body limit:** 1048576 bytes.
 
@@ -1007,7 +1015,7 @@ All routes share loopback Host/same-origin Origin protection and no-store/nosnif
 
 ### POST /v2/patterns
 
-**Availability:** Integrated in installed1e2e765; absent from historical 1d89.
+**Availability:** Integrated in installed6ca5a14 and previous1e; absent from historical 1d89.
 
 **Input:** Same author source + expected_revision matching full freshly built candidate; create-only. **Query:** none including empty ?. **Raw body limit:** 1048576 bytes.
 
@@ -1027,7 +1035,7 @@ All routes share loopback Host/same-origin Origin protection and no-store/nosnif
 
 ### POST /v2/patterns/preview-ref
 
-**Availability:** Integrated in installed1e2e765; absent from historical 1d89.
+**Availability:** Integrated in installed6ca5a14 and previous1e; absent from historical 1d89.
 
 **Input:** {pattern_ref,serial?}. **Query:** none including empty ?. **Raw body limit:** 4096 bytes.
 
@@ -1045,7 +1053,7 @@ All routes share loopback Host/same-origin Origin protection and no-store/nosnif
 
 ### POST /v2/devices/{serial}/pattern-jobs
 
-**Availability:** Integrated in installed1e2e765; absent from historical 1d89.
+**Availability:** Integrated in installed6ca5a14 and previous1e; absent from historical 1d89.
 
 **Input:** {pattern_ref,policy,request_id,expected_daemon_instance_id}. **Query:** none including empty ?. **Raw body limit:** 4096 bytes.
 
@@ -1065,7 +1073,7 @@ All routes share loopback Host/same-origin Origin protection and no-store/nosnif
 
 ### GET /v2/devices/{serial}/pattern-requests/{request_id}
 
-**Availability:** Integrated in installed1e2e765; absent from historical 1d89.
+**Availability:** Integrated in installed6ca5a14 and previous1e; absent from historical 1d89.
 
 **Input:** none. **Query:** exactly expected_daemon_instance_id,record_contract,pattern_id,revision, once each nonempty.
 
@@ -1085,7 +1093,7 @@ All routes share loopback Host/same-origin Origin protection and no-store/nosnif
 
 ### POST /v2/devices/{serial}/pattern-requests/{request_id}/cancel
 
-**Availability:** Integrated in installed1e2e765; absent from historical 1d89.
+**Availability:** Integrated in installed6ca5a14 and previous1e; absent from historical 1d89.
 
 **Input:** {pattern_ref,expected_daemon_instance_id,confirmed_job_id?}. **Query:** none including empty ?. **Raw body limit:** 4096 bytes.
 
@@ -1105,7 +1113,7 @@ All routes share loopback Host/same-origin Origin protection and no-store/nosnif
 
 ### GET /demo
 
-**Availability:** Installed1e2e765; also implemented in historical 1d89.
+**Availability:** Installed6ca5a14; previously1e2e765; also implemented in historical 1d89.
 
 **Input:** none. **Query:** none including empty ?.
 
@@ -1123,7 +1131,7 @@ All routes share loopback Host/same-origin Origin protection and no-store/nosnif
 
 ### GET /demo/
 
-**Availability:** Installed1e2e765; also implemented in historical 1d89.
+**Availability:** Installed6ca5a14; previously1e2e765; also implemented in historical 1d89.
 
 **Input:** none. **Query:** none including empty ?.
 
@@ -1143,7 +1151,7 @@ All routes share loopback Host/same-origin Origin protection and no-store/nosnif
 
 ### GET /demo/demo.js
 
-**Availability:** Installed1e2e765; also implemented in historical 1d89.
+**Availability:** Installed6ca5a14; previously1e2e765; also implemented in historical 1d89.
 
 **Input:** none. **Query:** none including empty ?.
 
@@ -1163,7 +1171,7 @@ All routes share loopback Host/same-origin Origin protection and no-store/nosnif
 
 ### GET /demo/demo.css
 
-**Availability:** Installed1e2e765; also implemented in historical 1d89.
+**Availability:** Installed6ca5a14; previously1e2e765; also implemented in historical 1d89.
 
 **Input:** none. **Query:** none including empty ?.
 
@@ -1183,7 +1191,7 @@ All routes share loopback Host/same-origin Origin protection and no-store/nosnif
 
 ### GET /demo/orbit.html
 
-**Availability:** Installed1e2e765; also implemented in historical 1d89.
+**Availability:** Installed6ca5a14; previously1e2e765; also implemented in historical 1d89.
 
 **Input:** none. **Query:** none including empty ?.
 
@@ -1203,7 +1211,7 @@ All routes share loopback Host/same-origin Origin protection and no-store/nosnif
 
 ### GET /demo/orbit.js
 
-**Availability:** Installed1e2e765; also implemented in historical 1d89.
+**Availability:** Installed6ca5a14; previously1e2e765; also implemented in historical 1d89.
 
 **Input:** none. **Query:** none including empty ?.
 
@@ -1223,7 +1231,7 @@ All routes share loopback Host/same-origin Origin protection and no-store/nosnif
 
 ### GET /demo/orbit.css
 
-**Availability:** Installed1e2e765; also implemented in historical 1d89.
+**Availability:** Installed6ca5a14; previously1e2e765; also implemented in historical 1d89.
 
 **Input:** none. **Query:** none including empty ?.
 
@@ -1243,7 +1251,7 @@ All routes share loopback Host/same-origin Origin protection and no-store/nosnif
 
 ### GET /demo/patterns.html
 
-**Availability:** Installed1e2e765 extended bundle serves 200; valid basic/old bundle serves 404. Historical1d89 lacked this route.
+**Availability:** Installed6ca bilingual Pattern bundle and previous1e extended bundle serve200; valid basic/old bundle serves 404. Historical1d89 lacked this route.
 
 **Input:** none. **Query:** none including empty ?.
 
@@ -1263,7 +1271,7 @@ All routes share loopback Host/same-origin Origin protection and no-store/nosnif
 
 ### GET /demo/patterns.js
 
-**Availability:** Installed1e2e765 extended bundle serves 200; valid basic/old bundle serves 404. Historical1d89 lacked this route.
+**Availability:** Installed6ca bilingual Pattern bundle and previous1e extended bundle serve200; valid basic/old bundle serves 404. Historical1d89 lacked this route.
 
 **Input:** none. **Query:** none including empty ?.
 
@@ -1283,7 +1291,7 @@ All routes share loopback Host/same-origin Origin protection and no-store/nosnif
 
 ### GET /demo/patterns.css
 
-**Availability:** Installed1e2e765 extended bundle serves 200; valid basic/old bundle serves 404. Historical1d89 lacked this route.
+**Availability:** Installed6ca bilingual Pattern bundle and previous1e extended bundle serve200; valid basic/old bundle serves 404. Historical1d89 lacked this route.
 
 **Input:** none. **Query:** none including empty ?.
 
@@ -1300,6 +1308,27 @@ All routes share loopback Host/same-origin Origin protection and no-store/nosnif
 **Bounds:** Only complete extended profile adds all three Pattern assets and both v2 Pattern contracts; total dist including manifest <=256KiB. Host support does not import new dist or install daemon; old complete bundle remains valid and returns 404; required files/hash mismatch still 500.
 
 **Source:** [internal/httpapi/light.go](../internal/httpapi/light.go). **Tests:** [light_test.go](../internal/httpapi/light_test.go), [embed_test.go](../internal/webui/embed_test.go).
+
+
+### GET /demo/i18n.js
+
+**Availability:** Installed6ca, conditional on the complete bilingual Pattern profile. Historical1e and valid older profiles return404.
+
+**Input:** no query/body, including an empty `?`; GET only. **Success:**200 local JavaScript, `text/javascript; charset=utf-8`; no-store/nosniff, same-origin CSP and no-referrer. Invalid required bundle bytes/profile/lock return500.
+
+**I/O / execution:** verified embedded bytes only; no filesystem Pattern access, Job, preparation, USB or permission request. Language selection changes UI text only, preserving raw payloads, user values and original tickets.
+
+Source: [light.go](../internal/httpapi/light.go), [embed.go](../internal/webui/embed.go); tests: [light_test.go](../internal/httpapi/light_test.go), [embed_test.go](../internal/webui/embed_test.go).
+
+### GET /demo/locales.js
+
+**Availability:** Installed6ca, conditional on the complete bilingual Pattern profile. Historical1e and valid older profiles return404.
+
+**Input:** no query/body, including an empty `?`; GET only. **Success:**200 local JavaScript, `text/javascript; charset=utf-8`; no-store/nosniff, same-origin CSP and no-referrer. Invalid required bundle bytes/profile/lock return500.
+
+**I/O / execution:** verified embedded bytes only; no filesystem Pattern access, Job, preparation, USB or permission request. Language selection changes UI text only, preserving raw payloads, user values and original tickets.
+
+Source: [light.go](../internal/httpapi/light.go), [embed.go](../internal/webui/embed.go); tests: [light_test.go](../internal/httpapi/light_test.go), [embed_test.go](../internal/webui/embed_test.go).
 
 <!-- canonical-http-operations:end -->
 
@@ -1388,13 +1417,13 @@ Strict JSON behavior differs across generations. New Light/Frame/Color/Pattern r
 
 New Pattern save reconstructs the authored candidate, checks expected_revision, then performs one create-only Import; a mismatch is 409 with zero Store calls. Integrity-valid unknown records remain readable/exportable, not newly importable/executable. An unknown library record makes writes read_only. Publication uncertainty is reconciled read-only using original ID/full Record; no automatic retry. A new submission failure must not replace old active work; an accepted receipt survives later Store/configuration failure under the core rules.
 
-The 44 canonical inventory includes three conditional assets. OpenAPI's48 operations include four aliases; JSON Schema does not prove raw lexical rules, source hashes, device support, or visual quality. [Structured operation inventory](api-http-inventory.json) retains historical provenance. [Low-level inputs](api-low-examples.json) are data, not executed requests.
+The source6ca inventory has46 canonical operations including five conditional assets. OpenAPI's50 operations include four aliases; historical1e had44 operations. Documentation inventory is source-derived; frozen historical Recorder observations are not relabeled as new HTTP evidence; JSON Schema does not prove raw lexical rules, source hashes, device support, or visual quality. [Structured operation inventory](api-http-inventory.json) retains historical provenance. [Low-level inputs](api-low-examples.json) are data, not executed requests.
 
 ## 15. Design boundaries and future work
 
 High level preserves intent while Low level preserves precise targets; one color core, separate preview/save/run operations, shared device workers, source revisions, and original receipts keep these roles explicit. Keep artistic meanings distinct: blink is on/off, breathe symmetric intensity, pulse attack/decay/rest, alternate exchange, rainbow hue cycle, orbit paired phase/intensity flow.
 
-Policy differences, pulse's extra 30ms per cycle, and hold's final-output behavior are current contract facts. Future changes need an explicit version. Generic compose/sequence, new names, user palettes, synchronization, automatic recovery, advanced CLI snapshot import/export, MCP import/export, and device RAM/Flash/notes interfaces are not implemented public APIs. Distribution, Web/HID direct access, hooks, scripting, and a formal website remain separate work. Local planning pages are internal review artifacts.
+Policy differences, pulse's extra 30ms per cycle, and hold's final-output behavior are current contract facts. Future changes need an explicit version. Generic compose/sequence, new names, user palettes, synchronization, automatic recovery, MCP snapshot import/export, and device RAM/Flash/notes interfaces are not implemented public APIs. CLI snapshot import/export exists in installed6ca; it does not create hardware-storage APIs. Distribution, Web/HID direct access, hooks, scripting, and a formal website remain separate work. Local planning pages are internal review artifacts.
 
 Software tests and documentation checks use fixed local sources, pure compilation/Recorder examples, temporary libraries, memory drivers, and isolated fixtures as applicable; they do not upgrade physical qualifications. This documentation pass does not access hardware, daemon, browser, or private camera material. The separate baseline physical/installation windows retain their own evidence and limits.
 
@@ -1520,7 +1549,7 @@ Software tests and documentation checks use fixed local sources, pure compilatio
 
 <!-- schema-models:end -->
 
-The 14 example JSON files below are unchanged input data. Opening/saving them does not run a task. `.action.json` files feed light preview/run; Program/Effect/Frame and ColorInput have their own envelopes. pattern-v2.preview.json is a host author request supported by installed1e2e765, absent only from historical 1d89. Author title strings are user data and remain untouched. Real execution additionally needs a selected serial, explicit policy as required, and original ticket.
+The 14 example JSON files below are unchanged input data. Opening/saving them does not run a task. `.action.json` files feed light preview/run; Program/Effect/Frame and ColorInput have their own envelopes. pattern-v2.preview.json is a host author request supported by installed6ca and previous1e, absent only from historical1d89. Author title strings are user data and remain untouched. Real execution additionally needs a selected serial, explicit policy as required, and original ticket.
 
 <!-- json-examples:start -->
 

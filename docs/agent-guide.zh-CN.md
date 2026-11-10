@@ -1,6 +1,7 @@
 # blink(1) Agent 使用指南
 
-> 当前安装说明（2026-11-10）：固定1e2e765已在本工作区运行，CLI高级图案八命令（包含list）、真实stdio MCP20及英文动森Web已接入，安装后38项只读检查通过。原96a／CLI7／MCP16记录属于历史来源；具体当前API与限制见[完整API手册](api-reference.zh-CN.md)。快照import/export客户端仍未安装，硬件RAM/Flash/Notes API仍属独立设计。源码后续英文帮助更改不等于已安装二进制发生变化。
+> 当前安装说明（2026-11-10）：固定6ca5a14已安装，CLI高级图案十命令（含import/export）、真实stdio MCP20与默认英文可切中文三页Web；57项安装后只读检查、另4项隔离只读UI检查通过。旧1e/CLI8/英文Web与96a/CLI7/MCP16保留为历史；SDK b3/GID37不变，未新增硬件RAM/Flash/Notes API。
+
 
 本指南描述源码中已接通的高级 CLI/MCP 接口，不记录某台机器安装了哪个提交。先核对所用二进制、daemon，以及宿主实际 `tools/list` / schema。MCP 链路为 Agent → 真实 stdio MCP → 本机 HTTP → nb1 执行器 → SDK/GID → USB，不通过 shell 调用 CLI。
 
@@ -147,12 +148,12 @@ MK3 未实机验收，软件兼容与物理效果分别验证。轻量动森风�
 
 ## 高级Pattern v2（1e已安装，历史资格单列）
 
-当前1e适配器真实stdio提供20工具：保留原16个完整对象，新增实验作者工具list_patterns_v2/get_pattern_v2/preview_pattern_draft_v2/save_pattern_v2。完整输入/输出见[当前20工具](mcp-tools.schema.json)；[历史96a16工具](mcp-tools.daily-96a.schema.json)与[历史1d8912工具](mcp-tools.daily-1d89.schema.json)保留原字节。先以实际会话tools/list确认，不自动注册宿主。
+当前6ca适配器真实stdio保留相同20个完整工具对象：保留原16个完整对象，新增实验作者工具list_patterns_v2/get_pattern_v2/preview_pattern_draft_v2/save_pattern_v2。完整输入/输出见[当前20工具](mcp-tools.schema.json)；[历史96a16工具](mcp-tools.daily-96a.schema.json)与[历史1d8912工具](mcp-tools.daily-1d89.schema.json)保留原字节。先以实际会话tools/list确认，不自动注册宿主。
 
 使用完整PatternRef（record_contract/id/revision），不猜latest。run必须显式policy和原票据，一次POST，无隐式preview、Prepare、重试或旧Program回退；daemon保持高级来源。原票据query/cancel不依赖库；cancel先GET绑定再至多一次POST，已终态/cancelling不再POST，坏响应保留原票据和最后可信快照。
 
-作者工具独立操作主机库：list读摘要，get用record_json保留完整来源与精确整数，preview-draft纯编译，save以expected_revision确认原草稿并只提交一次。保存不播放、不prepare票据；publication_unknown须保留original_author_json/Ref，仅显式GET核对，不自动重存。修改已保存内容须新ID；未知来源/recipe保持只读。CLI已有list/get/preview-draft/save/preview/run/request/cancel八命令，全部daemon-only。快照import/export CLI/MCP客户端仍未安装，旧v1工具语义不变。
+作者工具独立操作主机库：list读摘要，get用record_json保留完整来源与精确整数，preview-draft纯编译，save以expected_revision确认原草稿并只提交一次。保存不播放、不prepare票据；publication_unknown须保留original_author_json/Ref，仅显式GET核对，不自动重存。修改已保存内容须新ID；未知来源/recipe保持只读。CLI已有list/get/preview-draft/save/preview/run/request/cancel/import/export十命令，全部daemon-only。CLI快照交换仅主机存储；MCP导入导出仍未提供，旧v1工具语义不变。
 
-当前1e安装后38项只读核对通过；SDKb3/GID37不变，英文Webcf5219含11包内文件/210608字节，9公开资源与隐藏404路径分别核对。有限设备资格来自两个窗口的5个CLI/MCP任务，原首窗口脚本失败保留；后续只补Web只读检查。历史96a的7任务/3取消/6次恢复重试仍只属于它的窗口。无MK3、其他OS实体USB、Flash或长期服务的新保证。
+当前6ca有57项安装后只读核对及4项只读UI检查，SDKb3/GID37不变，双语Web1e1b1dd为13文件/260151字节、11公开资源；历史1e38项/英文cf5219另存。历史1e有限设备资格来自两个窗口的5个CLI/MCP任务，原首窗口脚本失败保留；后续只补Web只读检查。历史96a的7任务/3取消/6次恢复重试仍只属于它的窗口。无MK3、其他OS实体USB、Flash或长期服务的新保证。
 
 项目Skill已同步[高级主机图案工作流](../skills/blink1-control/references/patterns.md)：MK2可保存高级来源，主机库与Flash分开；相机先确认灯在画面，再定义ROI，不用背景亮度宣称灯效通过。

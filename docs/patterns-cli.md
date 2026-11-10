@@ -1,6 +1,7 @@
 # 本地图案库 CLI：v1 与高级 v2（候选）
 
-> 当前安装说明（2026-11-10）：固定1e2e765已在本工作区运行，CLI高级图案八命令（包含list）、真实stdio MCP20及英文动森Web已接入，安装后38项只读检查通过。原96a／CLI7／MCP16记录属于历史来源；具体当前API与限制见[完整API手册](api-reference.zh-CN.md)。快照import/export客户端仍未安装，硬件RAM/Flash/Notes API仍属独立设计。源码后续英文帮助更改不等于已安装二进制发生变化。
+> 当前安装说明（2026-11-10）：固定6ca5a14已安装，CLI高级图案十命令（含import/export）、真实stdio MCP20与默认英文可切中文三页Web；57项安装后只读检查、另4项隔离只读UI检查通过。旧1e/CLI8/英文Web与96a/CLI7/MCP16保留为历史；SDK b3/GID37不变，未新增硬件RAM/Flash/Notes API。
+
 
 本文按格式分开：`control patterns`是兼容v1，`control patterns-v2`是保留高级来源的独立库；不能交叉当作自动升级。当前工作区已安装96a，包含两组命令；1d89/eee/4e只作为历史资格来源，部署记录见API手册第1节。
 
@@ -35,7 +36,7 @@ run 的有效 policy 固定为 reject，显式 replace/queue 被拒绝。没有�
 
 ## 高级 v2：control patterns-v2
 
-作者候选eee1eb9已实现get/preview-draft/save；执行候选 `4eac5293bbad413e90ff19e6c8700628a1a4a8ee` 已实现固定Ref preview/run/request/cancel。原七命令与list已进入当前1e，共八命令，daemon-only；原片软件/96a历史实物/1e有限实物与安装证据分别记录。工作区安装看[API手册第1节](api-reference.zh-CN.md)，HTTP对应P3/P6，旧v1命令与格式不变。
+作者候选eee1eb9已实现get/preview-draft/save；执行候选 `4eac5293bbad413e90ff19e6c8700628a1a4a8ee` 已实现固定Ref preview/run/request/cancel。原七命令与list进入历史1e的八命令；当前6ca加显式主机快照import/export，共十命令，daemon-only；原片软件/96a历史实物/1e有限实物与安装证据分别记录。工作区安装看[API手册第1节](api-reference.zh-CN.md)，HTTP对应P3/P6，旧v1命令与格式不变。
 
 v2库由 `--pattern-v2-dir` / `NB1_PATTERN_V2_DIR` 独立选择，默认daemon账号 `UserConfigDir()/nb1/patterns-v2`，不随自定义旧--pattern-dir改变。构造、纯作者preview与缺失库读取不创建目录；有效保存/导入进入写事务时才可能创建，后续失败也可能留目录。既有库读取可能创建锁文件。CLI不会读取daemon返回的本地路径。
 

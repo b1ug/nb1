@@ -1,6 +1,6 @@
-# Embedded bilingual Web candidate
+# Embedded bilingual Web in installed6ca
 
-This development candidate imports the separate `nb1-web` producer commit `1e1b1ddf2a985dea00e494761eed592183755c1d`, with manifest SHA-256 `a35beb8fb17aa3a9e6751e006e0c7b6524d197b83cd679a25528a99134ce6460`. Its generated payload is 260,151 bytes across 13 files, including the manifest and license. The 256 KiB bundle limit is unchanged; 1,993 bytes remain.
+Installed runtime6ca imports the separate `nb1-web` producer commit `1e1b1ddf2a985dea00e494761eed592183755c1d`, with manifest SHA-256 `a35beb8fb17aa3a9e6751e006e0c7b6524d197b83cd679a25528a99134ce6460`. Its generated payload is 260,151 bytes across 13 files, including the manifest and license. The 256 KiB bundle limit is unchanged; 1,993 bytes remain.
 
 The three tools at `/demo/`, `/demo/orbit.html`, and `/demo/patterns.html` default to English on first use and offer an explicit English / 中文 selector. A namespaced browser preference carries the user's selection across pages. Browser and OS language do not change the first-use default. Translation catalogs can be extended in the producer; nb1 consumes its fixed runtime assets without requiring Node at build or startup.
 
@@ -20,7 +20,7 @@ The bilingual profile requires both `i18n.js` and `locales.js` in addition to ev
 
 The only added routes are `GET /demo/i18n.js` and `GET /demo/locales.js`, both JavaScript with the existing same-origin, no-query, no-body, GET-only, no-store and CSP rules. A valid older bundle lacks these files and returns 404 for them. No light, Pattern, SDK, MCP, authorization or execution contract changes.
 
-The existing generated API reference, OpenAPI and route inventory describe the captured 44-operation baseline. This source has 46 route/method entries after adding these two static resources; the generated snapshots have not yet been refreshed. The JSON models and examples are unchanged. This distinction is intentional until the documentation generator captures the complete new candidate.
+The API reference, OpenAPI and route inventory now describe fixed installed6ca:46 canonical operations,50 OpenAPI operations including four ordinary-ID aliases,45 paths and111 unchanged models. Only these two static GET entries are new;14 JSON input examples and the20 complete MCP tool objects are unchanged. Installed6ca has46 operations/CLI10/bilingual Web; previous1e44/CLI8/English Web is historical. The separate historical44-operation Recorder captures are preserved and are not relabeled as new HTTP/native observations.
 
 ## Reproduce the import
 
@@ -35,4 +35,4 @@ python3 tools/import-web-dist.py /path/to/nb1-web/dist \
 
 Use `--dry-run` to also validate the existing destination. Omitting the mode flag imports the verified bytes and updates the source-bound lock. Normal import failures restore the previous pair; crashes and concurrent unrelated edits are not promised atomic recovery. No frontend download or build runs in the importer, and generated `dist/` files must not be edited manually.
 
-This is an uninstalled local source candidate. The installed workspace suite remains source `1e2e7650e2cff6686d95cb9908953e5fd370f2bc` with the earlier English bundle. No daemon, USB device, camera, service configuration, remote branch or release is changed by preparing this candidate.
+Fixed runtime `6ca5a14e9f7fec8a5766e79f5bdef3fafef66d8f` is installed through a separate controlled four-file promotion.57 read-only postinstallation checks cover its exact binaries,CLI10,MCP20 and11 static resources;4 additional isolated browser checks cover EN first use,explicit ZH/navigation/EN roundtrip, raw JSON/title/original session invariance and no application mutations. This is read-only UI verification, not playback or optical qualification. Previous1e English-only installation evidence remains historical. The documentation/import instructions themselves do not install a daemon, access USB/camera, change OS/global MCP settings, push a remote branch or create a release.

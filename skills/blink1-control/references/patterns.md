@@ -7,7 +7,7 @@ Identify the format from actual schemas. Do not use latest or disable host stora
 | Legacy v1: Program / old Effect | CLI control patterns; MCP list_patterns/get_pattern | preview_program/run_program with {id,revision} pattern_ref |
 | Advanced v2: source, normalized action, recipe, frozen execution | CLI control patterns-v2; HTTP /v2/patterns | preview_pattern/run_pattern/get_pattern_request/cancel_pattern_request or matching CLI commands |
 
-The installed1e2e765 workspace has eight advanced CLI commands: list, get, preview-draft, save, preview, run, request, cancel. Its actual20-tool stdio MCP contains advanced execution/tracking plus list_patterns_v2, get_pattern_v2, preview_pattern_draft_v2 and save_pattern_v2. These four authoring tools remain experimental and do not play a task. Snapshot import/export clients remain future work. Help, actual tools/list, and schemas are authoritative.
+The installed6ca5a14 workspace has ten advanced CLI commands: list, get, preview-draft, save, preview, run, request, cancel, import, export. Its actual20-tool stdio MCP contains advanced execution/tracking plus list_patterns_v2, get_pattern_v2, preview_pattern_draft_v2 and save_pattern_v2. These four authoring tools remain experimental and do not play a task. Installed6ca includes host-only CLI `import/export`; historical1e had eight, and MCP snapshot exchange remains unavailable. Help, actual tools/list, and schemas are authoritative.
 
 ## Save high-level intent without playback
 
@@ -40,6 +40,10 @@ Current P1 requires ASCII object keys at every depth; Unicode string values are 
 The advanced HTTP API also supports list/get, author preview/save, and frozen snapshot import/export. Do not invent missing CLI commands or send v2 data to a v1 import route. Storage operations do not open a device, prepare execution tickets, or rewrite the original source.
 
 Local source remains editable. Publishing a changed period/source under the same existing ID conflicts: preserve the old record and use a user-appropriate new ID for a changed publication. There is no update-in-place command. When advanced MCP authoring tools are absent, use the discovered CLI preview-draft/save/get route rather than inventing MCP names.
+
+## Exchange a complete host snapshot when the CLI supports it
+
+Installed6ca provides `control patterns-v2 export [ID] [--output FILE]` and `control patterns-v2 import FILE` using existing daemon storage routes. They do not open USB, prepare tickets, run, or write device RAM/Flash. Import verifies the complete1MiB frozen package locally and sends the original bytes once to the create-only route; retain original snapshot/Refs and `publication_unknown` for explicit read-only reconciliation, without re-import. Export checks the complete bounded response, preserves valid future recipes and exact JSON integers, and writes stdout or exclusively creates0600 output without overwriting. Valid read-only future records cannot be promoted to executable or newly importable records. Historical1e did not include these two commands.
 
 ## Execute and cancel an exact reference
 

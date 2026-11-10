@@ -1,6 +1,6 @@
 # Advanced Pattern snapshot exchange
 
-This development slice adds `import` and `export` to `nb1 control patterns-v2`,
+Installed source6ca includes `import` and `export` in `nb1 control patterns-v2`,
 bringing that command group to ten commands. Availability depends on the actual
 CLI build. It does not install a new binary or change a daemon configuration.
 

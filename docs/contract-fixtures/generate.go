@@ -59,6 +59,16 @@ func main() {
 }
 
 func generate() error {
+	// Historical96a/f90 reproducer: reject a different bundle before any output
+	// is written. Current6ca documentation uses a separate source-only inventory.
+	_, file, _, ok := runtime.Caller(0)
+	if !ok {
+		return fmt.Errorf("cannot locate fixture generator")
+	}
+	manifest, err := os.ReadFile(filepath.Join(filepath.Dir(file), "../../internal/webui/dist/manifest.json"))
+	if err != nil || fmt.Sprintf("%x", sha256.Sum256(manifest)) != integratedManifestSHA {
+		return fmt.Errorf("current observation requires the pinned96a/f90 Web manifest")
+	}
 	var samples []sample
 	pure := func(name, schema, function, request string, value interface{}) {
 		samples = append(samples, sample{name, schema, source{Kind: "pure-codec", BaseCommit: sourceBase, Function: function, RequestSample: request}, value})
@@ -296,10 +306,6 @@ func generate() error {
 	if err != nil {
 		return err
 	}
-	_, file, _, ok := runtime.Caller(0)
-	if !ok {
-		return fmt.Errorf("cannot locate fixture generator")
-	}
 	path := filepath.Join(filepath.Dir(file), "actual-samples.json")
 	if err := os.WriteFile(path, append(output, '\n'), 0644); err != nil {
 		return err
@@ -308,10 +314,6 @@ func generate() error {
 	// Historical basic-bundle404 observations stay in their original file;
 	// new source96a metadata must refer to the pinned f90 extended bundle.
 	// No probe creates a job or listener.
-	manifest, err := os.ReadFile(filepath.Join(filepath.Dir(file), "../../internal/webui/dist/manifest.json"))
-	if err != nil || fmt.Sprintf("%x", sha256.Sum256(manifest)) != integratedManifestSHA {
-		return fmt.Errorf("current observation requires the pinned96a/f90 Web manifest")
-	}
 	resourceHandler := httpapi.New(nil)
 	var observations []map[string]interface{}
 	for _, asset := range []struct{ Path, File, Media string }{{"/demo/patterns.html", "patterns.html", "text/html; charset=utf-8"}, {"/demo/patterns.js", "patterns.js", "text/javascript; charset=utf-8"}, {"/demo/patterns.css", "patterns.css", "text/css; charset=utf-8"}} {

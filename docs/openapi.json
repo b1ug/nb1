@@ -4,7 +4,7 @@
   "info": {
     "title": "nb1 local device execution API",
     "version": "0.1.0-local",
-    "description": "Local implementation snapshot; this documentation does not announce a release. HTTP is loopback-only, without user authentication; non-local Host values and cross-origin browser control are rejected. Use canonical lowercase field names. Strict decoders reject unknown or incorrectly cased fields, duplicate object keys, explicit null, trailing JSON, and nesting beyond their limits; newer codecs have additional numeric and Unicode rules that must not be generalized to every legacy route. Legacy low-level Program may omit default fields and normalizes repeat=0 to 1; Frame HTTP and authored Action define their own omission and explicit-zero rules. Optional request_id/expected_daemon_instance_id bindings deduplicate only within bounded receipts in the same daemon instance. Legacy submissions need no preparation step; clients do not retry automatically, and no exactly-once guarantee survives a restart. The daily 1d89 and development f8bb267 labels in x-availability are historical source baselines. The installed workspace baseline is 1e2e7650e2cff6686d95cb9908953e5fd370f2bc, integrating the 44 canonical HTTP operations, P4 identity admission, P5 source resolver, P6 fixed-Ref preview/submit/query/cancel, and independent lazy-default v2 library; installed status is separately recorded in x-availability. Four explicit GET aliases bring this OpenAPI snapshot to 48 operations across 43 paths, with 111 models. Three static resources depend on the embedded bundle profile. JSON Schema checks structure, not hashes/source correspondence, raw numeric spelling, duplicate-key absence, Unicode scalar validity, device support, or physical effects. Installed1e2e765 has eight advanced CLI commands and MCP20, including four experimental host authoring tools, opt-in transport diagnostics, and an English Web bundle. The prior96a16 complete tool objects are preserved unchanged. Workspace installation passed38 read-only checks after bounded two-window Mac/MK2 qualification; this does not establish MK3, other-OS USB, Flash persistence, or long-running support. Discover the actual session before calling a feature."
+    "description": "Local implementation snapshot; this documentation does not announce a release. HTTP is loopback-only, without user authentication; non-local Host values and cross-origin browser control are rejected. Use canonical lowercase field names. Strict decoders reject unknown or incorrectly cased fields, duplicate object keys, explicit null, trailing JSON, and nesting beyond their limits; newer codecs have additional numeric and Unicode rules that must not be generalized to every legacy route. Legacy low-level Program may omit default fields and normalizes repeat=0 to 1; Frame HTTP and authored Action define their own omission and explicit-zero rules. Optional request_id/expected_daemon_instance_id bindings deduplicate only within bounded receipts in the same daemon instance. Legacy submissions need no preparation step; clients do not retry automatically, and no exactly-once guarantee survives a restart. The daily 1d89 and development f8bb267 labels in x-availability are historical source baselines. The historical prior workspace baseline was 1e2e7650e2cff6686d95cb9908953e5fd370f2bc, integrating the 44 canonical HTTP operations, P4 identity admission, P5 source resolver, P6 fixed-Ref preview/submit/query/cancel, and independent lazy-default v2 library; installed status is separately recorded in x-availability. The installed source6ca has46 canonical operations: the previous1e44 plus GET /demo/i18n.js and GET /demo/locales.js. Four explicit GET aliases bring this documentation to50 operations across45 paths, with the same111 models. Five static resources depend on their complete embedded bundle profile. Previous1e had44 operations and the English profile. Fixed6ca is separately installed with57 read-only checks; source support and actual deployment remain separate evidence. JSON Schema checks structure, not hashes/source correspondence, raw numeric spelling, duplicate-key absence, Unicode scalar validity, device support, or physical effects. Historical1e2e765 had eight advanced CLI commands and MCP20, including four experimental host authoring tools, opt-in transport diagnostics, and an English Web bundle. The prior96a16 complete tool objects are preserved unchanged. Workspace installation passed38 read-only checks after bounded two-window Mac/MK2 qualification; this does not establish MK3, other-OS USB, Flash persistence, or long-running support. Discover the actual session before calling a feature. Installed6ca adds CLI snapshot import/export for ten advanced commands and embeds the pinned English-default/Chinese-selectable debugger; its separate read-only UI check is not playback or optical qualification. MCP remains the same20 complete tool objects. No low/high action, machine payload, device RAM/Flash/Notes or SDK raw capability is added by this document."
   },
   "servers": [
     {
@@ -80,17 +80,18 @@
             "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
             "status": "implemented"
           },
-          "deployment": "daily_source_available",
+          "deployment": "installed_workspace_only",
           "hardware_qualification": "not_established_by_openapi",
-          "integrated_candidate": {
+          "installed": {
+            "source_commit": "6ca5a14e9f7fec8a5766e79f5bdef3fafef66d8f",
+            "status": "installed_workspace_only",
+            "evidence": "artifacts/bilingual-suite-upgrade-20261110/execution-6ca-approved/post-install/result.json"
+          },
+          "historical_integrated96a": {
             "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
             "status": "integrated_installed_workspace_only"
           },
-          "installed": {
-            "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
-            "status": "installed_workspace_only",
-            "evidence": "artifacts/pattern-v2-suite-native-20261110/post-install.json"
-          }
+          "historical_deployment": "daily_source_available"
         },
         "x-api-level": "discovery",
         "x-source-evidence": {
@@ -139,17 +140,18 @@
             "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
             "status": "implemented"
           },
-          "deployment": "daily_source_available",
+          "deployment": "installed_workspace_only",
           "hardware_qualification": "not_established_by_openapi",
-          "integrated_candidate": {
+          "installed": {
+            "source_commit": "6ca5a14e9f7fec8a5766e79f5bdef3fafef66d8f",
+            "status": "installed_workspace_only",
+            "evidence": "artifacts/bilingual-suite-upgrade-20261110/execution-6ca-approved/post-install/result.json"
+          },
+          "historical_integrated96a": {
             "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
             "status": "integrated_installed_workspace_only"
           },
-          "installed": {
-            "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
-            "status": "installed_workspace_only",
-            "evidence": "artifacts/pattern-v2-suite-native-20261110/post-install.json"
-          }
+          "historical_deployment": "daily_source_available"
         },
         "x-api-level": "low-state",
         "x-source-evidence": {
@@ -212,17 +214,18 @@
             "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
             "status": "implemented"
           },
-          "deployment": "daily_source_available",
+          "deployment": "installed_workspace_only",
           "hardware_qualification": "not_established_by_openapi",
-          "integrated_candidate": {
+          "installed": {
+            "source_commit": "6ca5a14e9f7fec8a5766e79f5bdef3fafef66d8f",
+            "status": "installed_workspace_only",
+            "evidence": "artifacts/bilingual-suite-upgrade-20261110/execution-6ca-approved/post-install/result.json"
+          },
+          "historical_integrated96a": {
             "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
             "status": "integrated_installed_workspace_only"
           },
-          "installed": {
-            "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
-            "status": "installed_workspace_only",
-            "evidence": "artifacts/pattern-v2-suite-native-20261110/post-install.json"
-          }
+          "historical_deployment": "daily_source_available"
         },
         "x-api-level": "low-state",
         "x-source-evidence": {
@@ -349,17 +352,18 @@
             "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
             "status": "implemented"
           },
-          "deployment": "daily_source_available",
+          "deployment": "installed_workspace_only",
           "hardware_qualification": "not_established_by_openapi",
-          "integrated_candidate": {
+          "installed": {
+            "source_commit": "6ca5a14e9f7fec8a5766e79f5bdef3fafef66d8f",
+            "status": "installed_workspace_only",
+            "evidence": "artifacts/bilingual-suite-upgrade-20261110/execution-6ca-approved/post-install/result.json"
+          },
+          "historical_integrated96a": {
             "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
             "status": "integrated_installed_workspace_only"
           },
-          "installed": {
-            "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
-            "status": "installed_workspace_only",
-            "evidence": "artifacts/pattern-v2-suite-native-20261110/post-install.json"
-          }
+          "historical_deployment": "daily_source_available"
         },
         "x-api-level": "low-program",
         "x-source-evidence": {
@@ -423,17 +427,18 @@
             "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
             "status": "implemented"
           },
-          "deployment": "daily_source_available",
+          "deployment": "installed_workspace_only",
           "hardware_qualification": "not_established_by_openapi",
-          "integrated_candidate": {
+          "installed": {
+            "source_commit": "6ca5a14e9f7fec8a5766e79f5bdef3fafef66d8f",
+            "status": "installed_workspace_only",
+            "evidence": "artifacts/bilingual-suite-upgrade-20261110/execution-6ca-approved/post-install/result.json"
+          },
+          "historical_integrated96a": {
             "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
             "status": "integrated_installed_workspace_only"
           },
-          "installed": {
-            "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
-            "status": "installed_workspace_only",
-            "evidence": "artifacts/pattern-v2-suite-native-20261110/post-install.json"
-          }
+          "historical_deployment": "daily_source_available"
         },
         "x-api-level": "low-job",
         "x-source-evidence": {
@@ -518,17 +523,18 @@
             "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
             "status": "implemented"
           },
-          "deployment": "daily_source_available",
+          "deployment": "installed_workspace_only",
           "hardware_qualification": "not_established_by_openapi",
-          "integrated_candidate": {
+          "installed": {
+            "source_commit": "6ca5a14e9f7fec8a5766e79f5bdef3fafef66d8f",
+            "status": "installed_workspace_only",
+            "evidence": "artifacts/bilingual-suite-upgrade-20261110/execution-6ca-approved/post-install/result.json"
+          },
+          "historical_integrated96a": {
             "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
             "status": "integrated_installed_workspace_only"
           },
-          "installed": {
-            "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
-            "status": "installed_workspace_only",
-            "evidence": "artifacts/pattern-v2-suite-native-20261110/post-install.json"
-          }
+          "historical_deployment": "daily_source_available"
         },
         "x-api-level": "low-job",
         "x-source-evidence": {
@@ -578,17 +584,18 @@
             "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
             "status": "implemented"
           },
-          "deployment": "daily_source_available",
+          "deployment": "installed_workspace_only",
           "hardware_qualification": "not_established_by_openapi",
-          "integrated_candidate": {
+          "installed": {
+            "source_commit": "6ca5a14e9f7fec8a5766e79f5bdef3fafef66d8f",
+            "status": "installed_workspace_only",
+            "evidence": "artifacts/bilingual-suite-upgrade-20261110/execution-6ca-approved/post-install/result.json"
+          },
+          "historical_integrated96a": {
             "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
             "status": "integrated_installed_workspace_only"
           },
-          "installed": {
-            "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
-            "status": "installed_workspace_only",
-            "evidence": "artifacts/pattern-v2-suite-native-20261110/post-install.json"
-          }
+          "historical_deployment": "daily_source_available"
         },
         "x-api-level": "diagnostic",
         "x-source-evidence": {
@@ -646,17 +653,18 @@
             "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
             "status": "implemented"
           },
-          "deployment": "daily_source_available",
+          "deployment": "installed_workspace_only",
           "hardware_qualification": "not_established_by_openapi",
-          "integrated_candidate": {
+          "installed": {
+            "source_commit": "6ca5a14e9f7fec8a5766e79f5bdef3fafef66d8f",
+            "status": "installed_workspace_only",
+            "evidence": "artifacts/bilingual-suite-upgrade-20261110/execution-6ca-approved/post-install/result.json"
+          },
+          "historical_integrated96a": {
             "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
             "status": "integrated_installed_workspace_only"
           },
-          "installed": {
-            "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
-            "status": "installed_workspace_only",
-            "evidence": "artifacts/pattern-v2-suite-native-20261110/post-install.json"
-          }
+          "historical_deployment": "daily_source_available"
         },
         "x-api-level": "receipt",
         "x-source-evidence": {
@@ -762,17 +770,18 @@
             "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
             "status": "implemented"
           },
-          "deployment": "daily_source_available",
+          "deployment": "installed_workspace_only",
           "hardware_qualification": "not_established_by_openapi",
-          "integrated_candidate": {
+          "installed": {
+            "source_commit": "6ca5a14e9f7fec8a5766e79f5bdef3fafef66d8f",
+            "status": "installed_workspace_only",
+            "evidence": "artifacts/bilingual-suite-upgrade-20261110/execution-6ca-approved/post-install/result.json"
+          },
+          "historical_integrated96a": {
             "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
             "status": "integrated_installed_workspace_only"
           },
-          "installed": {
-            "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
-            "status": "installed_workspace_only",
-            "evidence": "artifacts/pattern-v2-suite-native-20261110/post-install.json"
-          }
+          "historical_deployment": "daily_source_available"
         },
         "x-api-level": "receipt",
         "x-source-evidence": {
@@ -819,17 +828,18 @@
             "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
             "status": "implemented"
           },
-          "deployment": "daily_source_available",
+          "deployment": "installed_workspace_only",
           "hardware_qualification": "not_established_by_openapi",
-          "integrated_candidate": {
+          "installed": {
+            "source_commit": "6ca5a14e9f7fec8a5766e79f5bdef3fafef66d8f",
+            "status": "installed_workspace_only",
+            "evidence": "artifacts/bilingual-suite-upgrade-20261110/execution-6ca-approved/post-install/result.json"
+          },
+          "historical_integrated96a": {
             "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
             "status": "integrated_installed_workspace_only"
           },
-          "installed": {
-            "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
-            "status": "installed_workspace_only",
-            "evidence": "artifacts/pattern-v2-suite-native-20261110/post-install.json"
-          }
+          "historical_deployment": "daily_source_available"
         },
         "x-api-level": "discovery",
         "x-source-evidence": {
@@ -919,17 +929,18 @@
             "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
             "status": "implemented"
           },
-          "deployment": "daily_source_available",
+          "deployment": "installed_workspace_only",
           "hardware_qualification": "not_established_by_openapi",
-          "integrated_candidate": {
+          "installed": {
+            "source_commit": "6ca5a14e9f7fec8a5766e79f5bdef3fafef66d8f",
+            "status": "installed_workspace_only",
+            "evidence": "artifacts/bilingual-suite-upgrade-20261110/execution-6ca-approved/post-install/result.json"
+          },
+          "historical_integrated96a": {
             "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
             "status": "integrated_installed_workspace_only"
           },
-          "installed": {
-            "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
-            "status": "installed_workspace_only",
-            "evidence": "artifacts/pattern-v2-suite-native-20261110/post-install.json"
-          }
+          "historical_deployment": "daily_source_available"
         },
         "x-api-level": "low-program",
         "x-source-evidence": {
@@ -1031,17 +1042,18 @@
             "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
             "status": "implemented"
           },
-          "deployment": "daily_source_available",
+          "deployment": "installed_workspace_only",
           "hardware_qualification": "not_established_by_openapi",
-          "integrated_candidate": {
+          "installed": {
+            "source_commit": "6ca5a14e9f7fec8a5766e79f5bdef3fafef66d8f",
+            "status": "installed_workspace_only",
+            "evidence": "artifacts/bilingual-suite-upgrade-20261110/execution-6ca-approved/post-install/result.json"
+          },
+          "historical_integrated96a": {
             "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
             "status": "integrated_installed_workspace_only"
           },
-          "installed": {
-            "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
-            "status": "installed_workspace_only",
-            "evidence": "artifacts/pattern-v2-suite-native-20261110/post-install.json"
-          }
+          "historical_deployment": "daily_source_available"
         },
         "x-api-level": "color",
         "x-source-evidence": {
@@ -1119,17 +1131,18 @@
             "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
             "status": "implemented"
           },
-          "deployment": "daily_source_available",
+          "deployment": "installed_workspace_only",
           "hardware_qualification": "not_established_by_openapi",
-          "integrated_candidate": {
+          "installed": {
+            "source_commit": "6ca5a14e9f7fec8a5766e79f5bdef3fafef66d8f",
+            "status": "installed_workspace_only",
+            "evidence": "artifacts/bilingual-suite-upgrade-20261110/execution-6ca-approved/post-install/result.json"
+          },
+          "historical_integrated96a": {
             "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
             "status": "integrated_installed_workspace_only"
           },
-          "installed": {
-            "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
-            "status": "installed_workspace_only",
-            "evidence": "artifacts/pattern-v2-suite-native-20261110/post-install.json"
-          }
+          "historical_deployment": "daily_source_available"
         },
         "x-api-level": "high-action",
         "x-source-evidence": {
@@ -1262,17 +1275,18 @@
             "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
             "status": "implemented"
           },
-          "deployment": "daily_source_available",
+          "deployment": "installed_workspace_only",
           "hardware_qualification": "not_established_by_openapi",
-          "integrated_candidate": {
+          "installed": {
+            "source_commit": "6ca5a14e9f7fec8a5766e79f5bdef3fafef66d8f",
+            "status": "installed_workspace_only",
+            "evidence": "artifacts/bilingual-suite-upgrade-20261110/execution-6ca-approved/post-install/result.json"
+          },
+          "historical_integrated96a": {
             "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
             "status": "integrated_installed_workspace_only"
           },
-          "installed": {
-            "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
-            "status": "installed_workspace_only",
-            "evidence": "artifacts/pattern-v2-suite-native-20261110/post-install.json"
-          }
+          "historical_deployment": "daily_source_available"
         },
         "x-api-level": "high-action",
         "x-source-evidence": {
@@ -1350,17 +1364,18 @@
             "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
             "status": "implemented"
           },
-          "deployment": "daily_source_available",
+          "deployment": "installed_workspace_only",
           "hardware_qualification": "not_established_by_openapi",
-          "integrated_candidate": {
+          "installed": {
+            "source_commit": "6ca5a14e9f7fec8a5766e79f5bdef3fafef66d8f",
+            "status": "installed_workspace_only",
+            "evidence": "artifacts/bilingual-suite-upgrade-20261110/execution-6ca-approved/post-install/result.json"
+          },
+          "historical_integrated96a": {
             "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
             "status": "integrated_installed_workspace_only"
           },
-          "installed": {
-            "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
-            "status": "installed_workspace_only",
-            "evidence": "artifacts/pattern-v2-suite-native-20261110/post-install.json"
-          }
+          "historical_deployment": "daily_source_available"
         },
         "x-api-level": "pattern-library",
         "x-source-evidence": {
@@ -1448,17 +1463,18 @@
             "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
             "status": "implemented"
           },
-          "deployment": "daily_source_available",
+          "deployment": "installed_workspace_only",
           "hardware_qualification": "not_established_by_openapi",
-          "integrated_candidate": {
+          "installed": {
+            "source_commit": "6ca5a14e9f7fec8a5766e79f5bdef3fafef66d8f",
+            "status": "installed_workspace_only",
+            "evidence": "artifacts/bilingual-suite-upgrade-20261110/execution-6ca-approved/post-install/result.json"
+          },
+          "historical_integrated96a": {
             "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
             "status": "integrated_installed_workspace_only"
           },
-          "installed": {
-            "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
-            "status": "installed_workspace_only",
-            "evidence": "artifacts/pattern-v2-suite-native-20261110/post-install.json"
-          }
+          "historical_deployment": "daily_source_available"
         },
         "x-api-level": "pattern-library",
         "x-source-evidence": {
@@ -1533,17 +1549,18 @@
             "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
             "status": "implemented"
           },
-          "deployment": "daily_source_available",
+          "deployment": "installed_workspace_only",
           "hardware_qualification": "not_established_by_openapi",
-          "integrated_candidate": {
+          "installed": {
+            "source_commit": "6ca5a14e9f7fec8a5766e79f5bdef3fafef66d8f",
+            "status": "installed_workspace_only",
+            "evidence": "artifacts/bilingual-suite-upgrade-20261110/execution-6ca-approved/post-install/result.json"
+          },
+          "historical_integrated96a": {
             "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
             "status": "integrated_installed_workspace_only"
           },
-          "installed": {
-            "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
-            "status": "installed_workspace_only",
-            "evidence": "artifacts/pattern-v2-suite-native-20261110/post-install.json"
-          }
+          "historical_deployment": "daily_source_available"
         },
         "x-api-level": "pattern-library",
         "x-source-evidence": {
@@ -1620,17 +1637,18 @@
             "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
             "status": "implemented"
           },
-          "deployment": "daily_source_available",
+          "deployment": "installed_workspace_only",
           "hardware_qualification": "not_established_by_openapi",
-          "integrated_candidate": {
+          "installed": {
+            "source_commit": "6ca5a14e9f7fec8a5766e79f5bdef3fafef66d8f",
+            "status": "installed_workspace_only",
+            "evidence": "artifacts/bilingual-suite-upgrade-20261110/execution-6ca-approved/post-install/result.json"
+          },
+          "historical_integrated96a": {
             "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
             "status": "integrated_installed_workspace_only"
           },
-          "installed": {
-            "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
-            "status": "installed_workspace_only",
-            "evidence": "artifacts/pattern-v2-suite-native-20261110/post-install.json"
-          }
+          "historical_deployment": "daily_source_available"
         },
         "x-alias-of": "GET /v1/patterns/{id}",
         "description": "GET treats this literal operation-looking name as an ordinary ID. ",
@@ -1660,17 +1678,18 @@
             "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
             "status": "implemented"
           },
-          "deployment": "daily_source_available",
+          "deployment": "installed_workspace_only",
           "hardware_qualification": "not_established_by_openapi",
-          "integrated_candidate": {
+          "installed": {
+            "source_commit": "6ca5a14e9f7fec8a5766e79f5bdef3fafef66d8f",
+            "status": "installed_workspace_only",
+            "evidence": "artifacts/bilingual-suite-upgrade-20261110/execution-6ca-approved/post-install/result.json"
+          },
+          "historical_integrated96a": {
             "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
             "status": "integrated_installed_workspace_only"
           },
-          "installed": {
-            "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
-            "status": "installed_workspace_only",
-            "evidence": "artifacts/pattern-v2-suite-native-20261110/post-install.json"
-          }
+          "historical_deployment": "daily_source_available"
         },
         "responses": {
           "200": {
@@ -1722,17 +1741,18 @@
             "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
             "status": "implemented"
           },
-          "deployment": "daily_source_available",
+          "deployment": "installed_workspace_only",
           "hardware_qualification": "not_established_by_openapi",
-          "integrated_candidate": {
+          "installed": {
+            "source_commit": "6ca5a14e9f7fec8a5766e79f5bdef3fafef66d8f",
+            "status": "installed_workspace_only",
+            "evidence": "artifacts/bilingual-suite-upgrade-20261110/execution-6ca-approved/post-install/result.json"
+          },
+          "historical_integrated96a": {
             "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
             "status": "integrated_installed_workspace_only"
           },
-          "installed": {
-            "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
-            "status": "installed_workspace_only",
-            "evidence": "artifacts/pattern-v2-suite-native-20261110/post-install.json"
-          }
+          "historical_deployment": "daily_source_available"
         },
         "responses": {
           "200": {
@@ -1807,17 +1827,18 @@
             "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
             "status": "implemented"
           },
-          "deployment": "daily_source_available",
+          "deployment": "installed_workspace_only",
           "hardware_qualification": "not_established_by_openapi",
-          "integrated_candidate": {
+          "installed": {
+            "source_commit": "6ca5a14e9f7fec8a5766e79f5bdef3fafef66d8f",
+            "status": "installed_workspace_only",
+            "evidence": "artifacts/bilingual-suite-upgrade-20261110/execution-6ca-approved/post-install/result.json"
+          },
+          "historical_integrated96a": {
             "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
             "status": "integrated_installed_workspace_only"
           },
-          "installed": {
-            "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
-            "status": "installed_workspace_only",
-            "evidence": "artifacts/pattern-v2-suite-native-20261110/post-install.json"
-          }
+          "historical_deployment": "daily_source_available"
         },
         "responses": {
           "202": {
@@ -1946,17 +1967,18 @@
             "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
             "status": "implemented"
           },
-          "deployment": "daily_source_available",
+          "deployment": "installed_workspace_only",
           "hardware_qualification": "not_established_by_openapi",
-          "integrated_candidate": {
+          "installed": {
+            "source_commit": "6ca5a14e9f7fec8a5766e79f5bdef3fafef66d8f",
+            "status": "installed_workspace_only",
+            "evidence": "artifacts/bilingual-suite-upgrade-20261110/execution-6ca-approved/post-install/result.json"
+          },
+          "historical_integrated96a": {
             "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
             "status": "integrated_installed_workspace_only"
           },
-          "installed": {
-            "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
-            "status": "installed_workspace_only",
-            "evidence": "artifacts/pattern-v2-suite-native-20261110/post-install.json"
-          }
+          "historical_deployment": "daily_source_available"
         },
         "responses": {
           "200": {
@@ -2067,17 +2089,18 @@
             "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
             "status": "implemented"
           },
-          "deployment": "daily_source_available",
+          "deployment": "installed_workspace_only",
           "hardware_qualification": "not_established_by_openapi",
-          "integrated_candidate": {
+          "installed": {
+            "source_commit": "6ca5a14e9f7fec8a5766e79f5bdef3fafef66d8f",
+            "status": "installed_workspace_only",
+            "evidence": "artifacts/bilingual-suite-upgrade-20261110/execution-6ca-approved/post-install/result.json"
+          },
+          "historical_integrated96a": {
             "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
             "status": "integrated_installed_workspace_only"
           },
-          "installed": {
-            "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
-            "status": "installed_workspace_only",
-            "evidence": "artifacts/pattern-v2-suite-native-20261110/post-install.json"
-          }
+          "historical_deployment": "daily_source_available"
         },
         "responses": {
           "200": {
@@ -2149,17 +2172,18 @@
             "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
             "status": "implemented"
           },
-          "deployment": "daily_source_available",
+          "deployment": "installed_workspace_only",
           "hardware_qualification": "not_established_by_openapi",
-          "integrated_candidate": {
+          "installed": {
+            "source_commit": "6ca5a14e9f7fec8a5766e79f5bdef3fafef66d8f",
+            "status": "installed_workspace_only",
+            "evidence": "artifacts/bilingual-suite-upgrade-20261110/execution-6ca-approved/post-install/result.json"
+          },
+          "historical_integrated96a": {
             "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
             "status": "integrated_installed_workspace_only"
           },
-          "installed": {
-            "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
-            "status": "installed_workspace_only",
-            "evidence": "artifacts/pattern-v2-suite-native-20261110/post-install.json"
-          }
+          "historical_deployment": "daily_source_available"
         },
         "responses": {
           "202": {
@@ -2263,17 +2287,18 @@
             "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
             "status": "implemented"
           },
-          "deployment": "daily_source_available",
+          "deployment": "installed_workspace_only",
           "hardware_qualification": "not_established_by_openapi",
-          "integrated_candidate": {
+          "installed": {
+            "source_commit": "6ca5a14e9f7fec8a5766e79f5bdef3fafef66d8f",
+            "status": "installed_workspace_only",
+            "evidence": "artifacts/bilingual-suite-upgrade-20261110/execution-6ca-approved/post-install/result.json"
+          },
+          "historical_integrated96a": {
             "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
             "status": "integrated_installed_workspace_only"
           },
-          "installed": {
-            "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
-            "status": "installed_workspace_only",
-            "evidence": "artifacts/pattern-v2-suite-native-20261110/post-install.json"
-          }
+          "historical_deployment": "daily_source_available"
         },
         "responses": {
           "200": {
@@ -2349,17 +2374,18 @@
             "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
             "status": "implemented"
           },
-          "deployment": "daily_source_available",
+          "deployment": "installed_workspace_only",
           "hardware_qualification": "not_established_by_openapi",
-          "integrated_candidate": {
+          "installed": {
+            "source_commit": "6ca5a14e9f7fec8a5766e79f5bdef3fafef66d8f",
+            "status": "installed_workspace_only",
+            "evidence": "artifacts/bilingual-suite-upgrade-20261110/execution-6ca-approved/post-install/result.json"
+          },
+          "historical_integrated96a": {
             "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
             "status": "integrated_installed_workspace_only"
           },
-          "installed": {
-            "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
-            "status": "installed_workspace_only",
-            "evidence": "artifacts/pattern-v2-suite-native-20261110/post-install.json"
-          }
+          "historical_deployment": "daily_source_available"
         },
         "responses": {
           "202": {
@@ -2488,17 +2514,18 @@
             "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
             "status": "implemented"
           },
-          "deployment": "development_not_installed",
+          "deployment": "installed_workspace_only",
           "hardware_qualification": "not_established_by_openapi",
-          "integrated_candidate": {
+          "installed": {
+            "source_commit": "6ca5a14e9f7fec8a5766e79f5bdef3fafef66d8f",
+            "status": "installed_workspace_only",
+            "evidence": "artifacts/bilingual-suite-upgrade-20261110/execution-6ca-approved/post-install/result.json"
+          },
+          "historical_integrated96a": {
             "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
             "status": "integrated_installed_workspace_only"
           },
-          "installed": {
-            "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
-            "status": "installed_workspace_only",
-            "evidence": "artifacts/pattern-v2-suite-native-20261110/post-install.json"
-          }
+          "historical_deployment": "development_not_installed"
         },
         "responses": {
           "200": {
@@ -2592,18 +2619,19 @@
             "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
             "status": "implemented_with_default_lazy_v2_store"
           },
-          "deployment": "development_not_installed",
+          "deployment": "installed_workspace_only",
           "hardware_qualification": "not_established_by_openapi",
           "store_configuration": "Go WithPatternStoreV2 only; CLI does not select a v2 store; valid storage operations default to501; pure preview needs none",
-          "integrated_candidate": {
+          "installed": {
+            "source_commit": "6ca5a14e9f7fec8a5766e79f5bdef3fafef66d8f",
+            "status": "installed_workspace_only",
+            "evidence": "artifacts/bilingual-suite-upgrade-20261110/execution-6ca-approved/post-install/result.json"
+          },
+          "historical_integrated96a": {
             "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
             "status": "integrated_installed_workspace_only"
           },
-          "installed": {
-            "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
-            "status": "installed_workspace_only",
-            "evidence": "artifacts/pattern-v2-suite-native-20261110/post-install.json"
-          }
+          "historical_deployment": "development_not_installed"
         },
         "responses": {
           "200": {
@@ -2716,18 +2744,19 @@
             "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
             "status": "implemented_with_default_lazy_v2_store"
           },
-          "deployment": "development_not_installed",
+          "deployment": "installed_workspace_only",
           "hardware_qualification": "not_established_by_openapi",
           "store_configuration": "Go WithPatternStoreV2 only; CLI does not select a v2 store; valid storage operations default to501; pure preview needs none",
-          "integrated_candidate": {
+          "installed": {
+            "source_commit": "6ca5a14e9f7fec8a5766e79f5bdef3fafef66d8f",
+            "status": "installed_workspace_only",
+            "evidence": "artifacts/bilingual-suite-upgrade-20261110/execution-6ca-approved/post-install/result.json"
+          },
+          "historical_integrated96a": {
             "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
             "status": "integrated_installed_workspace_only"
           },
-          "installed": {
-            "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
-            "status": "installed_workspace_only",
-            "evidence": "artifacts/pattern-v2-suite-native-20261110/post-install.json"
-          }
+          "historical_deployment": "development_not_installed"
         },
         "responses": {
           "200": {
@@ -2831,18 +2860,19 @@
             "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
             "status": "implemented_with_default_lazy_v2_store"
           },
-          "deployment": "development_not_installed",
+          "deployment": "installed_workspace_only",
           "hardware_qualification": "not_established_by_openapi",
           "store_configuration": "Go WithPatternStoreV2 only; CLI does not select a v2 store; valid storage operations default to501; pure preview needs none",
-          "integrated_candidate": {
+          "installed": {
+            "source_commit": "6ca5a14e9f7fec8a5766e79f5bdef3fafef66d8f",
+            "status": "installed_workspace_only",
+            "evidence": "artifacts/bilingual-suite-upgrade-20261110/execution-6ca-approved/post-install/result.json"
+          },
+          "historical_integrated96a": {
             "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
             "status": "integrated_installed_workspace_only"
           },
-          "installed": {
-            "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
-            "status": "installed_workspace_only",
-            "evidence": "artifacts/pattern-v2-suite-native-20261110/post-install.json"
-          }
+          "historical_deployment": "development_not_installed"
         },
         "responses": {
           "201": {
@@ -2983,18 +3013,19 @@
             "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
             "status": "implemented_with_default_lazy_v2_store"
           },
-          "deployment": "development_not_installed",
+          "deployment": "installed_workspace_only",
           "hardware_qualification": "not_established_by_openapi",
           "store_configuration": "Go WithPatternStoreV2 only; CLI does not select a v2 store; valid storage operations default to501; pure preview needs none",
-          "integrated_candidate": {
+          "installed": {
+            "source_commit": "6ca5a14e9f7fec8a5766e79f5bdef3fafef66d8f",
+            "status": "installed_workspace_only",
+            "evidence": "artifacts/bilingual-suite-upgrade-20261110/execution-6ca-approved/post-install/result.json"
+          },
+          "historical_integrated96a": {
             "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
             "status": "integrated_installed_workspace_only"
           },
-          "installed": {
-            "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
-            "status": "installed_workspace_only",
-            "evidence": "artifacts/pattern-v2-suite-native-20261110/post-install.json"
-          }
+          "historical_deployment": "development_not_installed"
         },
         "responses": {
           "200": {
@@ -3115,18 +3146,19 @@
             "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
             "status": "implemented_with_default_lazy_v2_store"
           },
-          "deployment": "development_not_installed",
+          "deployment": "installed_workspace_only",
           "hardware_qualification": "not_established_by_openapi",
           "store_configuration": "Go WithPatternStoreV2 only; CLI does not select a v2 store; valid storage operations default to501; pure preview needs none",
-          "integrated_candidate": {
+          "installed": {
+            "source_commit": "6ca5a14e9f7fec8a5766e79f5bdef3fafef66d8f",
+            "status": "installed_workspace_only",
+            "evidence": "artifacts/bilingual-suite-upgrade-20261110/execution-6ca-approved/post-install/result.json"
+          },
+          "historical_integrated96a": {
             "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
             "status": "integrated_installed_workspace_only"
           },
-          "installed": {
-            "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
-            "status": "installed_workspace_only",
-            "evidence": "artifacts/pattern-v2-suite-native-20261110/post-install.json"
-          }
+          "historical_deployment": "development_not_installed"
         },
         "responses": {
           "200": {
@@ -3237,18 +3269,19 @@
             "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
             "status": "implemented_with_default_lazy_v2_store"
           },
-          "deployment": "development_not_installed",
+          "deployment": "installed_workspace_only",
           "hardware_qualification": "not_established_by_openapi",
           "store_configuration": "Go WithPatternStoreV2 only; CLI does not select a v2 store; valid storage operations default to501; pure preview needs none",
-          "integrated_candidate": {
+          "installed": {
+            "source_commit": "6ca5a14e9f7fec8a5766e79f5bdef3fafef66d8f",
+            "status": "installed_workspace_only",
+            "evidence": "artifacts/bilingual-suite-upgrade-20261110/execution-6ca-approved/post-install/result.json"
+          },
+          "historical_integrated96a": {
             "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
             "status": "integrated_installed_workspace_only"
           },
-          "installed": {
-            "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
-            "status": "installed_workspace_only",
-            "evidence": "artifacts/pattern-v2-suite-native-20261110/post-install.json"
-          }
+          "historical_deployment": "development_not_installed"
         },
         "responses": {
           "200": {
@@ -3360,19 +3393,20 @@
             "source_commit": "56c4aef153c560c68845e89ebdaa15bc1323eeb2",
             "status": "implemented"
           },
-          "deployment": "daily_source_available",
+          "deployment": "installed_workspace_only",
           "hardware_qualification": "not_established_by_openapi",
-          "integrated_candidate": {
+          "installed": {
+            "source_commit": "6ca5a14e9f7fec8a5766e79f5bdef3fafef66d8f",
+            "status": "installed_workspace_only",
+            "evidence": "artifacts/bilingual-suite-upgrade-20261110/execution-6ca-approved/post-install/result.json",
+            "bundle": "bilingual producer1e1b1dd;11 public assets/13 files/260151B including manifest; complete profile required"
+          },
+          "historical_integrated96a": {
             "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
             "status": "integrated_installed_workspace_only",
             "web_source_commit": "f90ef8d6143acd55c059b94ecf961ec65a1bb646"
           },
-          "installed": {
-            "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
-            "status": "installed_workspace_only",
-            "evidence": "artifacts/pattern-v2-suite-native-20261110/post-install.json",
-            "bundle": "f90ef8 extended fixed dist; conditional new resources included200"
-          }
+          "historical_deployment": "daily_source_available"
         },
         "x-no-request-body": true,
         "description": "No query/body. Host/Origin guard applies; no USB action from GET. /demo/index.html is not registered. Development host source 56c supports two closed bundle profiles; existing paths remain, but static payload depends on the fixed embedded dist, not external frontend files.",
@@ -3426,19 +3460,20 @@
             "source_commit": "56c4aef153c560c68845e89ebdaa15bc1323eeb2",
             "status": "implemented"
           },
-          "deployment": "daily_source_available",
+          "deployment": "installed_workspace_only",
           "hardware_qualification": "not_established_by_openapi",
-          "integrated_candidate": {
+          "installed": {
+            "source_commit": "6ca5a14e9f7fec8a5766e79f5bdef3fafef66d8f",
+            "status": "installed_workspace_only",
+            "evidence": "artifacts/bilingual-suite-upgrade-20261110/execution-6ca-approved/post-install/result.json",
+            "bundle": "bilingual producer1e1b1dd;11 public assets/13 files/260151B including manifest; complete profile required"
+          },
+          "historical_integrated96a": {
             "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
             "status": "integrated_installed_workspace_only",
             "web_source_commit": "f90ef8d6143acd55c059b94ecf961ec65a1bb646"
           },
-          "installed": {
-            "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
-            "status": "installed_workspace_only",
-            "evidence": "artifacts/pattern-v2-suite-native-20261110/post-install.json",
-            "bundle": "f90ef8 extended fixed dist; conditional new resources included200"
-          }
+          "historical_deployment": "daily_source_available"
         },
         "x-no-request-body": true,
         "description": "No query/body. Host/Origin guard applies; no USB action from GET. /demo/index.html is not registered. Development host source 56c supports two closed bundle profiles; existing paths remain, but static payload depends on the fixed embedded dist, not external frontend files.",
@@ -3504,19 +3539,20 @@
             "source_commit": "56c4aef153c560c68845e89ebdaa15bc1323eeb2",
             "status": "implemented"
           },
-          "deployment": "daily_source_available",
+          "deployment": "installed_workspace_only",
           "hardware_qualification": "not_established_by_openapi",
-          "integrated_candidate": {
+          "installed": {
+            "source_commit": "6ca5a14e9f7fec8a5766e79f5bdef3fafef66d8f",
+            "status": "installed_workspace_only",
+            "evidence": "artifacts/bilingual-suite-upgrade-20261110/execution-6ca-approved/post-install/result.json",
+            "bundle": "bilingual producer1e1b1dd;11 public assets/13 files/260151B including manifest; complete profile required"
+          },
+          "historical_integrated96a": {
             "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
             "status": "integrated_installed_workspace_only",
             "web_source_commit": "f90ef8d6143acd55c059b94ecf961ec65a1bb646"
           },
-          "installed": {
-            "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
-            "status": "installed_workspace_only",
-            "evidence": "artifacts/pattern-v2-suite-native-20261110/post-install.json",
-            "bundle": "f90ef8 extended fixed dist; conditional new resources included200"
-          }
+          "historical_deployment": "daily_source_available"
         },
         "x-no-request-body": true,
         "description": "No query/body. Host/Origin guard applies; no USB action from GET. /demo/index.html is not registered. Development host source 56c supports two closed bundle profiles; existing paths remain, but static payload depends on the fixed embedded dist, not external frontend files.",
@@ -3582,19 +3618,20 @@
             "source_commit": "56c4aef153c560c68845e89ebdaa15bc1323eeb2",
             "status": "implemented"
           },
-          "deployment": "daily_source_available",
+          "deployment": "installed_workspace_only",
           "hardware_qualification": "not_established_by_openapi",
-          "integrated_candidate": {
+          "installed": {
+            "source_commit": "6ca5a14e9f7fec8a5766e79f5bdef3fafef66d8f",
+            "status": "installed_workspace_only",
+            "evidence": "artifacts/bilingual-suite-upgrade-20261110/execution-6ca-approved/post-install/result.json",
+            "bundle": "bilingual producer1e1b1dd;11 public assets/13 files/260151B including manifest; complete profile required"
+          },
+          "historical_integrated96a": {
             "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
             "status": "integrated_installed_workspace_only",
             "web_source_commit": "f90ef8d6143acd55c059b94ecf961ec65a1bb646"
           },
-          "installed": {
-            "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
-            "status": "installed_workspace_only",
-            "evidence": "artifacts/pattern-v2-suite-native-20261110/post-install.json",
-            "bundle": "f90ef8 extended fixed dist; conditional new resources included200"
-          }
+          "historical_deployment": "daily_source_available"
         },
         "x-no-request-body": true,
         "description": "No query/body. Host/Origin guard applies; no USB action from GET. /demo/index.html is not registered. Development host source 56c supports two closed bundle profiles; existing paths remain, but static payload depends on the fixed embedded dist, not external frontend files.",
@@ -3660,19 +3697,20 @@
             "source_commit": "56c4aef153c560c68845e89ebdaa15bc1323eeb2",
             "status": "implemented"
           },
-          "deployment": "daily_source_available",
+          "deployment": "installed_workspace_only",
           "hardware_qualification": "not_established_by_openapi",
-          "integrated_candidate": {
+          "installed": {
+            "source_commit": "6ca5a14e9f7fec8a5766e79f5bdef3fafef66d8f",
+            "status": "installed_workspace_only",
+            "evidence": "artifacts/bilingual-suite-upgrade-20261110/execution-6ca-approved/post-install/result.json",
+            "bundle": "bilingual producer1e1b1dd;11 public assets/13 files/260151B including manifest; complete profile required"
+          },
+          "historical_integrated96a": {
             "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
             "status": "integrated_installed_workspace_only",
             "web_source_commit": "f90ef8d6143acd55c059b94ecf961ec65a1bb646"
           },
-          "installed": {
-            "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
-            "status": "installed_workspace_only",
-            "evidence": "artifacts/pattern-v2-suite-native-20261110/post-install.json",
-            "bundle": "f90ef8 extended fixed dist; conditional new resources included200"
-          }
+          "historical_deployment": "daily_source_available"
         },
         "x-no-request-body": true,
         "description": "No query/body. Host/Origin guard applies; no USB action from GET. /demo/index.html is not registered. Development host source 56c supports two closed bundle profiles; existing paths remain, but static payload depends on the fixed embedded dist, not external frontend files.",
@@ -3738,19 +3776,20 @@
             "source_commit": "56c4aef153c560c68845e89ebdaa15bc1323eeb2",
             "status": "implemented"
           },
-          "deployment": "daily_source_available",
+          "deployment": "installed_workspace_only",
           "hardware_qualification": "not_established_by_openapi",
-          "integrated_candidate": {
+          "installed": {
+            "source_commit": "6ca5a14e9f7fec8a5766e79f5bdef3fafef66d8f",
+            "status": "installed_workspace_only",
+            "evidence": "artifacts/bilingual-suite-upgrade-20261110/execution-6ca-approved/post-install/result.json",
+            "bundle": "bilingual producer1e1b1dd;11 public assets/13 files/260151B including manifest; complete profile required"
+          },
+          "historical_integrated96a": {
             "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
             "status": "integrated_installed_workspace_only",
             "web_source_commit": "f90ef8d6143acd55c059b94ecf961ec65a1bb646"
           },
-          "installed": {
-            "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
-            "status": "installed_workspace_only",
-            "evidence": "artifacts/pattern-v2-suite-native-20261110/post-install.json",
-            "bundle": "f90ef8 extended fixed dist; conditional new resources included200"
-          }
+          "historical_deployment": "daily_source_available"
         },
         "x-no-request-body": true,
         "description": "No query/body. Host/Origin guard applies; no USB action from GET. /demo/index.html is not registered. Development host source 56c supports two closed bundle profiles; existing paths remain, but static payload depends on the fixed embedded dist, not external frontend files.",
@@ -3816,19 +3855,20 @@
             "source_commit": "56c4aef153c560c68845e89ebdaa15bc1323eeb2",
             "status": "implemented"
           },
-          "deployment": "daily_source_available",
+          "deployment": "installed_workspace_only",
           "hardware_qualification": "not_established_by_openapi",
-          "integrated_candidate": {
+          "installed": {
+            "source_commit": "6ca5a14e9f7fec8a5766e79f5bdef3fafef66d8f",
+            "status": "installed_workspace_only",
+            "evidence": "artifacts/bilingual-suite-upgrade-20261110/execution-6ca-approved/post-install/result.json",
+            "bundle": "bilingual producer1e1b1dd;11 public assets/13 files/260151B including manifest; complete profile required"
+          },
+          "historical_integrated96a": {
             "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
             "status": "integrated_installed_workspace_only",
             "web_source_commit": "f90ef8d6143acd55c059b94ecf961ec65a1bb646"
           },
-          "installed": {
-            "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
-            "status": "installed_workspace_only",
-            "evidence": "artifacts/pattern-v2-suite-native-20261110/post-install.json",
-            "bundle": "f90ef8 extended fixed dist; conditional new resources included200"
-          }
+          "historical_deployment": "daily_source_available"
         },
         "x-no-request-body": true,
         "description": "No query/body. Host/Origin guard applies; no USB action from GET. /demo/index.html is not registered. Development host source 56c supports two closed bundle profiles; existing paths remain, but static payload depends on the fixed embedded dist, not external frontend files.",
@@ -3895,17 +3935,18 @@
             "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
             "status": "implemented"
           },
-          "deployment": "development_not_installed",
+          "deployment": "installed_workspace_only",
           "hardware_qualification": "not_established_by_openapi",
-          "integrated_candidate": {
+          "installed": {
+            "source_commit": "6ca5a14e9f7fec8a5766e79f5bdef3fafef66d8f",
+            "status": "installed_workspace_only",
+            "evidence": "artifacts/bilingual-suite-upgrade-20261110/execution-6ca-approved/post-install/result.json"
+          },
+          "historical_integrated96a": {
             "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
             "status": "integrated_installed_workspace_only"
           },
-          "installed": {
-            "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
-            "status": "installed_workspace_only",
-            "evidence": "artifacts/pattern-v2-suite-native-20261110/post-install.json"
-          }
+          "historical_deployment": "development_not_installed"
         },
         "responses": {
           "200": {
@@ -4038,18 +4079,19 @@
             "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
             "status": "implemented_with_default_lazy_v2_store"
           },
-          "deployment": "development_not_installed",
+          "deployment": "installed_workspace_only",
           "hardware_qualification": "not_established_by_openapi",
           "store_configuration": "Go WithPatternStoreV2 only; CLI does not select a v2 store; valid storage operations default to501; pure preview needs none",
-          "integrated_candidate": {
+          "installed": {
+            "source_commit": "6ca5a14e9f7fec8a5766e79f5bdef3fafef66d8f",
+            "status": "installed_workspace_only",
+            "evidence": "artifacts/bilingual-suite-upgrade-20261110/execution-6ca-approved/post-install/result.json"
+          },
+          "historical_integrated96a": {
             "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
             "status": "integrated_installed_workspace_only"
           },
-          "installed": {
-            "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
-            "status": "installed_workspace_only",
-            "evidence": "artifacts/pattern-v2-suite-native-20261110/post-install.json"
-          }
+          "historical_deployment": "development_not_installed"
         },
         "responses": {
           "200": {
@@ -4162,17 +4204,18 @@
             "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
             "status": "implemented"
           },
-          "deployment": "development_not_installed",
+          "deployment": "installed_workspace_only",
           "hardware_qualification": "not_established_by_openapi",
-          "integrated_candidate": {
+          "installed": {
+            "source_commit": "6ca5a14e9f7fec8a5766e79f5bdef3fafef66d8f",
+            "status": "installed_workspace_only",
+            "evidence": "artifacts/bilingual-suite-upgrade-20261110/execution-6ca-approved/post-install/result.json"
+          },
+          "historical_integrated96a": {
             "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
             "status": "integrated_installed_workspace_only"
           },
-          "installed": {
-            "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
-            "status": "installed_workspace_only",
-            "evidence": "artifacts/pattern-v2-suite-native-20261110/post-install.json"
-          }
+          "historical_deployment": "development_not_installed"
         },
         "responses": {
           "202": {
@@ -4355,17 +4398,18 @@
             "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
             "status": "implemented"
           },
-          "deployment": "development_not_installed",
+          "deployment": "installed_workspace_only",
           "hardware_qualification": "not_established_by_openapi",
-          "integrated_candidate": {
+          "installed": {
+            "source_commit": "6ca5a14e9f7fec8a5766e79f5bdef3fafef66d8f",
+            "status": "installed_workspace_only",
+            "evidence": "artifacts/bilingual-suite-upgrade-20261110/execution-6ca-approved/post-install/result.json"
+          },
+          "historical_integrated96a": {
             "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
             "status": "integrated_installed_workspace_only"
           },
-          "installed": {
-            "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
-            "status": "installed_workspace_only",
-            "evidence": "artifacts/pattern-v2-suite-native-20261110/post-install.json"
-          }
+          "historical_deployment": "development_not_installed"
         },
         "responses": {
           "200": {
@@ -4541,17 +4585,18 @@
             "source_commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
             "status": "implemented"
           },
-          "deployment": "development_not_installed",
+          "deployment": "installed_workspace_only",
           "hardware_qualification": "not_established_by_openapi",
-          "integrated_candidate": {
+          "installed": {
+            "source_commit": "6ca5a14e9f7fec8a5766e79f5bdef3fafef66d8f",
+            "status": "installed_workspace_only",
+            "evidence": "artifacts/bilingual-suite-upgrade-20261110/execution-6ca-approved/post-install/result.json"
+          },
+          "historical_integrated96a": {
             "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
             "status": "integrated_installed_workspace_only"
           },
-          "installed": {
-            "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
-            "status": "installed_workspace_only",
-            "evidence": "artifacts/pattern-v2-suite-native-20261110/post-install.json"
-          }
+          "historical_deployment": "development_not_installed"
         },
         "responses": {
           "202": {
@@ -4722,19 +4767,20 @@
             "source_commit": "56c4aef153c560c68845e89ebdaa15bc1323eeb2",
             "status": "conditional_on_embedded_bundle"
           },
-          "deployment": "development_host_not_installed_new_dist_not_imported_at_source56c",
+          "deployment": "installed_workspace_only",
           "hardware_qualification": "not_established_by_openapi",
-          "integrated_candidate": {
+          "installed": {
+            "source_commit": "6ca5a14e9f7fec8a5766e79f5bdef3fafef66d8f",
+            "status": "installed_workspace_only",
+            "evidence": "artifacts/bilingual-suite-upgrade-20261110/execution-6ca-approved/post-install/result.json",
+            "bundle": "bilingual producer1e1b1dd;11 public assets/13 files/260151B including manifest; complete profile required"
+          },
+          "historical_integrated96a": {
             "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
             "status": "integrated_installed_workspace_only",
             "web_source_commit": "f90ef8d6143acd55c059b94ecf961ec65a1bb646"
           },
-          "installed": {
-            "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
-            "status": "installed_workspace_only",
-            "evidence": "artifacts/pattern-v2-suite-native-20261110/post-install.json",
-            "bundle": "f90ef8 extended fixed dist; conditional new resources included200"
-          }
+          "historical_deployment": "development_host_not_installed_new_dist_not_imported_at_source56c"
         },
         "x-no-request-body": true,
         "description": "GET-only same-origin embedded resource; no query/body, Store, Job, or USB. Returns404 when a valid old bundle lacks this optional resource, and 200 only when a complete extended bundle is actually embedded. A host upgrade alone does not import Web assets, install a binary, or add hardware functionality. Missing required resources or digest mismatches still return 500. /demo/index.html is unregistered; LICENSE/manifest have no added public route.",
@@ -4819,19 +4865,20 @@
             "source_commit": "56c4aef153c560c68845e89ebdaa15bc1323eeb2",
             "status": "conditional_on_embedded_bundle"
           },
-          "deployment": "development_host_not_installed_new_dist_not_imported_at_source56c",
+          "deployment": "installed_workspace_only",
           "hardware_qualification": "not_established_by_openapi",
-          "integrated_candidate": {
+          "installed": {
+            "source_commit": "6ca5a14e9f7fec8a5766e79f5bdef3fafef66d8f",
+            "status": "installed_workspace_only",
+            "evidence": "artifacts/bilingual-suite-upgrade-20261110/execution-6ca-approved/post-install/result.json",
+            "bundle": "bilingual producer1e1b1dd;11 public assets/13 files/260151B including manifest; complete profile required"
+          },
+          "historical_integrated96a": {
             "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
             "status": "integrated_installed_workspace_only",
             "web_source_commit": "f90ef8d6143acd55c059b94ecf961ec65a1bb646"
           },
-          "installed": {
-            "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
-            "status": "installed_workspace_only",
-            "evidence": "artifacts/pattern-v2-suite-native-20261110/post-install.json",
-            "bundle": "f90ef8 extended fixed dist; conditional new resources included200"
-          }
+          "historical_deployment": "development_host_not_installed_new_dist_not_imported_at_source56c"
         },
         "x-no-request-body": true,
         "description": "GET-only same-origin embedded resource; no query/body, Store, Job, or USB. Returns404 when a valid old bundle lacks this optional resource, and 200 only when a complete extended bundle is actually embedded. A host upgrade alone does not import Web assets, install a binary, or add hardware functionality. Missing required resources or digest mismatches still return 500. /demo/index.html is unregistered; LICENSE/manifest have no added public route.",
@@ -4916,19 +4963,20 @@
             "source_commit": "56c4aef153c560c68845e89ebdaa15bc1323eeb2",
             "status": "conditional_on_embedded_bundle"
           },
-          "deployment": "development_host_not_installed_new_dist_not_imported_at_source56c",
+          "deployment": "installed_workspace_only",
           "hardware_qualification": "not_established_by_openapi",
-          "integrated_candidate": {
+          "installed": {
+            "source_commit": "6ca5a14e9f7fec8a5766e79f5bdef3fafef66d8f",
+            "status": "installed_workspace_only",
+            "evidence": "artifacts/bilingual-suite-upgrade-20261110/execution-6ca-approved/post-install/result.json",
+            "bundle": "bilingual producer1e1b1dd;11 public assets/13 files/260151B including manifest; complete profile required"
+          },
+          "historical_integrated96a": {
             "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
             "status": "integrated_installed_workspace_only",
             "web_source_commit": "f90ef8d6143acd55c059b94ecf961ec65a1bb646"
           },
-          "installed": {
-            "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
-            "status": "installed_workspace_only",
-            "evidence": "artifacts/pattern-v2-suite-native-20261110/post-install.json",
-            "bundle": "f90ef8 extended fixed dist; conditional new resources included200"
-          }
+          "historical_deployment": "development_host_not_installed_new_dist_not_imported_at_source56c"
         },
         "x-no-request-body": true,
         "description": "GET-only same-origin embedded resource; no query/body, Store, Job, or USB. Returns404 when a valid old bundle lacks this optional resource, and 200 only when a complete extended bundle is actually embedded. A host upgrade alone does not import Web assets, install a binary, or add hardware functionality. Missing required resources or digest mismatches still return 500. /demo/index.html is unregistered; LICENSE/manifest have no added public route.",
@@ -4994,6 +5042,198 @@
             "status": 200,
             "scope": "fixed extended dist, source Recorder and separately native attempt1; old host56c404 preserved"
           }
+        }
+      }
+    },
+    "/demo/i18n.js": {
+      "get": {
+        "operationId": "debugger_demo_i18n_js",
+        "tags": [
+          "debugger-assets"
+        ],
+        "summary": "Conditionally embedded local bilingual debugger JavaScript",
+        "x-availability": {
+          "daily": {
+            "source_commit": "1d89eae92278f24a68fff1a34e3c1e696a962c3c",
+            "status": "not_implemented"
+          },
+          "development": {
+            "source_commit": "6ca5a14e9f7fec8a5766e79f5bdef3fafef66d8f",
+            "status": "conditional_on_embedded_bilingual_bundle"
+          },
+          "installed": {
+            "source_commit": "6ca5a14e9f7fec8a5766e79f5bdef3fafef66d8f",
+            "status": "installed_workspace_only",
+            "evidence": "artifacts/bilingual-suite-upgrade-20261110/execution-6ca-approved/post-install/result.json",
+            "bundle": "bilingual producer1e1b1dd;11 public assets/13 files/260151B including manifest; complete profile required"
+          },
+          "candidate": {
+            "source_commit": "6ca5a14e9f7fec8a5766e79f5bdef3fafef66d8f",
+            "status": "installed_workspace_only",
+            "web_source_commit": "1e1b1ddf2a985dea00e494761eed592183755c1d"
+          },
+          "deployment": "installed_workspace_only_no_release_or_global_configuration",
+          "hardware_qualification": "not_established_by_openapi"
+        },
+        "x-no-request-body": true,
+        "description": "GET-only same-origin local JavaScript. No query/body, Store, Job, ticket or USB.200 requires the complete verified bilingual Pattern profile, including both locale assets and every existing asset. A valid older base/Pattern profile returns404. Invalid required files, digests, source lock or profile return500. Language changes presentation only; raw JSON, values and original tickets are retained. Fixed6ca is installed through a separate controlled promotion; this documentation update performs no installation.",
+        "responses": {
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "405": {
+            "$ref": "#/components/responses/405"
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          },
+          "200": {
+            "description": "JavaScript from the complete verified bilingual Pattern bundle installed in6ca; valid older profiles including historical1e lack this optional file.",
+            "content": {
+              "text/javascript": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "headers": {
+              "Content-Security-Policy": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Referrer-Policy": {
+                "schema": {
+                  "const": "no-referrer"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "x-api-level": "embedded-web",
+        "x-source-evidence": {
+          "source": "internal/httpapi/light.go",
+          "tests": [
+            "internal/httpapi/light_test.go",
+            "internal/webui/embed_test.go",
+            "tools/test_import_web_dist.py"
+          ],
+          "bundle_validator_source": "internal/webui/embed.go"
+        },
+        "x-bundle-condition": {
+          "profiles": "base:6 public assets;Pattern:9;bilingual Pattern:11;LICENSE and manifest are not public routes",
+          "candidate_source": "6ca5a14e9f7fec8a5766e79f5bdef3fafef66d8f",
+          "web_source_commit": "1e1b1ddf2a985dea00e494761eed592183755c1d",
+          "web_manifest_sha256": "a35beb8fb17aa3a9e6751e006e0c7b6524d197b83cd679a25528a99134ce6460",
+          "required_added_assets": [
+            "i18n.js",
+            "locales.js"
+          ],
+          "total_dist_limit_bytes": 262144,
+          "candidate_dist_bytes_including_manifest": 260151,
+          "qualification": "source and pinned-byte inventory; no new HTTP/native observation in this documentation pass"
+        }
+      }
+    },
+    "/demo/locales.js": {
+      "get": {
+        "operationId": "debugger_demo_locales_js",
+        "tags": [
+          "debugger-assets"
+        ],
+        "summary": "Conditionally embedded local bilingual debugger JavaScript",
+        "x-availability": {
+          "daily": {
+            "source_commit": "1d89eae92278f24a68fff1a34e3c1e696a962c3c",
+            "status": "not_implemented"
+          },
+          "development": {
+            "source_commit": "6ca5a14e9f7fec8a5766e79f5bdef3fafef66d8f",
+            "status": "conditional_on_embedded_bilingual_bundle"
+          },
+          "installed": {
+            "source_commit": "6ca5a14e9f7fec8a5766e79f5bdef3fafef66d8f",
+            "status": "installed_workspace_only",
+            "evidence": "artifacts/bilingual-suite-upgrade-20261110/execution-6ca-approved/post-install/result.json",
+            "bundle": "bilingual producer1e1b1dd;11 public assets/13 files/260151B including manifest; complete profile required"
+          },
+          "candidate": {
+            "source_commit": "6ca5a14e9f7fec8a5766e79f5bdef3fafef66d8f",
+            "status": "installed_workspace_only",
+            "web_source_commit": "1e1b1ddf2a985dea00e494761eed592183755c1d"
+          },
+          "deployment": "installed_workspace_only_no_release_or_global_configuration",
+          "hardware_qualification": "not_established_by_openapi"
+        },
+        "x-no-request-body": true,
+        "description": "GET-only same-origin local JavaScript. No query/body, Store, Job, ticket or USB.200 requires the complete verified bilingual Pattern profile, including both locale assets and every existing asset. A valid older base/Pattern profile returns404. Invalid required files, digests, source lock or profile return500. Language changes presentation only; raw JSON, values and original tickets are retained. Fixed6ca is installed through a separate controlled promotion; this documentation update performs no installation.",
+        "responses": {
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "405": {
+            "$ref": "#/components/responses/405"
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          },
+          "200": {
+            "description": "JavaScript from the complete verified bilingual Pattern bundle installed in6ca; valid older profiles including historical1e lack this optional file.",
+            "content": {
+              "text/javascript": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "headers": {
+              "Content-Security-Policy": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Referrer-Policy": {
+                "schema": {
+                  "const": "no-referrer"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "x-api-level": "embedded-web",
+        "x-source-evidence": {
+          "source": "internal/httpapi/light.go",
+          "tests": [
+            "internal/httpapi/light_test.go",
+            "internal/webui/embed_test.go",
+            "tools/test_import_web_dist.py"
+          ],
+          "bundle_validator_source": "internal/webui/embed.go"
+        },
+        "x-bundle-condition": {
+          "profiles": "base:6 public assets;Pattern:9;bilingual Pattern:11;LICENSE and manifest are not public routes",
+          "candidate_source": "6ca5a14e9f7fec8a5766e79f5bdef3fafef66d8f",
+          "web_source_commit": "1e1b1ddf2a985dea00e494761eed592183755c1d",
+          "web_manifest_sha256": "a35beb8fb17aa3a9e6751e006e0c7b6524d197b83cd679a25528a99134ce6460",
+          "required_added_assets": [
+            "i18n.js",
+            "locales.js"
+          ],
+          "total_dist_limit_bytes": 262144,
+          "candidate_dist_bytes_including_manifest": 260151,
+          "qualification": "source and pinned-byte inventory; no new HTTP/native observation in this documentation pass"
         }
       }
     }
@@ -10218,7 +10458,14 @@
       "additional_hardware_writes": false,
       "scope": "pinned workspace binaries and owned local daemon only; no OS startup service/global MCP registration/remote Release",
       "legacy_v1_snapshot": "same SHA before/after promotion"
-    }
+    },
+    "candidate_source": "6ca5a14e9f7fec8a5766e79f5bdef3fafef66d8f",
+    "candidate_scope": "Offline source6ca documentation projection:46 canonical/50 OpenAPI operations/45 paths/111 unchanged models. Historical Recorder samples remain frozen. Separate controlled installation/postcheck and readonly UI evidence is cited, never replayed by documentation checks.",
+    "installed_source": "6ca5a14e9f7fec8a5766e79f5bdef3fafef66d8f",
+    "installation_evidence": "artifacts/bilingual-suite-upgrade-20261110/execution-6ca-approved/post-install/result.json",
+    "installation_readonly_checks": 57,
+    "readonly_browser_evidence": "artifacts/bilingual-suite-upgrade-20261110/execution-6ca-approved/browser-read-only/result.json",
+    "readonly_browser_checks": 4
   },
   "x-specification-source": "https://spec.openapis.org/oas/v3.2.1.html",
   "x-source-baselines": {
@@ -10227,11 +10474,15 @@
     "inventory": "docs/api-http-inventory.json",
     "web_host": "56c4aef153c560c68845e89ebdaa15bc1323eeb2",
     "web_bundle_at_host_source": "fe32507cd80de36f3e9050036fbe1a469170d342",
-    "integrated_candidate": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
-    "web_bundle_at_integrated_candidate": "f90ef8d6143acd55c059b94ecf961ec65a1bb646",
+    "integrated_candidate": "6ca5a14e9f7fec8a5766e79f5bdef3fafef66d8f",
+    "web_bundle_at_integrated_candidate": "1e1b1ddf2a985dea00e494761eed592183755c1d",
     "historical_daily": "1d89eae92278f24a68fff1a34e3c1e696a962c3c",
-    "installed": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
-    "daily_note": "legacy field is historical former-daily1d89; current workspace source is installed1e2e765"
+    "installed": "6ca5a14e9f7fec8a5766e79f5bdef3fafef66d8f",
+    "daily_note": "legacy daily fields describe historical1d89; current workspace runtime is installed6ca; previous1e is historical",
+    "historical_integrated96a": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
+    "historical_web_bundle_at_integrated96a": "f90ef8d6143acd55c059b94ecf961ec65a1bb646",
+    "candidate_status": "installed_workspace_only",
+    "historical_installed1e": "1e2e7650e2cff6686d95cb9908953e5fd370f2bc"
   },
   "x-not-implemented": [
     "generic high sequence/compose/spin",
@@ -10262,26 +10513,28 @@
   "x-related-local-candidates": {
     "cli_pattern_v2_authoring": {
       "source_commit": "eee1eb952f01bab521d5514b74b60a5fa45d6e1d",
-      "status": "implemented_local_candidate_not_installed_outside_http_f8bb_baseline",
+      "status": "historical_component_source_now_integrated_in_installed6ca; not a separate newly qualified runtime",
       "commands": [
         "control patterns-v2 get ID",
         "control patterns-v2 preview-draft FILE",
         "control patterns-v2 save FILE"
       ],
-      "scope": "daemon only, authoring not execution; no prepare/policy/wait, save retains original Ref and publication confirmation/uncertainty"
+      "scope": "daemon only, authoring not execution; no prepare/policy/wait, save retains original Ref and publication confirmation/uncertainty",
+      "historical_status": "implemented_local_candidate_not_installed_outside_http_f8bb_baseline"
     },
     "mcp_documented_tools": 16,
     "mcp_scope": "daily1d89 installed12; separate development candidate c37f7fc33d52cc25619b10a5bc477965bf544cc0 has16 tools, not installed or globally registered; source schemas kept separately",
     "cli_pattern_v2_execution": {
       "source_commit": "4eac5293bbad413e90ff19e6c8700628a1a4a8ee",
-      "status": "implemented_local_candidate_not_installed_outside_http_f8bb_baseline",
+      "status": "historical_component_source_now_integrated_in_installed6ca; not a separate newly qualified runtime",
       "commands": [
         "control patterns-v2 preview ID --revision SHA",
         "control patterns-v2 run SERIAL ID --revision SHA",
         "control patterns-v2 request SERIAL ID --revision SHA --request-id KEY --expected-daemon-instance-id INSTANCE",
         "control patterns-v2 cancel SERIAL ID --revision SHA --request-id KEY --expected-daemon-instance-id INSTANCE"
       ],
-      "scope": "daemon-only; effective defaultreject with explicit three policies; one execution POST, original receipt wait/recovery; cancel GET then at most one bound POST; no library preflight/history fallback"
+      "scope": "daemon-only; effective defaultreject with explicit three policies; one execution POST, original receipt wait/recovery; cancel GET then at most one bound POST; no library preflight/history fallback",
+      "historical_status": "implemented_local_candidate_not_installed_outside_http_f8bb_baseline"
     },
     "mcp_installed_tools": 12,
     "mcp_implementation_source": "679bdfc735a2f011c4c1fbf4fabec80f406f8f18",

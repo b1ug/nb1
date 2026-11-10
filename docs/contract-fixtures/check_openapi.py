@@ -96,20 +96,23 @@ for path,item in document['paths'].items():
         placeholders=set(re.findall(r'{([^}]+)}',path))
         assert placeholders=={p['name'] for p in params if p['in']=='path'},(key,placeholders,params)
 inventory=json.loads((HERE/'route-inventory.json').read_text())
-assert inventory['baselines']['installed']['commit']=='96a1f92a8a2fcf836129797e4c3a82602a4e7ffc'
-assert inventory['baselines']['installed']['readonly_checks']==33
+assert inventory['baselines']['installed']['commit']=='6ca5a14e9f7fec8a5766e79f5bdef3fafef66d8f'
+assert inventory['baselines']['installed']['readonly_checks']==57
 assert all(row['status']['installed']=='implemented' for row in inventory['routes'])
 public_inventory=json.loads((WORK/'docs/api-http-inventory.json').read_text())
-assert public_inventory['summary']['installed_method_path_count']==44
+assert public_inventory['summary']['installed_method_path_count']==46
 assert public_inventory['summary']['daily_method_path_count']==32
 assert all(row['status']['installed']=='implemented' for row in public_inventory['routes'])
 shape=lambda key:re.sub(r'\{[^}]+\}','{}',key)
 expected={r['method']+' '+r['path'] for r in inventory['routes']}
 assert {shape(k) for k in set(operations)-set(aliases)}=={shape(k) for k in expected}
-assert len(operations)==48 and len(expected)==44 and len(aliases)==4
+assert len(operations)==50 and len(expected)==46 and len(aliases)==4
+assert len(document['paths'])==45 and len(schemas)==111
+assert set(aliases)=={'GET /v1/patterns/import','GET /v2/patterns/import','GET /v2/patterns/preview','GET /v2/patterns/preview-ref'}
 assert not any('/run' in p or '/query' in p or '/state' in p or '/set' in p for p in document['paths'])
 for key,operation in operations.items():
-    assert operation['x-availability']['development']['source_commit']==('56c4aef153c560c68845e89ebdaa15bc1323eeb2' if key.split(' ',1)[1].startswith('/demo') else 'f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae')
+    assert operation['x-availability']['development']['source_commit']==('6ca5a14e9f7fec8a5766e79f5bdef3fafef66d8f' if key in ('GET /demo/i18n.js','GET /demo/locales.js') else '56c4aef153c560c68845e89ebdaa15bc1323eeb2' if key.split(' ',1)[1].startswith('/demo') else 'f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae')
+    assert operation['x-availability']['installed']['source_commit']=='6ca5a14e9f7fec8a5766e79f5bdef3fafef66d8f'
     if key.split(' ',1)[1].startswith('/v2/patterns'):
         assert operation['x-availability']['daily']['status']=='not_implemented'
         assert operation['x-no-execution'] is True
@@ -144,22 +147,36 @@ for row in resources['observations']:
     check('historical host56c resource404 '+row['path'],'Error',row['error'],source='historical basic-bundle Recorder; not current96a observation')
     op=operations['GET '+row['path']]
     assert op['x-availability']['development']['status']=='conditional_on_embedded_bundle'
+# These96a Recorder captures are exact historical evidence, not observations of
+# the current embedded payload. Never rewrite their source identity on upgrade.
 current=json.loads((HERE/'resource-observations.current.json').read_text())
 candidate='96a1f92a8a2fcf836129797e4c3a82602a4e7ffc'
+assert hashlib.sha256((HERE/'resource-observations.current.json').read_bytes()).hexdigest()=='dcc61a8bc8da0a9d400543eebe829e8bd63920b563f2d09d9d0a7d51a5ceaa10'
 assert current['runtime_source']==candidate
+assert current['web_source']=='f90ef8d6143acd55c059b94ecf961ec65a1bb646'
+assert current['manifest_sha256']=='9f9c039abd50c65bf8ebc2e2a74954092e7cd0fff0871021666028adc9a2519d'
+assert len(current['observations'])==3
+for row in current['observations']:
+    assert row['status']==200 and row['method']=='GET' and row['path']=='/demo/'+row['asset']
+    assert row['headers']['Referrer-Policy']==['no-referrer'] and len(row['headers']['Content-Security-Policy'])==1
+    assert operations['GET '+row['path']]['x-availability']['historical_integrated96a']['source_commit']==candidate
+    results.append(dict(name='historical96a extended resource200 '+row['path'],schema='frozen historical Recorder evidence',accepted=True,expected=True,source='exact preserved96a/f90 capture; not compared to changed6ca payload'))
+projection=json.loads((HERE/'candidate-resource-inventory.json').read_text())
+assert projection['kind']=='source_only_bilingual_resource_inventory_not_http_observations'
+assert projection['runtime_source']=='6ca5a14e9f7fec8a5766e79f5bdef3fafef66d8f'
 manifest_path=WORK/'internal/webui/dist/manifest.json'
 manifest=json.loads(manifest_path.read_text())
-assert current['web_source']==manifest['source']['commit']=='f90ef8d6143acd55c059b94ecf961ec65a1bb646'
-assert current['manifest_sha256']==hashlib.sha256(manifest_path.read_bytes()).hexdigest()
-assert len(current['observations'])==3 and len(manifest['files'])==10
-assert sum(f['bytes'] for f in manifest['files'])+manifest_path.stat().st_size==208132
-for row in current['observations']:
+assert projection['web_source']==manifest['source']['commit']=='1e1b1ddf2a985dea00e494761eed592183755c1d'
+assert projection['manifest_sha256']==hashlib.sha256(manifest_path.read_bytes()).hexdigest()=='a35beb8fb17aa3a9e6751e006e0c7b6524d197b83cd679a25528a99134ce6460'
+assert len(manifest['files'])==12 and len(projection['resources'])==11
+assert sum(f['bytes']for f in manifest['files'])+manifest_path.stat().st_size==projection['dist_bytes_including_manifest']==260151
+assert {x['asset']for x in projection['resources']}=={x['path']for x in manifest['files']if x['path']!='LICENSE.txt'}
+for row in projection['resources']:
     asset=WORK/'internal/webui/dist'/row['asset']
-    assert row['status']==200 and row['method']=='GET' and row['path']=='/demo/'+row['asset']
-    assert hashlib.sha256(asset.read_bytes()).hexdigest()==row['body_sha256'] and asset.stat().st_size==row['bytes']
-    assert row['headers']['Referrer-Policy']==['no-referrer'] and len(row['headers']['Content-Security-Policy'])==1
-    assert operations['GET '+row['path']]['x-availability']['integrated_candidate']['source_commit']==candidate
-    results.append(dict(name='current96a extended resource200 '+row['path'],schema='static embedded bytes',accepted=True,expected=True,source='actual no-Service Recorder matches pinned f90 dist; historical56c preserved'))
+    assert row['method']=='GET' and row['path']=='/demo/'+(''if row['asset']=='index.html'else row['asset'])
+    assert hashlib.sha256(asset.read_bytes()).hexdigest()==row['sha256'] and asset.stat().st_size==row['bytes']
+    assert 'GET '+row['path'] in operations
+    results.append(dict(name='source6ca static inventory '+row['path'],schema='pinned source bytes only, no HTTP request',accepted=True,expected=True,source=projection['scope']))
 lexemes=json.loads((HERE/'numeric-lexeme-observations.json').read_text())
 assert lexemes['runtime_source']==candidate and len(lexemes['observations'])==8
 accepted={'legacy-program-negative-zero','legacy-effect-negative-zero','raw-frame-zero-fade'}
@@ -176,6 +193,6 @@ report={'status':'PASS_OPENAPI_DOCUMENTATION_CHECK','openapi':document['openapi'
         'paths':len(document['paths']),'operations':len(operations),'canonical_operations':len(expected),'id_alias_operations':aliases,
         'schemas':len(schemas),'local_refs_checked':len(refs),'examples_checked':len(results),'checks':results,
         'openapi_sha256':hashlib.sha256((WORK/'docs/openapi.json').read_bytes()).hexdigest(),
-        'network_access':False,'hardware_access':False,'limitations':['Not complete OpenAPI metaschema certification','JSON Schema is not a source/hash/lexical verifier; explicit runtime-only gap samples remain accepted by design']}
+        'network_access':False,'hardware_access':False,'documentation_runtime_source':'6ca5a14e9f7fec8a5766e79f5bdef3fafef66d8f','http_or_fixture_generator_executed':False,'limitations':['Not complete OpenAPI metaschema certification','JSON Schema is not a source/hash/lexical verifier; explicit runtime-only gap samples remain accepted by design']}
 if args.report:args.report.write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n')
 print(json.dumps({k:v for k,v in report.items() if k!='checks'},ensure_ascii=False))

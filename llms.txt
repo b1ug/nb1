@@ -12,12 +12,14 @@ MCP is real stdio to local HTTP, not a CLI wrapper or USB owner. Preview does no
 
 Legacy list_patterns/get_pattern remain v1 Program/Effect storage. Advanced host Pattern v2 preserves source, normalized action, recipe, frozen execution, revision, and execution_digest. MK2 can use this computer-side library; device RAM/flash and task receipts are different. No automatic migration, replay, or flash write.
 
-Installed workspace1e2e765 has eight advanced CLI commands: list/get/preview-draft/save/preview/run/request/cancel. Its actual stdio MCP20 includes the four advanced execution tools plus list_patterns_v2/get_pattern_v2/preview_pattern_draft_v2/save_pattern_v2. The latter four are experimental host authoring tools; CLI and MCP snapshot import/export are not installed. Discover the actual session before calling a tool. Preserve publication_unknown separately from execution outcome_unknown. Library paths are display metadata, not client file-access instructions.
+Installed workspace6ca5a14 has ten advanced CLI commands: list/get/preview-draft/save/preview/run/request/cancel/import/export. Its actual stdio MCP20 preserves the same complete objects, including the four experimental host-authoring tools; MCP snapshot import/export is unavailable. CLI import is explicit create-only host storage with publication uncertainty and no playback/ticket; export preserves valid future recipes and exact integers without reinterpretation. Discover actual help/session schemas; preserve publication_unknown separately from execution outcome_unknown. Library paths are display metadata, not client file-access instructions.
+
+Three installed Web tools default to English and offer explicit Chinese selection, preserving raw values/source/records/original tickets.57 installation-readonly checks and4 isolated readonly UI checks are separate from inherited prior1e physical-effect evidence; they add no hardware-storage capability.
 
 ## References
 
 - [Agent skill](skills/blink1-control/SKILL.md): expression selection, receipts, recovery, and host patterns.
-- [English API reference](docs/api-reference.md): High/Low semantics, 44 canonical HTTP operations, 111 models, and 14 examples.
+- [English API reference](docs/api-reference.md): High/Low semantics, 46 installed canonical HTTP operations (44 in historical1e), 111 models, and 14 examples.
 - [OpenAPI](docs/openapi.json): machine-readable structure and route availability, with English explanatory prose.
 - [Actual MCP schemas](docs/mcp-tools.schema.json): captured20-tool installed catalog; actual tools/list remains authoritative.
 - [Previous MCP16 snapshot](docs/mcp-tools.daily-96a.schema.json) and [historical MCP12](docs/mcp-tools.daily-1d89.schema.json) retain exact compatibility objects.
@@ -25,4 +27,4 @@ Installed workspace1e2e765 has eight advanced CLI commands: list/get/preview-dra
 - [Examples](docs/examples/api/): author files and pure preview inputs, not automatic execution.
 - [Localized API manual](docs/api-reference.zh-CN.md) and [localized agent guide](docs/agent-guide.zh-CN.md).
 
-Report software preview, trusted terminal state, timestamped RGB readback, and camera observation separately. An out-of-frame lamp cannot be optically qualified from background pixels. Current Mac/MK2 evidence does not establish MK3, other-OS USB, long-running reliability, perfect rotation, or flicker-free operation. Public default documentation/UI/messages are English; Chinese is for internal reports or explicit localization. Do not change global MCP, startup services, or system permissions merely to use these files.
+Report software preview, trusted terminal state, timestamped RGB readback, and camera observation separately. An out-of-frame lamp cannot be optically qualified from background pixels. Current Mac/MK2 evidence does not establish MK3, other-OS USB, long-running reliability, perfect rotation, or flicker-free operation. Public default documentation/UI/messages are English. The installed bilingual Web offers explicit Chinese selection, retains the browser preference across three pages and supports future locale extension; language changes no payload or original ticket. Do not change global MCP, startup services, or system permissions merely to use these files.

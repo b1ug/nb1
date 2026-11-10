@@ -12,7 +12,7 @@
     "development": {
       "commit": "f8bb267b5cf8b952ce6a8cdbd86e8b18971028ae",
       "source_worktree": "validation/nb1-pattern-v2-public",
-      "scope": "Historical P1..P6 source qualification; these features are integrated in the current installed1e2e765. This field is retained for provenance."
+      "scope": "Historical P1..P6 source qualification; integrated in previous1e and current installed6ca. This field is retained for provenance."
     },
     "web_host": {
       "commit": "56c4aef153c560c68845e89ebdaa15bc1323eeb2",
@@ -20,30 +20,39 @@
       "scope": "Source supports closed basic/extended static bundle; old dist retained at this source; no install/USB claim"
     },
     "integrated_candidate": {
-      "source_commit": "1e2e7650e2cff6686d95cb9908953e5fd370f2bc",
+      "source_commit": "6ca5a14e9f7fec8a5766e79f5bdef3fafef66d8f",
       "status": "installed_workspace_only",
-      "web_source_commit": "cf5219ba7c7da8e1f5db58dade22643aaa8c0861",
-      "web_manifest_sha256": "3cf7e88161a21d19edb056d2929b27da17b4b9958a8d2a18b2cbffc3992a8811",
-      "manifest_files": 10,
-      "public_assets": 9,
+      "web_source_commit": "1e1b1ddf2a985dea00e494761eed592183755c1d",
+      "web_manifest_sha256": "a35beb8fb17aa3a9e6751e006e0c7b6524d197b83cd679a25528a99134ce6460",
+      "manifest_files": 12,
+      "public_assets": 11,
       "api_contracts": 4,
-      "dist_bytes_including_manifest": 210608,
-      "native_evidence": "artifacts/native-english-suite-20261110/qualification.json",
-      "native_scope": "Current macOS arm64 MK2/FW204 only; two bounded windows, CLI3/MCP2 jobs completed3/cancelled2; original first-window Web harness failure preserved, second read-only Web recheck16 passed; trace160pairs/0retry/failure/loss; optical clipping limits, no MK3/other physical OS/Flash/long-run qualification"
+      "dist_bytes_including_manifest": 260151,
+      "cli_advanced_commands": 10,
+      "mcp_tools": 20,
+      "native_scope": "57 read-only postinstallation checks and4 isolated readonly UI checks; inherited prior1e physical-effect qualification is separate; no new playback/optical/Flash/MK3 qualification",
+      "native_evidence": "artifacts/bilingual-suite-upgrade-20261110/execution-6ca-approved/post-install/result.json"
     },
     "installed": {
-      "commit": "1e2e7650e2cff6686d95cb9908953e5fd370f2bc",
-      "worktree": "/Users/vej/Codebase/devel-blink1",
-      "source_worktree": "validation/nb1-ecosystem-next",
+      "commit": "6ca5a14e9f7fec8a5766e79f5bdef3fafef66d8f",
+      "source_worktree": "validation/nb1-bilingual-suite-fixed",
       "binary": "bin/nb1-runtime",
       "endpoint": "http://127.0.0.1:8931",
-      "evidence": "artifacts/native-english-suite-20261110/promotion/controlled/attempt1/post-install/result.json",
-      "readonly_checks": 38,
+      "evidence": "artifacts/bilingual-suite-upgrade-20261110/execution-6ca-approved/post-install/result.json",
+      "evidence_sha256": "ff49c2db0c2fe235bcba9dc30c2514d31d0b7f219118c6013bc56a102a844e95",
+      "readonly_checks": 57,
       "additional_hardware_writes": false,
-      "scope": "pinned workspace binaries and owned local daemon only; no OS startup service/global MCP registration/remote Release",
-      "cli_advanced_commands": 8,
+      "scope": "workspace four-file controlled promotion and read-only verification; daemon initialization/cleanup is separate from zero application mutations during the verification window; no release/OS startup/global MCP change",
+      "cli_advanced_commands": 10,
       "mcp_tools": 20,
-      "default_web_language": "English"
+      "default_web_language": "English",
+      "web_languages": [
+        "en",
+        "zh-CN"
+      ],
+      "readonly_browser_evidence": "artifacts/bilingual-suite-upgrade-20261110/execution-6ca-approved/browser-read-only/result.json",
+      "readonly_browser_checks": 4,
+      "readonly_browser_scope": "isolated browser context, default EN/explicit ZH/navigation/EN roundtrip; no non-GET or mutating transport delta; no animation or optical qualification"
     },
     "historical_daily": {
       "commit": "1d89eae92278f24a68fff1a34e3c1e696a962c3c",
@@ -72,6 +81,46 @@
       "dist_bytes_including_manifest": 208132,
       "native_evidence": "artifacts/pattern-v2-suite-native-20261110/attempt1/report.json",
       "native_scope": "macOS arm64 MK2/FW204; CLI3/MCP2/Web2, 7jobs/3cancel; restored daily1d89; 6USBretries/0finalfailure; optical limits, no MK3/other-platform qualification"
+    },
+    "historical_integrated1e": {
+      "source_commit": "1e2e7650e2cff6686d95cb9908953e5fd370f2bc",
+      "status": "installed_workspace_only",
+      "web_source_commit": "cf5219ba7c7da8e1f5db58dade22643aaa8c0861",
+      "web_manifest_sha256": "3cf7e88161a21d19edb056d2929b27da17b4b9958a8d2a18b2cbffc3992a8811",
+      "manifest_files": 10,
+      "public_assets": 9,
+      "api_contracts": 4,
+      "dist_bytes_including_manifest": 210608,
+      "native_evidence": "artifacts/native-english-suite-20261110/qualification.json",
+      "native_scope": "Current macOS arm64 MK2/FW204 only; two bounded windows, CLI3/MCP2 jobs completed3/cancelled2; original first-window Web harness failure preserved, second read-only Web recheck16 passed; trace160pairs/0retry/failure/loss; optical clipping limits, no MK3/other physical OS/Flash/long-run qualification"
+    },
+    "candidate": {
+      "source_commit": "6ca5a14e9f7fec8a5766e79f5bdef3fafef66d8f",
+      "status": "installed_workspace_only",
+      "web_source_commit": "1e1b1ddf2a985dea00e494761eed592183755c1d",
+      "web_manifest_sha256": "a35beb8fb17aa3a9e6751e006e0c7b6524d197b83cd679a25528a99134ce6460",
+      "manifest_files": 12,
+      "public_assets": 11,
+      "api_contracts": 4,
+      "dist_bytes_including_manifest": 260151,
+      "cli_advanced_commands": 10,
+      "mcp_tools": 20,
+      "native_scope": "57 read-only postinstallation checks and4 isolated readonly UI checks; inherited prior1e physical-effect qualification is separate; no new playback/optical/Flash/MK3 qualification",
+      "native_evidence": "artifacts/bilingual-suite-upgrade-20261110/execution-6ca-approved/post-install/result.json"
+    },
+    "historical_installed1e": {
+      "commit": "1e2e7650e2cff6686d95cb9908953e5fd370f2bc",
+      "worktree": "/Users/vej/Codebase/devel-blink1",
+      "source_worktree": "validation/nb1-ecosystem-next",
+      "binary": "bin/nb1-runtime",
+      "endpoint": "http://127.0.0.1:8931",
+      "evidence": "artifacts/native-english-suite-20261110/promotion/controlled/attempt1/post-install/result.json",
+      "readonly_checks": 38,
+      "additional_hardware_writes": false,
+      "scope": "pinned workspace binaries and owned local daemon only; no OS startup service/global MCP registration/remote Release",
+      "cli_advanced_commands": 8,
+      "mcp_tools": 20,
+      "default_web_language": "English"
     }
   },
   "summary": {
@@ -85,13 +134,20 @@
       "HTTP device USB open/close/raw report/flash upload endpoints",
       "Generic high sequence/compose/spin API"
     ],
-    "conditional_static_routes": 3,
-    "static_routes_including_demo_redirect": 10,
+    "conditional_static_routes": 5,
+    "static_routes_including_demo_redirect": 12,
     "current_legacy_bundle_serves_added_pattern_resources": false,
-    "current_legacy_bundle_scope": "historical host56c with Web fe32507; false does not describe installed1e2e765",
+    "current_legacy_bundle_scope": "historical host56c with Web fe32507; not the installed6ca bundle",
     "integrated_candidate_serves_added_pattern_resources": true,
-    "installed_method_path_count": 44,
-    "historical_daily_method_path_count": 32
+    "installed_method_path_count": 46,
+    "historical_daily_method_path_count": 32,
+    "canonical_method_path_count": 46,
+    "candidate_method_path_count": 46,
+    "candidate_added_method_paths": 2,
+    "installed_static_routes_including_demo_redirect": 12,
+    "historical_development_method_path_count": 44,
+    "candidate_scope": "Fixed source6ca is installed: only two static JavaScript GETs were added to the old44; no machine action/model addition.",
+    "historical_installed1e_method_path_count": 44
   },
   "low_state_set_mapping": {
     "state": {
@@ -199,7 +255,8 @@
       "status": {
         "daily_1d89": "implemented",
         "development_f8bb267": "same as daily",
-        "installed": "implemented"
+        "installed": "implemented",
+        "candidate_6ca5a14": "implemented; availability remains subject to the documented bundle/service boundaries"
       },
       "input": {
         "body": "none",
@@ -229,7 +286,8 @@
       "status": {
         "daily_1d89": "implemented",
         "development_f8bb267": "same as daily",
-        "installed": "implemented"
+        "installed": "implemented",
+        "candidate_6ca5a14": "implemented; availability remains subject to the documented bundle/service boundaries"
       },
       "input": {
         "body": "none",
@@ -263,7 +321,8 @@
       "status": {
         "daily_1d89": "implemented",
         "development_f8bb267": "same as daily",
-        "installed": "implemented"
+        "installed": "implemented",
+        "candidate_6ca5a14": "implemented; availability remains subject to the documented bundle/service boundaries"
       },
       "input": {
         "body": "none",
@@ -296,7 +355,8 @@
       "status": {
         "daily_1d89": "implemented",
         "development_f8bb267": "same as daily",
-        "installed": "implemented"
+        "installed": "implemented",
+        "candidate_6ca5a14": "implemented; availability remains subject to the documented bundle/service boundaries"
       },
       "input": {
         "body": "none",
@@ -328,7 +388,8 @@
       "status": {
         "daily_1d89": "implemented",
         "development_f8bb267": "same as daily",
-        "installed": "implemented"
+        "installed": "implemented",
+        "candidate_6ca5a14": "implemented; availability remains subject to the documented bundle/service boundaries"
       },
       "input": {
         "body": "none",
@@ -358,7 +419,8 @@
       "status": {
         "daily_1d89": "implemented",
         "development_f8bb267": "same as daily",
-        "installed": "implemented"
+        "installed": "implemented",
+        "candidate_6ca5a14": "implemented; availability remains subject to the documented bundle/service boundaries"
       },
       "input": {
         "body": "none",
@@ -392,7 +454,8 @@
       "status": {
         "daily_1d89": "implemented",
         "development_f8bb267": "same as daily",
-        "installed": "implemented"
+        "installed": "implemented",
+        "candidate_6ca5a14": "implemented; availability remains subject to the documented bundle/service boundaries"
       },
       "input": {
         "body": "Exactly one of program:Program / effect:Effect / pattern_ref:{id,revision}; optional serial",
@@ -427,7 +490,8 @@
       "status": {
         "daily_1d89": "implemented",
         "development_f8bb267": "same as daily",
-        "installed": "implemented"
+        "installed": "implemented",
+        "candidate_6ca5a14": "implemented; availability remains subject to the documented bundle/service boundaries"
       },
       "input": {
         "body": "Exactly one program:Program / effect:Effect / pattern_ref:{id,revision}, policy; request_id and expected_daemon_instance_id both present or both absent for raw Program/Effect",
@@ -471,7 +535,8 @@
       "status": {
         "daily_1d89": "implemented",
         "development_f8bb267": "same as daily",
-        "installed": "implemented"
+        "installed": "implemented",
+        "candidate_6ca5a14": "implemented; availability remains subject to the documented bundle/service boundaries"
       },
       "input": {
         "body": "documented none",
@@ -507,7 +572,8 @@
       "status": {
         "daily_1d89": "implemented",
         "development_f8bb267": "same as daily",
-        "installed": "implemented"
+        "installed": "implemented",
+        "candidate_6ca5a14": "implemented; availability remains subject to the documented bundle/service boundaries"
       },
       "input": {
         "body": "none",
@@ -539,7 +605,8 @@
       "status": {
         "daily_1d89": "implemented",
         "development_f8bb267": "same as daily",
-        "installed": "implemented"
+        "installed": "implemented",
+        "candidate_6ca5a14": "implemented; availability remains subject to the documented bundle/service boundaries"
       },
       "input": {
         "body": "empty or {} only; no source/instance/ticket fields",
@@ -574,7 +641,8 @@
       "status": {
         "daily_1d89": "implemented",
         "development_f8bb267": "same as daily",
-        "installed": "implemented"
+        "installed": "implemented",
+        "candidate_6ca5a14": "implemented; availability remains subject to the documented bundle/service boundaries"
       },
       "input": {
         "body": "{color:ColorInput}",
@@ -612,7 +680,8 @@
       "status": {
         "daily_1d89": "implemented",
         "development_f8bb267": "same as daily",
-        "installed": "implemented"
+        "installed": "implemented",
+        "candidate_6ca5a14": "implemented; availability remains subject to the documented bundle/service boundaries"
       },
       "input": {
         "body": "none",
@@ -643,7 +712,8 @@
       "status": {
         "daily_1d89": "implemented",
         "development_f8bb267": "same as daily",
-        "installed": "implemented"
+        "installed": "implemented",
+        "candidate_6ca5a14": "implemented; availability remains subject to the documented bundle/service boundaries"
       },
       "input": {
         "body": "{program:FrameProgram,serial?:string}",
@@ -678,7 +748,8 @@
       "status": {
         "daily_1d89": "implemented",
         "development_f8bb267": "same as daily",
-        "installed": "implemented"
+        "installed": "implemented",
+        "candidate_6ca5a14": "implemented; availability remains subject to the documented bundle/service boundaries"
       },
       "input": {
         "body": "{program:FrameProgram,policy:\"reject\",request_id,expected_daemon_instance_id}",
@@ -717,7 +788,8 @@
       "status": {
         "daily_1d89": "implemented",
         "development_f8bb267": "same as daily",
-        "installed": "implemented"
+        "installed": "implemented",
+        "candidate_6ca5a14": "implemented; availability remains subject to the documented bundle/service boundaries"
       },
       "input": {
         "body": "none",
@@ -751,7 +823,8 @@
       "status": {
         "daily_1d89": "implemented",
         "development_f8bb267": "same as daily",
-        "installed": "implemented"
+        "installed": "implemented",
+        "candidate_6ca5a14": "implemented; availability remains subject to the documented bundle/service boundaries"
       },
       "input": {
         "body": "none",
@@ -783,7 +856,8 @@
       "status": {
         "daily_1d89": "implemented",
         "development_f8bb267": "same as daily",
-        "installed": "implemented"
+        "installed": "implemented",
+        "candidate_6ca5a14": "implemented; availability remains subject to the documented bundle/service boundaries"
       },
       "input": {
         "body": "empty / {} legacy; optional nonempty expected_daemon_instance_id binds instance; explicit null/blank/wrong type/unknown/duplicate fields rejected",
@@ -822,7 +896,8 @@
       "status": {
         "daily_1d89": "implemented",
         "development_f8bb267": "same as daily",
-        "installed": "implemented"
+        "installed": "implemented",
+        "candidate_6ca5a14": "implemented; availability remains subject to the documented bundle/service boundaries"
       },
       "input": {
         "body": "{contract:\"nb1-light-action/v1\",action:{kind:set/off/fade/blink/breathe/pulse/alternate/rainbow,...},serial?:string}",
@@ -856,7 +931,8 @@
       "status": {
         "daily_1d89": "implemented",
         "development_f8bb267": "same as daily",
-        "installed": "implemented"
+        "installed": "implemented",
+        "candidate_6ca5a14": "implemented; availability remains subject to the documented bundle/service boundaries"
       },
       "input": {
         "body": "{contract:\"nb1-light-action/v1\",action:{...},policy:\"reject\",request_id,expected_daemon_instance_id}",
@@ -897,7 +973,8 @@
       "status": {
         "daily_1d89": "implemented",
         "development_f8bb267": "same as daily",
-        "installed": "implemented"
+        "installed": "implemented",
+        "candidate_6ca5a14": "implemented; availability remains subject to the documented bundle/service boundaries"
       },
       "input": {
         "body": "{contract:\"nb1-light-action/experimental-v2\",action:{kind:orbit only,...},serial?:string}",
@@ -932,7 +1009,8 @@
       "status": {
         "daily_1d89": "implemented",
         "development_f8bb267": "same as daily",
-        "installed": "implemented"
+        "installed": "implemented",
+        "candidate_6ca5a14": "implemented; availability remains subject to the documented bundle/service boundaries"
       },
       "input": {
         "body": "{contract:\"nb1-light-action/experimental-v2\",action:{...},policy:\"reject\",request_id,expected_daemon_instance_id}",
@@ -974,7 +1052,8 @@
       "status": {
         "daily_1d89": "implemented",
         "development_f8bb267": "same as daily",
-        "installed": "implemented"
+        "installed": "implemented",
+        "candidate_6ca5a14": "implemented; availability remains subject to the documented bundle/service boundaries"
       },
       "input": {
         "body": "none",
@@ -1007,7 +1086,8 @@
       "status": {
         "daily_1d89": "implemented",
         "development_f8bb267": "same as daily",
-        "installed": "implemented"
+        "installed": "implemented",
+        "candidate_6ca5a14": "implemented; availability remains subject to the documented bundle/service boundaries"
       },
       "input": {
         "body": "none",
@@ -1040,7 +1120,8 @@
       "status": {
         "daily_1d89": "implemented",
         "development_f8bb267": "same as daily",
-        "installed": "implemented"
+        "installed": "implemented",
+        "candidate_6ca5a14": "implemented; availability remains subject to the documented bundle/service boundaries"
       },
       "input": {
         "body": "v1 author package or frozen snapshot accepted by Store.Import; not advanced Action source",
@@ -1074,7 +1155,8 @@
       "status": {
         "daily_1d89": "absent",
         "development_f8bb267": "implemented; daemon selects independent default lazy v2 store; Go handler storage requires option",
-        "installed": "implemented"
+        "installed": "implemented",
+        "candidate_6ca5a14": "implemented; availability remains subject to the documented bundle/service boundaries"
       },
       "input": {
         "body": "none",
@@ -1108,7 +1190,8 @@
       "status": {
         "daily_1d89": "absent",
         "development_f8bb267": "implemented; daemon selects independent default lazy v2 store; Go handler storage requires option",
-        "installed": "implemented"
+        "installed": "implemented",
+        "candidate_6ca5a14": "implemented; availability remains subject to the documented bundle/service boundaries"
       },
       "input": {
         "body": "none",
@@ -1143,7 +1226,8 @@
       "status": {
         "daily_1d89": "absent",
         "development_f8bb267": "implemented; daemon selects independent default lazy v2 store; Go handler storage requires option",
-        "installed": "implemented"
+        "installed": "implemented",
+        "candidate_6ca5a14": "implemented; availability remains subject to the documented bundle/service boundaries"
       },
       "input": {
         "body": "Full verified canonical-compatible v2 frozen Snapshot; no authoring body",
@@ -1180,7 +1264,8 @@
       "status": {
         "daily_1d89": "absent",
         "development_f8bb267": "implemented; pure author preview zero Store calls",
-        "installed": "implemented"
+        "installed": "implemented",
+        "candidate_6ca5a14": "implemented; availability remains subject to the documented bundle/service boundaries"
       },
       "input": {
         "body": "{id,title,source:{kind:\"light_action\",contract,action}}; no serial/policy/ticket/expected_revision/program",
@@ -1216,7 +1301,8 @@
       "status": {
         "daily_1d89": "absent",
         "development_f8bb267": "implemented; daemon selects independent default lazy v2 store; Go handler storage requires option",
-        "installed": "implemented"
+        "installed": "implemented",
+        "candidate_6ca5a14": "implemented; availability remains subject to the documented bundle/service boundaries"
       },
       "input": {
         "body": "Same author source + expected_revision matching full freshly built candidate; create-only",
@@ -1258,7 +1344,8 @@
       "status": {
         "daily_1d89": "absent",
         "development_f8bb267": "implemented; not installed",
-        "installed": "implemented"
+        "installed": "implemented",
+        "candidate_6ca5a14": "implemented; availability remains subject to the documented bundle/service boundaries"
       },
       "input": {
         "body": "{pattern_ref,serial?}",
@@ -1295,7 +1382,8 @@
       "status": {
         "daily_1d89": "absent",
         "development_f8bb267": "implemented; not installed",
-        "installed": "implemented"
+        "installed": "implemented",
+        "candidate_6ca5a14": "implemented; availability remains subject to the documented bundle/service boundaries"
       },
       "input": {
         "body": "{pattern_ref,policy,request_id,expected_daemon_instance_id}",
@@ -1335,7 +1423,8 @@
       "status": {
         "daily_1d89": "absent",
         "development_f8bb267": "implemented; not installed",
-        "installed": "implemented"
+        "installed": "implemented",
+        "candidate_6ca5a14": "implemented; availability remains subject to the documented bundle/service boundaries"
       },
       "input": {
         "body": "none",
@@ -1372,7 +1461,8 @@
       "status": {
         "daily_1d89": "absent",
         "development_f8bb267": "implemented; not installed",
-        "installed": "implemented"
+        "installed": "implemented",
+        "candidate_6ca5a14": "implemented; availability remains subject to the documented bundle/service boundaries"
       },
       "input": {
         "body": "{pattern_ref,expected_daemon_instance_id,confirmed_job_id?}",
@@ -1411,7 +1501,8 @@
         "daily_1d89": "implemented",
         "development_f8bb267": "same as daily",
         "development_host_56c4aef": "existing canonical static path, payload selected by verified fixed bundle; not installed",
-        "installed": "implemented"
+        "installed": "implemented",
+        "candidate_6ca5a14": "implemented; availability remains subject to the documented bundle/service boundaries"
       },
       "input": {
         "body": "none",
@@ -1447,7 +1538,8 @@
         "daily_1d89": "implemented",
         "development_f8bb267": "same as daily",
         "development_host_56c4aef": "existing canonical static path, payload selected by verified fixed bundle; not installed",
-        "installed": "implemented"
+        "installed": "implemented",
+        "candidate_6ca5a14": "implemented; availability remains subject to the documented bundle/service boundaries"
       },
       "input": {
         "body": "none",
@@ -1486,7 +1578,8 @@
         "daily_1d89": "implemented",
         "development_f8bb267": "same as daily",
         "development_host_56c4aef": "existing canonical static path, payload selected by verified fixed bundle; not installed",
-        "installed": "implemented"
+        "installed": "implemented",
+        "candidate_6ca5a14": "implemented; availability remains subject to the documented bundle/service boundaries"
       },
       "input": {
         "body": "none",
@@ -1525,7 +1618,8 @@
         "daily_1d89": "implemented",
         "development_f8bb267": "same as daily",
         "development_host_56c4aef": "existing canonical static path, payload selected by verified fixed bundle; not installed",
-        "installed": "implemented"
+        "installed": "implemented",
+        "candidate_6ca5a14": "implemented; availability remains subject to the documented bundle/service boundaries"
       },
       "input": {
         "body": "none",
@@ -1564,7 +1658,8 @@
         "daily_1d89": "implemented",
         "development_f8bb267": "same as daily",
         "development_host_56c4aef": "existing canonical static path, payload selected by verified fixed bundle; not installed",
-        "installed": "implemented"
+        "installed": "implemented",
+        "candidate_6ca5a14": "implemented; availability remains subject to the documented bundle/service boundaries"
       },
       "input": {
         "body": "none",
@@ -1603,7 +1698,8 @@
         "daily_1d89": "implemented",
         "development_f8bb267": "same as daily",
         "development_host_56c4aef": "existing canonical static path, payload selected by verified fixed bundle; not installed",
-        "installed": "implemented"
+        "installed": "implemented",
+        "candidate_6ca5a14": "implemented; availability remains subject to the documented bundle/service boundaries"
       },
       "input": {
         "body": "none",
@@ -1642,7 +1738,8 @@
         "daily_1d89": "implemented",
         "development_f8bb267": "same as daily",
         "development_host_56c4aef": "existing canonical static path, payload selected by verified fixed bundle; not installed",
-        "installed": "implemented"
+        "installed": "implemented",
+        "candidate_6ca5a14": "implemented; availability remains subject to the documented bundle/service boundaries"
       },
       "input": {
         "body": "none",
@@ -1680,7 +1777,8 @@
       "status": {
         "daily_1d89": "absent",
         "development_host_56c4aef": "conditional on verified extended embedded bundle; source56c legacy dist returns404; not installed",
-        "installed": "implemented"
+        "installed": "implemented",
+        "candidate_6ca5a14": "implemented; availability remains subject to the documented bundle/service boundaries"
       },
       "input": {
         "body": "none",
@@ -1723,7 +1821,8 @@
       "status": {
         "daily_1d89": "absent",
         "development_host_56c4aef": "conditional on verified extended embedded bundle; source56c legacy dist returns404; not installed",
-        "installed": "implemented"
+        "installed": "implemented",
+        "candidate_6ca5a14": "implemented; availability remains subject to the documented bundle/service boundaries"
       },
       "input": {
         "body": "none",
@@ -1766,7 +1865,8 @@
       "status": {
         "daily_1d89": "absent",
         "development_host_56c4aef": "conditional on verified extended embedded bundle; source56c legacy dist returns404; not installed",
-        "installed": "implemented"
+        "installed": "implemented",
+        "candidate_6ca5a14": "implemented; availability remains subject to the documented bundle/service boundaries"
       },
       "input": {
         "body": "none",
@@ -1799,6 +1899,98 @@
       "notes": [
         "Only complete extended profile adds all three Pattern assets and both v2 Pattern contracts; total dist including manifest <=256KiB.",
         "Host support does not import new dist or install daemon; old complete bundle remains valid and returns404; required files/hash mismatch still500."
+      ]
+    },
+    {
+      "id": "web-demo-i18n-js",
+      "method": "GET",
+      "path": "/demo/i18n.js",
+      "level": "embedded-web",
+      "status": {
+        "daily_1d89": "absent",
+        "development_f8bb267": "absent",
+        "development_host_56c4aef": "absent",
+        "installed": "implemented",
+        "candidate_6ca5a14": "conditional on complete verified bilingual Pattern bundle"
+      },
+      "input": {
+        "body": "none",
+        "query": "none including empty ?"
+      },
+      "output": {
+        "status": [
+          200,
+          404
+        ],
+        "shape": "JavaScript from complete bilingual Pattern profile; standard Error when a valid older profile lacks the resource"
+      },
+      "success_headers": [
+        "Content-Security-Policy: default-src none; script/style/connect self; base/frame/form none",
+        "Referrer-Policy: no-referrer"
+      ],
+      "io_and_execution": "Read verified embedded bytes only; no Store/Job/device/USB. A Web resource route is not a hardware control API.",
+      "receipt": "none",
+      "errors": [
+        "global",
+        "400 invalid_request",
+        "404 not_found (valid legacy bundle)",
+        "500 internal_error (invalid bundle/required asset failure)"
+      ],
+      "source": "internal/httpapi/light.go",
+      "tests": [
+        "internal/httpapi/light_test.go",
+        "internal/webui/embed_test.go"
+      ],
+      "notes": [
+        "Only the complete bilingual Pattern profile declares both locale assets, every existing Pattern/base asset and the same four contracts.",
+        "The unchanged aggregate256KiB budget includes manifest and LICENSE. GET-only, no query/body, same-origin CSP, no-store/nosniff/no-referrer; no Store, Job or USB.",
+        "Installed6ca includes both files through separate controlled promotion; historical1e returned404. This documentation pass itself performs no installation or HTTP observation."
+      ]
+    },
+    {
+      "id": "web-demo-locales-js",
+      "method": "GET",
+      "path": "/demo/locales.js",
+      "level": "embedded-web",
+      "status": {
+        "daily_1d89": "absent",
+        "development_f8bb267": "absent",
+        "development_host_56c4aef": "absent",
+        "installed": "implemented",
+        "candidate_6ca5a14": "conditional on complete verified bilingual Pattern bundle"
+      },
+      "input": {
+        "body": "none",
+        "query": "none including empty ?"
+      },
+      "output": {
+        "status": [
+          200,
+          404
+        ],
+        "shape": "JavaScript from complete bilingual Pattern profile; standard Error when a valid older profile lacks the resource"
+      },
+      "success_headers": [
+        "Content-Security-Policy: default-src none; script/style/connect self; base/frame/form none",
+        "Referrer-Policy: no-referrer"
+      ],
+      "io_and_execution": "Read verified embedded bytes only; no Store/Job/device/USB. A Web resource route is not a hardware control API.",
+      "receipt": "none",
+      "errors": [
+        "global",
+        "400 invalid_request",
+        "404 not_found (valid legacy bundle)",
+        "500 internal_error (invalid bundle/required asset failure)"
+      ],
+      "source": "internal/httpapi/light.go",
+      "tests": [
+        "internal/httpapi/light_test.go",
+        "internal/webui/embed_test.go"
+      ],
+      "notes": [
+        "Only the complete bilingual Pattern profile declares both locale assets, every existing Pattern/base asset and the same four contracts.",
+        "The unchanged aggregate256KiB budget includes manifest and LICENSE. GET-only, no query/body, same-origin CSP, no-store/nosniff/no-referrer; no Store, Job or USB.",
+        "Installed6ca includes both files through separate controlled promotion; historical1e returned404. This documentation pass itself performs no installation or HTTP observation."
       ]
     }
   ],
@@ -1872,15 +2064,7 @@
     "blink1-go/device_cmd.go",
     "validation/nb1-ecosystem-next/internal/httpapi/README.patterns-v2.zh-CN.md"
   ],
-  "scope": {
-    "production_changes": false,
-    "service_or_device_requests": false,
-    "hardware_or_camera": false,
-    "build_or_test_execution": false,
-    "installation": false,
-    "remote_write": false,
-    "existing_tests_read_as_evidence_only": true
-  },
+  "scope": "Complete installed source6ca inventory:46 canonical operations; previous1e had44. No HTTP/USB/runtime observation is performed by this documentation pass; separate root execution evidence is cited.",
   "pattern_v2_configuration": {
     "default": "UserConfigDir()/nb1/patterns-v2",
     "flag": "--pattern-v2-dir",
@@ -1912,16 +2096,18 @@
     "bundle_budget_bytes": 262144,
     "no_hardware_capability_added": true,
     "integrated_candidate": {
-      "source_commit": "1e2e7650e2cff6686d95cb9908953e5fd370f2bc",
+      "source_commit": "6ca5a14e9f7fec8a5766e79f5bdef3fafef66d8f",
       "status": "installed_workspace_only",
-      "web_source_commit": "cf5219ba7c7da8e1f5db58dade22643aaa8c0861",
-      "web_manifest_sha256": "3cf7e88161a21d19edb056d2929b27da17b4b9958a8d2a18b2cbffc3992a8811",
-      "manifest_files": 10,
-      "public_assets": 9,
+      "web_source_commit": "1e1b1ddf2a985dea00e494761eed592183755c1d",
+      "web_manifest_sha256": "a35beb8fb17aa3a9e6751e006e0c7b6524d197b83cd679a25528a99134ce6460",
+      "manifest_files": 12,
+      "public_assets": 11,
       "api_contracts": 4,
-      "dist_bytes_including_manifest": 210608,
-      "native_evidence": "artifacts/native-english-suite-20261110/qualification.json",
-      "native_scope": "Current macOS arm64 MK2/FW204 only; two bounded windows, CLI3/MCP2 jobs completed3/cancelled2; original first-window Web harness failure preserved, second read-only Web recheck16 passed; trace160pairs/0retry/failure/loss; optical clipping limits, no MK3/other physical OS/Flash/long-run qualification"
+      "dist_bytes_including_manifest": 260151,
+      "cli_advanced_commands": 10,
+      "mcp_tools": 20,
+      "native_scope": "57 read-only postinstallation checks and4 isolated readonly UI checks; inherited prior1e physical-effect qualification is separate; no new playback/optical/Flash/MK3 qualification",
+      "native_evidence": "artifacts/bilingual-suite-upgrade-20261110/execution-6ca-approved/post-install/result.json"
     },
     "historical_integrated96a": {
       "source_commit": "96a1f92a8a2fcf836129797e4c3a82602a4e7ffc",
@@ -1934,6 +2120,33 @@
       "dist_bytes_including_manifest": 208132,
       "native_evidence": "artifacts/pattern-v2-suite-native-20261110/attempt1/report.json",
       "native_scope": "macOS arm64 MK2/FW204; CLI3/MCP2/Web2, 7jobs/3cancel; restored daily1d89; 6USBretries/0finalfailure; optical limits, no MK3/other-platform qualification"
-    }
+    },
+    "historical_integrated1e": {
+      "source_commit": "1e2e7650e2cff6686d95cb9908953e5fd370f2bc",
+      "status": "installed_workspace_only",
+      "web_source_commit": "cf5219ba7c7da8e1f5db58dade22643aaa8c0861",
+      "web_manifest_sha256": "3cf7e88161a21d19edb056d2929b27da17b4b9958a8d2a18b2cbffc3992a8811",
+      "manifest_files": 10,
+      "public_assets": 9,
+      "api_contracts": 4,
+      "dist_bytes_including_manifest": 210608,
+      "native_evidence": "artifacts/native-english-suite-20261110/qualification.json",
+      "native_scope": "Current macOS arm64 MK2/FW204 only; two bounded windows, CLI3/MCP2 jobs completed3/cancelled2; original first-window Web harness failure preserved, second read-only Web recheck16 passed; trace160pairs/0retry/failure/loss; optical clipping limits, no MK3/other physical OS/Flash/long-run qualification"
+    },
+    "bilingual_pattern": {
+      "public_assets": 11,
+      "manifest_files_including_LICENSE": 12,
+      "api_contracts": 4,
+      "required_added_assets": [
+        "i18n.js",
+        "locales.js"
+      ],
+      "dist_bytes_including_manifest": 260151
+    },
+    "candidate_added_asset_paths": [
+      "/demo/i18n.js",
+      "/demo/locales.js"
+    ],
+    "current_bundle_at_candidate": "installed6ca bilingual Pattern; producer1e1b1dd; previous1e English profile remains historical"
   }
 }

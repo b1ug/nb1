@@ -1,6 +1,6 @@
 # nb1 完整 API 手册：High level、Low level 与当前状态
 
-更新：2026-11-10。这份手册描述当前代码与本机已安装版本，供接口评审和实际调用使用。没有公开 Release；`experimental` 合同仍是实验接口。
+更新：2026-11-10。这份手册描述当前代码与本机已安装版本，供接口评审和实际调用使用。本轮没有发布新 Release（历史v0.0.1预发布仍存在）；`experimental` 合同仍是实验接口。
 
 范围是nb1当前完整HTTP面及对应CLI/MCP、执行模型和存储合同。GID与blink1-go属于独立HID/硬件SDK层，见后面的来源索引；本手册不会把它们的raw report/Flash能力虚构为HTTP端点。`internal/control`的Go接口供nb1内部接线，不是可以从任意外部Go模块直接导入的独立SDK。
 
@@ -36,6 +36,12 @@
 静默私有录像32.766667秒、983帧，没有超过50ms的PTS间隙；有限窗口未见中途全黑帧，亮边有过曝。帧时间连续不代表USB指令等间隔，也不能证明完美360度、无闪烁或已校准Gamma。该窗口USB记录6次retry（query 3、set 2、stop 1），最终失败0；原因和是否重触发fade仍待诊断，不能称零重试。
 
 候选nb1 SHA256 `b5a0f116b2f9c1b0047ef43960fb227148e29edd6b293ecee15dc45eecb3f4d3`，MCP SHA256 `8393167a18e7645561dff82b99698615e6e77a4361358af26a593939b0898f1d`；二者clean source均96a。公开脱敏资格为本地 `artifacts/pattern-v2-suite-native-20261110/qualification.json`（状态FINITE_MAC_MK2_SUITE_QUALIFIED_WITH_LIMITS）；原始执行记录为同目录attempt1/report.json，光学分析另存attempt1。raw录像保持私有，不随文档发布；报告的transport通过和光学限制分别保留。
+
+### 后续候选：诊断与高级图案列表
+
+开发片已增加第8个CLI命令 `control patterns-v2 list` 及默认关闭的 `server --transport-trace`，当前安装96a仍是七命令且没有此诊断flag。干净候选bc782在临时Mac/MK2窗口完成Pulse、Orbit和运行中取消，196条trace边/98对SDK调用均能对应原Ref和真实位置；零重试、零失败，结束后恢复日常96a并关闭trace。
+
+名义750ms的Orbit帧起点实测间隔751.059–752.173ms，同帧两颗灯仍先后写入；SDK返回后两目标间隔10.114–12.484ms。整个Orbit任务6080.978ms，包括主机、USB与清理开销。本轮录像里灯在画面外，因此**只验证指令、时序与清理，不作灯效验收**；背景裁剪的亮度统计已撤回。零重试样本也不能解释上一窗口的6次恢复重试。脱敏结果见本地`artifacts/transport-trace-native-20261110/qualification.json`和`summary.zh-CN.md`；原录像与日志保持私有。诊断限制见[本地运行说明](local-runtime.md#后续开发候选的诊断开关)。
 
 ## 2. High level 与 Low level 的职责
 
@@ -378,6 +384,8 @@ Program用completed_steps/total_steps；Frame用completed_frames/total_frames及
 这是当前真实状态，不是三套执行器。每设备仍只有一个worker，Program与Frame共享所有权。现有高级入口的策略限制尚未统一；不能在文档里先声称High/Low所有功能完全对等。 新Pattern HTTP与开发MCP run_pattern的policy必须显式传；新CLI patterns-v2 run的有效默认是reject，显式接受replace/queue/reject，不修改旧CLI父命令的replace默认。
 
 ## 12. 记忆与Pattern
+
+Pattern v2当前P1规范要求所有层级的JSON对象键为ASCII，包括未知来源中的嵌套对象；Unicode字符串值（例如中文名称）可用。整数保留精确词法与int64范围，不应先经过JavaScript Number或通用float64对象再保存；未知来源不代表任意JSON都可进入库。
 
 ### 日常可用的Pattern v1
 

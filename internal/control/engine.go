@@ -35,6 +35,11 @@ type worker struct {
 	state  DeviceState
 	queue  []*record
 	active *record
+	// Inspection reserves admission while pending or in synchronous native I/O.
+	// These fields are protected by engine.mu; only this worker calls the backend.
+	inspection                *nativeInspectionCall
+	nativeInspectionSupported bool
+	deviceSessionID           string
 	// Only this worker goroutine touches its native backend.
 	backend         Backend
 	nextObservation time.Time // Worker-owned monotonic deadline, shared across steps.
@@ -44,23 +49,24 @@ type worker struct {
 }
 
 type Engine struct {
-	mu            sync.Mutex
-	driver        Driver
-	options       Options
-	workers       map[string]*worker
-	jobs          map[string]*record
-	history       []string
-	started       bool
-	closed        bool
-	stop          chan struct{}
-	done          chan struct{}
-	shutdownErr   error
-	wg            sync.WaitGroup
-	events        chan ConnectionEvent
-	eventsClosed  bool
-	eventSequence uint64
-	droppedEvents uint64
-	receipts      *receiptState
+	mu             sync.Mutex
+	driver         Driver
+	options        Options
+	workers        map[string]*worker
+	jobs           map[string]*record
+	history        []string
+	started        bool
+	closed         bool
+	stop           chan struct{}
+	done           chan struct{}
+	shutdownErr    error
+	wg             sync.WaitGroup
+	events         chan ConnectionEvent
+	eventsClosed   bool
+	eventSequence  uint64
+	droppedEvents  uint64
+	deviceSessions uint64 // Successful connections, scoped to this Engine instance.
+	receipts       *receiptState
 }
 
 func New(driver Driver, options Options) (*Engine, error) {
@@ -143,6 +149,7 @@ func (e *Engine) beginClose() {
 	e.closed = true
 	close(e.stop)
 	for _, w := range e.workers {
+		w.cancelPendingInspectionLocked(ErrClosed)
 		w.connectionLocked("closing")
 		if w.active != nil {
 			e.cancelLocked(w.active)
@@ -319,6 +326,9 @@ func (e *Engine) canAdmitLocked(serial, policy string) (*worker, error) {
 		}
 		return nil, fmt.Errorf("%w: %s", ErrOffline, w.state.LastError)
 	}
+	if w.inspection != nil {
+		return nil, ErrBusy
+	}
 	if policy == "reject" && (w.active != nil || len(w.queue) > 0) {
 		return nil, ErrBusy
 	}
@@ -421,6 +431,9 @@ func (w *worker) offline(err error) {
 		connection = "busy"
 	}
 	w.state.LastError = err.Error()
+	w.cancelPendingInspectionLocked(fmt.Errorf("%w: %v", ErrOffline, err))
+	w.deviceSessionID = ""
+	w.nativeInspectionSupported = false
 	if !e.closed {
 		w.connectionLocked(connection)
 	}
@@ -463,6 +476,9 @@ func (w *worker) connect() bool {
 	w.state.Serial = w.serial
 	w.state.Observed = &obs
 	w.state.LastError = ""
+	e.deviceSessions++
+	w.deviceSessionID = fmt.Sprintf("session_%016x", e.deviceSessions)
+	_, w.nativeInspectionSupported = b.(NativeInspectionBackend)
 	if !e.closed {
 		w.connectionLocked("online")
 	} else {
@@ -511,6 +527,12 @@ func (w *worker) loop() {
 		e.mu.Lock()
 		if e.closed {
 			e.mu.Unlock()
+			continue
+		}
+		if call := w.inspection; call != nil {
+			call.started = true
+			e.mu.Unlock()
+			w.inspectNative(call)
 			continue
 		}
 		if len(w.queue) > 0 {

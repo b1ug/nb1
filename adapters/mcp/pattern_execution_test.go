@@ -230,7 +230,7 @@ func TestIndependentPatternValidMemoryAndStdio(t *testing.T) {
 				session = connect(t, srv.URL)
 			}
 			listed, err := session.ListTools(context.Background(), nil)
-			if err != nil || len(listed.Tools) != 20 {
+			if err != nil || len(listed.Tools) != 22 {
 				t.Fatalf("tools %v %v", listed, err)
 			}
 			res, out := call(t, session, "preview_program", json.RawMessage(`{"patt\u0065rn_ref":{"id":"frozen-2000","revision":"`+independentRef().Revision+`"}}`))

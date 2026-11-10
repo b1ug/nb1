@@ -104,6 +104,7 @@ func newServer(d *daemon) *mcp.Server {
 		}
 		return result(d.request(ctx, http.MethodPost, "/v1/jobs/"+url.PathEscape(args.ID)+"/cancel", "job", nil))
 	})
+	registerNativeInspectionTools(s, d)
 	return s
 }
 

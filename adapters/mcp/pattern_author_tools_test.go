@@ -56,7 +56,7 @@ func TestPatternAuthorCatalogFreezesCompleteLegacySixteen(t *testing.T) {
 	if e != nil {
 		t.Fatal(e)
 	}
-	if len(list.Tools) != 20 || len(old) != 16 {
+	if len(list.Tools) != 22 || len(old) != 16 {
 		t.Fatal(len(list.Tools), len(old))
 	}
 	byName := map[string]map[string]any{}

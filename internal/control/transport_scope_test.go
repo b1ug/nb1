@@ -148,8 +148,9 @@ func TestTransportPatternScopeKeepsOriginalRefForBothKinds(t *testing.T) {
 			e, b := startScopeEngine(t, time.Hour)
 			ref := patternRef(77)
 			resolved := patternResolved(t, kind, ref, "#112233")
-			accepted := mustPattern(t, e, resolved, "reject", receiptTicket(e, 1))
-			awaitPattern(t, e, ref, receiptTicket(e, 1), "succeeded")
+			ticket := receiptTicket(e, 1)
+			accepted := mustPattern(t, e, resolved, "reject", ticket)
+			awaitPattern(t, e, ref, ticket, "succeeded")
 			id := patternEnvelopeID(accepted.Job)
 			var sets int
 			for _, c := range b.traces() {

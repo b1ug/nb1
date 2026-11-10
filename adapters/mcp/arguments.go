@@ -27,6 +27,12 @@ func rawArgumentsGuard(next mcp.MethodHandler) mcp.MethodHandler {
 		if !ok || params == nil {
 			return next(ctx, method, request)
 		}
+		if isNativeInspectionTool(params.Name) {
+			if _, err := readNativeInspectionArgs(params.Arguments, nativeToolKind(params.Name)); err != nil {
+				return nativeInspectionProblem("invalid_request", "tool arguments: "+err.Error(), 0), nil
+			}
+			return next(ctx, method, request)
+		}
 		switch params.Name {
 		case "list_devices", "get_device_state", "set_device_state", "run_program", "preview_program", "resolve_color", "preview_light", "run_light", "get_job", "cancel_job", "list_patterns", "get_pattern", "preview_pattern", "run_pattern", "get_pattern_request", "cancel_pattern_request":
 		default:

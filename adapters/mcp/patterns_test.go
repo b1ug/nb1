@@ -58,7 +58,7 @@ func TestPatternListOfficialSDKMemoryAndStdio(t *testing.T) {
 				}
 			}
 			sort.Strings(names)
-			if strings.Join(names, ",") != "cancel_job,cancel_pattern_request,get_device_state,get_job,get_pattern,get_pattern_request,get_pattern_v2,list_devices,list_patterns,list_patterns_v2,preview_light,preview_pattern,preview_pattern_draft_v2,preview_program,resolve_color,run_light,run_pattern,run_program,save_pattern_v2,set_device_state" {
+			if strings.Join(names, ",") != "cancel_job,cancel_pattern_request,get_device_state,get_job,get_pattern,get_pattern_request,get_pattern_v2,list_devices,list_patterns,list_patterns_v2,preview_light,preview_pattern,preview_pattern_draft_v2,preview_program,read_device_playback_state,read_device_sequence_ram,resolve_color,run_light,run_pattern,run_program,save_pattern_v2,set_device_state" {
 				t.Fatal(names)
 			}
 			result, out := call(t, session, "list_patterns", map[string]any{})

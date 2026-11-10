@@ -54,7 +54,7 @@ func TestSDKAuthoritativePreviewIsReadOnlySinglePost(t *testing.T) {
 	defer srv.Close()
 	session := connect(t, srv.URL)
 	tools, err := session.ListTools(context.Background(), nil)
-	if err != nil || len(tools.Tools) != 20 {
+	if err != nil || len(tools.Tools) != 22 {
 		t.Fatalf("expected twelve tools: %+v %v", tools, err)
 	}
 	for _, tool := range tools.Tools {

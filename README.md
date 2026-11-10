@@ -30,6 +30,7 @@ Run as an ordinary user with the platform's device access configured. The HTTP s
 - [Agent skill](skills/blink1-control/SKILL.md) and [llms.txt](llms.txt) explain expression selection, original receipts, host-side pattern storage, and recovery.
 - [Advanced Pattern snapshot exchange](docs/pattern-snapshots-v2.md) describes the development CLI's host-only import/export commands and read-only future-recipe backups.
 - [Device-native sequence model](docs/device-native-sequence.md) describes the internal offline draft: explicit placement/playback checks and raw row inspection, without device execution or new API routes.
+- [Experimental native reads](docs/native-inspection.md) describes this branch's paired RAM/playback HTTP, CLI and MCP candidate. It requires an explicit local SDK replacement for software review; it is not installed, released or ready for a default-module build.
 - [Chinese reference manual](docs/api-reference.zh-CN.md), [Chinese CLI guide](docs/patterns-cli.md), and [Chinese README](README.zh-CN.md) are localized references.
 
 The installed workspace source is `6ca5a14e9f7fec8a5766e79f5bdef3fafef66d8f`: ten advanced Pattern CLI commands (including explicit host snapshot import/export),MCP20 with the same complete objects, and the pinned bilingual Animal Crossing-inspired Web debugger. Its three tools default to English and support explicit Chinese selection. The46 canonical inventory adds only two local JavaScript GET resources to the historical44;111 models and14 JSON inputs are unchanged.

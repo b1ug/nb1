@@ -45,6 +45,9 @@ func newControlCommand() *cobra.Command {
 		if options.policy != "replace" && options.policy != "queue" && options.policy != "reject" {
 			return fmt.Errorf("--policy must be replace, queue or reject")
 		}
+		if isNativeInspectionCommand(cmd) {
+			return nativeInspectionFlags(cmd, options)
+		}
 		if isPatternV2Command(cmd) {
 			return patternV2Flags(cmd, options)
 		}
@@ -110,7 +113,7 @@ func newControlCommand() *cobra.Command {
 		}
 		return nil
 	}
-	command.AddCommand(newControlCapabilitiesCommand(options), newControlPreviewCommand(options), newControlColorCommand(options), newControlLightCommand(options), newControlPatternsCommand(options), newControlPatternsV2Command(options))
+	command.AddCommand(newControlCapabilitiesCommand(options), newControlPreviewCommand(options), newControlColorCommand(options), newControlLightCommand(options), newControlPatternsCommand(options), newControlPatternsV2Command(options), newControlNativeInspectionCommand(options))
 	command.AddCommand(&cobra.Command{Use: "prepare", Short: "Prepare an optional daemon request binding without submitting a job", Args: cobra.NoArgs, RunE: func(cmd *cobra.Command, _ []string) error {
 		client, ctx, done, err := options.client(cmd.Context())
 		if err != nil {

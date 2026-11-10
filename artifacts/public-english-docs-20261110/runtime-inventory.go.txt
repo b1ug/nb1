@@ -1,0 +1,61 @@
+package main
+
+import (
+	"encoding/json"
+	"go/ast"
+	"go/parser"
+	"go/token"
+	"os"
+	"path/filepath"
+	"sort"
+	"strconv"
+	"strings"
+	"unicode"
+)
+
+type entry struct {
+	Path string `json:"path"`
+	Line int `json:"line"`
+	Category string `json:"category"`
+	Text string `json:"text"`
+}
+
+func main() {
+	root := os.Args[1]
+	var entries []entry
+	err := filepath.WalkDir(root, func(path string, d os.DirEntry, walkErr error) error {
+		if walkErr != nil { return walkErr }
+		if d.IsDir() { if d.Name()==".git" { return filepath.SkipDir }; return nil }
+		if !strings.HasSuffix(path, ".go") || strings.HasSuffix(path, "_test.go") { return nil }
+		fs := token.NewFileSet()
+		source, err := parser.ParseFile(fs,path,nil,0)
+		if err != nil { return err }
+		rel,err := filepath.Rel(root,path)
+		if err != nil { return err }
+		if strings.HasPrefix(rel,"docs/") { return nil }
+		ast.Inspect(source,func(node ast.Node) bool {
+			literal,ok := node.(*ast.BasicLit)
+			if !ok || literal.Kind!=token.STRING { return true }
+			value,err := strconv.Unquote(literal.Value)
+			if err!=nil { panic(err) }
+			if strings.IndexFunc(value,func(c rune)bool{return unicode.Is(unicode.Han,c)}) < 0 {return true}
+			category:="service_or_default_message"
+			switch {
+			case rel=="cmd/service.go" || strings.HasPrefix(rel,"internal/service/") || strings.HasPrefix(rel,"internal/taskquery/"): category="user_service_help_status_or_error"
+			case strings.HasPrefix(rel,"cmd/"): category="cli_help_flags_output_or_error"
+			case strings.HasPrefix(rel,"internal/doctor/"): category="doctor_diagnostic_or_default_advice"
+			case strings.HasPrefix(rel,"adapters/mcp/"): category="mcp_runtime_review_without_schema_mutation"
+			case strings.HasPrefix(rel,"hdwr/") || strings.HasPrefix(rel,"exchange/") || strings.HasPrefix(rel,"util/") || strings.HasPrefix(rel,"config/") || rel=="main.go": category="legacy_cli_defaults_logs_or_errors"
+			}
+			entries=append(entries,entry{filepath.ToSlash(rel),fs.Position(literal.Pos()).Line,category,value})
+			return true
+		})
+		return nil
+	})
+	if err!=nil {panic(err)}
+	sort.Slice(entries,func(i,j int)bool {if entries[i].Path!=entries[j].Path{return entries[i].Path<entries[j].Path};return entries[i].Line<entries[j].Line})
+	encoder := json.NewEncoder(os.Stdout)
+	encoder.SetEscapeHTML(false)
+	encoder.SetIndent("","  ")
+	if err:=encoder.Encode(entries);err!=nil {panic(err)}
+}

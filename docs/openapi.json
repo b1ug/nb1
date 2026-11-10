@@ -2,14 +2,14 @@
   "openapi": "3.2.1",
   "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
   "info": {
-    "title": "nb1 本地设备执行 API",
+    "title": "nb1 local device execution API",
     "version": "0.1.0-local",
-    "description": "当前本地候选实现，未发布。仅loopback HTTP，无用户认证；拒绝非本地Host及跨源浏览器控制。请求使用规范小写字段名；未知字段、非规范字段大小写、重复对象键、显式null、尾随JSON和超过64层的嵌套被拒绝。原低层Program可省略默认字段，repeat=0规范为1；Frame HTTP及高级Action有各自严格默认/显式零值规则。可选request_id/expected_daemon_instance_id绑定仅在同一daemon实例的有限回执内去重；旧提交无需准备步骤，客户端无自动重试，不提供跨重启exactly-once。 上述默认规则属于原低层Program；Frame HTTP与作者Action显式0/空值规则分别定义。此文档同时列出日常1d89和未安装开发f8bb267；状态见每操作x-availability。JSON Schema仅验证结构，不证明SHA/来源、原始数字词法、无重复键、Unicode scalar、设备支持或物理效果。 P4身份准入、P5完整来源resolver、P6固定Ref预览/提交/查停与独立v2默认库已在开发源码完成；日常1d89未安装。"
+    "description": "Local implementation snapshot; this documentation does not announce a release. HTTP is loopback-only, without user authentication; non-local Host values and cross-origin browser control are rejected. Use canonical lowercase field names. Strict decoders reject unknown or incorrectly cased fields, duplicate object keys, explicit null, trailing JSON, and nesting beyond their limits; newer codecs have additional numeric and Unicode rules that must not be generalized to every legacy route. Legacy low-level Program may omit default fields and normalizes repeat=0 to 1; Frame HTTP and authored Action define their own omission and explicit-zero rules. Optional request_id/expected_daemon_instance_id bindings deduplicate only within bounded receipts in the same daemon instance. Legacy submissions need no preparation step; clients do not retry automatically, and no exactly-once guarantee survives a restart. The daily 1d89 and development f8bb267 labels in x-availability are historical source baselines. The installed workspace baseline is 96a1f92a8a2fcf836129797e4c3a82602a4e7ffc, integrating the 44 canonical HTTP operations, P4 identity admission, P5 source resolver, P6 fixed-Ref preview/submit/query/cancel, and independent lazy-default v2 library; installed status is separately recorded in x-availability. Four explicit GET aliases bring this OpenAPI snapshot to 48 operations across 43 paths, with 111 models. Three static resources depend on the embedded bundle profile. JSON Schema checks structure, not hashes/source correspondence, raw numeric spelling, duplicate-key absence, Unicode scalar validity, device support, or physical effects. Installed 96a has seven advanced CLI commands and MCP16. Later source candidates add CLI list (eighth command), MCP20 authoring, transport diagnostics, and an English Web bundle; discover the installed interface before using them."
   },
   "servers": [
     {
       "url": "http://127.0.0.1:{port}",
-      "description": "以server启动JSON事件的url为准。",
+      "description": "Use the url reported by the server startup JSON event.",
       "variables": {
         "port": {
           "default": "8931"
@@ -29,7 +29,7 @@
     },
     {
       "name": "patterns",
-      "description": "daemon本机create-only库；固定revision复用，不自动重播"
+      "description": "Daemon-local create-only library; reuse exact revisions without automatic replay."
     },
     {
       "name": "frames"
@@ -51,11 +51,11 @@
         "tags": [
           "health"
         ],
-        "summary": "查询HTTP服务是否响应",
-        "description": "ok不表示任何硬件在线；设备状态另查devices。",
+        "summary": "Check whether the HTTP service responds",
+        "description": "ok does not imply any hardware is online; query devices separately.",
         "responses": {
           "200": {
-            "description": "服务正在响应。",
+            "description": "The service is responding.",
             "content": {
               "application/json": {
                 "schema": {
@@ -107,11 +107,11 @@
         "tags": [
           "devices"
         ],
-        "summary": "列出daemon已配置设备",
-        "description": "包含配置中但离线的设备；不是对所有USB进行即刻枚举。直控CLI devices为另一种元数据发现入口。",
+        "summary": "List devices configured for this daemon",
+        "description": "Includes configured offline devices; does not immediately enumerate every USB device. Direct-mode CLI devices is a separate metadata-discovery interface.",
         "responses": {
           "200": {
-            "description": "设备缓存状态，按序列号排序。",
+            "description": "Cached device states, sorted by serial.",
             "content": {
               "application/json": {
                 "schema": {
@@ -169,7 +169,7 @@
           "schema": {
             "type": "string",
             "pattern": "^[A-Za-z0-9_-]{1,128}$",
-            "description": "明确配置的真实序列号；无索引或别名解析。"
+            "description": "An explicitly configured real serial; no index or alias resolution."
           }
         }
       ],
@@ -178,10 +178,10 @@
         "tags": [
           "devices"
         ],
-        "summary": "取得最近设备状态快照",
+        "summary": "Read the latest cached device-state snapshot",
         "responses": {
           "200": {
-            "description": "状态存在，即使connection为offline仍返回200。",
+            "description": "An existing state returns 200 even when connection is offline.",
             "content": {
               "application/json": {
                 "schema": {
@@ -243,7 +243,7 @@
           "schema": {
             "type": "string",
             "pattern": "^[A-Za-z0-9_-]{1,128}$",
-            "description": "明确配置的真实序列号；无索引或别名解析。"
+            "description": "An explicitly configured real serial; no index or alias resolution."
           }
         }
       ],
@@ -252,8 +252,8 @@
         "tags": [
           "jobs"
         ],
-        "summary": "提交精确程序或有限高层效果",
-        "description": "job不随HTTP连接结束而取消。无自动USB回退、无Flash/设备模式写入。可选二元组启用同实例有限去重；首次与重放均202并返回原Job当前状态，失败/取消任务不重执行。无键调用保留每次新任务行为。 program/effect互斥，steady/pulse先编译到普通Program再走同一队列、回执与清理；返回Job.program展开结果。 新pattern_ref分支仅reject和完整原票据，解析冻结Program后进入相同执行器。引用失效不代表原票据没有执行；请查询原回执，不换票据补发。",
+        "summary": "Submit an exact Program or a finite legacy Effect",
+        "description": "An HTTP disconnect does not cancel the Job. No automatic USB fallback or Flash/device-mode write. The optional pair enables bounded same-instance deduplication: initial admission and replay both return 202 with the original Job current state; failed/cancelled Jobs are not executed again. An unkeyed call retains the legacy behavior of creating a new Job each time. program/effect are exclusive; steady/pulse compile to a normal Program before entering the same queue, receipts, and cleanup. Job.program contains the expanded result. The pattern_ref branch requires explicit reject and a complete original ticket, resolves the frozen Program, and uses the same executor. An invalid reference does not prove the original ticket never executed; query its original receipt rather than resubmitting with another ticket.",
         "x-max-body-bytes": 1048576,
         "requestBody": {
           "required": true,
@@ -267,7 +267,7 @@
         },
         "responses": {
           "202": {
-            "description": "首次准入或原任务重放，均返回202，包括原任务已终态；保存原binding和Location。",
+            "description": "Initial admission or replay of the original Job both return 202, including when that Job is terminal; preserve the original binding and Location.",
             "content": {
               "application/json": {
                 "schema": {
@@ -277,13 +277,13 @@
             },
             "headers": {
               "Location": {
-                "description": "无键时为job查询路径；有键时为含原实例query的回执查询路径。",
+                "description": "Unkeyed submissions use the Job lookup path; keyed submissions use the receipt path with the original instance query.",
                 "schema": {
                   "type": "string"
                 }
               },
               "X-NB1-Replayed": {
-                "description": "仅有键提交存在；true代表返回既有任务，非重新执行。",
+                "description": "Present only for keyed submissions; true returns an existing Job without executing it again.",
                 "schema": {
                   "type": "string",
                   "enum": [
@@ -293,11 +293,11 @@
                 }
               },
               "X-NB1-Daemon-Instance-ID": {
-                "description": "仅有键提交存在，确认原实例绑定。",
+                "description": "Present only for keyed submissions; confirms the original instance binding.",
                 "schema": {
                   "type": "string",
                   "pattern": "^daemon_[0-9a-f]{32}$",
-                  "description": "原daemon实例绑定；实例改变时旧结果仍可能未知，不可自动换绑。"
+                  "description": "Original daemon-instance binding; an instance change can leave the old outcome unknown and must not trigger automatic rebinding."
                 }
               }
             }
@@ -389,10 +389,10 @@
         "tags": [
           "jobs"
         ],
-        "summary": "查询一个内存任务记录",
+        "summary": "Query an in-memory Job record",
         "responses": {
           "200": {
-            "description": "当前任务状态。",
+            "description": "Current Job state.",
             "content": {
               "application/json": {
                 "schema": {
@@ -462,8 +462,8 @@
         "tags": [
           "jobs"
         ],
-        "summary": "请求取消任务",
-        "description": "可不带请求体；如携带，则必须是application/json空对象。返回202及真实job状态，活动任务通常先cancelling，停止/熄灯/读回成功后才cancelled；已有终态不改变。排队任务直接移除，不停止其他活动任务。",
+        "summary": "Request Job cancellation",
+        "description": "The body may be absent; when supplied, it must be an application/json empty object. Returns 202 with the real Job state. An active Job usually enters cancelling and becomes cancelled only after successful stop/off/readback cleanup. Existing terminal state is unchanged. A queued Job is removed without stopping another active Job.",
         "x-max-body-bytes": 1048576,
         "requestBody": {
           "required": false,
@@ -477,7 +477,7 @@
         },
         "responses": {
           "202": {
-            "description": "取消请求已处理；不能把202当作设备已经停止。",
+            "description": "The cancellation request was handled; 202 does not mean the device has already stopped.",
             "content": {
               "application/json": {
                 "schema": {
@@ -546,11 +546,11 @@
         "tags": [
           "devices"
         ],
-        "summary": "查询SDK操作级传输与重试计数",
-        "description": "不额外访问USB。driver未提供计数时返回空数组。calls是逻辑SDK操作，attempts含初次尝试，retries是额外尝试，failures是最终失败；不是原始USB transfer计数。last_error可能来自已恢复操作。",
+        "summary": "Read SDK-operation transport and retry counters",
+        "description": "Does not access USB again. Returns an empty array if the driver provides no counters. calls counts logical SDK operations; attempts includes the first attempt, retries counts extra attempts, and failures counts final failures. These are not raw USB-transfer counts. last_error can describe a recovered operation.",
         "responses": {
           "200": {
-            "description": "累积计数快照，进程重启后不保留。",
+            "description": "Cumulative counter snapshot; not retained across process restarts.",
             "content": {
               "application/json": {
                 "schema": {
@@ -605,11 +605,11 @@
         "tags": [
           "health"
         ],
-        "summary": "读取可选回执能力与新请求前缀",
-        "description": "只读，不分配回执或操作USB。客户端将prefix与16随机字节的小写hex组合并保存实例二元组；旧服务可404/501，不自动降级。",
+        "summary": "Read optional receipt capabilities and a new-request prefix",
+        "description": "Read-only; allocates no receipt and performs no USB operation. Append 16 random bytes encoded as lowercase hex to the prefix and preserve the instance pair. Older services may return 404/501; do not silently downgrade.",
         "responses": {
           "200": {
-            "description": "本实例与有限回执限额。",
+            "description": "This instance and its bounded receipt limits.",
             "content": {
               "application/json": {
                 "schema": {
@@ -622,7 +622,7 @@
                 "schema": {
                   "type": "string",
                   "pattern": "^daemon_[0-9a-f]{32}$",
-                  "description": "原daemon实例绑定；实例改变时旧结果仍可能未知，不可自动换绑。"
+                  "description": "Original daemon-instance binding; an instance change can leave the old outcome unknown and must not trigger automatic rebinding."
                 }
               }
             }
@@ -676,7 +676,7 @@
           "schema": {
             "type": "string",
             "pattern": "^[A-Za-z0-9_-]{1,128}$",
-            "description": "明确配置的真实序列号；无索引或别名解析。"
+            "description": "An explicitly configured real serial; no index or alias resolution."
           }
         },
         {
@@ -686,7 +686,7 @@
           "schema": {
             "type": "string",
             "pattern": "^req_[1-9][0-9]{0,18}_[0-9a-f]{32}$",
-            "description": "服务端request_id_prefix追加128bit小写hex nonce。截止点是daemon单调uptime毫秒；服务端另查int64溢出、过期及最大60000ms准入窗口。"
+            "description": "Append a 128-bit lowercase-hex nonce to the server request_id_prefix. The deadline is daemon monotonic uptime in milliseconds; the server also checks int64 overflow, expiration, and a maximum 60000ms admission window."
           }
         },
         {
@@ -696,9 +696,9 @@
           "schema": {
             "type": "string",
             "pattern": "^daemon_[0-9a-f]{32}$",
-            "description": "原daemon实例绑定；实例改变时旧结果仍可能未知，不可自动换绑。"
+            "description": "Original daemon-instance binding; an instance change can leave the old outcome unknown and must not trigger automatic rebinding."
           },
-          "description": "必须恰好一个非空参数；不接受未知或重复query参数。"
+          "description": "Exactly one nonempty parameter is required; unknown or repeated query parameters are rejected."
         }
       ],
       "get": {
@@ -706,11 +706,11 @@
         "tags": [
           "jobs"
         ],
-        "summary": "按原实例与请求键查原Job",
-        "description": "普通job历史淘汰后，有效回执仍可返回原任务的当前状态。404仅表示查询时未找到，410/实例409保留旧结果未知，不重建或重绑任务。",
+        "summary": "Find the original Job by its instance and request key",
+        "description": "A valid receipt can still return the original Job current state after ordinary Job history eviction. 404 only means it was not found at query time. Expiration410 or instance 409 preserves uncertainty about the old outcome; do not recreate or rebind the task.",
         "responses": {
           "200": {
-            "description": "原Job当前快照，无新任务副作用。",
+            "description": "Current original-Job snapshot, without a new-Job side effect.",
             "content": {
               "application/json": {
                 "schema": {
@@ -723,7 +723,7 @@
                 "schema": {
                   "type": "string",
                   "pattern": "^daemon_[0-9a-f]{32}$",
-                  "description": "原daemon实例绑定；实例改变时旧结果仍可能未知，不可自动换绑。"
+                  "description": "Original daemon-instance binding; an instance change can leave the old outcome unknown and must not trigger automatic rebinding."
                 }
               }
             }
@@ -787,11 +787,11 @@
     "/v1/capabilities": {
       "get": {
         "operationId": "getCapabilities",
-        "summary": "只读软件编译能力目录",
-        "description": "不接受查询参数或请求体。HTTP200；不调用设备/任务/回执服务。",
+        "summary": "Read-only software compilation capability catalog",
+        "description": "No query parameters or request body. Returns HTTP200 without calling device, Job, or receipt services.",
         "responses": {
           "200": {
-            "description": "软件能力目录",
+            "description": "Software capability catalog.",
             "content": {
               "application/json": {
                 "schema": {
@@ -844,8 +844,8 @@
     "/v1/programs/preview": {
       "post": {
         "operationId": "previewProgram",
-        "summary": "权威软件编译预览，不执行设备操作",
-        "description": "无查询参数。严格JSON，与提交共用编译器；可选serial只读已配置设备快照。不是Job提交、不返回202、不创建票据、不改变设备占用或灯光。旧daemon不支持时客户端明确报告，不能回退USB或把MCP结构dry_run当编译。 新增固定pattern_ref；不同响应类型见200；旧program/effect分支不变。",
+        "summary": "Authoritative software compilation preview without device execution",
+        "description": "No query parameters. Strict JSON shares the submit compiler; optional serial reads only a configured cached device snapshot. This is not Job submission: no202, ticket, device reservation, or light change. When an older daemon lacks support, report that explicitly; do not fall back to USB or treat an MCP structural dry_run as compilation. A fixed pattern_ref branch is also supported; response types differ as described under 200, while the original program/effect branches retain their contract.",
         "requestBody": {
           "required": true,
           "content": {
@@ -866,7 +866,7 @@
         },
         "responses": {
           "200": {
-            "description": "规范化程序和有限快照检查；不是执行证明",
+            "description": "Normalized Program and bounded cached-profile checks; not proof of execution.",
             "content": {
               "application/json": {
                 "schema": {
@@ -945,7 +945,7 @@
       "post": {
         "operationId": "resolveColor",
         "summary": "Pure color authoring normalization, no device or Job",
-        "description": "No query (including empty query). Maximum4096 bytes. Strict one-field envelope, no serial/policy/ticket. Fixed opaque CSS names, hex3/6, rgb8 and exact-decimal HSV. Output is raw RGB with no gamma. New route and independently versioned contract; existing v1 execution shapes unchanged. Old daemon404/501 is unsupported, no USB fallback.",
+        "description": "No query (including empty query). Maximum4096 bytes. Strict one-field envelope, no serial/policy/ticket. Fixed opaque CSS names, hex 3/6, rgb 8 and exact-decimal HSV. Output is raw RGB with no gamma. New route and independently versioned contract; existing v1 execution shapes unchanged. Old daemon 404/501 is unsupported, no USB fallback.",
         "requestBody": {
           "required": true,
           "content": {
@@ -1232,7 +1232,7 @@
                 "schema": {
                   "type": "string",
                   "pattern": "^daemon_[0-9a-f]{32}$",
-                  "description": "原daemon实例绑定；实例改变时旧结果仍可能未知，不可自动换绑。"
+                  "description": "Original daemon-instance binding; an instance change can leave the old outcome unknown and must not trigger automatic rebinding."
                 }
               }
             }
@@ -1297,7 +1297,7 @@
               "type": "string",
               "const": "snapshot"
             },
-            "description": "仅一次format=snapshot；未知、重复和空查询参数拒绝。省略返回目录/记录。"
+            "description": "Only one format=snapshot is accepted; unknown, duplicate, or empty query parameters are rejected. Omission returns the directory or record."
           }
         ],
         "responses": {
@@ -1320,7 +1320,7 @@
             "$ref": "#/components/responses/503"
           },
           "200": {
-            "description": "目录或精确冻结包，依format选择",
+            "description": "Directory or exact frozen package, selected by format.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1338,8 +1338,8 @@
           }
         },
         "operationId": "listPatterns",
-        "summary": "读取同一daemon图案库，或导出全库冻结快照",
-        "description": "无请求体；读取缺失库不创建目录。默认PatternList，format=snapshot返回规范PatternSnapshot。",
+        "summary": "Read the same daemon Pattern library or export its full frozen snapshot",
+        "description": "No request body. Reading a missing library does not create a directory. Returns PatternList by default or canonical PatternSnapshot for format=snapshot.",
         "x-no-request-body": true,
         "x-availability": {
           "daily": {
@@ -1394,7 +1394,7 @@
               "type": "string",
               "const": "snapshot"
             },
-            "description": "仅一次format=snapshot；未知、重复和空查询参数拒绝。省略返回目录/记录。"
+            "description": "Only one format=snapshot is accepted; unknown, duplicate, or empty query parameters are rejected. Omission returns the directory or record."
           }
         ],
         "responses": {
@@ -1420,7 +1420,7 @@
             "$ref": "#/components/responses/404"
           },
           "200": {
-            "description": "单条记录或单条冻结包，依format选择",
+            "description": "Single record or single-record frozen package, selected by format.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1438,7 +1438,7 @@
           }
         },
         "operationId": "getPattern",
-        "summary": "读取或导出指定ID，保留内容revision",
+        "summary": "Read or export the selected ID while preserving its content revision",
         "x-availability": {
           "daily": {
             "source_commit": "1d89eae92278f24a68fff1a34e3c1e696a962c3c",
@@ -1475,8 +1475,8 @@
         "tags": [
           "patterns"
         ],
-        "summary": "手动整包create-only导入；不播放",
-        "description": "原始JSON字节最大1MiB；完整验证后原子发布。相同内容幂等、冲突整包失败。pattern_commit_uncertain或响应丢失时读取ID/revision核对，不能说未保存或盲目回滚。无query、设备serial或执行票据。",
+        "summary": "Manually import a complete package create-only, without playing it",
+        "description": "Raw JSON is limited to 1MiB and fully validated before atomic publication. Identical content is idempotent; a conflict rejects the whole package. After pattern_commit_uncertain or a lost response, read the original ID/revision to reconcile; do not claim nothing was saved or blindly roll back. No query, device serial, or execution ticket.",
         "x-max-body-bytes": 1048576,
         "requestBody": {
           "required": true,
@@ -1514,7 +1514,7 @@
             "$ref": "#/components/responses/503"
           },
           "200": {
-            "description": "本次导入记录与created/existing、总条数",
+            "description": "Imported records, created/existing IDs, and total count.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1566,7 +1566,7 @@
               "type": "string",
               "const": "snapshot"
             },
-            "description": "仅一次format=snapshot；未知、重复和空查询参数拒绝。省略返回目录/记录。"
+            "description": "Only one format=snapshot is accepted; unknown, duplicate, or empty query parameters are rejected. Omission returns the directory or record."
           }
         ],
         "responses": {
@@ -1592,7 +1592,7 @@
             "$ref": "#/components/responses/404"
           },
           "200": {
-            "description": "单条记录或单条冻结包，依format选择",
+            "description": "Single record or single-record frozen package, selected by format.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1610,7 +1610,7 @@
           }
         },
         "operationId": "getV1ImportID",
-        "summary": "读取普通图案ID import",
+        "summary": "Read the ordinary Pattern ID import",
         "x-availability": {
           "daily": {
             "source_commit": "1d89eae92278f24a68fff1a34e3c1e696a962c3c",
@@ -1646,7 +1646,7 @@
     "/v1/frame-capabilities": {
       "get": {
         "operationId": "getFrameCapabilities",
-        "summary": "帧软件契约和门槛",
+        "summary": "Frame software contract and gates",
         "tags": [
           "frames"
         ],
@@ -1674,7 +1674,7 @@
         },
         "responses": {
           "200": {
-            "description": "成功；不等同设备已完成或物理验收。",
+            "description": "Operation succeeded; this does not imply device completion or physical qualification.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1708,7 +1708,7 @@
     "/v1/frame-programs/preview": {
       "post": {
         "operationId": "previewFrameProgram",
-        "summary": "纯帧预览",
+        "summary": "Pure Frame preview",
         "tags": [
           "frames"
         ],
@@ -1736,7 +1736,7 @@
         },
         "responses": {
           "200": {
-            "description": "成功；不等同设备已完成或物理验收。",
+            "description": "Operation succeeded; this does not imply device completion or physical qualification.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1793,7 +1793,7 @@
     "/v1/devices/{serial}/frame-jobs": {
       "post": {
         "operationId": "submitFrameProgram",
-        "summary": "以reject和完整票据提交帧",
+        "summary": "Submit Frames with reject and a complete ticket",
         "tags": [
           "frames"
         ],
@@ -1821,7 +1821,7 @@
         },
         "responses": {
           "202": {
-            "description": "成功；不等同设备已完成或物理验收。",
+            "description": "Operation succeeded; this does not imply device completion or physical qualification.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1851,7 +1851,7 @@
                 "schema": {
                   "type": "string",
                   "pattern": "^daemon_[0-9a-f]{32}$",
-                  "description": "原daemon实例绑定；实例改变时旧结果仍可能未知，不可自动换绑。"
+                  "description": "Original daemon-instance binding; an instance change can leave the old outcome unknown and must not trigger automatic rebinding."
                 }
               }
             }
@@ -1911,7 +1911,7 @@
             "schema": {
               "type": "string",
               "pattern": "^[A-Za-z0-9_-]{1,128}$",
-              "description": "明确配置的真实序列号；无索引或别名解析。"
+              "description": "An explicitly configured real serial; no index or alias resolution."
             }
           }
         ],
@@ -1932,7 +1932,7 @@
     "/v1/devices/{serial}/frame-requests/{request_id}": {
       "get": {
         "operationId": "getFrameReceipt",
-        "summary": "查询原帧票据",
+        "summary": "Query the original Frame receipt",
         "tags": [
           "frames"
         ],
@@ -1960,7 +1960,7 @@
         },
         "responses": {
           "200": {
-            "description": "成功；不等同设备已完成或物理验收。",
+            "description": "Operation succeeded; this does not imply device completion or physical qualification.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1974,7 +1974,7 @@
                 "schema": {
                   "type": "string",
                   "pattern": "^daemon_[0-9a-f]{32}$",
-                  "description": "原daemon实例绑定；实例改变时旧结果仍可能未知，不可自动换绑。"
+                  "description": "Original daemon-instance binding; an instance change can leave the old outcome unknown and must not trigger automatic rebinding."
                 }
               }
             }
@@ -2015,7 +2015,7 @@
             "schema": {
               "type": "string",
               "pattern": "^[A-Za-z0-9_-]{1,128}$",
-              "description": "明确配置的真实序列号；无索引或别名解析。"
+              "description": "An explicitly configured real serial; no index or alias resolution."
             }
           },
           {
@@ -2034,7 +2034,7 @@
             "schema": {
               "type": "string",
               "pattern": "^daemon_[0-9a-f]{32}$",
-              "description": "原daemon实例绑定；实例改变时旧结果仍可能未知，不可自动换绑。"
+              "description": "Original daemon-instance binding; an instance change can leave the old outcome unknown and must not trigger automatic rebinding."
             }
           }
         ],
@@ -2053,7 +2053,7 @@
     "/v1/frame-jobs/{jobId}": {
       "get": {
         "operationId": "getFrameJob",
-        "summary": "读取旧帧Job",
+        "summary": "Read a legacy FrameJob",
         "tags": [
           "frames"
         ],
@@ -2081,7 +2081,7 @@
         },
         "responses": {
           "200": {
-            "description": "成功；不等同设备已完成或物理验收。",
+            "description": "Operation succeeded; this does not imply device completion or physical qualification.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2135,7 +2135,7 @@
     "/v1/frame-jobs/{jobId}/cancel": {
       "post": {
         "operationId": "cancelFrameJob",
-        "summary": "取消旧帧Job，可选原实例绑定",
+        "summary": "Cancel a legacy FrameJob with optional original-instance binding",
         "tags": [
           "frames"
         ],
@@ -2163,7 +2163,7 @@
         },
         "responses": {
           "202": {
-            "description": "成功；不等同设备已完成或物理验收。",
+            "description": "Operation succeeded; this does not imply device completion or physical qualification.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2177,7 +2177,7 @@
                 "schema": {
                   "type": "string",
                   "pattern": "^daemon_[0-9a-f]{32}$",
-                  "description": "原daemon实例绑定；实例改变时旧结果仍可能未知，不可自动换绑。"
+                  "description": "Original daemon-instance binding; an instance change can leave the old outcome unknown and must not trigger automatic rebinding."
                 }
               }
             }
@@ -2249,7 +2249,7 @@
     "/v2/light/preview": {
       "post": {
         "operationId": "previewOrbit",
-        "summary": "预览实验Orbit高级动作",
+        "summary": "Preview an experimental high-level Orbit Action",
         "tags": [
           "light-v2"
         ],
@@ -2277,7 +2277,7 @@
         },
         "responses": {
           "200": {
-            "description": "成功；不等同设备已完成或物理验收。",
+            "description": "Operation succeeded; this does not imply device completion or physical qualification.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2335,7 +2335,7 @@
     "/v2/devices/{serial}/light": {
       "post": {
         "operationId": "submitOrbit",
-        "summary": "服务端编译Orbit后提交FrameJob",
+        "summary": "Compile Orbit on the server and submit a FrameJob",
         "tags": [
           "light-v2"
         ],
@@ -2363,7 +2363,7 @@
         },
         "responses": {
           "202": {
-            "description": "成功；不等同设备已完成或物理验收。",
+            "description": "Operation succeeded; this does not imply device completion or physical qualification.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2393,7 +2393,7 @@
                 "schema": {
                   "type": "string",
                   "pattern": "^daemon_[0-9a-f]{32}$",
-                  "description": "原daemon实例绑定；实例改变时旧结果仍可能未知，不可自动换绑。"
+                  "description": "Original daemon-instance binding; an instance change can leave the old outcome unknown and must not trigger automatic rebinding."
                 }
               }
             }
@@ -2453,7 +2453,7 @@
             "schema": {
               "type": "string",
               "pattern": "^[A-Za-z0-9_-]{1,128}$",
-              "description": "明确配置的真实序列号；无索引或别名解析。"
+              "description": "An explicitly configured real serial; no index or alias resolution."
             }
           }
         ],
@@ -2474,7 +2474,7 @@
     "/v2/patterns/preview": {
       "post": {
         "operationId": "previewPatternV2",
-        "summary": "高级来源生成冻结候选，零Store/Engine",
+        "summary": "Generate a frozen candidate from authored source, without Store or Engine access",
         "tags": [
           "patterns-v2"
         ],
@@ -2502,7 +2502,7 @@
         },
         "responses": {
           "200": {
-            "description": "成功；不等同设备已完成或物理验收。",
+            "description": "Operation succeeded; this does not imply device completion or physical qualification.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2548,7 +2548,7 @@
         ],
         "x-no-execution": true,
         "x-max-json-depth": 32,
-        "description": "P3保存/读取不运行，不建Job/执行票据；daemon默认独立懒选patterns-v2，--pattern-v2-dir/NB1_PATTERN_V2_DIR不影响旧库。Go handler未配置时存储501，配置错误503；纯作者preview零Store。合法unknown可只读/导出；schema不代替SHA/来源验证。",
+        "description": "P3 save/read does not run, create a Job, or prepare an execution ticket. The daemon independently selects lazy-default patterns-v2; --pattern-v2-dir/NB1_PATTERN_V2_DIR does not affect the old library. A Go handler without this configuration returns 501 for storage; configuration errors return 503. Pure authored preview makes zero Store calls. Valid unknown records can be read/exported; schema does not replace hash/source validation. These routes are integrated in installed 96a; historical 1d89 lacked them.",
         "x-error-codes": {
           "400": [
             "invalid_pattern_request"
@@ -2578,7 +2578,7 @@
       },
       "get": {
         "operationId": "getV2PreviewID",
-        "summary": "读取普通图案ID preview",
+        "summary": "Read the ordinary Pattern ID preview",
         "tags": [
           "patterns-v2"
         ],
@@ -2607,7 +2607,7 @@
         },
         "responses": {
           "200": {
-            "description": "成功；不等同设备已完成或物理验收。",
+            "description": "Operation succeeded; this does not imply device completion or physical qualification.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2663,7 +2663,7 @@
         ],
         "x-no-execution": true,
         "x-max-json-depth": 32,
-        "description": "P3保存/读取不运行，不建Job/执行票据；daemon默认独立懒选patterns-v2，--pattern-v2-dir/NB1_PATTERN_V2_DIR不影响旧库。Go handler未配置时存储501，配置错误503；纯作者preview零Store。合法unknown可只读/导出；schema不代替SHA/来源验证。",
+        "description": "P3 save/read does not run, create a Job, or prepare an execution ticket. The daemon independently selects lazy-default patterns-v2; --pattern-v2-dir/NB1_PATTERN_V2_DIR does not affect the old library. A Go handler without this configuration returns 501 for storage; configuration errors return 503. Pure authored preview makes zero Store calls. Valid unknown records can be read/exported; schema does not replace hash/source validation. These routes are integrated in installed 96a; historical 1d89 lacked them.",
         "x-canonical-snapshot-response": "format=snapshot returns exact bytes with no added newline; unknown preserved",
         "x-error-codes": {
           "400": [
@@ -2702,7 +2702,7 @@
     "/v2/patterns": {
       "get": {
         "operationId": "listPatternsV2",
-        "summary": "一次List的只读状态与摘要",
+        "summary": "Read-only state and summaries from a single List",
         "tags": [
           "patterns-v2"
         ],
@@ -2731,7 +2731,7 @@
         },
         "responses": {
           "200": {
-            "description": "成功；不等同设备已完成或物理验收。",
+            "description": "Operation succeeded; this does not imply device completion or physical qualification.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2784,7 +2784,7 @@
         ],
         "x-no-execution": true,
         "x-max-json-depth": 32,
-        "description": "P3保存/读取不运行，不建Job/执行票据；daemon默认独立懒选patterns-v2，--pattern-v2-dir/NB1_PATTERN_V2_DIR不影响旧库。Go handler未配置时存储501，配置错误503；纯作者preview零Store。合法unknown可只读/导出；schema不代替SHA/来源验证。",
+        "description": "P3 save/read does not run, create a Job, or prepare an execution ticket. The daemon independently selects lazy-default patterns-v2; --pattern-v2-dir/NB1_PATTERN_V2_DIR does not affect the old library. A Go handler without this configuration returns 501 for storage; configuration errors return 503. Pure authored preview makes zero Store calls. Valid unknown records can be read/exported; schema does not replace hash/source validation. These routes are integrated in installed 96a; historical 1d89 lacked them.",
         "x-canonical-snapshot-response": "format=snapshot returns exact bytes with no added newline; unknown preserved",
         "x-error-codes": {
           "400": [
@@ -2817,7 +2817,7 @@
       },
       "post": {
         "operationId": "savePatternV2",
-        "summary": "确认完整revision后create-only保存",
+        "summary": "Confirm the complete revision, then save create-only",
         "tags": [
           "patterns-v2"
         ],
@@ -2846,7 +2846,7 @@
         },
         "responses": {
           "201": {
-            "description": "成功；不等同设备已完成或物理验收。",
+            "description": "Operation succeeded; this does not imply device completion or physical qualification.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2864,7 +2864,7 @@
             }
           },
           "200": {
-            "description": "相同完整记录已存在；没有重写或运行。",
+            "description": "The identical complete record already exists; it was not rewritten or run.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2924,7 +2924,7 @@
         ],
         "x-no-execution": true,
         "x-max-json-depth": 32,
-        "description": "P3保存/读取不运行，不建Job/执行票据；daemon默认独立懒选patterns-v2，--pattern-v2-dir/NB1_PATTERN_V2_DIR不影响旧库。Go handler未配置时存储501，配置错误503；纯作者preview零Store。合法unknown可只读/导出；schema不代替SHA/来源验证。",
+        "description": "P3 save/read does not run, create a Job, or prepare an execution ticket. The daemon independently selects lazy-default patterns-v2; --pattern-v2-dir/NB1_PATTERN_V2_DIR does not affect the old library. A Go handler without this configuration returns 501 for storage; configuration errors return 503. Pure authored preview makes zero Store calls. Valid unknown records can be read/exported; schema does not replace hash/source validation. These routes are integrated in installed 96a; historical 1d89 lacked them.",
         "x-error-codes": {
           "400": [
             "invalid_pattern_request"
@@ -2969,7 +2969,7 @@
     "/v2/patterns/{id}": {
       "get": {
         "operationId": "getPatternV2",
-        "summary": "精确原ID读取，或单条unknown-safe快照",
+        "summary": "Read the exact original ID or a single-record unknown-safe snapshot",
         "tags": [
           "patterns-v2"
         ],
@@ -2998,7 +2998,7 @@
         },
         "responses": {
           "200": {
-            "description": "成功；不等同设备已完成或物理验收。",
+            "description": "Operation succeeded; this does not imply device completion or physical qualification.",
             "content": {
               "application/json": {
                 "schema": {
@@ -3063,7 +3063,7 @@
         ],
         "x-no-execution": true,
         "x-max-json-depth": 32,
-        "description": "P3保存/读取不运行，不建Job/执行票据；daemon默认独立懒选patterns-v2，--pattern-v2-dir/NB1_PATTERN_V2_DIR不影响旧库。Go handler未配置时存储501，配置错误503；纯作者preview零Store。合法unknown可只读/导出；schema不代替SHA/来源验证。",
+        "description": "P3 save/read does not run, create a Job, or prepare an execution ticket. The daemon independently selects lazy-default patterns-v2; --pattern-v2-dir/NB1_PATTERN_V2_DIR does not affect the old library. A Go handler without this configuration returns 501 for storage; configuration errors return 503. Pure authored preview makes zero Store calls. Valid unknown records can be read/exported; schema does not replace hash/source validation. These routes are integrated in installed 96a; historical 1d89 lacked them.",
         "x-canonical-snapshot-response": "format=snapshot returns exact bytes with no added newline; unknown preserved",
         "x-error-codes": {
           "400": [
@@ -3101,7 +3101,7 @@
     "/v2/patterns/import": {
       "post": {
         "operationId": "importPatternsV2",
-        "summary": "完整已验证快照一次事务导入",
+        "summary": "Import a fully validated snapshot in one transaction",
         "tags": [
           "patterns-v2"
         ],
@@ -3130,7 +3130,7 @@
         },
         "responses": {
           "200": {
-            "description": "成功；不等同设备已完成或物理验收。",
+            "description": "Operation succeeded; this does not imply device completion or physical qualification.",
             "content": {
               "application/json": {
                 "schema": {
@@ -3182,7 +3182,7 @@
         ],
         "x-no-execution": true,
         "x-max-json-depth": 32,
-        "description": "P3保存/读取不运行，不建Job/执行票据；daemon默认独立懒选patterns-v2，--pattern-v2-dir/NB1_PATTERN_V2_DIR不影响旧库。Go handler未配置时存储501，配置错误503；纯作者preview零Store。合法unknown可只读/导出；schema不代替SHA/来源验证。",
+        "description": "P3 save/read does not run, create a Job, or prepare an execution ticket. The daemon independently selects lazy-default patterns-v2; --pattern-v2-dir/NB1_PATTERN_V2_DIR does not affect the old library. A Go handler without this configuration returns 501 for storage; configuration errors return 503. Pure authored preview makes zero Store calls. Valid unknown records can be read/exported; schema does not replace hash/source validation. These routes are integrated in installed 96a; historical 1d89 lacked them.",
         "x-error-codes": {
           "400": [
             "invalid_pattern_request"
@@ -3223,7 +3223,7 @@
       },
       "get": {
         "operationId": "getV2ImportID",
-        "summary": "读取普通图案ID import",
+        "summary": "Read the ordinary Pattern ID import",
         "tags": [
           "patterns-v2"
         ],
@@ -3252,7 +3252,7 @@
         },
         "responses": {
           "200": {
-            "description": "成功；不等同设备已完成或物理验收。",
+            "description": "Operation succeeded; this does not imply device completion or physical qualification.",
             "content": {
               "application/json": {
                 "schema": {
@@ -3308,7 +3308,7 @@
         ],
         "x-no-execution": true,
         "x-max-json-depth": 32,
-        "description": "P3保存/读取不运行，不建Job/执行票据；daemon默认独立懒选patterns-v2，--pattern-v2-dir/NB1_PATTERN_V2_DIR不影响旧库。Go handler未配置时存储501，配置错误503；纯作者preview零Store。合法unknown可只读/导出；schema不代替SHA/来源验证。",
+        "description": "P3 save/read does not run, create a Job, or prepare an execution ticket. The daemon independently selects lazy-default patterns-v2; --pattern-v2-dir/NB1_PATTERN_V2_DIR does not affect the old library. A Go handler without this configuration returns 501 for storage; configuration errors return 503. Pure authored preview makes zero Store calls. Valid unknown records can be read/exported; schema does not replace hash/source validation. These routes are integrated in installed 96a; historical 1d89 lacked them.",
         "x-canonical-snapshot-response": "format=snapshot returns exact bytes with no added newline; unknown preserved",
         "x-error-codes": {
           "400": [
@@ -3350,7 +3350,7 @@
         "tags": [
           "debugger-assets"
         ],
-        "summary": "本地嵌入调试资源",
+        "summary": "Local embedded debugger resources",
         "x-availability": {
           "daily": {
             "source_commit": "1d89eae92278f24a68fff1a34e3c1e696a962c3c",
@@ -3375,7 +3375,7 @@
           }
         },
         "x-no-request-body": true,
-        "description": "No query/body. Host/Origin guard applies; no USB action from GET. /demo/index.html is not registered. Development host source56c supports two closed bundle profiles; existing paths remain, but static payload depends on the fixed embedded dist, not external frontend files.",
+        "description": "No query/body. Host/Origin guard applies; no USB action from GET. /demo/index.html is not registered. Development host source 56c supports two closed bundle profiles; existing paths remain, but static payload depends on the fixed embedded dist, not external frontend files.",
         "responses": {
           "403": {
             "$ref": "#/components/responses/403"
@@ -3416,7 +3416,7 @@
         "tags": [
           "debugger-assets"
         ],
-        "summary": "本地嵌入调试资源",
+        "summary": "Local embedded debugger resources",
         "x-availability": {
           "daily": {
             "source_commit": "1d89eae92278f24a68fff1a34e3c1e696a962c3c",
@@ -3441,7 +3441,7 @@
           }
         },
         "x-no-request-body": true,
-        "description": "No query/body. Host/Origin guard applies; no USB action from GET. /demo/index.html is not registered. Development host source56c supports two closed bundle profiles; existing paths remain, but static payload depends on the fixed embedded dist, not external frontend files.",
+        "description": "No query/body. Host/Origin guard applies; no USB action from GET. /demo/index.html is not registered. Development host source 56c supports two closed bundle profiles; existing paths remain, but static payload depends on the fixed embedded dist, not external frontend files.",
         "responses": {
           "403": {
             "$ref": "#/components/responses/403"
@@ -3494,7 +3494,7 @@
         "tags": [
           "debugger-assets"
         ],
-        "summary": "本地嵌入调试资源",
+        "summary": "Local embedded debugger resources",
         "x-availability": {
           "daily": {
             "source_commit": "1d89eae92278f24a68fff1a34e3c1e696a962c3c",
@@ -3519,7 +3519,7 @@
           }
         },
         "x-no-request-body": true,
-        "description": "No query/body. Host/Origin guard applies; no USB action from GET. /demo/index.html is not registered. Development host source56c supports two closed bundle profiles; existing paths remain, but static payload depends on the fixed embedded dist, not external frontend files.",
+        "description": "No query/body. Host/Origin guard applies; no USB action from GET. /demo/index.html is not registered. Development host source 56c supports two closed bundle profiles; existing paths remain, but static payload depends on the fixed embedded dist, not external frontend files.",
         "responses": {
           "403": {
             "$ref": "#/components/responses/403"
@@ -3572,7 +3572,7 @@
         "tags": [
           "debugger-assets"
         ],
-        "summary": "本地嵌入调试资源",
+        "summary": "Local embedded debugger resources",
         "x-availability": {
           "daily": {
             "source_commit": "1d89eae92278f24a68fff1a34e3c1e696a962c3c",
@@ -3597,7 +3597,7 @@
           }
         },
         "x-no-request-body": true,
-        "description": "No query/body. Host/Origin guard applies; no USB action from GET. /demo/index.html is not registered. Development host source56c supports two closed bundle profiles; existing paths remain, but static payload depends on the fixed embedded dist, not external frontend files.",
+        "description": "No query/body. Host/Origin guard applies; no USB action from GET. /demo/index.html is not registered. Development host source 56c supports two closed bundle profiles; existing paths remain, but static payload depends on the fixed embedded dist, not external frontend files.",
         "responses": {
           "403": {
             "$ref": "#/components/responses/403"
@@ -3650,7 +3650,7 @@
         "tags": [
           "debugger-assets"
         ],
-        "summary": "本地嵌入调试资源",
+        "summary": "Local embedded debugger resources",
         "x-availability": {
           "daily": {
             "source_commit": "1d89eae92278f24a68fff1a34e3c1e696a962c3c",
@@ -3675,7 +3675,7 @@
           }
         },
         "x-no-request-body": true,
-        "description": "No query/body. Host/Origin guard applies; no USB action from GET. /demo/index.html is not registered. Development host source56c supports two closed bundle profiles; existing paths remain, but static payload depends on the fixed embedded dist, not external frontend files.",
+        "description": "No query/body. Host/Origin guard applies; no USB action from GET. /demo/index.html is not registered. Development host source 56c supports two closed bundle profiles; existing paths remain, but static payload depends on the fixed embedded dist, not external frontend files.",
         "responses": {
           "403": {
             "$ref": "#/components/responses/403"
@@ -3728,7 +3728,7 @@
         "tags": [
           "debugger-assets"
         ],
-        "summary": "本地嵌入调试资源",
+        "summary": "Local embedded debugger resources",
         "x-availability": {
           "daily": {
             "source_commit": "1d89eae92278f24a68fff1a34e3c1e696a962c3c",
@@ -3753,7 +3753,7 @@
           }
         },
         "x-no-request-body": true,
-        "description": "No query/body. Host/Origin guard applies; no USB action from GET. /demo/index.html is not registered. Development host source56c supports two closed bundle profiles; existing paths remain, but static payload depends on the fixed embedded dist, not external frontend files.",
+        "description": "No query/body. Host/Origin guard applies; no USB action from GET. /demo/index.html is not registered. Development host source 56c supports two closed bundle profiles; existing paths remain, but static payload depends on the fixed embedded dist, not external frontend files.",
         "responses": {
           "403": {
             "$ref": "#/components/responses/403"
@@ -3806,7 +3806,7 @@
         "tags": [
           "debugger-assets"
         ],
-        "summary": "本地嵌入调试资源",
+        "summary": "Local embedded debugger resources",
         "x-availability": {
           "daily": {
             "source_commit": "1d89eae92278f24a68fff1a34e3c1e696a962c3c",
@@ -3831,7 +3831,7 @@
           }
         },
         "x-no-request-body": true,
-        "description": "No query/body. Host/Origin guard applies; no USB action from GET. /demo/index.html is not registered. Development host source56c supports two closed bundle profiles; existing paths remain, but static payload depends on the fixed embedded dist, not external frontend files.",
+        "description": "No query/body. Host/Origin guard applies; no USB action from GET. /demo/index.html is not registered. Development host source 56c supports two closed bundle profiles; existing paths remain, but static payload depends on the fixed embedded dist, not external frontend files.",
         "responses": {
           "403": {
             "$ref": "#/components/responses/403"
@@ -3881,7 +3881,7 @@
     "/v2/patterns/preview-ref": {
       "post": {
         "operationId": "previewPatternRefV2",
-        "summary": "复验固定完整Ref并纯预览，可选设备只读缓存",
+        "summary": "Revalidate a complete fixed Ref and preview purely, optionally reading a device cache",
         "tags": [
           "patterns-v2"
         ],
@@ -3909,7 +3909,7 @@
         },
         "responses": {
           "200": {
-            "description": "只表示该操作成功，不证明物理效果。",
+            "description": "Only this operation succeeded; this does not prove a physical effect.",
             "content": {
               "application/json": {
                 "schema": {
@@ -4020,11 +4020,11 @@
         "x-max-body-bytes": 4096,
         "x-max-json-depth": 64,
         "x-no-execution": true,
-        "description": "与作者preview不同，此操作先Resolve完整已存记录并验证来源。GET同路径仍读普通ID preview-ref。无prepare/Job/回执，选serial缓存最多一次。"
+        "description": "Unlike authored preview, this first resolves the full stored record and validates its source. GET on the same path still reads ordinary ID preview-ref. No preparation, Job, or receipt; selected serial reads the cache at most once."
       },
       "get": {
         "operationId": "getV2PreviewRefID",
-        "summary": "读取普通ID preview-ref",
+        "summary": "Read the ordinary ID preview-ref",
         "tags": [
           "patterns-v2"
         ],
@@ -4053,7 +4053,7 @@
         },
         "responses": {
           "200": {
-            "description": "成功；不等同设备已完成或物理验收。",
+            "description": "Operation succeeded; this does not imply device completion or physical qualification.",
             "content": {
               "application/json": {
                 "schema": {
@@ -4109,7 +4109,7 @@
         ],
         "x-no-execution": true,
         "x-max-json-depth": 32,
-        "description": "GET该路径仍选普通合法ID preview-ref；只有POST是Ref预览操作。",
+        "description": "GET on this path still selects ordinary legal ID preview-ref; only POST performs Ref preview.",
         "x-canonical-snapshot-response": "format=snapshot returns exact bytes with no added newline; unknown preserved",
         "x-error-codes": {
           "400": [
@@ -4148,7 +4148,7 @@
     "/v2/devices/{serial}/pattern-jobs": {
       "post": {
         "operationId": "submitPatternV2",
-        "summary": "按完整来源身份和原票据提交，三policy显式选择",
+        "summary": "Submit a complete source identity and original ticket with an explicit policy",
         "tags": [
           "patterns-v2"
         ],
@@ -4176,7 +4176,7 @@
         },
         "responses": {
           "202": {
-            "description": "原绑定成功响应；202不表示执行或清理已完成。",
+            "description": "Successful original binding; 202 does not mean execution or cleanup is complete.",
             "content": {
               "application/json": {
                 "schema": {
@@ -4186,15 +4186,15 @@
             },
             "headers": {
               "X-NB1-Daemon-Instance-ID": {
-                "description": "唯一一值，确认原daemon实例。",
+                "description": "Exactly one value confirming the original daemon instance.",
                 "schema": {
                   "type": "string",
                   "pattern": "^daemon_[0-9a-f]{32}$",
-                  "description": "原daemon实例绑定；实例改变时旧结果仍可能未知，不可自动换绑。"
+                  "description": "Original daemon-instance binding; an instance change can leave the old outcome unknown and must not trigger automatic rebinding."
                 }
               },
               "X-NB1-Replayed": {
-                "description": "唯一一值，新建false/原回执重放true；均202。",
+                "description": "Exactly one value: false for new admission, true for original-receipt replay; both return 202.",
                 "schema": {
                   "enum": [
                     "true",
@@ -4203,7 +4203,7 @@
                 }
               },
               "Location": {
-                "description": "唯一一值，原Pattern receipt GET；保留四query字段，PathEscape+url.Values.Encode。",
+                "description": "Exactly one original Pattern-receipt GET URI, retaining all four query fields through PathEscape and url.Values.Encode.",
                 "schema": {
                   "type": "string"
                 }
@@ -4319,7 +4319,7 @@
             "schema": {
               "type": "string",
               "pattern": "^[A-Za-z0-9_-]{1,128}$",
-              "description": "明确配置的真实序列号；无索引或别名解析。"
+              "description": "An explicitly configured real serial; no index or alias resolution."
             }
           }
         ],
@@ -4335,13 +4335,13 @@
         },
         "x-max-body-bytes": 4096,
         "x-max-json-depth": 64,
-        "description": "保持原Ref/票据/实例，query/cancel与accepted replay不依赖Store。取消202可仍cancelling/terminal；终态hold不补关灯。新Pattern支持replace/queue/reject，不改变旧light/raw Frame仅reject限制。"
+        "description": "Preserve the original Ref/ticket/instance. Query, cancel, and accepted replay do not depend on Store. Cancellation202 can still be cancelling or terminal; cancelling terminal hold does not issue off. New Pattern admission supports replace/queue/reject without changing the legacy light/raw-Frame reject-only restrictions."
       }
     },
     "/v2/devices/{serial}/pattern-requests/{request_id}": {
       "get": {
         "operationId": "getPatternRequestV2",
-        "summary": "以完整Ref和原票据查询，不依赖库",
+        "summary": "Query by complete Ref and original ticket without depending on the library",
         "tags": [
           "patterns-v2"
         ],
@@ -4369,7 +4369,7 @@
         },
         "responses": {
           "200": {
-            "description": "只表示该操作成功，不证明物理效果。",
+            "description": "Only this operation succeeded; this does not prove a physical effect.",
             "content": {
               "application/json": {
                 "schema": {
@@ -4379,11 +4379,11 @@
             },
             "headers": {
               "X-NB1-Daemon-Instance-ID": {
-                "description": "唯一一值，确认原daemon实例。",
+                "description": "Exactly one value confirming the original daemon instance.",
                 "schema": {
                   "type": "string",
                   "pattern": "^daemon_[0-9a-f]{32}$",
-                  "description": "原daemon实例绑定；实例改变时旧结果仍可能未知，不可自动换绑。"
+                  "description": "Original daemon-instance binding; an instance change can leave the old outcome unknown and must not trigger automatic rebinding."
                 }
               }
             }
@@ -4471,7 +4471,7 @@
             "schema": {
               "type": "string",
               "pattern": "^[A-Za-z0-9_-]{1,128}$",
-              "description": "明确配置的真实序列号；无索引或别名解析。"
+              "description": "An explicitly configured real serial; no index or alias resolution."
             }
           },
           {
@@ -4481,7 +4481,7 @@
             "schema": {
               "type": "string",
               "pattern": "^req_[1-9][0-9]{0,18}_[0-9a-f]{32}$",
-              "description": "服务端request_id_prefix追加128bit小写hex nonce。截止点是daemon单调uptime毫秒；服务端另查int64溢出、过期及最大60000ms准入窗口。"
+              "description": "Append a 128-bit lowercase-hex nonce to the server request_id_prefix. The deadline is daemon monotonic uptime in milliseconds; the server also checks int64 overflow, expiration, and a maximum 60000ms admission window."
             }
           },
           {
@@ -4491,7 +4491,7 @@
             "schema": {
               "type": "string",
               "pattern": "^daemon_[0-9a-f]{32}$",
-              "description": "原daemon实例绑定；实例改变时旧结果仍可能未知，不可自动换绑。"
+              "description": "Original daemon-instance binding; an instance change can leave the old outcome unknown and must not trigger automatic rebinding."
             }
           },
           {
@@ -4521,13 +4521,13 @@
             }
           }
         ],
-        "description": "保持原Ref/票据/实例，query/cancel与accepted replay不依赖Store。取消202可仍cancelling/terminal；终态hold不补关灯。新Pattern支持replace/queue/reject，不改变旧light/raw Frame仅reject限制。"
+        "description": "Preserve the original Ref/ticket/instance. Query, cancel, and accepted replay do not depend on Store. Cancellation202 can still be cancelling or terminal; cancelling terminal hold does not issue off. New Pattern admission supports replace/queue/reject without changing the legacy light/raw-Frame reject-only restrictions."
       }
     },
     "/v2/devices/{serial}/pattern-requests/{request_id}/cancel": {
       "post": {
         "operationId": "cancelPatternRequestV2",
-        "summary": "以原票据和可选确认Job取消，不依赖库",
+        "summary": "Cancel by original ticket and optional confirmed Job without depending on the library",
         "tags": [
           "patterns-v2"
         ],
@@ -4555,7 +4555,7 @@
         },
         "responses": {
           "202": {
-            "description": "原绑定成功响应；202不表示执行或清理已完成。",
+            "description": "Successful original binding; 202 does not mean execution or cleanup is complete.",
             "content": {
               "application/json": {
                 "schema": {
@@ -4565,11 +4565,11 @@
             },
             "headers": {
               "X-NB1-Daemon-Instance-ID": {
-                "description": "唯一一值，确认原daemon实例。",
+                "description": "Exactly one value confirming the original daemon instance.",
                 "schema": {
                   "type": "string",
                   "pattern": "^daemon_[0-9a-f]{32}$",
-                  "description": "原daemon实例绑定；实例改变时旧结果仍可能未知，不可自动换绑。"
+                  "description": "Original daemon-instance binding; an instance change can leave the old outcome unknown and must not trigger automatic rebinding."
                 }
               }
             }
@@ -4677,7 +4677,7 @@
             "schema": {
               "type": "string",
               "pattern": "^[A-Za-z0-9_-]{1,128}$",
-              "description": "明确配置的真实序列号；无索引或别名解析。"
+              "description": "An explicitly configured real serial; no index or alias resolution."
             }
           },
           {
@@ -4687,7 +4687,7 @@
             "schema": {
               "type": "string",
               "pattern": "^req_[1-9][0-9]{0,18}_[0-9a-f]{32}$",
-              "description": "服务端request_id_prefix追加128bit小写hex nonce。截止点是daemon单调uptime毫秒；服务端另查int64溢出、过期及最大60000ms准入窗口。"
+              "description": "Append a 128-bit lowercase-hex nonce to the server request_id_prefix. The deadline is daemon monotonic uptime in milliseconds; the server also checks int64 overflow, expiration, and a maximum 60000ms admission window."
             }
           }
         ],
@@ -4703,7 +4703,7 @@
         },
         "x-max-body-bytes": 4096,
         "x-max-json-depth": 64,
-        "description": "保持原Ref/票据/实例，query/cancel与accepted replay不依赖Store。取消202可仍cancelling/terminal；终态hold不补关灯。新Pattern支持replace/queue/reject，不改变旧light/raw Frame仅reject限制。"
+        "description": "Preserve the original Ref/ticket/instance. Query, cancel, and accepted replay do not depend on Store. Cancellation202 can still be cancelling or terminal; cancelling terminal hold does not issue off. New Pattern admission supports replace/queue/reject without changing the legacy light/raw-Frame reject-only restrictions."
       }
     },
     "/demo/patterns.html": {
@@ -4712,7 +4712,7 @@
         "tags": [
           "debugger-assets"
         ],
-        "summary": "条件嵌入的高级Pattern调试资源",
+        "summary": "Conditionally embedded advanced Pattern debugger resource",
         "x-availability": {
           "daily": {
             "source_commit": "1d89eae92278f24a68fff1a34e3c1e696a962c3c",
@@ -4737,7 +4737,7 @@
           }
         },
         "x-no-request-body": true,
-        "description": "GET-only同源嵌入资源，无query/body，无Store/Job/USB。合法旧bundle不包含此可选资源时404；完整扩展bundle实际嵌入后才200。单升级host不构成Web导入、安装或新硬件功能。缺必需资源/摘要失配仍500。/demo/index.html未注册；LICENSE/manifest无新增公开route。",
+        "description": "GET-only same-origin embedded resource; no query/body, Store, Job, or USB. Returns404 when a valid old bundle lacks this optional resource, and 200 only when a complete extended bundle is actually embedded. A host upgrade alone does not import Web assets, install a binary, or add hardware functionality. Missing required resources or digest mismatches still return 500. /demo/index.html is unregistered; LICENSE/manifest have no added public route.",
         "responses": {
           "403": {
             "$ref": "#/components/responses/403"
@@ -4752,7 +4752,7 @@
             "$ref": "#/components/responses/500"
           },
           "200": {
-            "description": "Only if the verified complete extended bundle actually contains this asset; source56c alone still embeds the legacy bundle.",
+            "description": "Only if the verified complete extended bundle actually contains this asset; source 56c alone still embeds the legacy bundle.",
             "content": {
               "text/html": {
                 "schema": {
@@ -4809,7 +4809,7 @@
         "tags": [
           "debugger-assets"
         ],
-        "summary": "条件嵌入的高级Pattern调试资源",
+        "summary": "Conditionally embedded advanced Pattern debugger resource",
         "x-availability": {
           "daily": {
             "source_commit": "1d89eae92278f24a68fff1a34e3c1e696a962c3c",
@@ -4834,7 +4834,7 @@
           }
         },
         "x-no-request-body": true,
-        "description": "GET-only同源嵌入资源，无query/body，无Store/Job/USB。合法旧bundle不包含此可选资源时404；完整扩展bundle实际嵌入后才200。单升级host不构成Web导入、安装或新硬件功能。缺必需资源/摘要失配仍500。/demo/index.html未注册；LICENSE/manifest无新增公开route。",
+        "description": "GET-only same-origin embedded resource; no query/body, Store, Job, or USB. Returns404 when a valid old bundle lacks this optional resource, and 200 only when a complete extended bundle is actually embedded. A host upgrade alone does not import Web assets, install a binary, or add hardware functionality. Missing required resources or digest mismatches still return 500. /demo/index.html is unregistered; LICENSE/manifest have no added public route.",
         "responses": {
           "403": {
             "$ref": "#/components/responses/403"
@@ -4849,7 +4849,7 @@
             "$ref": "#/components/responses/500"
           },
           "200": {
-            "description": "Only if the verified complete extended bundle actually contains this asset; source56c alone still embeds the legacy bundle.",
+            "description": "Only if the verified complete extended bundle actually contains this asset; source 56c alone still embeds the legacy bundle.",
             "content": {
               "text/javascript": {
                 "schema": {
@@ -4906,7 +4906,7 @@
         "tags": [
           "debugger-assets"
         ],
-        "summary": "条件嵌入的高级Pattern调试资源",
+        "summary": "Conditionally embedded advanced Pattern debugger resource",
         "x-availability": {
           "daily": {
             "source_commit": "1d89eae92278f24a68fff1a34e3c1e696a962c3c",
@@ -4931,7 +4931,7 @@
           }
         },
         "x-no-request-body": true,
-        "description": "GET-only同源嵌入资源，无query/body，无Store/Job/USB。合法旧bundle不包含此可选资源时404；完整扩展bundle实际嵌入后才200。单升级host不构成Web导入、安装或新硬件功能。缺必需资源/摘要失配仍500。/demo/index.html未注册；LICENSE/manifest无新增公开route。",
+        "description": "GET-only same-origin embedded resource; no query/body, Store, Job, or USB. Returns404 when a valid old bundle lacks this optional resource, and 200 only when a complete extended bundle is actually embedded. A host upgrade alone does not import Web assets, install a binary, or add hardware functionality. Missing required resources or digest mismatches still return 500. /demo/index.html is unregistered; LICENSE/manifest have no added public route.",
         "responses": {
           "403": {
             "$ref": "#/components/responses/403"
@@ -4946,7 +4946,7 @@
             "$ref": "#/components/responses/500"
           },
           "200": {
-            "description": "Only if the verified complete extended bundle actually contains this asset; source56c alone still embeds the legacy bundle.",
+            "description": "Only if the verified complete extended bundle actually contains this asset; source 56c alone still embeds the legacy bundle.",
             "content": {
               "text/css": {
                 "schema": {
@@ -5015,13 +5015,13 @@
               2
             ],
             "default": 0,
-            "description": "0=两颗，1/2=单颗；省略按0，显式null拒绝。",
+            "description": "0 selects both outputs; 1/2 selects one physical LED. Omission defaults to 0; explicit null is rejected.",
             "x-json-number-lexeme": "Mathematical integer schema does not constrain original JSON spelling; exact request/output codec rules are in x-runtime-validation.numeric_lexemes."
           },
           "color": {
             "type": "string",
             "pattern": "^#[0-9A-Fa-f]{6}$",
-            "description": "原始RGB，无隐式Gamma；字母会规范为小写。"
+            "description": "Raw RGB without implicit Gamma; letters normalize to lowercase."
           },
           "fade_ms": {
             "type": "integer",
@@ -5029,7 +5029,7 @@
             "maximum": 600000,
             "multipleOf": 10,
             "default": 0,
-            "description": "淡入毫秒数，10ms整数倍；省略按0，显式null拒绝。",
+            "description": "Fade duration in milliseconds, in multiples of10ms. Omission defaults to 0; explicit null is rejected.",
             "x-json-number-lexeme": "Mathematical integer schema does not constrain original JSON spelling; exact request/output codec rules are in x-runtime-validation.numeric_lexemes."
           },
           "hold_ms": {
@@ -5037,11 +5037,11 @@
             "minimum": 0,
             "maximum": 3600000,
             "default": 0,
-            "description": "淡入后的保持毫秒数；省略按0，显式null拒绝。",
+            "description": "Hold duration after the fade in milliseconds. Omission defaults to 0; explicit null is rejected.",
             "x-json-number-lexeme": "Mathematical integer schema does not constrain original JSON spelling; exact request/output codec rules are in x-runtime-validation.numeric_lexemes."
           }
         },
-        "description": "整数字段请使用普通十进制JSON整数字面量；Go int解码不接受1.0或1e0，JSON Schema本身不约束数值的词法拼写。",
+        "description": "Use ordinary decimal JSON integer literals. Go int decoding rejects 1.0 and 1e0; JSON Schema itself does not constrain numeric spelling.",
         "x-integer-request-codec": "legacy Go int decode: fractional/exponent integer tokens rejected; -0 becomes0, then domain bounds/defaults apply. No new runtime rule."
       },
       "Step": {
@@ -5088,7 +5088,7 @@
         "required": [
           "steps"
         ],
-        "description": "服务端还检查 repeat × Σ(fade_ms+hold_ms+10) <= 86400000ms。10ms为每步固件更新等待；原生I/O与调度开销不属于该名义预算，不是墙钟期限。",
+        "description": "The server also checks repeat * sum(fade_ms+hold_ms+10) <=86400000ms. Each10ms is a firmware-update wait per Step. Native I/O and scheduling overhead are outside this nominal budget; it is not a wall-clock deadline.",
         "properties": {
           "steps": {
             "type": "array",
@@ -5103,7 +5103,7 @@
             "minimum": 0,
             "maximum": 10000,
             "default": 1,
-            "description": "省略或0规范为1，显式null拒绝；0不是无限循环。",
+            "description": "Omission or0 normalizes to 1; explicit null is rejected. Zero does not mean an infinite loop.",
             "x-json-number-lexeme": "Mathematical integer schema does not constrain original JSON spelling; exact request/output codec rules are in x-runtime-validation.numeric_lexemes."
           },
           "on_finish": {
@@ -5114,7 +5114,7 @@
               "hold"
             ],
             "default": "off",
-            "description": "省略或空串默认off；运行中取消/错误执行off清理；已succeeded hold的取消不自动熄灯。"
+            "description": "Omission or an empty string defaults to off. Active cancellation/execution errors perform off cleanup; cancelling succeeded hold does not automatically turn the light off."
           }
         },
         "examples": [
@@ -5209,17 +5209,17 @@
               "reject"
             ],
             "default": "replace",
-            "description": "省略或空串按replace；显式null拒绝；replace取消旧活动/队列，queue排队，reject有工作则409。"
+            "description": "Omission or an empty string defaults to replace; explicit null is rejected. replace cancels old active/queued work, queue enqueues, and reject returns 409 when work exists."
           },
           "request_id": {
             "type": "string",
             "pattern": "^req_[1-9][0-9]{0,18}_[0-9a-f]{32}$",
-            "description": "服务端request_id_prefix追加128bit小写hex nonce。截止点是daemon单调uptime毫秒；服务端另查int64溢出、过期及最大60000ms准入窗口。"
+            "description": "Append a 128-bit lowercase-hex nonce to the server request_id_prefix. The deadline is daemon monotonic uptime in milliseconds; the server also checks int64 overflow, expiration, and a maximum 60000ms admission window."
           },
           "expected_daemon_instance_id": {
             "type": "string",
             "pattern": "^daemon_[0-9a-f]{32}$",
-            "description": "原daemon实例绑定；实例改变时旧结果仍可能未知，不可自动换绑。"
+            "description": "Original daemon-instance binding; an instance change can leave the old outcome unknown and must not trigger automatic rebinding."
           },
           "effect": {
             "$ref": "#/components/schemas/Effect"
@@ -5228,7 +5228,7 @@
             "$ref": "#/components/schemas/PatternRef"
           }
         },
-        "description": "最大1MiB，program/effect必须且仅有一个；effect由同一权威编译器产生普通Program后才准入。两回执字段同时省略或同时非空。去重比较规范化Program/policy，因此效果与完全相同raw Program共享同key同job；所有shape/编译失败均不创建任务或replace旧工作。 新增pattern_ref与program/effect严格三选一；仅该分支必须显式reject及完整原票据。按冻结Program/policy/serial去重，不另建图案去重表；库后来不可读不影响原Job/回执查询。",
+        "description": "Limited to 1MiB, with exactly one program/effect compiled authoritatively into a normal Program before admission. The two receipt fields must both be omitted or both be nonempty. Deduplication compares normalized Program/policy, so an Effect and identical raw Program can share a key and Job. Shape/compile failures neither create a Job nor replace old work. The pattern_ref branch makes this a strict three-way choice; that branch alone requires explicit reject and the complete original ticket. Deduplication uses frozen Program/policy/serial, with no separate Pattern table; later library read failure does not affect the original Job/receipt lookup.",
         "examples": [
           {
             "program": {
@@ -5345,7 +5345,7 @@
           "serial": {
             "type": "string",
             "pattern": "^[A-Za-z0-9_-]{1,128}$",
-            "description": "明确配置的真实序列号；无索引或别名解析。"
+            "description": "An explicitly configured real serial; no index or alias resolution."
           },
           "product": {
             "type": "string"
@@ -5366,7 +5366,7 @@
             "items": {
               "type": "string"
             },
-            "description": "已知能力列表；连接初期的兼容输出可能为null。"
+            "description": "Known capability names; compatible output during initial connection can be null."
           },
           "connection": {
             "type": "string",
@@ -5423,7 +5423,7 @@
             "format": "date-time"
           }
         },
-        "description": "最后一次设备RGB报告的缓存快照；不是本次GET触发的实时读，也不是相机或光学校准结果。离线时仍可保留旧采样，须同时看connection与时间。"
+        "description": "Cached snapshot of the last device RGB report; not a fresh USB read triggered by this GET, camera evidence, or optical calibration. Offline state may retain an older sample; check connection and timestamp together."
       },
       "Job": {
         "type": "object",
@@ -5445,7 +5445,7 @@
           "device": {
             "type": "string",
             "pattern": "^[A-Za-z0-9_-]{1,128}$",
-            "description": "明确配置的真实序列号；无索引或别名解析。"
+            "description": "An explicitly configured real serial; no index or alias resolution."
           },
           "status": {
             "type": "string",
@@ -5487,7 +5487,7 @@
             "type": "string"
           }
         },
-        "description": "202只表示请求已接受；job终态/设备读回/相机观察不同。活动job仅在硬件停止并清理读回后才能cancelled；排队job可直接移除且不影响其他活动job。终态历史默认128条，内存保存，重启不恢复。"
+        "description": "202 means accepted only; terminal Job state, device readback, and camera observation are distinct. Active Jobs become cancelled only after hardware stop and cleanup readback. Queued Jobs can be removed without affecting another active Job. Ordinary terminal history defaults to 128 entries in memory and is not restored after restart."
       },
       "Error": {
         "type": "object",
@@ -5585,12 +5585,12 @@
           "retries",
           "failures"
         ],
-        "description": "当前driver生命周期内累积的SDK操作级计数，不是raw USB transfer数。last_error保留历史，即使操作后来恢复。进程重启后重新累计。",
+        "description": "SDK-operation counters accumulated over the current driver lifecycle, not raw USB transfers. last_error retains history even after recovery. Process restart resets the counters.",
         "properties": {
           "serial": {
             "type": "string",
             "pattern": "^[A-Za-z0-9_-]{1,128}$",
-            "description": "明确配置的真实序列号；无索引或别名解析。"
+            "description": "An explicitly configured real serial; no index or alias resolution."
           },
           "operation": {
             "type": "string"
@@ -5631,7 +5631,7 @@
           "daemon_instance_id": {
             "type": "string",
             "pattern": "^daemon_[0-9a-f]{32}$",
-            "description": "原daemon实例绑定；实例改变时旧结果仍可能未知，不可自动换绑。"
+            "description": "Original daemon-instance binding; an instance change can leave the old outcome unknown and must not trigger automatic rebinding."
           },
           "idempotency": {
             "$ref": "#/components/schemas/IdempotencyInfo"
@@ -5657,7 +5657,7 @@
           "request_id_prefix": {
             "type": "string",
             "pattern": "^req_[1-9][0-9]{0,18}_$",
-            "description": "追加32个小写hex随机字符；准备不预留回执、不提交任务。"
+            "description": "Append32 random lowercase-hex characters. Preparation reserves no receipt and submits no Job."
           },
           "accept_until_uptime_ms": {
             "type": "integer",
@@ -5667,25 +5667,25 @@
           "max_accept_window_ms": {
             "type": "integer",
             "minimum": 1,
-            "description": "当前默认60000ms。",
+            "description": "Current default:60000ms.",
             "x-json-number-lexeme": "Mathematical integer schema does not constrain original JSON spelling; exact request/output codec rules are in x-runtime-validation.numeric_lexemes."
           },
           "receipt_retention_ms": {
             "type": "integer",
             "minimum": 1,
-            "description": "当前默认终态后至少60000ms，且不早于准入截止点；查询/重放不续期。",
+            "description": "Current default: at least 60000ms after terminal state and no earlier than the admission deadline. Query/replay does not extend retention.",
             "x-json-number-lexeme": "Mathematical integer schema does not constrain original JSON spelling; exact request/output codec rules are in x-runtime-validation.numeric_lexemes."
           },
           "max_entries": {
             "type": "integer",
             "minimum": 1,
-            "description": "当前默认全Engine4096条，不驱逐未过期/活动回执。",
+            "description": "Current default:4096 entries across the Engine; unexpired/active receipts are not evicted.",
             "x-json-number-lexeme": "Mathematical integer schema does not constrain original JSON spelling; exact request/output codec rules are in x-runtime-validation.numeric_lexemes."
           },
           "max_retained_steps": {
             "type": "integer",
             "minimum": 1,
-            "description": "当前默认65536步，按原steps长度计算，不展开repeat。",
+            "description": "Current default:65536 Steps, counting original steps length without expanding repeat.",
             "x-json-number-lexeme": "Mathematical integer schema does not constrain original JSON spelling; exact request/output codec rules are in x-runtime-validation.numeric_lexemes."
           }
         }
@@ -5701,12 +5701,12 @@
           "request_id": {
             "type": "string",
             "pattern": "^req_[1-9][0-9]{0,18}_[0-9a-f]{32}$",
-            "description": "服务端request_id_prefix追加128bit小写hex nonce。截止点是daemon单调uptime毫秒；服务端另查int64溢出、过期及最大60000ms准入窗口。"
+            "description": "Append a 128-bit lowercase-hex nonce to the server request_id_prefix. The deadline is daemon monotonic uptime in milliseconds; the server also checks int64 overflow, expiration, and a maximum 60000ms admission window."
           },
           "expected_daemon_instance_id": {
             "type": "string",
             "pattern": "^daemon_[0-9a-f]{32}$",
-            "description": "原daemon实例绑定；实例改变时旧结果仍可能未知，不可自动换绑。"
+            "description": "Original daemon-instance binding; an instance change can leave the old outcome unknown and must not trigger automatic rebinding."
           }
         }
       },
@@ -5725,7 +5725,7 @@
           "color": {
             "type": "string",
             "pattern": "^#[0-9A-Fa-f]{6}$",
-            "description": "原始RGB，无隐式Gamma；字母会规范为小写。"
+            "description": "Raw RGB without implicit Gamma; letters normalize to lowercase."
           },
           "led": {
             "type": "integer",
@@ -5735,7 +5735,7 @@
               2
             ],
             "default": 0,
-            "description": "0=两颗，1/2=单颗；省略按0，显式null拒绝。",
+            "description": "0 selects both outputs; 1/2 selects one physical LED. Omission defaults to 0; explicit null is rejected.",
             "x-json-number-lexeme": "Mathematical integer schema does not constrain original JSON spelling; exact request/output codec rules are in x-runtime-validation.numeric_lexemes."
           },
           "fade_ms": {
@@ -5744,11 +5744,11 @@
             "maximum": 600000,
             "multipleOf": 10,
             "default": 0,
-            "description": "淡入毫秒数，10ms整数倍；省略按0，显式null拒绝。",
+            "description": "Fade duration in milliseconds, in multiples of10ms. Omission defaults to 0; explicit null is rejected.",
             "x-json-number-lexeme": "Mathematical integer schema does not constrain original JSON spelling; exact request/output codec rules are in x-runtime-validation.numeric_lexemes."
           }
         },
-        "description": "编译为一个步骤、repeat=1、on_finish=hold；仅允许kind/color/led/fade_ms。色彩为原始RGB。即使提供cycles=0、period_ms或on_finish=hold也拒绝。",
+        "description": "Compiles to one Step with repeat=1 and on_finish=hold. Only kind/color/led/fade_ms are allowed. Colors are raw RGB. cycles=0, period_ms, or even on_finish=hold is rejected when supplied.",
         "x-integer-request-codec": "legacy Go int decode: fractional/exponent integer tokens rejected; -0 becomes0, then domain bounds/defaults apply. No new runtime rule."
       },
       "PulseEffect": {
@@ -5766,7 +5766,7 @@
           "color": {
             "type": "string",
             "pattern": "^#[0-9A-Fa-f]{6}$",
-            "description": "原始RGB，无隐式Gamma；字母会规范为小写。"
+            "description": "Raw RGB without implicit Gamma; letters normalize to lowercase."
           },
           "led": {
             "type": "integer",
@@ -5776,7 +5776,7 @@
               2
             ],
             "default": 0,
-            "description": "0=两颗，1/2=单颗；省略按0，显式null拒绝。",
+            "description": "0 selects both outputs; 1/2 selects one physical LED. Omission defaults to 0; explicit null is rejected.",
             "x-json-number-lexeme": "Mathematical integer schema does not constrain original JSON spelling; exact request/output codec rules are in x-runtime-validation.numeric_lexemes."
           },
           "cycles": {
@@ -5784,7 +5784,7 @@
             "minimum": 1,
             "maximum": 10000,
             "default": 1,
-            "description": "省略为1，显式0不合法；不展开为无限程序。",
+            "description": "Omission defaults to 1; explicit 0 is invalid and does not expand to an infinite Program.",
             "x-json-number-lexeme": "Mathematical integer schema does not constrain original JSON spelling; exact request/output codec rules are in x-runtime-validation.numeric_lexemes."
           },
           "period_ms": {
@@ -5793,7 +5793,7 @@
             "maximum": 1200000,
             "multipleOf": 10,
             "default": 1000,
-            "description": "名义周期包含每周期三个10ms更新等待，仍须cycles*period_ms<=86400000；原生I/O和前后清理另计，非墙钟/实时保证。",
+            "description": "The nominal period includes three 10ms update waits per cycle, with cycles*period_ms<=86400000. Native I/O and pre/post cleanup add time; this is no wall-clock or real-time guarantee.",
             "x-json-number-lexeme": "Mathematical integer schema does not constrain original JSON spelling; exact request/output codec rules are in x-runtime-validation.numeric_lexemes."
           },
           "on_finish": {
@@ -5803,10 +5803,10 @@
               "hold"
             ],
             "default": "off",
-            "description": "hold保留结束时读回：选中LED在pulse最后已为黑；off/cancel/daemon退出沿用整设备熄灯策略。"
+            "description": "hold preserves the final readback: the selected LED is already black at pulse end. off/cancel/daemon shutdown retain whole-device off behavior."
           }
         },
-        "description": "有限黑→目标色→黑，拒绝fade_ms（即使0）。令U=floor(period_ms/20)*10、D=period_ms-U；三步fade为0、U-20、D-10，hold=0，repeat=cycles。通过同一Normalize预算，不上传设备Pattern/Flash。",
+        "description": "Finite black-to-color-to-black pulse; fade_ms is rejected even when 0. Let U=floor(period_ms/20)*10 and D=period_ms-U. Three fade values are 0,U-20,D-10, with hold=0 and repeat=cycles. Uses the same Normalize budget, without uploading a device Pattern or Flash.",
         "x-integer-request-codec": "legacy Go int decode: fractional/exponent integer tokens rejected; -0 becomes0, then domain bounds/defaults apply. No new runtime rule."
       },
       "Effect": {
@@ -5818,7 +5818,7 @@
             "$ref": "#/components/schemas/PulseEffect"
           }
         ],
-        "description": "权威control.CompileEffect编译为普通规范化Program。JSON边界仍拒绝null、重复键、字段别名与未知字段。"
+        "description": "Authoritative control.CompileEffect produces a normal normalized Program. The JSON boundary still rejects null, duplicate keys, field aliases, and unknown fields."
       },
       "PreviewRequest": {
         "type": "object",
@@ -5900,7 +5900,7 @@
             }
           }
         ],
-        "description": "program/effect/pattern_ref恰好一种，serial可选只读目标快照；新引用返回PatternPreview，旧输入返回原PreviewResult。没有policy、票据、Job或USB写入。"
+        "description": "Exactly one program/effect/pattern_ref; optional serial reads a target snapshot only. A new reference returns PatternPreview; old inputs return PreviewResult. No policy, ticket, Job, or USB write."
       },
       "PreviewValidation": {
         "type": "object",
@@ -5942,7 +5942,7 @@
             "minItems": 1
           }
         },
-        "description": "supported仅指当前缓存中声明的能力名称齐全，不是实物/准入/严格时间保证；离线或没有能力信息为unknown。"
+        "description": "supported means only that all required capability names appear in the current cache; it is no physical/admission/strict-timing guarantee. Offline or missing capability data is unknown."
       },
       "PreviewDevice": {
         "type": "object",
@@ -6031,7 +6031,7 @@
             "$ref": "#/components/schemas/PreviewDevice"
           }
         },
-        "description": "标准Program与执行共用CompileEffect/Normalize；nominal_duration_ms含每步骤10ms更新余量，不含原生I/O及调度/清理额外耗时，不是硬实时承诺。无target时device省略且validation.device=not_requested。目标不在配置中仍200/program有效、device未知。"
+        "description": "Standard Program uses the same CompileEffect/Normalize as execution. nominal_duration_ms includes a10ms update allowance per Step, excluding native I/O and extra scheduling/cleanup time; no hard real-time promise. Without a target, device is omitted and validation.device=not_requested. An unconfigured target still yields 200 with a valid Program and unknown device."
       },
       "ProgramLimits": {
         "type": "object",
@@ -6201,11 +6201,11 @@
           },
           "pattern_library": {
             "type": "boolean",
-            "description": "仅当前配置的Store本次可读取时为true，supported_inputs追加pattern_ref。目录存在与后续写入/设备准入分别判断。"
+            "description": "True only when the configured Store can be read in this call; supported_inputs then includes pattern_ref. Directory existence, later writes, and device admission are separate checks."
           },
           "hardware_pattern_upload": {
             "type": "boolean",
-            "description": "本版false；读取该声明不触发硬件写入。"
+            "description": "False in this version; reading the declaration triggers no hardware write."
           },
           "program_limits": {
             "$ref": "#/components/schemas/ProgramLimits"
@@ -6220,7 +6220,7 @@
             "x-json-number-lexeme": "Mathematical integer schema does not constrain original JSON spelling; exact request/output codec rules are in x-runtime-validation.numeric_lexemes."
           }
         },
-        "description": "软件能力与编译契约，非设备实物验证。当前输入program/effect、效果steady/pulse、策略replace/queue/reject；保留已知编译契约时未来目录可以追加能力名称或声明新feature。设备启用能力仍来自已有GET /v1/devices快照，不扫描/不试写。"
+        "description": "Software capabilities and compilation contract, not physical device qualification. Current inputs are program/effect; Effects steady/pulse; policies replace/queue/reject. Future catalogs may add capability names or new features while retaining a known compile contract. Device-enabled capabilities still come from existing GET /v1/devices snapshots, without scanning or test writes."
       },
       "ColorRGB8": {
         "type": "object",
@@ -6307,7 +6307,7 @@
             "type": "string",
             "minLength": 1,
             "maxLength": 64,
-            "description": "Hex3/hex6 or frozen css-named-2026 opaque name, ASCII case-insensitive after outer ASCII whitespace. Server verifies exact dictionary. No alpha/currentColor/transparent/rgb()/HSL/random."
+            "description": "Hex3/hex 6 or frozen css-named-2026 opaque name, ASCII case-insensitive after outer ASCII whitespace. Server verifies exact dictionary. No alpha/currentColor/transparent/rgb()/HSL/random."
           },
           {
             "$ref": "#/components/schemas/ColorRGB8"
@@ -7047,7 +7047,7 @@
               "sine",
               "orbit"
             ],
-            "description": "可选。省略保持旧cut与旧规范输出；显式cut保持字段。linear/sine/orbit为32相位66步有限闭环，orbit颜色与亮度错1/4周期，不宣称真实空间方向。"
+            "description": "Optional. Omission preserves old cut behavior and canonical output; explicit cut retains the field. linear/sine/orbit are finite 32-phase 66-Step loops; orbit offsets color and brightness by one quarter cycle without claiming a physical spatial direction."
           }
         },
         "required": [
@@ -7142,7 +7142,7 @@
               "sine",
               "orbit"
             ],
-            "description": "可选。省略保持旧cut与旧规范输出；显式cut保持字段。linear/sine/orbit为32相位66步有限闭环，orbit颜色与亮度错1/4周期，不宣称真实空间方向。"
+            "description": "Optional. Omission preserves old cut behavior and canonical output; explicit cut retains the field. linear/sine/orbit are finite 32-phase 66-Step loops; orbit offsets color and brightness by one quarter cycle without claiming a physical spatial direction."
           }
         },
         "required": [
@@ -7389,12 +7389,12 @@
           "request_id": {
             "type": "string",
             "pattern": "^req_[1-9][0-9]{0,18}_[0-9a-f]{32}$",
-            "description": "服务端request_id_prefix追加128bit小写hex nonce。截止点是daemon单调uptime毫秒；服务端另查int64溢出、过期及最大60000ms准入窗口。"
+            "description": "Append a 128-bit lowercase-hex nonce to the server request_id_prefix. The deadline is daemon monotonic uptime in milliseconds; the server also checks int64 overflow, expiration, and a maximum 60000ms admission window."
           },
           "expected_daemon_instance_id": {
             "type": "string",
             "pattern": "^daemon_[0-9a-f]{32}$",
-            "description": "原daemon实例绑定；实例改变时旧结果仍可能未知，不可自动换绑。"
+            "description": "Original daemon-instance binding; an instance change can leave the old outcome unknown and must not trigger automatic rebinding."
           }
         },
         "required": [
@@ -7510,7 +7510,7 @@
           "id",
           "revision"
         ],
-        "description": "明确ID与完整内容revision；没有latest。引用不代替执行票据。"
+        "description": "Explicit ID and full content revision; no latest. A reference does not replace an execution ticket."
       },
       "PatternSource": {
         "type": "object",
@@ -7554,7 +7554,7 @@
             }
           }
         ],
-        "description": "规范来源；effect保留旧对称pulse语义，未增加source.action。"
+        "description": "Canonical source; Effect retains legacy symmetric-pulse semantics and does not add source.action."
       },
       "PatternRecord": {
         "type": "object",
@@ -7591,7 +7591,7 @@
           "compile_contract",
           "revision"
         ],
-        "description": "必须通过nb1-pattern-record/v1域、LF和规范内容的SHA256校验，并确认source展开与compiled_program一致；JSON Schema本身不计算哈希。"
+        "description": "Must pass SHA256 verification over the nb1-pattern-record/v1 domain, LF, and canonical content, and confirm source expansion matches compiled_program. JSON Schema does not calculate hashes."
       },
       "PatternAuthoringRecord": {
         "type": "object",
@@ -7669,7 +7669,7 @@
           "schema_version",
           "patterns"
         ],
-        "description": "整包/合并后的规范快照均最多1MiB；ID不可重复。导入不播放。"
+        "description": "Both the package and merged canonical snapshot are limited to 1MiB. IDs must be unique. Import does not play."
       },
       "PatternSnapshot": {
         "type": "object",
@@ -7696,7 +7696,7 @@
           "kind",
           "records"
         ],
-        "description": "冻结包：每条需内容与编译校验；完整规范编码最多1MiB，不是硬件PatternSet。"
+        "description": "Frozen package: each record requires content and compilation validation. Complete canonical encoding is limited to 1MiB; this is not a hardware PatternSet."
       },
       "PatternImportPackage": {
         "oneOf": [
@@ -7715,7 +7715,7 @@
           "path": {
             "type": "string",
             "minLength": 1,
-            "description": "daemon用户选择的绝对路径，仅展示；客户端不打开此路径。"
+            "description": "Absolute path chosen by the daemon user, for display only; clients must not open it."
           },
           "state": {
             "const": "ready"
@@ -7813,7 +7813,7 @@
           "on_finish",
           "required_capabilities"
         ],
-        "description": "只含目录摘要，不能据此重算内容hash。duration至少total_steps×10ms；capabilities按set/program/raw-rgb及可选hold排序。"
+        "description": "Directory summaries only; content hashes cannot be recomputed from them. duration is at least total_steps*10ms; capabilities are ordered set/program/raw-rgb with optional hold."
       },
       "PatternList": {
         "type": "object",
@@ -7844,7 +7844,7 @@
           "library",
           "patterns"
         ],
-        "description": "按ASCII ID严格排序且唯一。缺失库返回空列表且不创建目录；损坏/不可用库返回错误，不伪装为空。"
+        "description": "Strictly sorted unique ASCII IDs. A missing library returns an empty list without creating a directory. Corrupt/unavailable libraries return errors rather than masquerading as empty."
       },
       "PatternImportResult": {
         "type": "object",
@@ -7888,7 +7888,7 @@
           "existing",
           "total"
         ],
-        "description": "created/existing互斥且覆盖本次records；同ID同内容幂等，不覆盖不同内容。"
+        "description": "created/existing are disjoint and cover this import records. Same-ID identical content is idempotent; different content is never overwritten."
       },
       "PatternPreview": {
         "type": "object",
@@ -7905,7 +7905,7 @@
           "pattern_ref",
           "preview"
         ],
-        "description": "保存的冻结Program经共同预览校验；preview.input_kind恒为program。无Job/票据/USB操作。"
+        "description": "The saved frozen Program passes shared preview validation; preview.input_kind is always program. No Job, ticket, or USB operation."
       },
       "FrameTargetRequest": {
         "type": "object",
@@ -8228,7 +8228,7 @@
           "required_capabilities",
           "execution"
         ],
-        "description": "纯计划统计，可选serial只查缓存。available不是视觉验收；native I/O/Read/额外off清理不在名义时长中。"
+        "description": "Pure plan statistics; optional serial reads only the cache. available is not visual qualification. Native I/O, Read, and extra off cleanup are outside nominal duration."
       },
       "FramePreviewRequest": {
         "type": "object",
@@ -8240,7 +8240,7 @@
           "serial": {
             "type": "string",
             "pattern": "^[A-Za-z0-9_-]{1,128}$",
-            "description": "明确配置的真实序列号；无索引或别名解析。"
+            "description": "An explicitly configured real serial; no index or alias resolution."
           }
         },
         "required": [
@@ -8260,12 +8260,12 @@
           "request_id": {
             "type": "string",
             "pattern": "^req_[1-9][0-9]{0,18}_[0-9a-f]{32}$",
-            "description": "服务端request_id_prefix追加128bit小写hex nonce。截止点是daemon单调uptime毫秒；服务端另查int64溢出、过期及最大60000ms准入窗口。"
+            "description": "Append a 128-bit lowercase-hex nonce to the server request_id_prefix. The deadline is daemon monotonic uptime in milliseconds; the server also checks int64 overflow, expiration, and a maximum 60000ms admission window."
           },
           "expected_daemon_instance_id": {
             "type": "string",
             "pattern": "^daemon_[0-9a-f]{32}$",
-            "description": "原daemon实例绑定；实例改变时旧结果仍可能未知，不可自动换绑。"
+            "description": "Original daemon-instance binding; an instance change can leave the old outcome unknown and must not trigger automatic rebinding."
           }
         },
         "required": [
@@ -8274,7 +8274,7 @@
           "request_id",
           "expected_daemon_instance_id"
         ],
-        "description": "legacy raw Frame HTTP及其Frame core入口仍只允许reject+完整票据。新Pattern v2路由已支持三policy准入冻结帧；不改变此旧请求schema或High light的限制。"
+        "description": "Legacy raw Frame HTTP and its Frame-core entry still require reject and a complete ticket. New Pattern v2 routes admit frozen Frames with three policies without changing this legacy request schema or high-level light restrictions."
       },
       "FrameCancelRequest": {
         "type": "object",
@@ -8283,11 +8283,11 @@
           "expected_daemon_instance_id": {
             "type": "string",
             "pattern": "^daemon_[0-9a-f]{32}$",
-            "description": "原daemon实例绑定；实例改变时旧结果仍可能未知，不可自动换绑。"
+            "description": "Original daemon-instance binding; an instance change can leave the old outcome unknown and must not trigger automatic rebinding."
           }
         },
         "required": [],
-        "description": "空body或{}保留旧取消语义；提供实例绑定时先核对再取消，返回唯一instance header。不是Pattern身份绑定取消。"
+        "description": "An empty body or{} retains legacy cancellation behavior. With an instance binding, validate it before cancellation and return a unique instance header. This is not Pattern-identity-bound cancellation."
       },
       "FrameJob": {
         "type": "object",
@@ -8300,7 +8300,7 @@
           "device": {
             "type": "string",
             "pattern": "^[A-Za-z0-9_-]{1,128}$",
-            "description": "明确配置的真实序列号；无索引或别名解析。"
+            "description": "An explicitly configured real serial; no index or alias resolution."
           },
           "status": {
             "type": "string",
@@ -8367,7 +8367,7 @@
           "planned_target_writes",
           "created_at"
         ],
-        "description": "原FrameJob形状；无Pattern来源元数据。状态/清理与原worker一致，completed计数不含额外off清理。"
+        "description": "Original FrameJob shape without Pattern-source metadata. State/cleanup use the existing worker; completed counts exclude extra off cleanup."
       },
       "FrameCapabilities": {
         "type": "object",
@@ -8559,7 +8559,7 @@
             }
           }
         ],
-        "description": "4/8段paired-linear艺术环绕；不是几何360度/视觉质量承诺。period不要求10ms倍数；interval按整数余数分摊、内部fade向上10ms量化。",
+        "description": "Artistic4/8-segment paired-linear Orbit, without a geometric 360-degree or visual-quality promise. period need not be a multiple of10ms; integer remainders distribute intervals, and internal fade rounds upward to 10ms.",
         "x-runtime-validation": [
           "all raw integer fields require ordinary integer lexemes",
           "total frames<=1024 and nominal duration<=24h; not merely period*cycles",
@@ -8753,7 +8753,7 @@
           "serial": {
             "type": "string",
             "pattern": "^[A-Za-z0-9_-]{1,128}$",
-            "description": "明确配置的真实序列号；无索引或别名解析。"
+            "description": "An explicitly configured real serial; no index or alias resolution."
           }
         },
         "required": [
@@ -8777,12 +8777,12 @@
           "request_id": {
             "type": "string",
             "pattern": "^req_[1-9][0-9]{0,18}_[0-9a-f]{32}$",
-            "description": "服务端request_id_prefix追加128bit小写hex nonce。截止点是daemon单调uptime毫秒；服务端另查int64溢出、过期及最大60000ms准入窗口。"
+            "description": "Append a 128-bit lowercase-hex nonce to the server request_id_prefix. The deadline is daemon monotonic uptime in milliseconds; the server also checks int64 overflow, expiration, and a maximum 60000ms admission window."
           },
           "expected_daemon_instance_id": {
             "type": "string",
             "pattern": "^daemon_[0-9a-f]{32}$",
-            "description": "原daemon实例绑定；实例改变时旧结果仍可能未知，不可自动换绑。"
+            "description": "Original daemon-instance binding; an instance change can leave the old outcome unknown and must not trigger automatic rebinding."
           }
         },
         "required": [
@@ -8830,7 +8830,7 @@
           "id",
           "revision"
         ],
-        "description": "完整作者记录的固定身份；revision绑定来源、recipe与冻结执行，不能用execution_digest替代，不隐式选择latest。P6所有执行/查停操作均保留完整Ref。"
+        "description": "Fixed identity of the complete authored record. revision binds source, recipe, and frozen execution; execution_digest cannot replace it, and latest is never implicitly selected. All P6 execution/query/cancel operations retain the complete Ref."
       },
       "PatternOpaqueJSON": {
         "oneOf": [
@@ -9431,7 +9431,7 @@
             ]
           }
         ],
-        "description": "只报告PatternService+resolver配置接线，检查状态不调用Store；不证明库健康、记录存在、设备支持或准入成功，也不阻断已接受原回执重放/查询/取消。"
+        "description": "Reports only PatternService/resolver configuration wiring; checking it does not call Store. It does not prove library health, record existence, device support, or admission success, and does not block replay/query/cancel of an accepted original receipt."
       },
       "PatternRecordResponseV2": {
         "type": "object",
@@ -9810,7 +9810,7 @@
           "serial": {
             "type": "string",
             "pattern": "^[A-Za-z0-9_-]{1,128}$",
-            "description": "明确配置的真实序列号；无索引或别名解析。"
+            "description": "An explicitly configured real serial; no index or alias resolution."
           }
         },
         "required": [
@@ -9838,12 +9838,12 @@
           "request_id": {
             "type": "string",
             "pattern": "^req_[1-9][0-9]{0,18}_[0-9a-f]{32}$",
-            "description": "服务端request_id_prefix追加128bit小写hex nonce。截止点是daemon单调uptime毫秒；服务端另查int64溢出、过期及最大60000ms准入窗口。"
+            "description": "Append a 128-bit lowercase-hex nonce to the server request_id_prefix. The deadline is daemon monotonic uptime in milliseconds; the server also checks int64 overflow, expiration, and a maximum 60000ms admission window."
           },
           "expected_daemon_instance_id": {
             "type": "string",
             "pattern": "^daemon_[0-9a-f]{32}$",
-            "description": "原daemon实例绑定；实例改变时旧结果仍可能未知，不可自动换绑。"
+            "description": "Original daemon-instance binding; an instance change can leave the old outcome unknown and must not trigger automatic rebinding."
           }
         },
         "required": [
@@ -9852,7 +9852,7 @@
           "request_id",
           "expected_daemon_instance_id"
         ],
-        "description": "完整原票据，policy必须显式传；仅新key才Resolve，不提前Store/config preflight。不接受Program/Action/client digest或verified声明。",
+        "description": "Complete original ticket and explicitly supplied policy. Resolve occurs only for a new key, without an earlier Store/configuration preflight. Program/Action/client digest or verified claims are not accepted.",
         "x-runtime-validation": [
           "request deadline parsed as positive int64, core checks current admission window and original receipt",
           "4096 raw bytes, exact JSON content type, no query/null/duplicate/unknown fields"
@@ -9868,7 +9868,7 @@
           "expected_daemon_instance_id": {
             "type": "string",
             "pattern": "^daemon_[0-9a-f]{32}$",
-            "description": "原daemon实例绑定；实例改变时旧结果仍可能未知，不可自动换绑。"
+            "description": "Original daemon-instance binding; an instance change can leave the old outcome unknown and must not trigger automatic rebinding."
           },
           "confirmed_job_id": {
             "type": "string",
@@ -9879,7 +9879,7 @@
           "pattern_ref",
           "expected_daemon_instance_id"
         ],
-        "description": "request_id来自路径，省略confirmed_job_id才不加Job ID约束；显式空或null拒绝。query/cancel从不访问Store。"
+        "description": "request_id comes from the path. Only omission of confirmed_job_id omits the Job-ID constraint; explicit empty or null is rejected. Query/cancel never access Store."
       },
       "PatternJobEnvelopeV2": {
         "oneOf": [
@@ -9934,7 +9934,7 @@
             ]
           }
         ],
-        "description": "core原回执来源外壳；旧Job/FrameJob schema不改。拒绝客户端把此响应当执行输入。JSONSchema不证明Ref/digest/Program对应或已接受。",
+        "description": "Source envelope of the core original receipt; legacy Job/FrameJob schemas stay unchanged. Clients must not submit this response as execution input. JSON Schema does not prove Ref/digest/Program correspondence or acceptance.",
         "x-runtime-validation": [
           "exact original Ref, execution digest, selected typed job and receipt/serial/instance binding",
           "no legacy bare Job/history fallback for Pattern-origin records"
@@ -10051,7 +10051,7 @@
             ]
           }
         ],
-        "description": "完整来源验证后只做纯预览；选serial最多读取一次缓存Device，Program/Frame均回显所选serial/connection，未选省略device。无票据/Job/USB。Frame hold额外要求缓存hold；preview不是准入或物理验收。",
+        "description": "Pure preview after complete source validation. Selected serial reads cached Device at most once; Program/Frame both echo that serial/connection, or omit device when none is selected. No ticket, Job, or USB. Frame hold additionally requires cached hold capability. Preview is not admission or physical qualification.",
         "x-runtime-validation": [
           "P5 revalidates author source, recipe, exact frozen execution/revision and digest",
           "execution kind/contract/program exactly matches preview program and computed facts; selected device echo required",
@@ -10061,7 +10061,7 @@
     },
     "responses": {
       "400": {
-        "description": "请求/JSON无效，未创建新job。",
+        "description": "Invalid request/JSON; no new Job was created.",
         "content": {
           "application/json": {
             "schema": {
@@ -10071,7 +10071,7 @@
         }
       },
       "403": {
-        "description": "Host不是loopback或浏览器Origin不是同源。",
+        "description": "Host is not loopback or browser Origin is not same-origin.",
         "content": {
           "application/json": {
             "schema": {
@@ -10081,7 +10081,7 @@
         }
       },
       "404": {
-        "description": "未知路由、未配置设备或不存在/已淘汰的job。回执request_not_found仅表示查询当时无记录；原POST可能仍在途中。",
+        "description": "Unknown route, unconfigured device, or absent/evicted Job. Receipt request_not_found means only no record at query time; the original POST may still be in transit.",
         "content": {
           "application/json": {
             "schema": {
@@ -10091,7 +10091,7 @@
         }
       },
       "405": {
-        "description": "方法不支持；Allow头指出允许方法。",
+        "description": "Unsupported method; Allow lists permitted methods.",
         "content": {
           "application/json": {
             "schema": {
@@ -10101,7 +10101,7 @@
         }
       },
       "409": {
-        "description": "设备已有工作/其他合作进程持有，或队列已满；code区分busy/queue_full。可选回执还区分idempotency_conflict与daemon_instance_changed；实例变化不证明旧意图未执行。",
+        "description": "Device already has work, another cooperating process owns it, or the queue is full; code distinguishes busy/queue_full. Optional receipts also distinguish idempotency_conflict/daemon_instance_changed. An instance change does not prove the old intent never executed.",
         "content": {
           "application/json": {
             "schema": {
@@ -10111,7 +10111,7 @@
         }
       },
       "413": {
-        "description": "超过该路由原始字节上限（Color4KiB、Light64KiB、Program/Frame/Pattern1MiB等）；具体x-max-body-bytes为准。",
+        "description": "Exceeds this route raw-byte limit, such as Color4KiB, Light64KiB, or Program/Frame/Pattern1MiB. The exact x-max-body-bytes governs.",
         "content": {
           "application/json": {
             "schema": {
@@ -10121,7 +10121,7 @@
         }
       },
       "415": {
-        "description": "携带JSON体时Content-Type必须为application/json。",
+        "description": "A supplied JSON body requires Content-Type: application/json.",
         "content": {
           "application/json": {
             "schema": {
@@ -10131,7 +10131,7 @@
         }
       },
       "500": {
-        "description": "内部服务错误或Pattern完整性拒绝；按error.code区分。传输或context不确定时保留原票据，不推断未接受。",
+        "description": "Internal service error or Pattern integrity rejection; distinguish by error.code. When transport/context is uncertain, preserve the original ticket rather than infer non-acceptance.",
         "content": {
           "application/json": {
             "schema": {
@@ -10141,7 +10141,7 @@
         }
       },
       "503": {
-        "description": "执行器已关闭或目标设备不在线；结构化拒绝响应表示此提交没有创建job。",
+        "description": "Executor closed or target device offline; a structured rejection means this submission created no Job.",
         "content": {
           "application/json": {
             "schema": {
@@ -10151,7 +10151,7 @@
         }
       },
       "410": {
-        "description": "request_expired：旧token已过期且无可用回执，不再按新请求执行；不能推断此前是否执行。",
+        "description": "request_expired: the old token expired without an available receipt and will not run as a new request. This does not establish whether it executed earlier.",
         "content": {
           "application/json": {
             "schema": {
@@ -10161,7 +10161,7 @@
         }
       },
       "429": {
-        "description": "idempotency_capacity：回执数量或步数预算已满，新键未准入；已有键仍可命中。",
+        "description": "idempotency_capacity: receipt-count or Step budget exhausted; a new key was not admitted, while existing keys may still match.",
         "content": {
           "application/json": {
             "schema": {
@@ -10171,7 +10171,7 @@
         }
       },
       "501": {
-        "description": "所需Receipt/Frame/Pattern服务不可用，v2 Store未配置/不支持，或来源/recipe验证器不可用；精确code区分，禁止降级。",
+        "description": "Required Receipt/Frame/Pattern service unavailable, v2 Store unconfigured/unsupported, or source/recipe verifier unavailable. Distinguish exact codes; do not downgrade.",
         "content": {
           "application/json": {
             "schema": {

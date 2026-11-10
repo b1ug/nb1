@@ -1,0 +1,1758 @@
+{
+  "status": "PASS",
+  "date": "2026-11-10",
+  "base_commit": "1e2e7650e2cff6686d95cb9908953e5fd370f2bc",
+  "scope": "local documentation/structure/bytes/links only; no daemon, USB, browser, install, configuration, PR, release, or private camera access",
+  "openapi": {
+    "only_permitted_prose_changed": true,
+    "changed_prose_fields": 254,
+    "changed_prose_paths": [
+      "/info/title",
+      "/info/description",
+      "/servers/0/description",
+      "/tags/3/description",
+      "/paths//healthz/get/summary",
+      "/paths//healthz/get/description",
+      "/paths//healthz/get/responses/200/description",
+      "/paths//v1/devices/get/summary",
+      "/paths//v1/devices/get/description",
+      "/paths//v1/devices/get/responses/200/description",
+      "/paths//v1/devices/{serial}/parameters/0/schema/description",
+      "/paths//v1/devices/{serial}/get/summary",
+      "/paths//v1/devices/{serial}/get/responses/200/description",
+      "/paths//v1/devices/{serial}/jobs/parameters/0/schema/description",
+      "/paths//v1/devices/{serial}/jobs/post/summary",
+      "/paths//v1/devices/{serial}/jobs/post/description",
+      "/paths//v1/devices/{serial}/jobs/post/responses/202/description",
+      "/paths//v1/devices/{serial}/jobs/post/responses/202/headers/Location/description",
+      "/paths//v1/devices/{serial}/jobs/post/responses/202/headers/X-NB1-Replayed/description",
+      "/paths//v1/devices/{serial}/jobs/post/responses/202/headers/X-NB1-Daemon-Instance-ID/description",
+      "/paths//v1/devices/{serial}/jobs/post/responses/202/headers/X-NB1-Daemon-Instance-ID/schema/description",
+      "/paths//v1/jobs/{jobId}/get/summary",
+      "/paths//v1/jobs/{jobId}/get/responses/200/description",
+      "/paths//v1/jobs/{jobId}/cancel/post/summary",
+      "/paths//v1/jobs/{jobId}/cancel/post/description",
+      "/paths//v1/jobs/{jobId}/cancel/post/responses/202/description",
+      "/paths//v1/transport-metrics/get/summary",
+      "/paths//v1/transport-metrics/get/description",
+      "/paths//v1/transport-metrics/get/responses/200/description",
+      "/paths//v1/instance/get/summary",
+      "/paths//v1/instance/get/description",
+      "/paths//v1/instance/get/responses/200/description",
+      "/paths//v1/instance/get/responses/200/headers/X-NB1-Daemon-Instance-ID/schema/description",
+      "/paths//v1/devices/{serial}/requests/{request_id}/parameters/0/schema/description",
+      "/paths//v1/devices/{serial}/requests/{request_id}/parameters/1/schema/description",
+      "/paths//v1/devices/{serial}/requests/{request_id}/parameters/2/schema/description",
+      "/paths//v1/devices/{serial}/requests/{request_id}/parameters/2/description",
+      "/paths//v1/devices/{serial}/requests/{request_id}/get/summary",
+      "/paths//v1/devices/{serial}/requests/{request_id}/get/description",
+      "/paths//v1/devices/{serial}/requests/{request_id}/get/responses/200/description",
+      "/paths//v1/devices/{serial}/requests/{request_id}/get/responses/200/headers/X-NB1-Daemon-Instance-ID/schema/description",
+      "/paths//v1/capabilities/get/summary",
+      "/paths//v1/capabilities/get/description",
+      "/paths//v1/capabilities/get/responses/200/description",
+      "/paths//v1/programs/preview/post/summary",
+      "/paths//v1/programs/preview/post/description",
+      "/paths//v1/programs/preview/post/responses/200/description",
+      "/paths//v1/colors/resolve/post/description",
+      "/paths//v1/devices/{serial}/light/post/responses/202/headers/X-NB1-Daemon-Instance-ID/schema/description",
+      "/paths//v1/patterns/get/parameters/0/description",
+      "/paths//v1/patterns/get/responses/200/description",
+      "/paths//v1/patterns/get/summary",
+      "/paths//v1/patterns/get/description",
+      "/paths//v1/patterns/{id}/get/parameters/1/description",
+      "/paths//v1/patterns/{id}/get/responses/200/description",
+      "/paths//v1/patterns/{id}/get/summary",
+      "/paths//v1/patterns/import/post/summary",
+      "/paths//v1/patterns/import/post/description",
+      "/paths//v1/patterns/import/post/responses/200/description",
+      "/paths//v1/patterns/import/get/parameters/0/description",
+      "/paths//v1/patterns/import/get/responses/200/description",
+      "/paths//v1/patterns/import/get/summary",
+      "/paths//v1/frame-capabilities/get/summary",
+      "/paths//v1/frame-capabilities/get/responses/200/description",
+      "/paths//v1/frame-programs/preview/post/summary",
+      "/paths//v1/frame-programs/preview/post/responses/200/description",
+      "/paths//v1/devices/{serial}/frame-jobs/post/summary",
+      "/paths//v1/devices/{serial}/frame-jobs/post/responses/202/description",
+      "/paths//v1/devices/{serial}/frame-jobs/post/responses/202/headers/X-NB1-Daemon-Instance-ID/schema/description",
+      "/paths//v1/devices/{serial}/frame-jobs/post/parameters/0/schema/description",
+      "/paths//v1/devices/{serial}/frame-requests/{request_id}/get/summary",
+      "/paths//v1/devices/{serial}/frame-requests/{request_id}/get/responses/200/description",
+      "/paths//v1/devices/{serial}/frame-requests/{request_id}/get/responses/200/headers/X-NB1-Daemon-Instance-ID/schema/description",
+      "/paths//v1/devices/{serial}/frame-requests/{request_id}/get/parameters/0/schema/description",
+      "/paths//v1/devices/{serial}/frame-requests/{request_id}/get/parameters/2/schema/description",
+      "/paths//v1/frame-jobs/{jobId}/get/summary",
+      "/paths//v1/frame-jobs/{jobId}/get/responses/200/description",
+      "/paths//v1/frame-jobs/{jobId}/cancel/post/summary",
+      "/paths//v1/frame-jobs/{jobId}/cancel/post/responses/202/description",
+      "/paths//v1/frame-jobs/{jobId}/cancel/post/responses/202/headers/X-NB1-Daemon-Instance-ID/schema/description",
+      "/paths//v2/light/preview/post/summary",
+      "/paths//v2/light/preview/post/responses/200/description",
+      "/paths//v2/devices/{serial}/light/post/summary",
+      "/paths//v2/devices/{serial}/light/post/responses/202/description",
+      "/paths//v2/devices/{serial}/light/post/responses/202/headers/X-NB1-Daemon-Instance-ID/schema/description",
+      "/paths//v2/devices/{serial}/light/post/parameters/0/schema/description",
+      "/paths//v2/patterns/preview/post/summary",
+      "/paths//v2/patterns/preview/post/responses/200/description",
+      "/paths//v2/patterns/preview/post/description",
+      "/paths//v2/patterns/preview/get/summary",
+      "/paths//v2/patterns/preview/get/responses/200/description",
+      "/paths//v2/patterns/preview/get/description",
+      "/paths//v2/patterns/get/summary",
+      "/paths//v2/patterns/get/responses/200/description",
+      "/paths//v2/patterns/get/description",
+      "/paths//v2/patterns/post/summary",
+      "/paths//v2/patterns/post/responses/201/description",
+      "/paths//v2/patterns/post/responses/200/description",
+      "/paths//v2/patterns/post/description",
+      "/paths//v2/patterns/{id}/get/summary",
+      "/paths//v2/patterns/{id}/get/responses/200/description",
+      "/paths//v2/patterns/{id}/get/description",
+      "/paths//v2/patterns/import/post/summary",
+      "/paths//v2/patterns/import/post/responses/200/description",
+      "/paths//v2/patterns/import/post/description",
+      "/paths//v2/patterns/import/get/summary",
+      "/paths//v2/patterns/import/get/responses/200/description",
+      "/paths//v2/patterns/import/get/description",
+      "/paths//demo/get/summary",
+      "/paths//demo/get/description",
+      "/paths//demo//get/summary",
+      "/paths//demo//get/description",
+      "/paths//demo/demo.js/get/summary",
+      "/paths//demo/demo.js/get/description",
+      "/paths//demo/demo.css/get/summary",
+      "/paths//demo/demo.css/get/description",
+      "/paths//demo/orbit.html/get/summary",
+      "/paths//demo/orbit.html/get/description",
+      "/paths//demo/orbit.js/get/summary",
+      "/paths//demo/orbit.js/get/description",
+      "/paths//demo/orbit.css/get/summary",
+      "/paths//demo/orbit.css/get/description",
+      "/paths//v2/patterns/preview-ref/post/summary",
+      "/paths//v2/patterns/preview-ref/post/responses/200/description",
+      "/paths//v2/patterns/preview-ref/post/description",
+      "/paths//v2/patterns/preview-ref/get/summary",
+      "/paths//v2/patterns/preview-ref/get/responses/200/description",
+      "/paths//v2/patterns/preview-ref/get/description",
+      "/paths//v2/devices/{serial}/pattern-jobs/post/summary",
+      "/paths//v2/devices/{serial}/pattern-jobs/post/responses/202/description",
+      "/paths//v2/devices/{serial}/pattern-jobs/post/responses/202/headers/X-NB1-Daemon-Instance-ID/description",
+      "/paths//v2/devices/{serial}/pattern-jobs/post/responses/202/headers/X-NB1-Daemon-Instance-ID/schema/description",
+      "/paths//v2/devices/{serial}/pattern-jobs/post/responses/202/headers/X-NB1-Replayed/description",
+      "/paths//v2/devices/{serial}/pattern-jobs/post/responses/202/headers/Location/description",
+      "/paths//v2/devices/{serial}/pattern-jobs/post/parameters/0/schema/description",
+      "/paths//v2/devices/{serial}/pattern-jobs/post/description",
+      "/paths//v2/devices/{serial}/pattern-requests/{request_id}/get/summary",
+      "/paths//v2/devices/{serial}/pattern-requests/{request_id}/get/responses/200/description",
+      "/paths//v2/devices/{serial}/pattern-requests/{request_id}/get/responses/200/headers/X-NB1-Daemon-Instance-ID/description",
+      "/paths//v2/devices/{serial}/pattern-requests/{request_id}/get/responses/200/headers/X-NB1-Daemon-Instance-ID/schema/description",
+      "/paths//v2/devices/{serial}/pattern-requests/{request_id}/get/parameters/0/schema/description",
+      "/paths//v2/devices/{serial}/pattern-requests/{request_id}/get/parameters/1/schema/description",
+      "/paths//v2/devices/{serial}/pattern-requests/{request_id}/get/parameters/2/schema/description",
+      "/paths//v2/devices/{serial}/pattern-requests/{request_id}/get/description",
+      "/paths//v2/devices/{serial}/pattern-requests/{request_id}/cancel/post/summary",
+      "/paths//v2/devices/{serial}/pattern-requests/{request_id}/cancel/post/responses/202/description",
+      "/paths//v2/devices/{serial}/pattern-requests/{request_id}/cancel/post/responses/202/headers/X-NB1-Daemon-Instance-ID/description",
+      "/paths//v2/devices/{serial}/pattern-requests/{request_id}/cancel/post/responses/202/headers/X-NB1-Daemon-Instance-ID/schema/description",
+      "/paths//v2/devices/{serial}/pattern-requests/{request_id}/cancel/post/parameters/0/schema/description",
+      "/paths//v2/devices/{serial}/pattern-requests/{request_id}/cancel/post/parameters/1/schema/description",
+      "/paths//v2/devices/{serial}/pattern-requests/{request_id}/cancel/post/description",
+      "/paths//demo/patterns.html/get/summary",
+      "/paths//demo/patterns.html/get/description",
+      "/paths//demo/patterns.html/get/responses/200/description",
+      "/paths//demo/patterns.js/get/summary",
+      "/paths//demo/patterns.js/get/description",
+      "/paths//demo/patterns.js/get/responses/200/description",
+      "/paths//demo/patterns.css/get/summary",
+      "/paths//demo/patterns.css/get/description",
+      "/paths//demo/patterns.css/get/responses/200/description",
+      "/components/schemas/StepRequest/properties/led/description",
+      "/components/schemas/StepRequest/properties/color/description",
+      "/components/schemas/StepRequest/properties/fade_ms/description",
+      "/components/schemas/StepRequest/properties/hold_ms/description",
+      "/components/schemas/StepRequest/description",
+      "/components/schemas/ProgramRequest/description",
+      "/components/schemas/ProgramRequest/properties/repeat/description",
+      "/components/schemas/ProgramRequest/properties/on_finish/description",
+      "/components/schemas/SubmitRequest/properties/policy/description",
+      "/components/schemas/SubmitRequest/properties/request_id/description",
+      "/components/schemas/SubmitRequest/properties/expected_daemon_instance_id/description",
+      "/components/schemas/SubmitRequest/description",
+      "/components/schemas/DeviceState/properties/serial/description",
+      "/components/schemas/DeviceState/properties/capabilities/description",
+      "/components/schemas/Observation/description",
+      "/components/schemas/Job/properties/device/description",
+      "/components/schemas/Job/description",
+      "/components/schemas/TransportMetric/description",
+      "/components/schemas/TransportMetric/properties/serial/description",
+      "/components/schemas/InstanceInfo/properties/daemon_instance_id/description",
+      "/components/schemas/IdempotencyInfo/properties/request_id_prefix/description",
+      "/components/schemas/IdempotencyInfo/properties/max_accept_window_ms/description",
+      "/components/schemas/IdempotencyInfo/properties/receipt_retention_ms/description",
+      "/components/schemas/IdempotencyInfo/properties/max_entries/description",
+      "/components/schemas/IdempotencyInfo/properties/max_retained_steps/description",
+      "/components/schemas/RequestTicket/properties/request_id/description",
+      "/components/schemas/RequestTicket/properties/expected_daemon_instance_id/description",
+      "/components/schemas/SteadyEffect/properties/color/description",
+      "/components/schemas/SteadyEffect/properties/led/description",
+      "/components/schemas/SteadyEffect/properties/fade_ms/description",
+      "/components/schemas/SteadyEffect/description",
+      "/components/schemas/PulseEffect/properties/color/description",
+      "/components/schemas/PulseEffect/properties/led/description",
+      "/components/schemas/PulseEffect/properties/cycles/description",
+      "/components/schemas/PulseEffect/properties/period_ms/description",
+      "/components/schemas/PulseEffect/properties/on_finish/description",
+      "/components/schemas/PulseEffect/description",
+      "/components/schemas/Effect/description",
+      "/components/schemas/PreviewRequest/description",
+      "/components/schemas/PreviewValidation/description",
+      "/components/schemas/PreviewResult/description",
+      "/components/schemas/CapabilityCatalog/properties/pattern_library/description",
+      "/components/schemas/CapabilityCatalog/properties/hardware_pattern_upload/description",
+      "/components/schemas/CapabilityCatalog/description",
+      "/components/schemas/ColorInput/oneOf/0/description",
+      "/components/schemas/LightActionAlternate/properties/transition/description",
+      "/components/schemas/NormalizedLightActionAlternate/properties/transition/description",
+      "/components/schemas/LightSubmitRequest/properties/request_id/description",
+      "/components/schemas/LightSubmitRequest/properties/expected_daemon_instance_id/description",
+      "/components/schemas/PatternRef/description",
+      "/components/schemas/PatternSource/description",
+      "/components/schemas/PatternRecord/description",
+      "/components/schemas/PatternAuthoringPackage/description",
+      "/components/schemas/PatternSnapshot/description",
+      "/components/schemas/PatternLibraryInfo/properties/path/description",
+      "/components/schemas/PatternSummary/description",
+      "/components/schemas/PatternList/description",
+      "/components/schemas/PatternImportResult/description",
+      "/components/schemas/PatternPreview/description",
+      "/components/schemas/FramePreview/description",
+      "/components/schemas/FramePreviewRequest/properties/serial/description",
+      "/components/schemas/FrameSubmitRequest/properties/request_id/description",
+      "/components/schemas/FrameSubmitRequest/properties/expected_daemon_instance_id/description",
+      "/components/schemas/FrameSubmitRequest/description",
+      "/components/schemas/FrameCancelRequest/properties/expected_daemon_instance_id/description",
+      "/components/schemas/FrameCancelRequest/description",
+      "/components/schemas/FrameJob/properties/device/description",
+      "/components/schemas/FrameJob/description",
+      "/components/schemas/OrbitAction/description",
+      "/components/schemas/OrbitPreviewRequest/properties/serial/description",
+      "/components/schemas/OrbitSubmitRequest/properties/request_id/description",
+      "/components/schemas/OrbitSubmitRequest/properties/expected_daemon_instance_id/description",
+      "/components/schemas/PatternRefV2/description",
+      "/components/schemas/PatternExecutionAvailabilityV2/description",
+      "/components/schemas/PatternRefPreviewRequestV2/properties/serial/description",
+      "/components/schemas/PatternSubmitRequestV2/properties/request_id/description",
+      "/components/schemas/PatternSubmitRequestV2/properties/expected_daemon_instance_id/description",
+      "/components/schemas/PatternSubmitRequestV2/description",
+      "/components/schemas/PatternCancelRequestV2/properties/expected_daemon_instance_id/description",
+      "/components/schemas/PatternCancelRequestV2/description",
+      "/components/schemas/PatternJobEnvelopeV2/description",
+      "/components/schemas/PatternRefPreviewV2/description",
+      "/components/responses/400/description",
+      "/components/responses/403/description",
+      "/components/responses/404/description",
+      "/components/responses/405/description",
+      "/components/responses/409/description",
+      "/components/responses/413/description",
+      "/components/responses/415/description",
+      "/components/responses/500/description",
+      "/components/responses/503/description",
+      "/components/responses/410/description",
+      "/components/responses/429/description",
+      "/components/responses/501/description"
+    ],
+    "paths": 43,
+    "operations_including_aliases": 48,
+    "canonical_operations": 44,
+    "aliases": [
+      [
+        "GET",
+        "/v1/patterns/import"
+      ],
+      [
+        "GET",
+        "/v2/patterns/import"
+      ],
+      [
+        "GET",
+        "/v2/patterns/preview"
+      ],
+      [
+        "GET",
+        "/v2/patterns/preview-ref"
+      ]
+    ],
+    "models": 111,
+    "model_names": [
+      "StepRequest",
+      "Step",
+      "ProgramRequest",
+      "Program",
+      "SubmitRequest",
+      "DeviceState",
+      "Observation",
+      "Job",
+      "Error",
+      "Health",
+      "EmptyObject",
+      "TransportMetric",
+      "InstanceInfo",
+      "IdempotencyInfo",
+      "RequestTicket",
+      "SteadyEffect",
+      "PulseEffect",
+      "Effect",
+      "PreviewRequest",
+      "PreviewValidation",
+      "PreviewDevice",
+      "PreviewResult",
+      "ProgramLimits",
+      "EffectLimits",
+      "CapabilityCatalog",
+      "ColorRGB8",
+      "ColorHSV",
+      "ColorInput",
+      "ColorResolveRequest",
+      "ResolvedRGB8",
+      "ColorResolution",
+      "LightActionSet",
+      "NormalizedLightActionSet",
+      "LightActionOff",
+      "NormalizedLightActionOff",
+      "LightActionFade",
+      "NormalizedLightActionFade",
+      "LightActionBlink",
+      "NormalizedLightActionBlink",
+      "LightActionBreathe",
+      "NormalizedLightActionBreathe",
+      "LightActionPulse",
+      "NormalizedLightActionPulse",
+      "LightActionAlternate",
+      "NormalizedLightActionAlternate",
+      "LightActionRainbow",
+      "NormalizedLightActionRainbow",
+      "LightAction",
+      "NormalizedLightAction",
+      "LightRequest",
+      "LightPreviewRequest",
+      "LightSubmitRequest",
+      "LightCompilation",
+      "LightPreviewResponse",
+      "PatternRef",
+      "PatternSource",
+      "PatternRecord",
+      "PatternAuthoringRecord",
+      "PatternAuthoringPackage",
+      "PatternSnapshot",
+      "PatternImportPackage",
+      "PatternLibraryInfo",
+      "PatternSummary",
+      "PatternList",
+      "PatternImportResult",
+      "PatternPreview",
+      "FrameTargetRequest",
+      "FrameRequest",
+      "FrameProgramRequest",
+      "FrameTarget",
+      "Frame",
+      "FrameProgram",
+      "FrameExecutionAvailability",
+      "FramePreview",
+      "FramePreviewRequest",
+      "FrameSubmitRequest",
+      "FrameCancelRequest",
+      "FrameJob",
+      "FrameCapabilities",
+      "OrbitAction",
+      "NormalizedOrbitAction",
+      "OrbitCompilation",
+      "OrbitPreviewRequest",
+      "OrbitSubmitRequest",
+      "OrbitPreviewResponse",
+      "PatternRefV2",
+      "PatternOpaqueJSON",
+      "PatternSourceV2Read",
+      "PatternSourceV2Known",
+      "PatternExecutionV2",
+      "PatternCompiledV2Read",
+      "PatternRecordV2Read",
+      "PatternRecordV2Known",
+      "PatternSnapshotV2Read",
+      "PatternSnapshotV2Write",
+      "PatternAuthorPreviewRequestV2",
+      "PatternAuthorSaveRequestV2",
+      "PatternVerificationV2",
+      "PatternExecutionAvailabilityV2",
+      "PatternRecordResponseV2",
+      "PatternPreviewFactsV2",
+      "PatternPreviewResponseV2",
+      "PatternSummaryV2",
+      "PatternLibraryInfoV2",
+      "PatternListV2",
+      "PatternWriteResponseV2",
+      "PatternRefPreviewRequestV2",
+      "PatternSubmitRequestV2",
+      "PatternCancelRequestV2",
+      "PatternJobEnvelopeV2",
+      "PatternRefPreviewV2"
+    ],
+    "validated_internal_refs": 524,
+    "x_availability_unchanged": true,
+    "non_prose_structure_unchanged": true,
+    "before_sha256": "e43660f5c5bdde61ebb6bef40eca524ff3805dab41699b1aacc2df5884b85212",
+    "after_sha256": "2690476da9cb72708d0adfb436832f2d780c53297c92be2fa89097e765844487",
+    "embedded_examples": [
+      {
+        "path": "/paths//v1/programs/preview/post/requestBody/content/application/json/example",
+        "sha256": "b502aa61df40de16d97906a03b4680585574130f8aed0bbc241833321501b6d7",
+        "bytes": 202
+      },
+      {
+        "path": "/paths//v1/colors/resolve/post/requestBody/content/application/json/examples",
+        "sha256": "25b73f41f30e84b4d581904e4713d660cf4cf2ccec137dd4aeda93aa22f9faf8",
+        "bytes": 846
+      },
+      {
+        "path": "/paths//v1/light/preview/post/requestBody/content/application/json/example",
+        "sha256": "4a47aa5004a6d756a2ed57c26b270441bb0070f74188f9937e4fe311d4b2ed59",
+        "bytes": 291
+      },
+      {
+        "path": "/paths//v1/devices/{serial}/light/post/requestBody/content/application/json/example",
+        "sha256": "8fbecb3868175a69ee4e0e040ad2f2db420394e751acc92075ceda687caad7b8",
+        "bytes": 493
+      },
+      {
+        "path": "/components/schemas/ProgramRequest/examples",
+        "sha256": "a57ee897b76dd711078205f438b9f70f2ca3bab9c953ee7716ac84d8269b9a5d",
+        "bytes": 877
+      },
+      {
+        "path": "/components/schemas/SubmitRequest/examples",
+        "sha256": "2d3c076a91c69119c05cec882e574d1d67e57e695fc1d2f3d6ca977880f801bd",
+        "bytes": 596
+      }
+    ]
+  },
+  "manual": {
+    "canonical_operations": [
+      "GET /healthz",
+      "GET /v1/capabilities",
+      "GET /v1/instance",
+      "GET /v1/transport-metrics",
+      "GET /v1/devices",
+      "GET /v1/devices/{serial}",
+      "POST /v1/programs/preview",
+      "POST /v1/devices/{serial}/jobs",
+      "GET /v1/devices/{serial}/requests/{request_id}",
+      "GET /v1/jobs/{id}",
+      "POST /v1/jobs/{id}/cancel",
+      "POST /v1/colors/resolve",
+      "GET /v1/frame-capabilities",
+      "POST /v1/frame-programs/preview",
+      "POST /v1/devices/{serial}/frame-jobs",
+      "GET /v1/devices/{serial}/frame-requests/{request_id}",
+      "GET /v1/frame-jobs/{id}",
+      "POST /v1/frame-jobs/{id}/cancel",
+      "POST /v1/light/preview",
+      "POST /v1/devices/{serial}/light",
+      "POST /v2/light/preview",
+      "POST /v2/devices/{serial}/light",
+      "GET /v1/patterns",
+      "GET /v1/patterns/{id}",
+      "POST /v1/patterns/import",
+      "GET /v2/patterns",
+      "GET /v2/patterns/{id}",
+      "POST /v2/patterns/import",
+      "POST /v2/patterns/preview",
+      "POST /v2/patterns",
+      "POST /v2/patterns/preview-ref",
+      "POST /v2/devices/{serial}/pattern-jobs",
+      "GET /v2/devices/{serial}/pattern-requests/{request_id}",
+      "POST /v2/devices/{serial}/pattern-requests/{request_id}/cancel",
+      "GET /demo",
+      "GET /demo/",
+      "GET /demo/demo.js",
+      "GET /demo/demo.css",
+      "GET /demo/orbit.html",
+      "GET /demo/orbit.js",
+      "GET /demo/orbit.css",
+      "GET /demo/patterns.html",
+      "GET /demo/patterns.js",
+      "GET /demo/patterns.css"
+    ],
+    "models_linked": 111,
+    "json_examples_linked": 14,
+    "unchanged_json_data_fences": 7
+  },
+  "example_bytes_unchanged": [
+    {
+      "path": "docs/examples/api/alternate.action.json",
+      "sha256": "d3d5c75135f2fe321dcc1ffccb298b65d0e176c5d0ff74fa1c8f5b48534967c8",
+      "bytes": 235
+    },
+    {
+      "path": "docs/examples/api/blink.action.json",
+      "sha256": "5d960911ee1e865740bae2433cb3dcd222818ac136c5b10f9285ff50e03161e2",
+      "bytes": 180
+    },
+    {
+      "path": "docs/examples/api/breathe.action.json",
+      "sha256": "9b20751a6098dff0a8200604155145bd98bb99ab3d1707d01a329b2c63556cf4",
+      "bytes": 166
+    },
+    {
+      "path": "docs/examples/api/fade.action.json",
+      "sha256": "76af137a3f470790b166d3dcc53bb4a10d9a97a05f2bd131c3fcfac5eaf38a27",
+      "bytes": 150
+    },
+    {
+      "path": "docs/examples/api/hsv.color-input.json",
+      "sha256": "34e71e3cefdceeab13c1d4ceb198c4f2b0704f8a000bc48874d851038e1a9830",
+      "bytes": 68
+    },
+    {
+      "path": "docs/examples/api/legacy.effect.json",
+      "sha256": "9c8a106339546c8529e4fac41454b954f2a498ecdb9f2f560bbc7a9619900fea",
+      "bytes": 114
+    },
+    {
+      "path": "docs/examples/api/low.frame-program.json",
+      "sha256": "35e6d49e614e962e9a9f0b550042da33f6d4442c56fcc6f9115d6ac464f88bf5",
+      "bytes": 690
+    },
+    {
+      "path": "docs/examples/api/low.program.json",
+      "sha256": "b189b73a32c38eb20064e24061290bbbbea98331b20d67ac4f351f31a3a3168c",
+      "bytes": 253
+    },
+    {
+      "path": "docs/examples/api/off.action.json",
+      "sha256": "4334e6b03e87e3bcf89a4bc25dd7d98427bb3e801ba238a5bbdbeb98c31ce244",
+      "bytes": 91
+    },
+    {
+      "path": "docs/examples/api/orbit.action.json",
+      "sha256": "a182b474bcb823d73f70b6db332bd413b516a7bd072c9f235f140c96f02e3fff",
+      "bytes": 262
+    },
+    {
+      "path": "docs/examples/api/pattern-v2.preview.json",
+      "sha256": "3cd6393c119b062eb46602ab11f9bbffda556f1cb1c3b03e137b17a36baca7c0",
+      "bytes": 347
+    },
+    {
+      "path": "docs/examples/api/pulse.action.json",
+      "sha256": "dc57ae1fea005dae270ea5286c2ad7c14b92bc45241387dcaf0d6d0699dbda9d",
+      "bytes": 260
+    },
+    {
+      "path": "docs/examples/api/rainbow.action.json",
+      "sha256": "cf7a4144529e0d7d2b789efec6ef97e3e8026e1019dfbbab239dea04e1e88111",
+      "bytes": 121
+    },
+    {
+      "path": "docs/examples/api/set.action.json",
+      "sha256": "c8711d374eaf00c2cfcbe9c8d1155fdbb46f01d1e24972d20a2a906c7eca5609",
+      "bytes": 137
+    }
+  ],
+  "frozen_files_unchanged": [
+    {
+      "path": "docs/api-reference.zh-CN.md",
+      "sha256": "8d33c2f3471a83d5b01889acaf11655d1c0c911e7e34386b4a553a0dde9606d7",
+      "bytes": 96909
+    },
+    {
+      "path": "docs/api-http-inventory.json",
+      "sha256": "7849056731ef58686b0ecd2f8e2573168fb77a074a2885fe4555c783ff27d1bd",
+      "bytes": 72712
+    },
+    {
+      "path": "docs/api-low-examples.json",
+      "sha256": "7edf2fba4b1e48778169fd2e2980031f323ff783d9ed19cec08a0d0081749869",
+      "bytes": 2442
+    },
+    {
+      "path": "docs/examples/api/README.zh-CN.md",
+      "sha256": "20762c1d7e946bddcb0a2475511142d2a1c3d36a429bb5fc36178e19b83d8c36",
+      "bytes": 446
+    },
+    {
+      "path": "README.zh-CN.md",
+      "sha256": "2f2d62d9d5ae4686dcfecbbd7614ad633ac780c78f5d920098cc269ef4c56895",
+      "bytes": 2272
+    },
+    {
+      "path": "go.mod",
+      "sha256": "6e6b4fd77ac779d7b23e0096af87bc66701cd47466efd08c66894b3fc7dff2e2",
+      "bytes": 2194
+    },
+    {
+      "path": "go.sum",
+      "sha256": "e0b57831854217746dccdd5a1d19c1cf3399042536d63a5f6f097f40edb55f8b",
+      "bytes": 58557
+    },
+    {
+      "path": "docs/mcp-tools.candidate-20.schema.json",
+      "sha256": "83d310acb959356970161d13adfc7d62d846ff65c3c994e499bd8c18091635fa",
+      "bytes": 412386
+    },
+    {
+      "path": "docs/mcp-tools.daily-1d89.schema.json",
+      "sha256": "dbc79793c332d5e25032f34614717e0d9ab98c49947e162683d34d2515af118e",
+      "bytes": 202720
+    },
+    {
+      "path": "docs/mcp-tools.schema.json",
+      "sha256": "b4f266bb69c5aabf2d6e529d4c9a886b66e2ddc5cc869fc43e2b6dcd0b42cab9",
+      "bytes": 289694
+    }
+  ],
+  "frozen_mcp16_complete_objects_unchanged": true,
+  "candidate_mcp20_unchanged": true,
+  "local_links": {
+    "count": 275,
+    "all_targets_exist": true,
+    "checked": [
+      {
+        "document": "README.md",
+        "target": "docs/api-reference.md"
+      },
+      {
+        "document": "README.md",
+        "target": "docs/openapi.json"
+      },
+      {
+        "document": "README.md",
+        "target": "docs/mcp-tools.schema.json"
+      },
+      {
+        "document": "README.md",
+        "target": "adapters/mcp/README.md"
+      },
+      {
+        "document": "README.md",
+        "target": "docs/daemon-lifecycle-diagnostics.md"
+      },
+      {
+        "document": "README.md",
+        "target": "skills/blink1-control/SKILL.md"
+      },
+      {
+        "document": "README.md",
+        "target": "llms.txt"
+      },
+      {
+        "document": "README.md",
+        "target": "docs/api-reference.zh-CN.md"
+      },
+      {
+        "document": "README.md",
+        "target": "docs/patterns-cli.md"
+      },
+      {
+        "document": "README.md",
+        "target": "README.zh-CN.md"
+      },
+      {
+        "document": "llms.txt",
+        "target": "skills/blink1-control/SKILL.md"
+      },
+      {
+        "document": "llms.txt",
+        "target": "docs/api-reference.md"
+      },
+      {
+        "document": "llms.txt",
+        "target": "docs/openapi.json"
+      },
+      {
+        "document": "llms.txt",
+        "target": "docs/mcp-tools.schema.json"
+      },
+      {
+        "document": "llms.txt",
+        "target": "adapters/mcp/README.md"
+      },
+      {
+        "document": "llms.txt",
+        "target": "docs/examples/api/"
+      },
+      {
+        "document": "llms.txt",
+        "target": "docs/api-reference.zh-CN.md"
+      },
+      {
+        "document": "llms.txt",
+        "target": "docs/agent-guide.zh-CN.md"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "api-reference.zh-CN.md"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "examples/api/breathe.action.json"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "mcp-tools.schema.json"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "mcp-tools.daily-1d89.schema.json"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "examples/api/README.md"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "patterns-cli.md"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/daemonclient/README.pattern-execution-v2.zh-CN.md"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "mcp-tools.candidate-20.schema.json"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "web-debugger.zh-CN.md"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/httpapi.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/httpapi_test.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/preview.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/preview_test.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/patterns_test.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/httpapi.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/receipt_test.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/httpapi.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/httpapi_test.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/httpapi.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/httpapi_test.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/httpapi.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/httpapi_test.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/preview_test.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/preview.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/preview_test.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/patterns_test.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/httpapi.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/receipt_test.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/effects_test.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/patterns_execution_test.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/httpapi.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/receipt_test.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/patterns_execution_test.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/httpapi.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/httpapi_test.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/receipt_test.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/httpapi.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/httpapi_test.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/control/engine_test.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/color.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/color_test.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/frames.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/frames_test.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/frames.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/frames_test.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/frames.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/frames_test.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/frames_engine_test.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/frames.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/frames_test.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/frames.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/frames_test.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/frames.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/frame_cancel_bound_test.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/frames_test.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/light.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/light_test.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/light.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/light_test.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/light_v2.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/frames_test.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/frames_engine_test.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/light_v2.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/frames_test.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/frames_engine_test.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/patterns.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/patterns_test.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/patterns.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/patterns_test.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/patterns.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/patterns_test.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/patterns_v2.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/patterns_v2_test.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/patterns_v2.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/patterns_v2_test.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/patterns_v2.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/patterns_v2_test.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/patterns_v2.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/patterns_v2_test.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/patterns_v2.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/patterns_v2_test.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/pattern_execution_v2.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/pattern_execution_v2_test.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/pattern_execution_v2_engine_test.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/pattern_execution_v2.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/pattern_execution_v2_test.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/pattern_execution_v2_engine_test.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/pattern_execution_v2.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/pattern_execution_v2_test.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/pattern_execution_v2_engine_test.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/pattern_execution_v2.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/pattern_execution_v2_test.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/pattern_execution_v2_engine_test.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/light.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/light_test.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/light.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/light_test.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/light.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/light_test.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/light.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/light_test.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/light.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/light_test.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/light.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/light_test.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/light.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/light_test.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/light.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/light_test.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/webui/embed_test.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/light.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/light_test.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/webui/embed_test.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/light.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/httpapi/light_test.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/webui/embed_test.go"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "api-http-inventory.json"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "api-low-examples.json"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/StepRequest"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/Step"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/ProgramRequest"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/Program"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/SubmitRequest"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/DeviceState"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/Observation"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/Job"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/Error"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/Health"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/EmptyObject"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/TransportMetric"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/InstanceInfo"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/IdempotencyInfo"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/RequestTicket"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/SteadyEffect"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/PulseEffect"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/Effect"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/PreviewRequest"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/PreviewValidation"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/PreviewDevice"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/PreviewResult"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/ProgramLimits"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/EffectLimits"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/CapabilityCatalog"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/ColorRGB8"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/ColorHSV"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/ColorInput"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/ColorResolveRequest"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/ResolvedRGB8"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/ColorResolution"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/LightActionSet"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/NormalizedLightActionSet"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/LightActionOff"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/NormalizedLightActionOff"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/LightActionFade"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/NormalizedLightActionFade"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/LightActionBlink"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/NormalizedLightActionBlink"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/LightActionBreathe"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/NormalizedLightActionBreathe"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/LightActionPulse"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/NormalizedLightActionPulse"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/LightActionAlternate"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/NormalizedLightActionAlternate"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/LightActionRainbow"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/NormalizedLightActionRainbow"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/LightAction"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/NormalizedLightAction"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/LightRequest"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/LightPreviewRequest"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/LightSubmitRequest"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/LightCompilation"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/LightPreviewResponse"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/PatternRef"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/PatternSource"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/PatternRecord"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/PatternAuthoringRecord"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/PatternAuthoringPackage"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/PatternSnapshot"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/PatternImportPackage"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/PatternLibraryInfo"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/PatternSummary"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/PatternList"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/PatternImportResult"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/PatternPreview"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/FrameTargetRequest"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/FrameRequest"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/FrameProgramRequest"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/FrameTarget"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/Frame"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/FrameProgram"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/FrameExecutionAvailability"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/FramePreview"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/FramePreviewRequest"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/FrameSubmitRequest"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/FrameCancelRequest"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/FrameJob"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/FrameCapabilities"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/OrbitAction"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/NormalizedOrbitAction"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/OrbitCompilation"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/OrbitPreviewRequest"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/OrbitSubmitRequest"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/OrbitPreviewResponse"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/PatternRefV2"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/PatternOpaqueJSON"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/PatternSourceV2Read"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/PatternSourceV2Known"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/PatternExecutionV2"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/PatternCompiledV2Read"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/PatternRecordV2Read"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/PatternRecordV2Known"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/PatternSnapshotV2Read"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/PatternSnapshotV2Write"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/PatternAuthorPreviewRequestV2"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/PatternAuthorSaveRequestV2"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/PatternVerificationV2"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/PatternExecutionAvailabilityV2"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/PatternRecordResponseV2"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/PatternPreviewFactsV2"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/PatternPreviewResponseV2"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/PatternSummaryV2"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/PatternLibraryInfoV2"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/PatternListV2"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/PatternWriteResponseV2"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/PatternRefPreviewRequestV2"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/PatternSubmitRequestV2"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/PatternCancelRequestV2"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/PatternJobEnvelopeV2"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "openapi.json#/components/schemas/PatternRefPreviewV2"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "examples/api/alternate.action.json"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "examples/api/blink.action.json"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "examples/api/breathe.action.json"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "examples/api/fade.action.json"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "examples/api/hsv.color-input.json"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "examples/api/legacy.effect.json"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "examples/api/low.frame-program.json"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "examples/api/low.program.json"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "examples/api/off.action.json"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "examples/api/orbit.action.json"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "examples/api/pattern-v2.preview.json"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "examples/api/pulse.action.json"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "examples/api/rainbow.action.json"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "examples/api/set.action.json"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "examples/api/README.md"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "examples/api/README.zh-CN.md"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "mcp-tools.schema.json"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "mcp-tools.daily-1d89.schema.json"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "mcp-tools.candidate-20.schema.json"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../skills/blink1-control/SKILL.md"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../skills/blink1-control/references/patterns.md"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../llms.txt"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "agent-guide.zh-CN.md"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "patterns-cli.md"
+      },
+      {
+        "document": "docs/api-reference.md",
+        "target": "../internal/devicebackend/README.md"
+      },
+      {
+        "document": "docs/examples/api/README.md",
+        "target": "../../api-reference.md"
+      },
+      {
+        "document": "docs/examples/api/README.md",
+        "target": "README.zh-CN.md"
+      }
+    ]
+  },
+  "runtime_chinese_backlog": {
+    "literal_count": 197,
+    "file_count": 11,
+    "by_path": {
+      "cmd/control_color.go": 3,
+      "cmd/control_preview.go": 4,
+      "cmd/doctor.go": 6,
+      "cmd/root.go": 2,
+      "cmd/service.go": 40,
+      "internal/doctor/doctor.go": 43,
+      "internal/service/systemduser/files.go": 15,
+      "internal/service/systemduser/manager.go": 32,
+      "internal/service/systemduser/properties.go": 8,
+      "internal/service/systemduser/types.go": 1,
+      "internal/service/user.go": 43
+    },
+    "by_category": {
+      "cli_help_flags_output_or_error": 15,
+      "user_service_help_status_or_error": 139,
+      "doctor_diagnostic_or_default_advice": 43
+    },
+    "runtime_changes": false
+  },
+  "changed_paths": [
+    "README.md",
+    "artifacts/public-english-docs-20261110/gaps.zh-CN.md",
+    "artifacts/public-english-docs-20261110/review.json",
+    "artifacts/public-english-docs-20261110/runtime-chinese-inventory.json",
+    "artifacts/public-english-docs-20261110/runtime-inventory.go.txt",
+    "artifacts/public-english-docs-20261110/summary.zh-CN.md",
+    "artifacts/public-english-docs-20261110/validate.py",
+    "artifacts/public-english-docs-20261110/validation.json",
+    "docs/api-reference.md",
+    "docs/examples/api/README.md",
+    "docs/openapi.json",
+    "llms.txt"
+  ]
+}

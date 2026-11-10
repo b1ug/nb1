@@ -17,7 +17,8 @@ Installed baseline96a has seven advanced CLI commands: get/preview-draft/save/pr
 ## References
 
 - [Agent skill](skills/blink1-control/SKILL.md): expression selection, receipts, recovery, and host patterns.
-- [OpenAPI](docs/openapi.json): machine-readable structure and route availability; existing prose localization is in progress.
+- [English API reference](docs/api-reference.md): High/Low semantics, 44 canonical HTTP operations, 111 models, and 14 examples.
+- [OpenAPI](docs/openapi.json): machine-readable structure and route availability, with English explanatory prose.
 - [Actual MCP schemas](docs/mcp-tools.schema.json): captured16-tool baseline; actual tools/list remains authoritative.
 - [MCP adapter](adapters/mcp/README.md): protocol and transport behavior.
 - [Examples](docs/examples/api/): author files and pure preview inputs, not automatic execution.

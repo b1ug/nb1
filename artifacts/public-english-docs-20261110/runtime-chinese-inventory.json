@@ -1,0 +1,1184 @@
+[
+  {
+    "path": "cmd/control_color.go",
+    "line": 17,
+    "category": "cli_help_flags_output_or_error",
+    "text": "归一化颜色输入为精确 Hex6，不执行灯光"
+  },
+  {
+    "path": "cmd/control_color.go",
+    "line": 18,
+    "category": "cli_help_flags_output_or_error",
+    "text": "名字或 hex 使用一个位置参数；RGB8、HSV 或其他裸 JSON ColorInput 使用 --file。两者只能选一个。默认由 daemon 归一化；显式 --mode direct 使用同一个纯函数，不连接 daemon、不发现设备、不获取设备锁、不打开 USB。结果无隐式 Gamma 或亮度校正，不能证明实际灯光效果。此命令不接受 serial、policy 或请求票据。旧 daemon 不支持时明确报错，不回退直控；Program、Effect 和 set 的原有 Hex6 合同不变。"
+  },
+  {
+    "path": "cmd/control_color.go",
+    "line": 61,
+    "category": "cli_help_flags_output_or_error",
+    "text": "裸 JSON ColorInput 文件，不是含 color 字段的 HTTP 信封；与 INPUT 互斥"
+  },
+  {
+    "path": "cmd/control_preview.go",
+    "line": 14,
+    "category": "cli_help_flags_output_or_error",
+    "text": "查看软件编译能力目录，不打开设备"
+  },
+  {
+    "path": "cmd/control_preview.go",
+    "line": 15,
+    "category": "cli_help_flags_output_or_error",
+    "text": "默认读取 daemon 的软件能力目录。显式 --mode direct 返回本地编译器目录，不发现设备、不获取设备锁、不打开 USB。目录不证明设备在线或支持某项硬件功能。旧 daemon 不支持新接口时明确报错，不回退直控。"
+  },
+  {
+    "path": "cmd/control_preview.go",
+    "line": 43,
+    "category": "cli_help_flags_output_or_error",
+    "text": "权威预览 Program 或 Effect，不创建 Job"
+  },
+  {
+    "path": "cmd/control_preview.go",
+    "line": 44,
+    "category": "cli_help_flags_output_or_error",
+    "text": "必须且只能指定一个 Program 或 Effect 文件。默认由 daemon 校验并编译，返回规范化 Program、名义时长和限制；可选 --serial 只核对缓存设备能力，不证明执行或准入成功。显式 --mode direct 使用同一纯软件编译器，不连接 daemon、不发现设备、不获取设备锁、不打开 USB；direct 不接受 --serial。预览不接受 policy 或请求回执，不创建/取消 Job。旧 daemon 不支持时不回退。"
+  },
+  {
+    "path": "cmd/doctor.go",
+    "line": 16,
+    "category": "cli_help_flags_output_or_error",
+    "text": "只读检查构建版本、daemon与已配置设备快照"
+  },
+  {
+    "path": "cmd/doctor.go",
+    "line": 17,
+    "category": "cli_help_flags_output_or_error",
+    "text": "在3秒总预算内读取本机二进制构建信息及本地daemon的health/v1设备列表。不会扫描或打开USB，不设色、不提交任务、不安装服务、不自动回退直控。未指定--serial时显示daemon配置的全部目标。HTTP响应不代表设备在线；observed是带时间戳的已有快照。"
+  },
+  {
+    "path": "cmd/doctor.go",
+    "line": 36,
+    "category": "cli_help_flags_output_or_error",
+    "text": "诊断发现待检查项目；请查看issues及建议"
+  },
+  {
+    "path": "cmd/doctor.go",
+    "line": 41,
+    "category": "cli_help_flags_output_or_error",
+    "text": "本地loopback HTTP服务地址"
+  },
+  {
+    "path": "cmd/doctor.go",
+    "line": 42,
+    "category": "cli_help_flags_output_or_error",
+    "text": "只检查这个明确序列号；省略时使用daemon配置目标"
+  },
+  {
+    "path": "cmd/doctor.go",
+    "line": 43,
+    "category": "cli_help_flags_output_or_error",
+    "text": "输出schema_version=1的JSON；attention时退出码为1"
+  },
+  {
+    "path": "cmd/root.go",
+    "line": 32,
+    "category": "cli_help_flags_output_or_error",
+    "text": "控制 blink(1) 指示灯，提供本机共享 API"
+  },
+  {
+    "path": "cmd/root.go",
+    "line": 33,
+    "category": "cli_help_flags_output_or_error",
+    "text": "\n\t\tnb1 用于控制 blink(1) 指示灯，也可运行本机 daemon，\n\t\t通过 HTTP v1 API 供 CLI 和其他客户端共享设备。\n\n\t\t先用 server --devices 明确指定设备启动 daemon，再用 control 操作。\n\t\tcontrol 默认连接本机 daemon；临时直控可显式使用 control --mode direct。\n\t\tdoctor 只读检查构建版本、daemon 和已配置设备快照，不扫描或打开 USB。\n\n\t\ton、off、blink、fade、play、read、write 等旧命令仍直接访问设备，\n\t\t不经过 daemon。各入口的参数可用 nb1 <命令> --help 查看。\n\n\t\t日常以普通用户运行，设备访问按系统权限配置；\n\t\tserver 仅监听本机回环地址。\n"
+  },
+  {
+    "path": "cmd/service.go",
+    "line": 73,
+    "category": "user_service_help_status_or_error",
+    "text": "macOS/Linux：安装并安排用户登录加载；默认不立即启动"
+  },
+  {
+    "path": "cmd/service.go",
+    "line": 74,
+    "category": "user_service_help_status_or_error",
+    "text": "macOS写当前用户LaunchAgents配置；Linux写当前用户nb1.service及本工具的default.target持久启用链接，并刷新用户manager。默认不立即启动；下次登录可能加载，--start才请求立即启动。未知同名项、覆盖配置、查询异常或已有配置不同均拒绝接管或升级。二进制必须是当前机器上已存在的绝对可执行路径，设备须明确指定。不停止手工daemon，不管理系统服务、不自动提权。"
+  },
+  {
+    "path": "cmd/service.go",
+    "line": 81,
+    "category": "user_service_help_status_or_error",
+    "text": "已存在的绝对可执行文件路径，不使用PATH搜索"
+  },
+  {
+    "path": "cmd/service.go",
+    "line": 82,
+    "category": "user_service_help_status_or_error",
+    "text": "明确的8位十六进制设备序列号列表"
+  },
+  {
+    "path": "cmd/service.go",
+    "line": 83,
+    "category": "user_service_help_status_or_error",
+    "text": "固定loopback host:port"
+  },
+  {
+    "path": "cmd/service.go",
+    "line": 84,
+    "category": "user_service_help_status_or_error",
+    "text": "可选明确的绝对设备锁目录；不收集环境变量"
+  },
+  {
+    "path": "cmd/service.go",
+    "line": 85,
+    "category": "user_service_help_status_or_error",
+    "text": "显式请求立即启动；否则仅安装配置和登录启用"
+  },
+  {
+    "path": "cmd/service.go",
+    "line": 86,
+    "category": "user_service_help_status_or_error",
+    "text": "输出当前平台的原始schema_version=1状态"
+  },
+  {
+    "path": "cmd/service.go",
+    "line": 95,
+    "category": "user_service_help_status_or_error",
+    "text": "macOS/Linux：启动已有且归属已核对的托管用户配置"
+  },
+  {
+    "path": "cmd/service.go",
+    "line": 96,
+    "category": "user_service_help_status_or_error",
+    "text": "只启动当前平台已安装的完整托管配置。未知来源、覆盖、查询失败或配置变化时拒绝动作。macOS相同配置已注册、Linux已active时均幂等返回，不重启。Linux还须有可查询的用户systemd manager。注册、loaded或active均不表示HTTP或USB已就绪。"
+  },
+  {
+    "path": "cmd/service.go",
+    "line": 102,
+    "category": "user_service_help_status_or_error",
+    "text": "输出当前平台的原始schema_version=1状态"
+  },
+  {
+    "path": "cmd/service.go",
+    "line": 109,
+    "category": "user_service_help_status_or_error",
+    "text": "macOS/Linux：停止已核对归属的用户服务，保留配置与登录启用"
+  },
+  {
+    "path": "cmd/service.go",
+    "line": 110,
+    "category": "user_service_help_status_or_error",
+    "text": "macOS仅对已核对归属的单个service-target请求bootout；Linux仅停止已核对来源、覆盖及启用状态的nb1.service。保留配置和登录启用，stop不等于禁用下次登录加载。未知归属、查询失败或配置变化时拒绝动作；注册消失或inactive不证明USB清理完成。不强杀、不删除持久锁、不自动提权。"
+  },
+  {
+    "path": "cmd/service.go",
+    "line": 116,
+    "category": "user_service_help_status_or_error",
+    "text": "输出当前平台的原始schema_version=1状态"
+  },
+  {
+    "path": "cmd/service.go",
+    "line": 123,
+    "category": "user_service_help_status_or_error",
+    "text": "macOS/Linux用户服务状态；Windows候选仅只读查询固定当前用户任务"
+  },
+  {
+    "path": "cmd/service.go",
+    "line": 124,
+    "category": "user_service_help_status_or_error",
+    "text": "macOS/Linux区分磁盘配置与manager状态。Windows候选只允许经token核验的当前普通用户查询固定任务的有限字段；同名存在不等于托管，Scheduler状态不等于daemon PID、HTTP或USB就绪。未知/拒绝/缺失HRESULT未有原生合同均保持unknown，不提权或切换身份。Windows不支持--config-only，普通用户原生查询仍待独立验收。"
+  },
+  {
+    "path": "cmd/service.go",
+    "line": 130,
+    "category": "user_service_help_status_or_error",
+    "text": "仅macOS/Linux：只读磁盘配置，完全不调用launchctl或systemctl；Windows不支持"
+  },
+  {
+    "path": "cmd/service.go",
+    "line": 131,
+    "category": "user_service_help_status_or_error",
+    "text": "输出当前平台的原始schema_version=1状态"
+  },
+  {
+    "path": "cmd/service.go",
+    "line": 138,
+    "category": "user_service_help_status_or_error",
+    "text": "macOS/Linux：核对归属后卸载；需停止时须显式--stop"
+  },
+  {
+    "path": "cmd/service.go",
+    "line": 139,
+    "category": "user_service_help_status_or_error",
+    "text": "始终先查询当前平台用户manager。macOS已注册项、Linux仍活动的unit须显式--stop；Linux已加载但inactive的托管unit可直接卸载。只删除完整托管配置与本工具持久启用链接；未知来源、覆盖、查询失败或停止结果不明时保留文件。不强杀、不删除持久锁、不接管未知配置。卸载结果不代表USB清理已完成。"
+  },
+  {
+    "path": "cmd/service.go",
+    "line": 145,
+    "category": "user_service_help_status_or_error",
+    "text": "明确允许先停止归属已核对的服务；macOS已注册或Linux仍活动时需要"
+  },
+  {
+    "path": "cmd/service.go",
+    "line": 146,
+    "category": "user_service_help_status_or_error",
+    "text": "输出当前平台的原始schema_version=1状态"
+  },
+  {
+    "path": "cmd/service.go",
+    "line": 195,
+    "category": "user_service_help_status_or_error",
+    "text": "该用户服务操作不受当前平台支持；自动管理仅macOS/Linux普通用户，Windows候选仅service status只读查询与render；不自动提权"
+  },
+  {
+    "path": "cmd/service.go",
+    "line": 196,
+    "category": "user_service_help_status_or_error",
+    "text": "%w；Windows的install/start/stop/uninstall和status --config-only尚未实现，不构造查询器或修改任务"
+  },
+  {
+    "path": "cmd/service.go",
+    "line": 233,
+    "category": "user_service_help_status_or_error",
+    "text": "nb1 Windows任务只读查询（候选）\n目标：%s\n注册存在性：%s\n归属：%s（未验证托管归属）\n"
+  },
+  {
+    "path": "cmd/service.go",
+    "line": 235,
+    "category": "user_service_help_status_or_error",
+    "text": "查询采样：%s\n"
+  },
+  {
+    "path": "cmd/service.go",
+    "line": 238,
+    "category": "user_service_help_status_or_error",
+    "text": "enabled：%t\nScheduler状态：%s（%d）\n上次任务结果：%d\n"
+  },
+  {
+    "path": "cmd/service.go",
+    "line": 240,
+    "category": "user_service_help_status_or_error",
+    "text": "Scheduler字段：不可确认；不能据此判断任务不存在。"
+  },
+  {
+    "path": "cmd/service.go",
+    "line": 243,
+    "category": "user_service_help_status_or_error",
+    "text": "查询失败：%s · 阶段=%s"
+  },
+  {
+    "path": "cmd/service.go",
+    "line": 249,
+    "category": "user_service_help_status_or_error",
+    "text": "同名任务不等于本工具托管；Scheduler状态不代表daemon PID、HTTP可用或USB在线。"
+  },
+  {
+    "path": "cmd/service.go",
+    "line": 250,
+    "category": "user_service_help_status_or_error",
+    "text": "Windows目前仅候选只读status与render；管理与可靠stop协议未实现，普通用户原生查询待独立验收，不提权、不注册/运行/停止任务。"
+  },
+  {
+    "path": "cmd/service.go",
+    "line": 289,
+    "category": "user_service_help_status_or_error",
+    "text": "nb1 Linux systemd 用户服务\nunit：%s\n目标：%s\n配置：%s · %s\nmanager加载：%s · 归属已核对=%t\n"
+  },
+  {
+    "path": "cmd/service.go",
+    "line": 290,
+    "category": "user_service_help_status_or_error",
+    "text": "持久启用链接：%s · %s\n"
+  },
+  {
+    "path": "cmd/service.go",
+    "line": 292,
+    "category": "user_service_help_status_or_error",
+    "text": "本工具登录启用：未检查或无法确认。"
+  },
+  {
+    "path": "cmd/service.go",
+    "line": 294,
+    "category": "user_service_help_status_or_error",
+    "text": "本工具登录启用：%t；仅描述default.target持久链接，其他来源看unit_file_state。\n"
+  },
+  {
+    "path": "cmd/service.go",
+    "line": 297,
+    "category": "user_service_help_status_or_error",
+    "text": "load_state / active_state / sub_state / unit_file_state：未检查或无法确认。"
+  },
+  {
+    "path": "cmd/service.go",
+    "line": 302,
+    "category": "user_service_help_status_or_error",
+    "text": "NoNewPrivileges：未检查或无法确认。"
+  },
+  {
+    "path": "cmd/service.go",
+    "line": 308,
+    "category": "user_service_help_status_or_error",
+    "text": "二进制：%s\n设备：%s\n监听：%s\n"
+  },
+  {
+    "path": "cmd/service.go",
+    "line": 311,
+    "category": "user_service_help_status_or_error",
+    "text": "本次操作：%s\n"
+  },
+  {
+    "path": "cmd/service.go",
+    "line": 313,
+    "category": "user_service_help_status_or_error",
+    "text": "loaded、active、登录启用与归属已核对均不表示HTTP可用或USB在线；停止也不证明硬件清理已完成。"
+  },
+  {
+    "path": "internal/doctor/doctor.go",
+    "line": 80,
+    "category": "doctor_diagnostic_or_default_advice",
+    "text": "--serial 必须是1–128个字母、数字、下划线或连字符"
+  },
+  {
+    "path": "internal/doctor/doctor.go",
+    "line": 89,
+    "category": "doctor_diagnostic_or_default_advice",
+    "text": "--endpoint 必须是本地loopback HTTP地址，例如 %s"
+  },
+  {
+    "path": "internal/doctor/doctor.go",
+    "line": 98,
+    "category": "doctor_diagnostic_or_default_advice",
+    "text": "HTTP响应只验证服务；设备online来自daemon，observed是已有快照，不是此命令触发的新采样。"
+  },
+  {
+    "path": "internal/doctor/doctor.go",
+    "line": 99,
+    "category": "doctor_diagnostic_or_default_advice",
+    "text": "此命令只读取构建元数据和本地HTTP，不扫描或打开USB、不提交任务、不自动回退直控。"
+  },
+  {
+    "path": "internal/doctor/doctor.go",
+    "line": 100,
+    "category": "doctor_diagnostic_or_default_advice",
+    "text": "native_hid_supported只表示此二进制编译了原生后端，不代表当前系统版本或设备型号已经通过实物验证。"
+  },
+  {
+    "path": "internal/doctor/doctor.go",
+    "line": 120,
+    "category": "doctor_diagnostic_or_default_advice",
+    "text": "nb1 server --devices <明确序列号>"
+  },
+  {
+    "path": "internal/doctor/doctor.go",
+    "line": 124,
+    "category": "doctor_diagnostic_or_default_advice",
+    "text": "未能确认兼容的daemon；这不能说明硬件损坏或离线。"
+  },
+  {
+    "path": "internal/doctor/doctor.go",
+    "line": 124,
+    "category": "doctor_diagnostic_or_default_advice",
+    "text": "检查 --endpoint 是否匹配已有服务；尚未启动时可运行 "
+  },
+  {
+    "path": "internal/doctor/doctor.go",
+    "line": 124,
+    "category": "doctor_diagnostic_or_default_advice",
+    "text": "。不要启动第二个进程抢占同一设备。"
+  },
+  {
+    "path": "internal/doctor/doctor.go",
+    "line": 130,
+    "category": "doctor_diagnostic_or_default_advice",
+    "text": "HTTP有响应，但API版本不是v1。"
+  },
+  {
+    "path": "internal/doctor/doctor.go",
+    "line": 130,
+    "category": "doctor_diagnostic_or_default_advice",
+    "text": "确认端口上的进程是当前nb1 daemon；更新配套CLI与daemon后重新诊断。"
+  },
+  {
+    "path": "internal/doctor/doctor.go",
+    "line": 135,
+    "category": "doctor_diagnostic_or_default_advice",
+    "text": "daemon的health状态不是ok。"
+  },
+  {
+    "path": "internal/doctor/doctor.go",
+    "line": 135,
+    "category": "doctor_diagnostic_or_default_advice",
+    "text": "查看daemon运行日志并确认服务状态；此命令不会重启或改变设备。"
+  },
+  {
+    "path": "internal/doctor/doctor.go",
+    "line": 146,
+    "category": "doctor_diagnostic_or_default_advice",
+    "text": "HTTP和v1健康检查通过，但设备列表不可用。"
+  },
+  {
+    "path": "internal/doctor/doctor.go",
+    "line": 146,
+    "category": "doctor_diagnostic_or_default_advice",
+    "text": "查看daemon日志及配套版本；HTTP存活不能替代设备在线检查。"
+  },
+  {
+    "path": "internal/doctor/doctor.go",
+    "line": 155,
+    "category": "doctor_diagnostic_or_default_advice",
+    "text": "设备列表包含非法或重复序列号，或负数排队深度。"
+  },
+  {
+    "path": "internal/doctor/doctor.go",
+    "line": 155,
+    "category": "doctor_diagnostic_or_default_advice",
+    "text": "检查daemon的API实现与配套版本；不要根据这个响应执行自动控制。"
+  },
+  {
+    "path": "internal/doctor/doctor.go",
+    "line": 171,
+    "category": "doctor_diagnostic_or_default_advice",
+    "text": "设备标记在线，但读回快照缺失、超过5秒或时间异常。"
+  },
+  {
+    "path": "internal/doctor/doctor.go",
+    "line": 171,
+    "category": "doctor_diagnostic_or_default_advice",
+    "text": "比较sampled_at与本机时间，查看daemon日志；再次诊断确认采样是否继续更新。"
+  },
+  {
+    "path": "internal/doctor/doctor.go",
+    "line": 174,
+    "category": "doctor_diagnostic_or_default_advice",
+    "text": "设备被合作式所有权锁占用。"
+  },
+  {
+    "path": "internal/doctor/doctor.go",
+    "line": 174,
+    "category": "doctor_diagnostic_or_default_advice",
+    "text": "通过持有它的daemon控制，或正常停止占用进程后再启动目标服务；保留锁文件，不要删除锁来抢占。"
+  },
+  {
+    "path": "internal/doctor/doctor.go",
+    "line": 176,
+    "category": "doctor_diagnostic_or_default_advice",
+    "text": "daemon已配置该设备，但当前未在线。"
+  },
+  {
+    "path": "internal/doctor/doctor.go",
+    "line": 176,
+    "category": "doctor_diagnostic_or_default_advice",
+    "text": "核对序列号、USB连接与访问权限，并查看last_error；daemon会继续尝试连接，不需要静默回退直控。"
+  },
+  {
+    "path": "internal/doctor/doctor.go",
+    "line": 178,
+    "category": "doctor_diagnostic_or_default_advice",
+    "text": "daemon仍在尝试连接设备。"
+  },
+  {
+    "path": "internal/doctor/doctor.go",
+    "line": 178,
+    "category": "doctor_diagnostic_or_default_advice",
+    "text": "稍后重新诊断；持续失败时核对USB、序列号、权限和daemon日志。"
+  },
+  {
+    "path": "internal/doctor/doctor.go",
+    "line": 180,
+    "category": "doctor_diagnostic_or_default_advice",
+    "text": "设备执行或清理操作发生错误。"
+  },
+  {
+    "path": "internal/doctor/doctor.go",
+    "line": 180,
+    "category": "doctor_diagnostic_or_default_advice",
+    "text": "查看last_error和daemon日志，确认清理及后续连接状态；不要把旧快照当作当前实物状态。"
+  },
+  {
+    "path": "internal/doctor/doctor.go",
+    "line": 182,
+    "category": "doctor_diagnostic_or_default_advice",
+    "text": "设备worker正在关闭或已经关闭。"
+  },
+  {
+    "path": "internal/doctor/doctor.go",
+    "line": 182,
+    "category": "doctor_diagnostic_or_default_advice",
+    "text": "检查daemon是否正在正常退出；等待其释放设备后再启动服务。"
+  },
+  {
+    "path": "internal/doctor/doctor.go",
+    "line": 184,
+    "category": "doctor_diagnostic_or_default_advice",
+    "text": "daemon返回了未知设备连接状态。"
+  },
+  {
+    "path": "internal/doctor/doctor.go",
+    "line": 184,
+    "category": "doctor_diagnostic_or_default_advice",
+    "text": "检查CLI与daemon是否配套，并查看daemon日志。"
+  },
+  {
+    "path": "internal/doctor/doctor.go",
+    "line": 189,
+    "category": "doctor_diagnostic_or_default_advice",
+    "text": "所选序列号不在daemon配置目标中。"
+  },
+  {
+    "path": "internal/doctor/doctor.go",
+    "line": 189,
+    "category": "doctor_diagnostic_or_default_advice",
+    "text": "检查 nb1 server --devices 配置；需要时正常重启服务并明确加入该序列号。doctor不会选取第一个USB设备。"
+  },
+  {
+    "path": "internal/doctor/doctor.go",
+    "line": 191,
+    "category": "doctor_diagnostic_or_default_advice",
+    "text": "daemon没有返回配置目标。"
+  },
+  {
+    "path": "internal/doctor/doctor.go",
+    "line": 191,
+    "category": "doctor_diagnostic_or_default_advice",
+    "text": "检查 nb1 server --devices 配置与运行日志。"
+  },
+  {
+    "path": "internal/doctor/doctor.go",
+    "line": 232,
+    "category": "doctor_diagnostic_or_default_advice",
+    "text": "nb1 doctor · 只读诊断 · %s\n"
+  },
+  {
+    "path": "internal/doctor/doctor.go",
+    "line": 233,
+    "category": "doctor_diagnostic_or_default_advice",
+    "text": "检查时间：%s\n构建：%s %s/%s · CGO=%t · 原生HID后端=%t\n"
+  },
+  {
+    "path": "internal/doctor/doctor.go",
+    "line": 240,
+    "category": "doctor_diagnostic_or_default_advice",
+    "text": "诊断错误：%q\n"
+  },
+  {
+    "path": "internal/doctor/doctor.go",
+    "line": 243,
+    "category": "doctor_diagnostic_or_default_advice",
+    "text": "设备 %q：%s · queue=%d · active_job=%q · firmware=%d\n"
+  },
+  {
+    "path": "internal/doctor/doctor.go",
+    "line": 257,
+    "category": "doctor_diagnostic_or_default_advice",
+    "text": "待检查 [%s] %q：%s\n  建议：%s\n"
+  },
+  {
+    "path": "internal/doctor/doctor.go",
+    "line": 269,
+    "category": "doctor_diagnostic_or_default_advice",
+    "text": "构建信息不可用"
+  },
+  {
+    "path": "internal/doctor/doctor.go",
+    "line": 271,
+    "category": "doctor_diagnostic_or_default_advice",
+    "text": "本地工作区/替换，实际版本未编号（requested="
+  },
+  {
+    "path": "internal/doctor/doctor.go",
+    "line": 273,
+    "category": "doctor_diagnostic_or_default_advice",
+    "text": "（替换，requested="
+  },
+  {
+    "path": "internal/service/systemduser/files.go",
+    "line": 67,
+    "category": "user_service_help_status_or_error",
+    "text": "存在未托管的unit drop-in目录或无法检查；拒绝接管"
+  },
+  {
+    "path": "internal/service/systemduser/files.go",
+    "line": 77,
+    "category": "user_service_help_status_or_error",
+    "text": "unit不是安全的当前用户普通文件"
+  },
+  {
+    "path": "internal/service/systemduser/files.go",
+    "line": 81,
+    "category": "user_service_help_status_or_error",
+    "text": "无法读取完整受控unit或文件过大"
+  },
+  {
+    "path": "internal/service/systemduser/files.go",
+    "line": 85,
+    "category": "user_service_help_status_or_error",
+    "text": "已有unit不是本工具完整托管文件，不会覆盖或删除"
+  },
+  {
+    "path": "internal/service/systemduser/files.go",
+    "line": 89,
+    "category": "user_service_help_status_or_error",
+    "text": "unit托管标记损坏"
+  },
+  {
+    "path": "internal/service/systemduser/files.go",
+    "line": 95,
+    "category": "user_service_help_status_or_error",
+    "text": "unit托管身份/版本不匹配"
+  },
+  {
+    "path": "internal/service/systemduser/files.go",
+    "line": 99,
+    "category": "user_service_help_status_or_error",
+    "text": "unit内容被修改或托管标记不一致，不会覆盖或删除"
+  },
+  {
+    "path": "internal/service/systemduser/files.go",
+    "line": 103,
+    "category": "user_service_help_status_or_error",
+    "text": "无法安全读取unit，不会覆盖或删除: %w"
+  },
+  {
+    "path": "internal/service/systemduser/files.go",
+    "line": 119,
+    "category": "user_service_help_status_or_error",
+    "text": "登录启用路径不是当前用户受控symlink，不会覆盖或删除"
+  },
+  {
+    "path": "internal/service/systemduser/files.go",
+    "line": 123,
+    "category": "user_service_help_status_or_error",
+    "text": "登录启用链接目标或unit归属未知，不会接管"
+  },
+  {
+    "path": "internal/service/systemduser/files.go",
+    "line": 135,
+    "category": "user_service_help_status_or_error",
+    "text": "unit或登录链接在检查期间改变；拒绝启动、停止或删除"
+  },
+  {
+    "path": "internal/service/systemduser/files.go",
+    "line": 166,
+    "category": "user_service_help_status_or_error",
+    "text": "unit目录超出用户配置根"
+  },
+  {
+    "path": "internal/service/systemduser/files.go",
+    "line": 193,
+    "category": "user_service_help_status_or_error",
+    "text": "用户配置目录不是安全的当前用户目录；拒绝symlink或他人可写目录"
+  },
+  {
+    "path": "internal/service/systemduser/files.go",
+    "line": 242,
+    "category": "user_service_help_status_or_error",
+    "text": "配置路径祖先归属不安全"
+  },
+  {
+    "path": "internal/service/systemduser/files.go",
+    "line": 245,
+    "category": "user_service_help_status_or_error",
+    "text": "配置路径祖先可被其他用户改写"
+  },
+  {
+    "path": "internal/service/systemduser/manager.go",
+    "line": 34,
+    "category": "user_service_help_status_or_error",
+    "text": "请使用当前普通用户；不支持root、sudo或身份切换"
+  },
+  {
+    "path": "internal/service/systemduser/manager.go",
+    "line": 53,
+    "category": "user_service_help_status_or_error",
+    "text": "找不到受信任的系统systemctl；未进行任何服务操作"
+  },
+  {
+    "path": "internal/service/systemduser/manager.go",
+    "line": 79,
+    "category": "user_service_help_status_or_error",
+    "text": "loaded、active与登录启用分别报告；systemd状态不能替代HTTP/USB就绪检查。"
+  },
+  {
+    "path": "internal/service/systemduser/manager.go",
+    "line": 80,
+    "category": "user_service_help_status_or_error",
+    "text": "managed_enabled_for_login只描述本工具的default.target持久链接；其他来源看unit_file_state，未知来源不接管。"
+  },
+  {
+    "path": "internal/service/systemduser/manager.go",
+    "line": 81,
+    "category": "user_service_help_status_or_error",
+    "text": "不配置linger、系统级服务或登录前常驻；Stop保留unit和登录启用，Uninstall才移除受控文件。"
+  },
+  {
+    "path": "internal/service/systemduser/manager.go",
+    "line": 115,
+    "category": "user_service_help_status_or_error",
+    "text": "无法完整查询用户systemd，未推断unit缺失"
+  },
+  {
+    "path": "internal/service/systemduser/manager.go",
+    "line": 125,
+    "category": "user_service_help_status_or_error",
+    "text": "systemctl show失败，注册状态未知"
+  },
+  {
+    "path": "internal/service/systemduser/manager.go",
+    "line": 142,
+    "category": "user_service_help_status_or_error",
+    "text": "unit来源、覆盖或reload状态不明确；拒绝操作"
+  },
+  {
+    "path": "internal/service/systemduser/manager.go",
+    "line": 145,
+    "category": "user_service_help_status_or_error",
+    "text": "FragmentPath未知，拒绝操作"
+  },
+  {
+    "path": "internal/service/systemduser/manager.go",
+    "line": 149,
+    "category": "user_service_help_status_or_error",
+    "text": "同名unit来自其他位置，拒绝操作"
+  },
+  {
+    "path": "internal/service/systemduser/manager.go",
+    "line": 156,
+    "category": "user_service_help_status_or_error",
+    "text": "登录启用状态含未知链接、runtime覆盖或其他来源，拒绝接管"
+  },
+  {
+    "path": "internal/service/systemduser/manager.go",
+    "line": 172,
+    "category": "user_service_help_status_or_error",
+    "text": "systemctl %s结果未确认；不重试、不强杀、不自动回滚文件，请重新查询状态"
+  },
+  {
+    "path": "internal/service/systemduser/manager.go",
+    "line": 196,
+    "category": "user_service_help_status_or_error",
+    "text": "binary必须是明确的已存在绝对可执行普通文件"
+  },
+  {
+    "path": "internal/service/systemduser/manager.go",
+    "line": 219,
+    "category": "user_service_help_status_or_error",
+    "text": "现有托管配置不同；不覆盖升级，请先审阅并正常卸载"
+  },
+  {
+    "path": "internal/service/systemduser/manager.go",
+    "line": 223,
+    "category": "user_service_help_status_or_error",
+    "text": "已有同名外部/未知unit或覆盖，不会安装"
+  },
+  {
+    "path": "internal/service/systemduser/manager.go",
+    "line": 263,
+    "category": "user_service_help_status_or_error",
+    "text": "重载后无法确认本工具unit来源；文件保留，未设置登录启用"
+  },
+  {
+    "path": "internal/service/systemduser/manager.go",
+    "line": 275,
+    "category": "user_service_help_status_or_error",
+    "text": "启用链接已存在或创建失败；不会覆盖: %w"
+  },
+  {
+    "path": "internal/service/systemduser/manager.go",
+    "line": 296,
+    "category": "user_service_help_status_or_error",
+    "text": "登录链接已创建但启用结果未确认；保留配置，不自动启动"
+  },
+  {
+    "path": "internal/service/systemduser/manager.go",
+    "line": 327,
+    "category": "user_service_help_status_or_error",
+    "text": "unit在外层检查后改变；未开始或停止新配置"
+  },
+  {
+    "path": "internal/service/systemduser/manager.go",
+    "line": 333,
+    "category": "user_service_help_status_or_error",
+    "text": "未确认是本工具完整unit及启用状态，拒绝开始/停止"
+  },
+  {
+    "path": "internal/service/systemduser/manager.go",
+    "line": 337,
+    "category": "user_service_help_status_or_error",
+    "text": "unit有待处理任务，不替换其他start/stop操作"
+  },
+  {
+    "path": "internal/service/systemduser/manager.go",
+    "line": 343,
+    "category": "user_service_help_status_or_error",
+    "text": "unit不在可开始的稳定状态，未替换当前任务"
+  },
+  {
+    "path": "internal/service/systemduser/manager.go",
+    "line": 346,
+    "category": "user_service_help_status_or_error",
+    "text": "unit停止状态未知，未发出命令"
+  },
+  {
+    "path": "internal/service/systemduser/manager.go",
+    "line": 373,
+    "category": "user_service_help_status_or_error",
+    "text": "操作后unit归属未知，文件保留"
+  },
+  {
+    "path": "internal/service/systemduser/manager.go",
+    "line": 376,
+    "category": "user_service_help_status_or_error",
+    "text": "systemd操作返回后未确认目标活动状态；不据此声称HTTP或硬件就绪"
+  },
+  {
+    "path": "internal/service/systemduser/manager.go",
+    "line": 383,
+    "category": "user_service_help_status_or_error",
+    "text": "binary路径祖先可被不受信任用户改写，未启动或安装: %w"
+  },
+  {
+    "path": "internal/service/systemduser/manager.go",
+    "line": 387,
+    "category": "user_service_help_status_or_error",
+    "text": "binary缺失、非可执行普通文件、成为symlink或可被其他用户改写；未安装或启动"
+  },
+  {
+    "path": "internal/service/systemduser/manager.go",
+    "line": 408,
+    "category": "user_service_help_status_or_error",
+    "text": "同名unit归属/覆盖未知，拒绝停止或删除"
+  },
+  {
+    "path": "internal/service/systemduser/manager.go",
+    "line": 412,
+    "category": "user_service_help_status_or_error",
+    "text": "unit仍活动；显式Uninstall(stop=true)才会先停止"
+  },
+  {
+    "path": "internal/service/systemduser/manager.go",
+    "line": 449,
+    "category": "user_service_help_status_or_error",
+    "text": "移除本工具链接后仍有未知启用/覆盖或活动状态；保留unit，不删除其他链接"
+  },
+  {
+    "path": "internal/service/systemduser/manager.go",
+    "line": 468,
+    "category": "user_service_help_status_or_error",
+    "text": "删除unit前发现活动、覆盖或未知来源；保留文件"
+  },
+  {
+    "path": "internal/service/systemduser/manager.go",
+    "line": 491,
+    "category": "user_service_help_status_or_error",
+    "text": "本工具文件已移除，但manager还有同名来源；不接管或停止它"
+  },
+  {
+    "path": "internal/service/systemduser/properties.go",
+    "line": 39,
+    "category": "user_service_help_status_or_error",
+    "text": "systemctl show返回未知或不完整属性"
+  },
+  {
+    "path": "internal/service/systemduser/properties.go",
+    "line": 42,
+    "category": "user_service_help_status_or_error",
+    "text": "systemctl show返回重复属性"
+  },
+  {
+    "path": "internal/service/systemduser/properties.go",
+    "line": 45,
+    "category": "user_service_help_status_or_error",
+    "text": "systemctl属性含控制字符，状态未知"
+  },
+  {
+    "path": "internal/service/systemduser/properties.go",
+    "line": 52,
+    "category": "user_service_help_status_or_error",
+    "text": "systemctl属性缺失"
+  },
+  {
+    "path": "internal/service/systemduser/properties.go",
+    "line": 56,
+    "category": "user_service_help_status_or_error",
+    "text": "systemctl属性缺失或unit身份不匹配"
+  },
+  {
+    "path": "internal/service/systemduser/properties.go",
+    "line": 65,
+    "category": "user_service_help_status_or_error",
+    "text": "systemctl布尔属性无法识别"
+  },
+  {
+    "path": "internal/service/systemduser/properties.go",
+    "line": 88,
+    "category": "user_service_help_status_or_error",
+    "text": "systemctl Job属性无法识别"
+  },
+  {
+    "path": "internal/service/systemduser/properties.go",
+    "line": 92,
+    "category": "user_service_help_status_or_error",
+    "text": "systemctl状态属性为空"
+  },
+  {
+    "path": "internal/service/systemduser/types.go",
+    "line": 21,
+    "category": "user_service_help_status_or_error",
+    "text": "systemd用户服务管理只支持Linux普通用户；其他平台可继续使用service render"
+  },
+  {
+    "path": "internal/service/user.go",
+    "line": 22,
+    "category": "user_service_help_status_or_error",
+    "text": "自动用户服务管理目前只支持macOS；其他平台仍可使用 service render，不会调用launchctl"
+  },
+  {
+    "path": "internal/service/user.go",
+    "line": 86,
+    "category": "user_service_help_status_or_error",
+    "text": "请以当前普通用户运行用户服务管理；不支持sudo、root或身份切换"
+  },
+  {
+    "path": "internal/service/user.go",
+    "line": 118,
+    "category": "user_service_help_status_or_error",
+    "text": "配置写入LaunchAgents后，即使本次不启动，下次图形登录也可能自动加载。"
+  },
+  {
+    "path": "internal/service/user.go",
+    "line": 119,
+    "category": "user_service_help_status_or_error",
+    "text": "registered只表示launchd注册；不表示进程已运行、HTTP可用或USB设备在线，API/设备快照另用nb1 doctor检查。"
+  },
+  {
+    "path": "internal/service/user.go",
+    "line": 120,
+    "category": "user_service_help_status_or_error",
+    "text": "launchctl print不是稳定机器API；归属字段无法严格核对时拒绝启动、停止和卸载。"
+  },
+  {
+    "path": "internal/service/user.go",
+    "line": 173,
+    "category": "user_service_help_status_or_error",
+    "text": "没有已核对的托管配置；请先service install，不会创建配置或接管同名注册项"
+  },
+  {
+    "path": "internal/service/user.go",
+    "line": 193,
+    "category": "user_service_help_status_or_error",
+    "text": "stop保留plist，不等于禁用下次图形登录加载；需要移除配置请用service uninstall。"
+  },
+  {
+    "path": "internal/service/user.go",
+    "line": 194,
+    "category": "user_service_help_status_or_error",
+    "text": "注册已消失不等于进程退出、原生I/O、设备所有权释放或最后熄灯已完成；按需另行检查。"
+  },
+  {
+    "path": "internal/service/user.go",
+    "line": 243,
+    "category": "user_service_help_status_or_error",
+    "text": "已有托管配置与请求不同；不会覆盖或升级，请先审阅并正常卸载旧配置"
+  },
+  {
+    "path": "internal/service/user.go",
+    "line": 257,
+    "category": "user_service_help_status_or_error",
+    "text": "配置创建未完成；未请求启动，已有或部分文件保留供检查，不会覆盖或删除: %w"
+  },
+  {
+    "path": "internal/service/user.go",
+    "line": 279,
+    "category": "user_service_help_status_or_error",
+    "text": "--binary 必须指向已存在、可执行的普通文件；不会自动下载或执行它"
+  },
+  {
+    "path": "internal/service/user.go",
+    "line": 288,
+    "category": "user_service_help_status_or_error",
+    "text": "当前用户身份已改变；拒绝启动或停止用户服务"
+  },
+  {
+    "path": "internal/service/user.go",
+    "line": 303,
+    "category": "user_service_help_status_or_error",
+    "text": "同一托管配置已注册；未重启、kickstart或替换进程。"
+  },
+  {
+    "path": "internal/service/user.go",
+    "line": 307,
+    "category": "user_service_help_status_or_error",
+    "text": "launchd中已有未确认归属的同名项或注册状态未知；不会bootstrap、替换或停止它"
+  },
+  {
+    "path": "internal/service/user.go",
+    "line": 314,
+    "category": "user_service_help_status_or_error",
+    "text": "托管二进制路径已变为符号链接；拒绝加载，请重新核对配置"
+  },
+  {
+    "path": "internal/service/user.go",
+    "line": 323,
+    "category": "user_service_help_status_or_error",
+    "text": "bootstrap未确认成功；配置保留，下次登录仍可能加载。请运行service status核对；不会自动回滚、重试或bootout"
+  },
+  {
+    "path": "internal/service/user.go",
+    "line": 332,
+    "category": "user_service_help_status_or_error",
+    "text": "bootstrap返回后无法确认注册项归属；配置保留，请查看service status，不会自动bootout"
+  },
+  {
+    "path": "internal/service/user.go",
+    "line": 350,
+    "category": "user_service_help_status_or_error",
+    "text": "同名注册项归属不明确；不会停止或删除配置"
+  },
+  {
+    "path": "internal/service/user.go",
+    "line": 356,
+    "category": "user_service_help_status_or_error",
+    "text": "bootout未确认成功；配置保留，请重新运行service status；不会强杀或删除文件"
+  },
+  {
+    "path": "internal/service/user.go",
+    "line": 370,
+    "category": "user_service_help_status_or_error",
+    "text": "停止后注册项归属改变；配置保留"
+  },
+  {
+    "path": "internal/service/user.go",
+    "line": 374,
+    "category": "user_service_help_status_or_error",
+    "text": "等待注销超时；配置保留，不能保证进程或硬件清理完成"
+  },
+  {
+    "path": "internal/service/user.go",
+    "line": 398,
+    "category": "user_service_help_status_or_error",
+    "text": "同名注册项归属不明确；不会停止或删除配置"
+  },
+  {
+    "path": "internal/service/user.go",
+    "line": 401,
+    "category": "user_service_help_status_or_error",
+    "text": "服务仍已注册；需要显式service uninstall --stop才会请求停止并卸载"
+  },
+  {
+    "path": "internal/service/user.go",
+    "line": 408,
+    "category": "user_service_help_status_or_error",
+    "text": "注册状态不明确；配置保留"
+  },
+  {
+    "path": "internal/service/user.go",
+    "line": 420,
+    "category": "user_service_help_status_or_error",
+    "text": "配置文件在检查后发生变化；拒绝删除"
+  },
+  {
+    "path": "internal/service/user.go",
+    "line": 431,
+    "category": "user_service_help_status_or_error",
+    "text": "注册已移除不等于原生I/O、设备所有权释放或最后熄灯已完成；按需另行检查。持久管理锁文件保留。"
+  },
+  {
+    "path": "internal/service/user.go",
+    "line": 448,
+    "category": "user_service_help_status_or_error",
+    "text": "托管配置在检查期间发生替换或内容变化；拒绝启动、停止或删除，请重新核对"
+  },
+  {
+    "path": "internal/service/user.go",
+    "line": 457,
+    "category": "user_service_help_status_or_error",
+    "text": "无法查询launchd；归属未知，不会启动、停止或删除配置"
+  },
+  {
+    "path": "internal/service/user.go",
+    "line": 476,
+    "category": "user_service_help_status_or_error",
+    "text": "launchd查询失败或GUI登录域不可用；注册状态未知，不会启动、停止或删除配置"
+  },
+  {
+    "path": "internal/service/user.go",
+    "line": 526,
+    "category": "user_service_help_status_or_error",
+    "text": "无法安全读取配置；不会覆盖或删除: %w"
+  },
+  {
+    "path": "internal/service/user.go",
+    "line": 534,
+    "category": "user_service_help_status_or_error",
+    "text": "配置必须是当前用户拥有且组/其他用户不可写的普通文件；不会覆盖或删除"
+  },
+  {
+    "path": "internal/service/user.go",
+    "line": 541,
+    "category": "user_service_help_status_or_error",
+    "text": "配置过大；视为未知文件，不会覆盖或删除"
+  },
+  {
+    "path": "internal/service/user.go",
+    "line": 545,
+    "category": "user_service_help_status_or_error",
+    "text": "已有plist不含本工具的完整托管标记；不会接管、覆盖或删除"
+  },
+  {
+    "path": "internal/service/user.go",
+    "line": 550,
+    "category": "user_service_help_status_or_error",
+    "text": "托管标记损坏；不会覆盖或删除"
+  },
+  {
+    "path": "internal/service/user.go",
+    "line": 556,
+    "category": "user_service_help_status_or_error",
+    "text": "托管标记身份或版本不匹配；不会覆盖或删除"
+  },
+  {
+    "path": "internal/service/user.go",
+    "line": 560,
+    "category": "user_service_help_status_or_error",
+    "text": "托管plist已修改或标记不一致；不会覆盖或删除"
+  },
+  {
+    "path": "internal/service/user.go",
+    "line": 601,
+    "category": "user_service_help_status_or_error",
+    "text": "用户服务目录不是安全的当前用户目录；拒绝符号链接、他人拥有或组/其他用户可写的目录"
+  },
+  {
+    "path": "internal/service/user.go",
+    "line": 611,
+    "category": "user_service_help_status_or_error",
+    "text": "nb1 macOS 用户服务\nlabel：%s\n目标：%s\n配置：%s · %s\nlaunchd注册：%s · 归属已核对=%t\n"
+  },
+  {
+    "path": "internal/service/user.go",
+    "line": 613,
+    "category": "user_service_help_status_or_error",
+    "text": "下次图形登录自动加载：未检查或无法确认；不能据此判断配置存在、缺失或可安全操作。"
+  },
+  {
+    "path": "internal/service/user.go",
+    "line": 615,
+    "category": "user_service_help_status_or_error",
+    "text": "下次图形登录可能自动加载：是；这不表示现在已经运行。"
+  },
+  {
+    "path": "internal/service/user.go",
+    "line": 617,
+    "category": "user_service_help_status_or_error",
+    "text": "托管plist不存在；未由这份配置安排下次登录加载。"
+  },
+  {
+    "path": "internal/service/user.go",
+    "line": 620,
+    "category": "user_service_help_status_or_error",
+    "text": "二进制：%s\n设备：%s\n监听：%s\n"
+  },
+  {
+    "path": "internal/service/user.go",
+    "line": 623,
+    "category": "user_service_help_status_or_error",
+    "text": "本次操作：%s\n"
+  }
+]

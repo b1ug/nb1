@@ -1,6 +1,6 @@
 # Device-native sequence model (internal draft)
 
-The `internal/devicesequence` package implements offline author parsing, placement/playback checks and raw row inspection. It does not add HTTP routes, CLI commands, MCP tools, SDK pin changes, a device executor or new artistic actions. `spin`, `swap` and `switch` remain on hold.
+The `internal/devicesequence` package implements offline author parsing, placement/playback checks, raw row inspection and playback-register inspection. It does not add HTTP routes, CLI commands, MCP tools, SDK pin changes, a device executor or new artistic actions. `spin`, `swap` and `switch` remain on hold.
 
 High/low describes abstraction, host/device describes execution location, and RAM/Flash describes lifetime. These axes are independent. A native sequence is an explicit limited row language, not an alias for a complete host Program or FrameProgram.
 
@@ -27,6 +27,7 @@ Each row has one RGB color, one LED selection (`all`, `1`, or `2`) and one durat
 | `PlanPlacementJSON` | Absolute positions, target capacity, row encodings and source/profile digests | A Flash whole-image commit, playback bounds or permission to write |
 | `PlanPlayback` | Explicit finite1–255 or forever, selectable range and historic end/count fields | An uploaded image, execution ticket, physical completion or permission to start |
 | `InspectSnapshot` | Preserved raw observations and optional exact known-field decoding | Atomic snapshot, high-level recipe recovery, host save, Flash verification or deployment permission |
+| `InspectPlayback` | Preserved S prefixes and optional reference-based register range interpretation | An active job, currently lit row, repeat intent, fade settlement or completion |
 
 Uploading line0 is valid. Playing **only** line0 cannot be expressed by the historic `p end=0` encoding, which selects the complete capacity. Placement and playback checks therefore must not be combined into a single boolean. There is no silent relocation, repetition or target fallback.
 
@@ -50,7 +51,15 @@ Only a complete range of representable positive-time rows produces `DeviceSequen
 
 The inspection is sequential best effort, not firmware-atomic. Observation timestamps, real device identity, cached/live provenance, error classification and ownership must be provided by the future reader/service envelope. This pure component generates none of them. It never imports into or overwrites the host library. R targets cannot recover titles, source, recipes or revisions, and R is not a Flash reader.
 
-Playback-state decoding, startup/Notes schemas and native execution are not included in this package. The SDK raw-state candidate preserves modes and cursor bytes before normalization. FW204's S playpos is the **next scheduling cursor**, not necessarily the currently lit row. Raw mode0/1/2/3 and unknown values must not be reduced to a boolean; count0 does not universally mean forever; stopped scheduling can precede the last fade settling.
+## Playback registers are observations, not execution receipts
+
+`InspectPlayback` accepts a caller-owned S observation and a separate trusted `PlaybackProfile`. It preserves the exact supplied raw buffer and read error, and exposes each raw scalar only when it falls within a valid returned GID prefix. Partial prefixes with an error can still expose available fields, but cannot acquire a normalized range. Invalid or mismatched lengths, an unattempted read or an unknown layout expose no interpreted fields. Raw headers and tail bytes are never rewritten; all exposed data is copied.
+
+The profile must explicitly supply the reviewed S end encoding (`exclusive`, `inclusive`, or `unknown`). No model-name inference takes place. The supplied reference must be firmware-matched and RAM capacity known before the function interprets registers as `configured_range`. The digest binds these reference inputs, not a genuine device or physical qualification. Reviewed FW204/205 return an internal exclusive end; reviewed MK3 returns an inclusive end. **The p command's end=0 sentinel does not apply to an S response.** Unknown modes or impossible ranges remain complete raw observations with interpretation issues, rather than being discarded or silently repaired.
+
+`configured_range` describes the reported register values; it does not identify an active sequence or prove that those rows are currently playing. Raw mode0/1/2/3 and unknown values are not reduced to a boolean. Count0 is retained without inferring forever. FW204's S playpos is the **next scheduling cursor**, not necessarily the currently lit row. Stopped scheduling can precede the last fade settling. The result creates no current-row, repeat, completed-job or visual-completion claim and remains `deployable=false`.
+
+This is a pure software component, not a service envelope. Observation timestamps, real device identity, cached/live provenance, typed transport errors and worker ownership still belong to the future reader/service path. Malformed provider input returns `ErrInvalid`; a collector must retain its original raw/error envelope independently, even when interpretation fails. Startup/Notes schemas and native execution are not included in this package.
 
 ## Primary references and remaining physical work
 

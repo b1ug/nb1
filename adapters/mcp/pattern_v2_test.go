@@ -96,7 +96,7 @@ func TestPatternV2LegacySchemaFreeze(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(tools.Tools) != 16 || len(before) != 12 {
+	if len(tools.Tools) != 20 || len(before) != 12 {
 		t.Fatal(len(tools.Tools), len(before))
 	}
 	seen := 0

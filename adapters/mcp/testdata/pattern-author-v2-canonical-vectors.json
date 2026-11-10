@@ -1,0 +1,87 @@
+{
+  "source_commit": "0fe12e90876e81db9ff2d090e33285596b9d89b2",
+  "p1_vectors_path": "internal/patternsv2/testdata/design/canonical-vectors.json",
+  "p1_vectors_sha256": "cad2b1564c8d810551b1b353294c098a97e5b0f42623dd6f68dc41c24f22fe5a",
+  "notes": "Pure JSON canonical/hash vectors only; no source-to-execution compiler is imported or exercised. Numeric lexemes survive parsing before canonicalization.",
+  "vectors": [
+    {
+      "label": "exact-decimal",
+      "input": "{\"v_pct\":12.340000,\"h_deg\":240.0}",
+      "canonical": "{\"h_deg\":240,\"v_pct\":12.34}",
+      "origin": "P1 canonical-vectors.json at 0fe12e90876e81db9ff2d090e33285596b9d89b2"
+    },
+    {
+      "label": "utf8-no-html-escape",
+      "input": "{\"title\":\"红<&>\\n\"}",
+      "canonical": "{\"title\":\"红<&>\\u000a\"}",
+      "origin": "P1 canonical-vectors.json at 0fe12e90876e81db9ff2d090e33285596b9d89b2"
+    },
+    {
+      "label": "key-order",
+      "input": "{\"b\":2,\"a\":1}",
+      "canonical": "{\"a\":1,\"b\":2}",
+      "origin": "P1 canonical-vectors.json at 0fe12e90876e81db9ff2d090e33285596b9d89b2"
+    },
+    {
+      "label": "p1-record-payload-pulse-lime",
+      "origin": "P1 design/records/pulse-lime at 0fe12e9",
+      "input": "{\n  \"record_contract\": \"nb1-pattern-record/experimental-v2\",\n  \"id\": \"pulse-lime\",\n  \"title\": \"绿色脉冲\",\n  \"source\": {\n    \"kind\": \"light_action\",\n    \"contract\": \"nb1-light-action/v1\",\n    \"action\": {\n      \"kind\": \"pulse\",\n      \"color\": \"lime\",\n      \"attack_ms\": 60,\n      \"decay_ms\": 240,\n      \"rest_ms\": 700,\n      \"cycles\": 2,\n      \"on_finish\": \"off\"\n    }\n  },\n  \"compiled\": {\n    \"normalized_action\": {\n      \"kind\": \"pulse\",\n      \"led\": 0,\n      \"color\": \"#00ff00\",\n      \"attack_ms\": 60,\n      \"decay_ms\": 240,\n      \"rest_ms\": 700,\n      \"cycles\": 2,\n      \"on_finish\": \"off\"\n    },\n    \"execution\": {\n      \"kind\": \"program\",\n      \"contract\": \"nb1-program-effect/v1\",\n      \"program\": {\n        \"steps\": [\n          {\n            \"led\": 0,\n            \"color\": \"#000000\",\n            \"fade_ms\": 0,\n            \"hold_ms\": 0\n          },\n          {\n            \"led\": 0,\n            \"color\": \"#00ff00\",\n            \"fade_ms\": 60,\n            \"hold_ms\": 0\n          },\n          {\n            \"led\": 0,\n            \"color\": \"#000000\",\n            \"fade_ms\": 240,\n            \"hold_ms\": 700\n          }\n        ],\n        \"repeat\": 2,\n        \"on_finish\": \"off\"\n      }\n    }\n  }\n}",
+      "canonical": "{\"compiled\":{\"execution\":{\"contract\":\"nb1-program-effect/v1\",\"kind\":\"program\",\"program\":{\"on_finish\":\"off\",\"repeat\":2,\"steps\":[{\"color\":\"#000000\",\"fade_ms\":0,\"hold_ms\":0,\"led\":0},{\"color\":\"#00ff00\",\"fade_ms\":60,\"hold_ms\":0,\"led\":0},{\"color\":\"#000000\",\"fade_ms\":240,\"hold_ms\":700,\"led\":0}]}},\"normalized_action\":{\"attack_ms\":60,\"color\":\"#00ff00\",\"cycles\":2,\"decay_ms\":240,\"kind\":\"pulse\",\"led\":0,\"on_finish\":\"off\",\"rest_ms\":700}},\"id\":\"pulse-lime\",\"record_contract\":\"nb1-pattern-record/experimental-v2\",\"source\":{\"action\":{\"attack_ms\":60,\"color\":\"lime\",\"cycles\":2,\"decay_ms\":240,\"kind\":\"pulse\",\"on_finish\":\"off\",\"rest_ms\":700},\"contract\":\"nb1-light-action/v1\",\"kind\":\"light_action\"},\"title\":\"绿色脉冲\"}",
+      "domain": "nb1-pattern-record/experimental-v2",
+      "digest": "sha256:f2ab7093566ea4cd5e975cdc70482c85dc6f56f9347916a78d5d08658c2ca2fe"
+    },
+    {
+      "label": "p1-record-payload-orbit-red-blue",
+      "origin": "P1 design/records/orbit-red-blue at 0fe12e9",
+      "input": "{\n  \"record_contract\": \"nb1-pattern-record/experimental-v2\",\n  \"id\": \"orbit-red-blue\",\n  \"title\": \"红蓝环绕\",\n  \"source\": {\n    \"kind\": \"light_action\",\n    \"contract\": \"nb1-light-action/experimental-v2\",\n    \"action\": {\n      \"kind\": \"orbit\",\n      \"colors\": [\n        \"red\",\n        \"blue\"\n      ],\n      \"period_ms\": 3000,\n      \"cycles\": 3,\n      \"segments\": 4,\n      \"on_finish\": \"off\"\n    }\n  },\n  \"compiled\": {\n    \"normalized_action\": {\n      \"kind\": \"orbit\",\n      \"colors\": [\n        \"#ff0000\",\n        \"#0000ff\"\n      ],\n      \"leds\": [\n        1,\n        2\n      ],\n      \"period_ms\": 3000,\n      \"cycles\": 3,\n      \"segments\": 4,\n      \"on_finish\": \"off\"\n    },\n    \"execution\": {\n      \"kind\": \"frame_program\",\n      \"contract\": \"nb1-frame-program/experimental-v1\",\n      \"program\": {\n        \"contract\": \"nb1-frame-program/experimental-v1\",\n        \"initial\": [\n          {\n            \"led\": 1,\n            \"color\": \"#990000\"\n          },\n          {\n            \"led\": 2,\n            \"color\": \"#000099\"\n          }\n        ],\n        \"frames\": [\n          {\n            \"targets\": [\n              {\n                \"led\": 1,\n                \"color\": \"#800080\"\n              },\n              {\n                \"led\": 2,\n                \"color\": \"#1a001a\"\n              }\n            ],\n            \"fade_ms\": 750,\n            \"interval_ms\": 750\n          },\n          {\n            \"targets\": [\n              {\n                \"led\": 1,\n                \"color\": \"#000099\"\n              },\n              {\n                \"led\": 2,\n                \"color\": \"#990000\"\n              }\n            ],\n            \"fade_ms\": 750,\n            \"interval_ms\": 750\n          },\n          {\n            \"targets\": [\n              {\n                \"led\": 1,\n                \"color\": \"#1a001a\"\n              },\n              {\n                \"led\": 2,\n                \"color\": \"#800080\"\n              }\n            ],\n            \"fade_ms\": 750,\n            \"interval_ms\": 750\n          },\n          {\n            \"targets\": [\n              {\n                \"led\": 1,\n                \"color\": \"#990000\"\n              },\n              {\n                \"led\": 2,\n                \"color\": \"#000099\"\n              }\n            ],\n            \"fade_ms\": 750,\n            \"interval_ms\": 750\n          }\n        ],\n        \"repeat\": 3,\n        \"on_finish\": \"off\"\n      }\n    },\n    \"recipe_id\": \"orbit-paired-linear-4/experimental-v1\"\n  }\n}",
+      "canonical": "{\"compiled\":{\"execution\":{\"contract\":\"nb1-frame-program/experimental-v1\",\"kind\":\"frame_program\",\"program\":{\"contract\":\"nb1-frame-program/experimental-v1\",\"frames\":[{\"fade_ms\":750,\"interval_ms\":750,\"targets\":[{\"color\":\"#800080\",\"led\":1},{\"color\":\"#1a001a\",\"led\":2}]},{\"fade_ms\":750,\"interval_ms\":750,\"targets\":[{\"color\":\"#000099\",\"led\":1},{\"color\":\"#990000\",\"led\":2}]},{\"fade_ms\":750,\"interval_ms\":750,\"targets\":[{\"color\":\"#1a001a\",\"led\":1},{\"color\":\"#800080\",\"led\":2}]},{\"fade_ms\":750,\"interval_ms\":750,\"targets\":[{\"color\":\"#990000\",\"led\":1},{\"color\":\"#000099\",\"led\":2}]}],\"initial\":[{\"color\":\"#990000\",\"led\":1},{\"color\":\"#000099\",\"led\":2}],\"on_finish\":\"off\",\"repeat\":3}},\"normalized_action\":{\"colors\":[\"#ff0000\",\"#0000ff\"],\"cycles\":3,\"kind\":\"orbit\",\"leds\":[1,2],\"on_finish\":\"off\",\"period_ms\":3000,\"segments\":4},\"recipe_id\":\"orbit-paired-linear-4/experimental-v1\"},\"id\":\"orbit-red-blue\",\"record_contract\":\"nb1-pattern-record/experimental-v2\",\"source\":{\"action\":{\"colors\":[\"red\",\"blue\"],\"cycles\":3,\"kind\":\"orbit\",\"on_finish\":\"off\",\"period_ms\":3000,\"segments\":4},\"contract\":\"nb1-light-action/experimental-v2\",\"kind\":\"light_action\"},\"title\":\"红蓝环绕\"}",
+      "domain": "nb1-pattern-record/experimental-v2",
+      "digest": "sha256:95c165aeacf05ef6ec8fb815afb7f04b727162e6bb28744f20ad1fa57efb0f87"
+    },
+    {
+      "label": "above-float53",
+      "input": "{\"n\":9007199254740993}",
+      "canonical": "{\"n\":9007199254740993}"
+    },
+    {
+      "label": "max-int64",
+      "input": "{\"n\":9223372036854775807}",
+      "canonical": "{\"n\":9223372036854775807}"
+    },
+    {
+      "label": "max-integer-part-decimal",
+      "input": "{\"n\":9223372036854775807.500000}",
+      "canonical": "{\"n\":9223372036854775807.5}"
+    },
+    {
+      "label": "nonnegative-decimal-trim",
+      "input": "{\"b\":0.000000,\"a\":0.000001}",
+      "canonical": "{\"a\":0.000001,\"b\":0}"
+    },
+    {
+      "label": "unicode-pair-and-separators",
+      "input": "{\"s\":\"\\ud83d\\udca1<&>\\u2028\\u2029\"}",
+      "canonical": "{\"s\":\"💡<&>  \"}"
+    },
+    {
+      "label": "no-nfc",
+      "input": "{\"b\":\"é\",\"a\":\"é\"}",
+      "canonical": "{\"a\":\"é\",\"b\":\"é\"}"
+    },
+    {
+      "label": "array-order",
+      "input": "[{\"z\":2,\"a\":1},3.140000,true,false,\"x\"]",
+      "canonical": "[{\"a\":1,\"z\":2},3.14,true,false,\"x\"]"
+    },
+    {
+      "label": "unknown-source-exact-values",
+      "input": "{\"source\":{\"kind\":\"light_action\",\"contract\":\"future/v99\",\"action\":{\"title\":\"灯<&>\",\"counter\":9007199254740993}}}",
+      "canonical": "{\"source\":{\"action\":{\"counter\":9007199254740993,\"title\":\"灯<&>\"},\"contract\":\"future/v99\",\"kind\":\"light_action\"}}"
+    },
+    {
+      "label": "all-c0-canonical-lowercase",
+      "input": "{\"s\": \"\\u0000\\u0001\\u0002\\u0003\\u0004\\u0005\\u0006\\u0007\\b\\t\\n\\u000b\\f\\r\\u000e\\u000f\\u0010\\u0011\\u0012\\u0013\\u0014\\u0015\\u0016\\u0017\\u0018\\u0019\\u001a\\u001b\\u001c\\u001d\\u001e\\u001f\"}",
+      "canonical": "{\"s\":\"\\u0000\\u0001\\u0002\\u0003\\u0004\\u0005\\u0006\\u0007\\u0008\\u0009\\u000a\\u000b\\u000c\\u000d\\u000e\\u000f\\u0010\\u0011\\u0012\\u0013\\u0014\\u0015\\u0016\\u0017\\u0018\\u0019\\u001a\\u001b\\u001c\\u001d\\u001e\\u001f\"}"
+    }
+  ]
+}

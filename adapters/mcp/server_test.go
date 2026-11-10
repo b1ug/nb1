@@ -108,7 +108,7 @@ func TestOfficialSDKToolsForwardAndPreserveJobSemantics(t *testing.T) {
 		}
 	}
 	sort.Strings(names)
-	if strings.Join(names, ",") != "cancel_job,cancel_pattern_request,get_device_state,get_job,get_pattern,get_pattern_request,list_devices,list_patterns,preview_light,preview_pattern,preview_program,resolve_color,run_light,run_pattern,run_program,set_device_state" {
+	if strings.Join(names, ",") != "cancel_job,cancel_pattern_request,get_device_state,get_job,get_pattern,get_pattern_request,get_pattern_v2,list_devices,list_patterns,list_patterns_v2,preview_light,preview_pattern,preview_pattern_draft_v2,preview_program,resolve_color,run_light,run_pattern,run_program,save_pattern_v2,set_device_state" {
 		t.Fatal(names)
 	}
 	res, out := call(t, session, "list_devices", map[string]any{})
@@ -221,7 +221,7 @@ func TestOfficialSDKOverStdio(t *testing.T) {
 	}
 	defer session.Close()
 	listed, err := session.ListTools(ctx, nil)
-	if err != nil || len(listed.Tools) != 16 {
+	if err != nil || len(listed.Tools) != 20 {
 		t.Fatalf("list: %v %v", listed, err)
 	}
 	res, out := call(t, session, "list_devices", map[string]any{})

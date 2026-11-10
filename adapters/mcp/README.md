@@ -25,7 +25,7 @@ GOWORK=off go build -o nb1-mcp .
 
 ## 工具
 
-当前工作区96a适配器实际stdio提供16个工具：下表12个兼容工具加文末4个实验Pattern工具。旧1d89的12工具文件保留为历史快照；安装二进制不注册宿主，实际会话先tools/list。源码与本机有限资格见[完整API手册](../../docs/api-reference.zh-CN.md)。
+The locally installed 96a adapter exposes 16 tools over actual stdio: the 12 compatible tools below and four experimental Pattern execution tools. This source candidate adds four high-level Pattern authoring tools (20 total); it is not installed. Software v2 is unrelated to hardware MK2/MK3. The older 1d89 12-tool catalog remains a historical snapshot. No binary is registered with a host by installation alone: inspect tools/list in the actual session. See the [complete API reference](../../docs/api-reference.zh-CN.md) for source and local qualification boundaries.
 
 | 工具 | 输入与结果 |
 | --- | --- |
@@ -370,3 +370,21 @@ GOWORK=off go test -run '^TestLiveEffectsOptIn$' -v
 取消先 GET 原回执，随后至多一次 POST。`cancel_attempted:true` 仅表示尝试了取消写入；accepted 和 cancelling 均不表示任务已经结束或灯已经熄灭。错误会保留原票据及取消前最后可信 Job，调用者用原 GET 另行恢复。已自然 succeeded 的 hold 保持原颜色，failed 只报告故障；只有实际终态与 daemon 的清理结果可以确认生命周期。HTTP 超时和关闭 MCP 会话不会自动取消任务。
 
 MCP 输入每次最多4096字节，HTTP 响应最多1MiB；重复键、未知字段、null、别名、坏 Unicode、非规范冻结程序、坏实例/摘要/时间/计数响应都会拒绝。POST body 不可自动重放；不重定向、不自动重试、不切换路由或直控硬件。
+
+
+## Experimental high-level Pattern authoring candidate (four new tools, not installed)
+
+| Tool | Arguments | Operation and boundary |
+| --- | --- | --- |
+| list_patterns_v2 | Empty object | One GET /v2/patterns; advertises metadata without per-record requests or opening returned paths. |
+| get_pattern_v2 | id, optional expected_revision | One GET for a complete record; valid unknown sources and recipes remain read-only. |
+| preview_pattern_draft_v2 | id/title/original source | One pure-compilation POST; no library write, preparation or playback. |
+| save_pattern_v2 | Original id/title/source + expected_revision | One conditional create-only POST; saving does not play the Pattern. No automatic retry. |
+
+Author arguments are bounded to 128KiB, with source.action at most 64KiB. Known sources support the eight v1 actions and experimental-v2 Orbit. Preview and save forward the raw Arguments received by the adapter; an integer field written as 1.0 is not repaired to 1. An SDK client may compact whitespace before sending: original_author_json identifies the actual arguments received by the server, not the original formatting of a caller's file. These tools do not invoke the CLI or access USB.
+
+Complete Records use a canonical record_json string instead of a duplicate generic numeric map. This preserves exact source numbers above 2^53 even when an outer SDK or JavaScript consumer uses generic maps. Parse the inner JSON with numeric lexemes preserved, or retain its string unchanged. The adapter independently checks Record revision, typed execution digest and public wire structure. Source-to-Compiled color and curve semantics remain the daemon's responsibility; the adapter does not recompile actions. Current P1 requires ASCII object keys; Unicode string values are preserved without NFC normalization. Unknown sources and recipes remain read-only. HTTP responses are bounded to 2MiB and canonical Records to 1MiB. The combined serialized result (text plus structured channels) is bounded to 4MiB for these new tools, without reducing the old 16 tools' limits.
+
+Save has an independent output type and schema: accepted is always false; publication_attempted/confirmed/unknown describe storage only. The output retains the original Ref and original_author_json. Confirming 201 created or 200 identical-existing requires the complete matching Record, original source/expected revision and a unique matching Location. Daemon-instance and replay execution headers are forbidden. Ambiguous errors, timeouts, malformed responses and commit_uncertain preserve publication uncertainty without an execution outcome_unknown or ticket, and never trigger another POST. Save the original arguments and Ref before calling: losing the entire MCP session without a result does not prove that nothing was committed. Recover with an explicit get for the same ID and expected_revision. A match proves that the desired content exists now; it does not erase the original diagnostic or identify which historical POST published it.
+
+The first three tools advertise readOnly/idempotent=true; save advertises both false and destructive=false. The complete old 16 schemas and behaviors remain unchanged. New tools do not import the root controller or CGO, or copy the high-level compiler. Software fake-HTTP/stdio qualification and the locally installed tool catalog are recorded separately. This candidate has no physical-device qualification.

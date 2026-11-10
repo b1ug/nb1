@@ -1,0 +1,20 @@
+{
+  "expected_revision": "sha256:95c165aeacf05ef6ec8fb815afb7f04b727162e6bb28744f20ad1fa57efb0f87",
+  "id": "orbit-red-blue",
+  "source": {
+    "kind": "light_action",
+    "contract": "nb1-light-action/experimental-v2",
+    "action": {
+      "colors": [
+        "red",
+        "blue"
+      ],
+      "cycles": 3,
+      "kind": "orbit",
+      "on_finish": "off",
+      "period_ms": 3000,
+      "segments": 4
+    }
+  },
+  "title": "红蓝环绕"
+}

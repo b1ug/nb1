@@ -14,8 +14,8 @@ func newControlColorCommand(options *controlFlags) *cobra.Command {
 	var path string
 	command := &cobra.Command{
 		Use:     "color INPUT | --file FILE",
-		Short:   "归一化颜色输入为精确 Hex6，不执行灯光",
-		Long:    "名字或 hex 使用一个位置参数；RGB8、HSV 或其他裸 JSON ColorInput 使用 --file。两者只能选一个。默认由 daemon 归一化；显式 --mode direct 使用同一个纯函数，不连接 daemon、不发现设备、不获取设备锁、不打开 USB。结果无隐式 Gamma 或亮度校正，不能证明实际灯光效果。此命令不接受 serial、policy 或请求票据。旧 daemon 不支持时明确报错，不回退直控；Program、Effect 和 set 的原有 Hex6 合同不变。",
+		Short:   "Normalize a color to exact Hex6 without playing a light action",
+		Long:    "Pass a name or hex color as one argument, or use --file for a bare JSON ColorInput such as RGB8 or HSV. Choose exactly one input. The daemon normalizes colors by default. Explicit --mode direct uses the same pure function without contacting a daemon, discovering devices, acquiring device ownership or opening USB. Normalization applies no implicit gamma or brightness correction and does not verify physical appearance. This command accepts no serial, policy or request ticket. An unsupported daemon returns an error without falling back to direct control. Existing Program, Effect and set Hex6 contracts retain their semantics.",
 		Example: "  nb1 control color green\n  nb1 control color '#0f8'\n  nb1 control color --file color.json\n  nb1 control --mode direct color lime\n  nb1 control --mode direct color --file hsv.json",
 		Args:    cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -58,7 +58,7 @@ func newControlColorCommand(options *controlFlags) *cobra.Command {
 			return printControlJSON(cmd.OutOrStdout(), result)
 		},
 	}
-	command.Flags().StringVar(&path, "file", "", "裸 JSON ColorInput 文件，不是含 color 字段的 HTTP 信封；与 INPUT 互斥")
+	command.Flags().StringVar(&path, "file", "", "bare JSON ColorInput file, without an HTTP color envelope; mutually exclusive with INPUT")
 	return command
 }
 

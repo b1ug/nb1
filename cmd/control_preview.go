@@ -11,8 +11,8 @@ import (
 func newControlCapabilitiesCommand(options *controlFlags) *cobra.Command {
 	return &cobra.Command{
 		Use:     "capabilities",
-		Short:   "查看软件编译能力目录，不打开设备",
-		Long:    "默认读取 daemon 的软件能力目录。显式 --mode direct 返回本地编译器目录，不发现设备、不获取设备锁、不打开 USB。目录不证明设备在线或支持某项硬件功能。旧 daemon 不支持新接口时明确报错，不回退直控。",
+		Short:   "Inspect software compiler capabilities without opening a device",
+		Long:    "Read the daemon's software capability catalog by default. Explicit --mode direct returns the local compiler catalog without discovering devices, acquiring device ownership or opening USB. The catalog does not establish that a device is online or supports a hardware operation. An unsupported daemon returns an error without falling back to direct control.",
 		Example: "  nb1 control capabilities\n  nb1 control --mode direct capabilities",
 		Args:    cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
@@ -40,8 +40,8 @@ func newControlPreviewCommand(options *controlFlags) *cobra.Command {
 	var programPath, effectPath, serial string
 	command := &cobra.Command{
 		Use:     "preview --program FILE | --effect FILE [--serial SERIAL]",
-		Short:   "权威预览 Program 或 Effect，不创建 Job",
-		Long:    "必须且只能指定一个 Program 或 Effect 文件。默认由 daemon 校验并编译，返回规范化 Program、名义时长和限制；可选 --serial 只核对缓存设备能力，不证明执行或准入成功。显式 --mode direct 使用同一纯软件编译器，不连接 daemon、不发现设备、不获取设备锁、不打开 USB；direct 不接受 --serial。预览不接受 policy 或请求回执，不创建/取消 Job。旧 daemon 不支持时不回退。",
+		Short:   "Preview a Program or Effect without creating a Job",
+		Long:    "Choose exactly one Program or Effect file. The daemon validates and compiles it by default, returning the normalized Program, nominal duration and limits. Optional --serial checks cached device capabilities; it does not confirm admission or execution. Explicit --mode direct uses the same pure software compiler without contacting a daemon, discovering devices, acquiring device ownership or opening USB; direct preview rejects --serial. Preview accepts no policy or request receipt and creates or cancels no Job. An unsupported daemon returns an error without falling back to direct control.",
 		Example: "  nb1 control preview --program program.json\n  nb1 control preview --effect pulse.effect.json\n  nb1 control preview --program program.json --serial 20005601\n  nb1 control preview --effect pulse.effect.json --serial 20005601\n  nb1 control --mode direct preview --effect pulse.effect.json",
 		Args:    cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {

@@ -29,20 +29,21 @@ var (
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   config.AppName,
-	Short: "控制 blink(1) 指示灯，提供本机共享 API",
+	Short: "Control blink(1) lights and share a local device API",
 	Long: colorLogo + ystring.NewLine + hdoc(`
-		nb1 用于控制 blink(1) 指示灯，也可运行本机 daemon，
-		通过 HTTP v1 API 供 CLI 和其他客户端共享设备。
+		nb1 controls blink(1) lights and can run a local daemon that shares
+		configured devices with the CLI and other clients through versioned HTTP APIs.
 
-		先用 server --devices 明确指定设备启动 daemon，再用 control 操作。
-		control 默认连接本机 daemon；临时直控可显式使用 control --mode direct。
-		doctor 只读检查构建版本、daemon 和已配置设备快照，不扫描或打开 USB。
+		Start the daemon with server --devices, then use control to send requests.
+		control connects to the local daemon by default. Temporary direct access
+		requires explicit control --mode direct. doctor inspects build information,
+		daemon status and configured device snapshots without scanning or opening USB.
 
-		on、off、blink、fade、play、read、write 等旧命令仍直接访问设备，
-		不经过 daemon。各入口的参数可用 nb1 <命令> --help 查看。
+		Legacy commands such as on, off, blink, fade, play, read and write access
+		the device directly. Read each command's options with nb1 <command> --help.
 
-		日常以普通用户运行，设备访问按系统权限配置；
-		server 仅监听本机回环地址。
+		Run as a regular user with the required device access configured.
+		server listens on the local loopback interface.
 `),
 	Example: `  nb1 server --devices 20005601
   nb1 control devices

@@ -1456,5 +1456,6 @@ Web/HID直连、Homebrew、Codex hook、Starlark和正式网站按规划继续�
 - [HTTP操作目录](api-http-inventory.json)：逐操作的版本、状态、输入输出和源码依据。
 - [JSON示例](examples/api/)：明确区分作者文件、低层Program、Frame和颜色输入。
 - [Agent指南](agent-guide.zh-CN.md)及[项目Skill](../skills/blink1-control/SKILL.md)：使用入口；旧章节的历史状态以本手册和实际部署清单为准。
+- [English Skill Pattern workflow](../skills/blink1-control/references/patterns.md)：主机保存/未知结果、create-only编辑与固定Ref执行。
 
 手册中的示例先做纯编译/预览和schema核对，不为编写文档重复操作硬件。日常执行验证继续绑定原始源码、设备和参数，不因本文更新自动升级为全平台支持声明。

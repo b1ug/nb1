@@ -26,6 +26,7 @@ Run as an ordinary user with the platform's device access configured. The HTTP s
 
 - [OpenAPI](docs/openapi.json), [captured MCP schemas](docs/mcp-tools.schema.json), and [JSON examples](docs/examples/api/) describe field contracts. Some existing reference text is still being localized to English; schemas do not prove runtime support or physical behavior.
 - [MCP adapter](adapters/mcp/README.md) implements real stdio MCP to local HTTP, without wrapping the CLI or owning USB.
+- [Shutdown diagnostics](docs/daemon-lifecycle-diagnostics.md) explain the candidate's bounded lifecycle logs and their limits.
 - [Agent skill](skills/blink1-control/SKILL.md) and [llms.txt](llms.txt) explain expression selection, original receipts, host-side pattern storage, and recovery.
 - [Chinese reference manual](docs/api-reference.zh-CN.md), [Chinese CLI guide](docs/patterns-cli.md), and [Chinese README](README.zh-CN.md) are localized references.
 

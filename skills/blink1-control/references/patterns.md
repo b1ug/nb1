@@ -22,7 +22,7 @@ An author file contains id/title/source:
     "contract": "nb1-light-action/experimental-v2",
     "action": {
       "kind": "orbit", "colors": ["red", "blue"],
-      "period_ms": 3000, "cycles": 2, "segments": 4, "on_finish": "off"
+      "period_ms": 3000, "cycles": 1, "segments": 4, "on_finish": "off"
     }
   }
 }
@@ -31,13 +31,15 @@ An author file contains id/title/source:
 1. Preserve the author file. Run control patterns-v2 preview-draft FILE to obtain the candidate record/revision. This neither saves, prepares a run ticket, nor accesses USB.
 2. To save, add expected_revision from that exact preview to the same author JSON, in a separate submission file. This is a candidate-content condition, not overwrite permission or a daemon ticket.
 3. control patterns-v2 save FILE submits once. Different content under the same ID conflicts; new content returns201, an identical existing record200. Success is publication_confirmed, not a Job or accepted execution.
-4. On publication_unknown or a lost/contradictory save response, retain the original author file, Ref, and revision. Read get ID to compare; do not automatically save again, change ID, or play. A mismatching GET is not confirmation.
+4. On publication_unknown or a lost/contradictory save response, retain the original author file, Ref, and revision. Read get ID to compare; do not automatically save again, change ID, or play. Confirmation requires an integrity-verified complete record matching the original contract, ID, and full revision. A match establishes presence now, not which attempt created it. A 404, mismatch, unavailable library, or corrupt result does not prove the original save never happened. An integrity-valid unknown recipe can confirm exact record presence while remaining semantically unsupported and read-only.
 
 CLI reuses local source compilation and full verification. MCP relies on the daemon's authoritative compiler and independently checks record revision, typed execution digest, and Ref; it is not a second source compiler. If a discovered tool returns record_json as a string, retain the exact JSON rather than round-tripping through a generic Number object.
 
 Current P1 requires ASCII object keys at every depth; Unicode string values are supported. Times/counts use ordinary nonnegative JSON integers, not decimals, exponents, or negative zero. Preserve int64 precision. Unknown source/recipe records remain read-only and cannot be newly imported or executed; unknown entries may make the entire library read-only.
 
 The advanced HTTP API also supports list/get, author preview/save, and frozen snapshot import/export. Do not invent missing CLI commands or send v2 data to a v1 import route. Storage operations do not open a device, prepare execution tickets, or rewrite the original source.
+
+Local source remains editable. Publishing a changed period/source under the same existing ID conflicts: preserve the old record and use a user-appropriate new ID for a changed publication. There is no update-in-place command. When advanced MCP authoring tools are absent, use the discovered CLI preview-draft/save/get route rather than inventing MCP names.
 
 ## Execute and cancel an exact reference
 

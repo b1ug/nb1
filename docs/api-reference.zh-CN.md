@@ -536,7 +536,15 @@ nb1 control patterns-v2 cancel "$SERIAL" orbit-red-blue --revision "$REVISION" -
 
 成功run的`structuredContent.kind`为`pattern_job`，`data`是完整`{pattern_ref,execution_digest,job_kind,job}`，外层保留`request_ticket`；接受不等于完成。query为`pattern_request`；cancel为`pattern_cancel`，其data含`pattern_job`（最后可信Envelope）与`cancel_attempted`。取消错误仍保留原票据及最后可信快照；`cancel_attempted`只说明是否尝试过唯一一次POST，不证明已熄灯。坏响应、断连、实例变化和回执过期不能触发换键补播；完整性错误不会被后续看似正确的响应掩盖。
 
-c37历史片current/race各816测试节点通过、3项显式live跳过；真实stdio→P6 HTTP→临时StoreV2→内存fake Engine贯通，未访问USB。679仅增加Pattern错误响应头检查，独立软件验证另有归档；此处工具快照/stdio证据仍绑定c37。独立MCP模块沿用Go1.25下限，不能以root Go1.18兼容性替代。v2列表/读取完整Record/保存/导入导出MCP工具仍未提供；原list_patterns/get_pattern保持v1语义。
+c37历史片current/race各816测试节点通过、3项显式live跳过；真实stdio→P6 HTTP→临时StoreV2→内存fake Engine贯通，未访问USB。679仅增加Pattern错误响应头检查，独立软件验证另有归档；此处工具快照/stdio证据仍绑定c37。独立MCP模块沿用Go1.25下限，不能以root Go1.18兼容性替代。日常96a未提供v2库作者工具；后续MCP20候选见本节。导入/导出MCP仍未提供，原list_patterns/get_pattern保持v1语义。
+
+### 后续候选MCP20：主机高级库作者入口（未安装）
+
+开发整合另包含固定来源10cf37f的四个作者工具，旧16完整schema不变。`list_patterns_v2`读取高级摘要；`get_pattern_v2`读取完整Record；`preview_pattern_draft_v2`编译作者草稿；`save_pattern_v2`按expected_revision条件保存。它们不prepare运行票据、不创建Job或播放，不改旧list_patterns/get_pattern的v1含义。实际schema见[候选20工具快照](mcp-tools.candidate-20.schema.json)，本机日常96a仍为16工具。
+
+完整记录用record_json字符串传递，保留精确整数；保存不确定时保留original_author_json和原Ref，仅显式GET核对。主机库create-only，修改周期后不能覆盖原ID，应保存为新ID；保留可编辑来源不等于已经有同名版本树。MCP由daemon权威编译，适配器验证Record revision/typed执行摘要，不能称为本地语义复编译。4MiB预算只含适配器构造的CallToolResult，不含SDK自动_meta或JSON-RPC外封套。
+
+固定源current/Go1.25/race各1016节点117顶层通过，3项live跳过；fresh真实stdio→HTTP→临时Store有22请求软件证据，未用USB。候选整合另补MCP race的8分钟有界CI预算；未跑本片hosted矩阵或自动注册宿主。
 
 ## 14. 完整HTTP索引与错误
 

@@ -1,6 +1,6 @@
 # Experimental native reads
 
-This source candidate adds two tools to the existing catalog: **22 candidate tools**. The installed MCP binary in this validation workspace remains at **20**. No installation, release, SDK pin change or device qualification is implied. All original20 complete tool objects are frozen in `testdata/native-inspection/legacy20-tools.json`.
+This source candidate adds two tools to the existing catalog: **22 candidate tools**. The installed MCP binary in this validation workspace remains at **20**. This separate MCP module has no SDK or USB dependency; the daemon's fixed SDK/GID integration is described in the [native-inspection guide](../../docs/native-inspection.md). No installation, release or device qualification is implied. All original20 complete tool objects are frozen in `testdata/native-inspection/legacy20-tools.json`.
 
 | Tool | Required arguments | One daemon request |
 | --- | --- | --- |

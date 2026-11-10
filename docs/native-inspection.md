@@ -2,7 +2,7 @@
 
 This development candidate adds paired native reads through the existing daemon-owned device worker. It is **not installed or released**. The daily workspace remains source `6ca5a14`, with 20 MCP tools. This candidate has 22 MCP tools and two additional HTTP resources; the installed API reference's 46 canonical entries remain a separate inventory.
 
-The SDK adapter requires the reviewed raw-read SDK candidate `b3d4a3fd8ce507884eb939288c3f7169ebf61c9b`, including its parent capability model. The checked-in `go.mod` still selects SDK b3, which does not provide the new methods. Candidate builds and tests currently use an explicit alternate module file with a local replacement; **a plain default-module build of this branch is not ready**. A reachable fixed SDK version, verified checksums and a consumer dependency change are required before integration or release. No tag, release, PR merge, installation or device qualification follows from software tests.
+This integration candidate pins SDK commit `17f690dc746c2368f04fbfedfae5fc6cb36b6db5` as `v0.0.2-0.20261110161339-17f690dc746c`, and GID commit `7858785cfdf0ccc811ec3864508e70c5fa95bca8` as `v0.0.3-0.20261110160506-7858785cfdf0`. The checked-in module files use Go-resolved versions and checksums, without local replacements or a required tag. The SDK includes the earlier capability/raw-read model and the independent SavePattern communication-error fix; GID adds the Darwin string-metadata type guard. The historical b323 candidate required an alternate module file, but this dependency integration uses its regular `go.mod` and `go.sum`. No tag, release, PR merge, installation or device qualification follows from dependency resolution or software tests.
 
 ## Read through one owner
 
@@ -49,14 +49,14 @@ No P/W/B/F, storage write, upload, playback or power-cycle operation is added. R
 
 ## Local software review
 
-For this workspace only, the explicit alternate module file is at `artifacts/native-inspection-runtime-20261110/deps/candidate.mod` under the workspace root. It replaces the SDK with the clean fixed raw-read checkout at `validation/blink1-go-raw-inspection`; the regular module files and installed binaries are unchanged. Run commands from this candidate repository, using an absolute path for `CANDIDATE_MOD`:
+Run commands from this integration repository with the regular module files. No workspace or local SDK replacement is required:
 
 ```sh
-GOWORK=off go test -mod=readonly -modfile="$CANDIDATE_MOD" -count=1 ./...
-GOWORK=off go test -mod=readonly -modfile="$CANDIDATE_MOD" -race -count=1 ./...
-GOWORK=off go build -mod=readonly -modfile="$CANDIDATE_MOD" -o "$CANDIDATE_BIN" .
+GOWORK=off go test -mod=readonly -count=1 ./...
+GOWORK=off go test -mod=readonly -race -count=1 ./...
+GOWORK=off go build -mod=readonly -o "$CANDIDATE_BIN" .
 ```
 
 The MCP adapter is a separate module and has no SDK/USB dependency. Its [native-read guide](../adapters/mcp/NATIVE_INSPECTION.md) documents the candidate tools and synthetic protocol fixtures. Tests compose fake native readers, the real worker, HTTP, CLI/client and real stdio MCP; they are software evidence, not successful physical R/S captures.
 
-Before installation, pin and verify a reproducible SDK module without replacements, run the corresponding software/dependency matrix, and perform a bounded FW204 R/S qualification. Retain the current installed version until those gates pass.
+Before installation, verify the fixed module graph and downloaded source, run the corresponding software/dependency matrix, and perform a bounded FW204 R/S qualification for this exact combined chain. Earlier raw-read evidence does not automatically qualify the new dependency combination. Retain the current installed version until those gates pass.

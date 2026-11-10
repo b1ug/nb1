@@ -16,6 +16,7 @@ MAX_MANIFEST_BYTES = 16 * 1024
 ASSETS = frozenset(("index.html", "demo.css", "demo.js", "orbit.html", "orbit.css", "orbit.js", "LICENSE.txt"))
 CONTRACTS = frozenset(("nb1-light-action/v1", "nb1-light-action/experimental-v2"))
 PATTERN_ASSETS = ASSETS | {"patterns.html", "patterns.js", "patterns.css"}
+BILINGUAL_ASSETS = PATTERN_ASSETS | {"i18n.js", "locales.js"}
 PATTERN_CONTRACTS = CONTRACTS | {"nb1-pattern-library/experimental-v2", "nb1-pattern-record/experimental-v2"}
 PENDING = b"Waiting for verified nb1-web dist.\n"
 
@@ -40,7 +41,7 @@ def sha(data):
 
 
 def tree_digest(files):
-    # Both closed asset profiles use ASCII paths. The manifest is not itself
+    # All closed asset profiles use ASCII paths. The manifest is not itself
     # part of the source tree hash. Match the frontend builder byte for byte.
     entries = "".join(name + "\0" + sha(files[name]) + "\n" for name in sorted(files) if name != "manifest.json")
     return sha(entries.encode("utf-8"))
@@ -124,7 +125,7 @@ def names(directory):
     result = set()
     with os.scandir(str(directory)) as entries:
         for entry in entries:
-            require(len(result) < len(PATTERN_ASSETS) + 1, "too many dist entries")
+            require(len(result) < len(BILINGUAL_ASSETS) + 1, "too many dist entries")
             result.add(entry.name)
     return result
 
@@ -138,8 +139,10 @@ def validate_directory(directory, expected_commit, expected_manifest_sha):
         assets, required_contracts = ASSETS, CONTRACTS
     elif present == PATTERN_ASSETS | {"manifest.json"}:
         assets, required_contracts = PATTERN_ASSETS, PATTERN_CONTRACTS
+    elif present == BILINGUAL_ASSETS | {"manifest.json"}:
+        assets, required_contracts = BILINGUAL_ASSETS, PATTERN_CONTRACTS
     else:
-        raise InvalidBundle("dist must match the complete base or Pattern asset profile and manifest.json")
+        raise InvalidBundle("dist must match the complete base, Pattern or bilingual Pattern asset profile and manifest.json")
     wanted = assets | {"manifest.json"}
     data = read_plain(directory / "manifest.json", MAX_MANIFEST_BYTES)
     require(sha(data) == expected_manifest_sha, "manifest SHA-256 differs from the explicit pin")

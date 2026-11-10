@@ -8,6 +8,8 @@
   <title>nb1 · Pattern Book</title>
   <link rel="stylesheet" href="./demo.css">
   <link rel="stylesheet" href="./patterns.css">
+  <script defer src="./locales.js"></script>
+  <script defer src="./i18n.js"></script>
   <script defer src="./patterns.js"></script>
 </head>
 <body class="pattern-book-page">
@@ -16,6 +18,7 @@
   <nav class="workbench-topbar" aria-label="Workbench navigation">
     <a class="brand" href="./"><svg class="brand-mark" viewBox="0 0 28 28" aria-hidden="true"><rect x="3" y="8" width="22" height="14" rx="7" fill="#fff8df"/><circle cx="10" cy="15" r="3.5" fill="#a2c979"/><circle cx="19" cy="15" r="3.5" fill="#eeb28b"/><path d="M10 8V4h8v4" fill="none" stroke="#fff8df" stroke-width="3"/></svg>nb1 <small>Little light workbench</small></a>
     <div class="top-nav"><a href="./">Workbench</a><a href="./orbit.html">Orbit lab</a><a href="./patterns.html" aria-current="page">Pattern Book</a></div>
+  <label class="locale-control" for="locale-select"><span id="locale-label">Language</span><select id="locale-select" aria-labelledby="locale-label"><option value="en" lang="en">English</option><option value="zh-CN" lang="zh-CN">中文</option></select></label>
   </nav>
   <header class="book-hero">
     <div><p class="eyebrow">COLLECT A LITTLE LIGHT.</p><h1>A little light,<br><span>worth keeping.</span></h1><p class="intro">Keep the action and its source together. Write a draft, preview it, then save the confirmed revision on this computer.</p><p><span class="local-badge">Experimental v2 · local storage · explicit playback</span></p></div>
@@ -49,7 +52,7 @@
         <div class="book-actions"><button id="save-pattern" type="button" class="primary" disabled>Save this revision</button><button id="recover-save" type="button" class="secondary" hidden>Verify original save</button></div>
         <p id="save-status" class="book-muted" role="status"></p>
       </div>
-      <details class="book-diagnostics"><summary>Source, recipe, and frozen execution</summary><pre id="record-detail">Choose a Pattern or preview a draft first.</pre></details>
+      <details class="book-diagnostics"><summary>Source, recipe, and frozen execution</summary><pre data-i18n-help id="record-detail">Choose a Pattern or preview a draft first.</pre></details>
     </section>
   </div>
   <section class="panel play-desk" aria-labelledby="play-heading">
@@ -62,7 +65,7 @@
       </div>
       <div class="receipt-card"><p class="receipt-eyebrow">This playback</p><strong id="job-status">No task yet</strong><p id="job-progress" class="book-muted">Acceptance is not completion. Stopping may wait for device cleanup.</p><p id="job-identity" class="book-muted"></p><div class="book-actions"><button id="query-pattern" type="button" class="secondary" disabled>Query original receipt</button><button id="cancel-pattern" type="button" class="danger" disabled>Stop this playback</button><button id="new-pattern-task" type="button" class="text-button" hidden>Keep receipt and prepare another</button></div><p id="integrity-status" class="book-warning" hidden></p></div>
     </div>
-    <details class="book-diagnostics"><summary>Original ticket and diagnostics</summary><pre id="task-detail">The full daemon ID is shown only here; the main view abbreviates it.</pre><button id="export-receipt" type="button" class="secondary" disabled>Download original task</button><label for="receipt-history">Receipt history in this tab<select id="receipt-history"><option value="">No receipt history yet</option></select></label><button id="load-history" type="button" class="secondary" disabled>Restore selected ticket</button><label for="restore-receipt">Restore an exported original task<input id="restore-receipt" type="file" accept="application/json,.json"></label><p class="book-muted">Import restores query context only. It sends no play or stop request. Refreshing does not replay a task.</p></details>
+    <details class="book-diagnostics"><summary>Original ticket and diagnostics</summary><pre data-i18n-help id="task-detail">The full daemon ID is shown only here; the main view abbreviates it.</pre><button id="export-receipt" type="button" class="secondary" disabled>Download original task</button><label for="receipt-history">Receipt history in this tab<select id="receipt-history"><option value="">No receipt history yet</option></select></label><button id="load-history" type="button" class="secondary" disabled>Restore selected ticket</button><label for="restore-receipt">Restore an exported original task<input id="restore-receipt" type="file" accept="application/json,.json"></label><p class="book-muted">Import restores query context only. It sends no play or stop request. Refreshing does not replay a task.</p></details>
   </section>
   <footer class="book-footer"><span>nb1 Pattern Book · experimental-v2</span><span>Local page → same-origin daemon → one device worker</span></footer>
 </main>

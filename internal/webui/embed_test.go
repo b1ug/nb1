@@ -235,3 +235,89 @@ func TestPatternBundleProfileIsCompleteAndBoundToContracts(t *testing.T) {
 		})
 	}
 }
+
+func bilingualBundleFixture(t *testing.T) (fstest.MapFS, manifest) {
+	t.Helper()
+	files, record := patternBundleFixture(t)
+	for _, name := range bilingualAssetNames {
+		data := []byte("fixture " + name)
+		size := int64(len(data))
+		files["dist/"+name] = &fstest.MapFile{Data: data}
+		record.Files = append(record.Files, assetRecord{Path: name, Bytes: &size, SHA256: digest(data)})
+	}
+	refreshProfileFixture(t, files, &record)
+	return files, record
+}
+
+func TestBilingualBundleProfilePreservesClosedLegacyProfiles(t *testing.T) {
+	for _, fixture := range []struct {
+		name string
+		make func(*testing.T) (fstest.MapFS, manifest)
+	}{{"base", bundleFixture}, {"patterns", patternBundleFixture}, {"bilingual-patterns", bilingualBundleFixture}} {
+		t.Run(fixture.name, func(t *testing.T) {
+			files, _ := fixture.make(t)
+			if err := validateBundle(files); err != nil {
+				t.Fatal(err)
+			}
+		})
+	}
+	for _, mode := range []string{"missing-i18n", "missing-locales", "missing-pattern", "base-contracts", "extra", "tampered", "substituted-pattern", "base-plus-locales", "budget"} {
+		t.Run(mode, func(t *testing.T) {
+			files, record := bilingualBundleFixture(t)
+			remove := func(names ...string) {
+				for _, name := range names {
+					delete(files, "dist/"+name)
+					for i, item := range record.Files {
+						if item.Path == name {
+							record.Files = append(record.Files[:i], record.Files[i+1:]...)
+							break
+						}
+					}
+				}
+			}
+			switch mode {
+			case "missing-i18n":
+				remove("i18n.js")
+			case "missing-locales":
+				remove("locales.js")
+			case "missing-pattern":
+				remove("patterns.js")
+			case "base-contracts":
+				record.APIContracts = record.APIContracts[:2]
+			case "extra":
+				files["dist/extra.js"] = &fstest.MapFile{Data: []byte("extra")}
+			case "tampered":
+				files["dist/locales.js"].Data = []byte("tampered")
+			case "substituted-pattern":
+				remove("patterns.js", "patterns.css")
+			case "base-plus-locales":
+				remove("patterns.html", "patterns.js", "patterns.css")
+				record.APIContracts = record.APIContracts[:2]
+			case "budget":
+				for i := range record.Files {
+					if record.Files[i].Path == "locales.js" {
+						data := []byte(strings.Repeat("x", maxBundleBytes))
+						size := int64(len(data))
+						files["dist/locales.js"].Data = data
+						record.Files[i].Bytes, record.Files[i].SHA256 = &size, digest(data)
+					}
+				}
+			}
+			refreshProfileFixture(t, files, &record)
+			if err := validateBundle(files); err == nil {
+				t.Fatal("incomplete, substituted, changed or oversized bilingual profile accepted")
+			}
+		})
+	}
+}
+
+func TestEmbeddedBilingualAssets(t *testing.T) {
+	if err := Validate(); err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range bilingualAssetNames {
+		if data, err := ReadFile(name); err != nil || len(data) == 0 {
+			t.Fatalf("embedded %s: %v", name, err)
+		}
+	}
+}

@@ -254,3 +254,8 @@ footer span { overflow-wrap: anywhere; }
   html { scroll-behavior: auto; }
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* A local, keyboard-accessible language control shared by every tool. */
+.locale-control { display:flex; align-items:center; gap:.4rem; margin:0; font-size:.78rem; color:var(--ink-soft, #51604a); white-space:nowrap; }
+.locale-control select { width:auto; min-width:6.3rem; padding:.38rem .6rem; border-radius:999px; font:inherit; background:#fffaf0; color:inherit; }
+@media(max-width:640px) { .workbench-topbar { flex-wrap:wrap; } .locale-control { margin-left:auto; } }

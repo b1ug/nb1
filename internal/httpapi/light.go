@@ -262,13 +262,17 @@ func (h *handler) serveLightDemo(w http.ResponseWriter, r *http.Request) {
 		file, contentType = "patterns.js", "text/javascript; charset=utf-8"
 	case "/demo/patterns.css":
 		file, contentType = "patterns.css", "text/css; charset=utf-8"
+	case "/demo/i18n.js":
+		file, contentType = "i18n.js", "text/javascript; charset=utf-8"
+	case "/demo/locales.js":
+		file, contentType = "locales.js", "text/javascript; charset=utf-8"
 	default:
 		writeError(w, http.StatusNotFound, "not_found", "unknown demo resource")
 		return
 	}
 	data, err := webui.ReadFile(file)
 	if err != nil {
-		// A valid legacy bundle need not include the optional Pattern page.
+		// A valid legacy bundle need not include Pattern or locale resources.
 		// Validation failure, including a missing required file, stays a 500.
 		if errors.Is(err, fs.ErrNotExist) && webui.Validate() == nil {
 			writeError(w, http.StatusNotFound, "not_found", "demo resource is not included in this build")

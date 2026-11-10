@@ -7,6 +7,8 @@
   <meta name="theme-color" content="#fbf6e7">
   <title>nb1 · Local light workbench</title>
   <link rel="stylesheet" href="./demo.css">
+  <script defer src="./locales.js"></script>
+  <script defer src="./i18n.js"></script>
   <script defer src="./demo.js"></script>
 </head>
 <body class="workbench-page">
@@ -15,7 +17,8 @@
     <nav class="workbench-topbar" aria-label="Workbench navigation">
       <a class="brand" href="./" aria-label="nb1 Local light workbench"><svg class="brand-mark" viewBox="0 0 28 28" aria-hidden="true"><rect x="3" y="8" width="22" height="14" rx="7" fill="#fff8df"/><circle cx="10" cy="15" r="3.5" fill="#a2c979"/><circle cx="19" cy="15" r="3.5" fill="#eeb28b"/><path d="M10 8V4h8v4" fill="none" stroke="#fff8df" stroke-width="3" stroke-linejoin="round"/></svg>nb1 <small>Little light workbench</small></a>
       <div class="top-nav"><a href="./" aria-current="page">Workbench</a><a href="./orbit.html">Orbit lab ↗</a><a href="./patterns.html">Pattern Book</a></div>
-    </nav>
+    <label class="locale-control" for="locale-select"><span id="locale-label">Language</span><select id="locale-select" aria-labelledby="locale-label"><option value="en" lang="en">English</option><option value="zh-CN" lang="zh-CN">中文</option></select></label>
+  </nav>
     <header class="masthead">
       <div><p class="eyebrow">A LITTLE LIGHT, LOCALLY.</p><h1>Give this moment<br><span>a little color.</span></h1><p class="intro">Choose an action and a color you like. Preview the request, then light up the blink(1) on your desk.</p><p class="footnote"><span class="local-badge">Local only · same origin</span></p></div>
       <div class="hero-art" aria-hidden="true"><svg viewBox="0 0 230 125"><ellipse cx="121" cy="109" rx="72" ry="8" fill="#b6c8a3" opacity=".45"/><rect x="29" y="39" width="35" height="38" rx="6" fill="#c6c6ad" stroke="#9eab91" stroke-width="3"/><path d="M40 43v8m11-8v8" stroke="#eef1df" stroke-width="4" stroke-linecap="round"/><rect x="55" y="23" width="148" height="71" rx="35" fill="#fff9e5" stroke="#b5bfa0" stroke-width="3"/><path d="M79 33h95" stroke="#fffef8" stroke-width="5" stroke-linecap="round"/><circle cx="104" cy="59" r="22" fill="#a6ce97"/><circle cx="158" cy="59" r="22" fill="#edbd95"/><circle cx="98" cy="52" r="6" fill="#e4f0cf"/><circle cx="152" cy="52" r="6" fill="#fff0d3"/><path d="M207 23l8-8m-6 30h12M73 8l-4-7" stroke="#90ae76" stroke-width="4" stroke-linecap="round"/></svg><small>SMALL DEVICE, MANY MOODS</small></div>
@@ -137,9 +140,9 @@
       <p><code id="surface-call">light.set({ color: "#00a060", led: 0 })</code></p>
       <p class="footnote">The client manages request and service-instance IDs to identify this submission and prevent duplicate admission. No manual IDs are needed.</p>
       <details id="debug-details"><summary>Request, frozen program, and receipt details</summary>
-      <div class="trace-grid"><div><h3>Actual HTTP request</h3><pre id="request-json">Choose Preview only to inspect the request.</pre></div><div><h3>nb1 Core compilation result</h3><pre id="compiled-json">The Go core compiles actions into canonical Programs.</pre></div></div>
-      <details><summary>Job and receipt state</summary><pre id="job-json">Not submitted.</pre></details>
-      <details><summary>Raw library response</summary><pre id="library-json">Not read yet.</pre></details>
+      <div class="trace-grid"><div><h3>Actual HTTP request</h3><pre data-i18n-help id="request-json">Choose Preview only to inspect the request.</pre></div><div><h3>nb1 Core compilation result</h3><pre data-i18n-help id="compiled-json">The Go core compiles actions into canonical Programs.</pre></div></div>
+      <details><summary>Job and receipt state</summary><pre data-i18n-help id="job-json">Not submitted.</pre></details>
+      <details><summary>Raw library response</summary><pre data-i18n-help id="library-json">Not read yet.</pre></details>
       <p class="footnote">breathe is symmetric. This pulse rises quickly, decays, then rests; the old Effect v1 pulse keeps its original meaning. Two-LED alternate swaps colors without establishing a clockwise or counterclockwise direction.</p>
     </details></section>
     <footer>nb1 · Local light workbench。Preview does not light the device. Play sends the control request.<span id="contract">nb1-light-action/v1</span></footer>

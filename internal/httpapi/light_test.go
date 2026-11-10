@@ -72,6 +72,47 @@ func TestPatternWebResourcesUseTheSelectedBundleProfileAndSameGuards(t *testing.
 	}
 }
 
+func TestBilingualWebResourcesKeepStaticGuardsWithoutBackendCalls(t *testing.T) {
+	// Every backend method panics: serving locale assets must remain pure.
+	h := httpapi.New(noPreviewIO{})
+	for _, name := range []string{"i18n.js", "locales.js"} {
+		t.Run(name, func(t *testing.T) {
+			path := "/demo/" + name
+			want, err := webui.ReadFile(name)
+			response := previewRequest(h, http.MethodGet, path, "")
+			if err != nil || response.Code != http.StatusOK || !bytes.Equal(response.Body.Bytes(), want) {
+				t.Fatal("locale asset differs from verified bundle", response.Code, err)
+			}
+			if response.Header().Get("Content-Type") != "text/javascript; charset=utf-8" || response.Header().Get("Content-Security-Policy") != "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'" || response.Header().Get("Cache-Control") != "no-store" || response.Header().Get("X-Content-Type-Options") != "nosniff" || response.Header().Get("Referrer-Policy") != "no-referrer" {
+				t.Fatal("locale asset policy changed", response.Header())
+			}
+			for _, method := range []string{http.MethodPost, http.MethodHead, http.MethodPut} {
+				if w := previewRequest(h, method, path, ""); w.Code != 405 || w.Header().Get("Allow") != "GET" {
+					t.Fatal("locale resource accepted method", method, w.Code)
+				}
+			}
+			if w := previewRequest(h, http.MethodGet, path+"?", ""); w.Code != 400 {
+				t.Fatal("locale resource accepted query", w.Code)
+			}
+			if w := previewRequest(h, http.MethodGet, path, "body"); w.Code != 400 {
+				t.Fatal("locale resource accepted body", w.Code)
+			}
+			r := httptest.NewRequest(http.MethodGet, "http://127.0.0.1"+path, nil)
+			r.Header.Set("Origin", "https://untrusted.invalid")
+			blocked := httptest.NewRecorder()
+			h.ServeHTTP(blocked, r)
+			if blocked.Code != 403 {
+				t.Fatal("locale resource bypassed origin guard", blocked.Code)
+			}
+		})
+	}
+	for _, path := range []string{"/demo/locales/en.js", "/demo/locales.json", "/demo/i18n.js.map", "/demo/locales.js.map"} {
+		if w := previewRequest(h, http.MethodGet, path, ""); w.Code != 404 {
+			t.Fatal("unknown locale resource exposed", path, w.Code)
+		}
+	}
+}
+
 type lightHTTPSpy struct {
 	noPreviewIO
 	deviceCalls int

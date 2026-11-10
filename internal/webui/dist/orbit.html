@@ -8,6 +8,8 @@
   <title>Orbit Overlapping fade experiment · nb1</title>
   <link rel="stylesheet" href="./demo.css">
   <link rel="stylesheet" href="./orbit.css">
+  <script defer src="./locales.js"></script>
+  <script defer src="./i18n.js"></script>
   <script src="./orbit.js" defer></script>
 </head>
 <body class="orbit-page">
@@ -15,6 +17,7 @@
   <nav class="shell workbench-topbar" aria-label="Workbench navigation">
     <a class="brand" href="./" aria-label="nb1 Local light workbench"><svg class="brand-mark" viewBox="0 0 28 28" aria-hidden="true"><rect x="3" y="8" width="22" height="14" rx="7" fill="#fff8df"/><circle cx="10" cy="15" r="3.5" fill="#a2c979"/><circle cx="19" cy="15" r="3.5" fill="#eeb28b"/><path d="M10 8V4h8v4" fill="none" stroke="#fff8df" stroke-width="3" stroke-linejoin="round"/></svg>nb1 <small>Little light workbench</small></a>
     <div class="top-nav"><a href="./">Workbench</a><a href="./orbit.html" aria-current="page">Orbit lab</a><a href="./patterns.html">Pattern Book</a></div>
+  <label class="locale-control" for="locale-select"><span id="locale-label">Language</span><select id="locale-select" aria-labelledby="locale-label"><option value="en" lang="en">English</option><option value="zh-CN" lang="zh-CN">中文</option></select></label>
   </nav>
   <main class="shell" id="main-content">
     <section class="hero">
@@ -60,7 +63,7 @@
         <textarea id="program" readonly spellcheck="false" aria-label="Frozen FrameProgram" placeholder="Choose Preview only to inspect the frame program here."></textarea>
       </details>
     </section>
-    <details class="panel transport"><summary>Request, receipt, and technical details</summary><p class="hint">Request IDs bind one submission. Daemon IDs prevent an old ticket from targeting a restarted service. Uncertain writes are checked through the original request, never automatically replayed.</p><pre id="wire">No request yet.</pre></details>
+    <details class="panel transport"><summary>Request, receipt, and technical details</summary><p class="hint">Request IDs bind one submission. Daemon IDs prevent an old ticket from targeting a restarted service. Uncertain writes are checked through the original request, never automatically replayed.</p><pre data-i18n-help id="wire">No request yet.</pre></details>
   </main>
   <footer class="shell">nb1 · Local control / observe the light before judging the effect</footer>
 </body>

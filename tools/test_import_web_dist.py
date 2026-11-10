@@ -19,10 +19,10 @@ spec.loader.exec_module(importer)
 COMMIT = "1" * 40
 
 
-def fixture(path, patterns=False):
+def fixture(path, patterns=False, bilingual=False):
     path.mkdir()
-    assets = importer.PATTERN_ASSETS if patterns else importer.ASSETS
-    contracts = importer.PATTERN_CONTRACTS if patterns else importer.CONTRACTS
+    assets = importer.BILINGUAL_ASSETS if bilingual else importer.PATTERN_ASSETS if patterns else importer.ASSETS
+    contracts = importer.PATTERN_CONTRACTS if patterns or bilingual else importer.CONTRACTS
     for name in assets:
         (path / name).write_bytes(("fixture " + name + "\n").encode())
     manifest = {
@@ -57,6 +57,58 @@ def snapshot(path):
 
 
 class ImportBoundaryTests(unittest.TestCase):
+    def test_bilingual_upgrade_rollback_and_explicit_legacy_restore(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            old = root / "old"; fixture(old, patterns=True)
+            localized = root / "bilingual"; fixture(localized, bilingual=True)
+            old_bundle, new_bundle = validate(old), validate(localized)
+            self.assertEqual(len(new_bundle.files), 13)
+            target = root / "webui"; initial_destination(target)
+            importer.install(old_bundle, target)
+            before = snapshot(target)
+            real_replace = os.replace
+            failed = [False]
+            def fail_new_lock(src, dst):
+                if not failed[0] and Path(src).parent.name.startswith(".webui-stage-") and Path(dst).name == "manifest.lock.json":
+                    failed[0] = True
+                    raise OSError("injected bilingual lock publication failure")
+                return real_replace(src, dst)
+            with mock.patch.object(importer.os, "replace", side_effect=fail_new_lock):
+                with self.assertRaises(OSError): importer.install(new_bundle, target)
+            self.assertTrue(failed[0])
+            self.assertEqual(snapshot(target), before)
+            importer.install(new_bundle, target)
+            self.assertEqual(importer.snapshot_destination(target)[0], new_bundle.files)
+            importer.install(old_bundle, target)
+            self.assertEqual(snapshot(target), before)
+
+    def test_bilingual_profile_rejects_partial_substituted_or_unpinned_assets(self):
+        modes = ["missing-i18n", "missing-locales", "missing-pattern", "base-contracts", "unknown-contract", "extra", "tampered", "substituted-pattern", "base-plus-locales"]
+        for mode in modes:
+            with self.subTest(mode=mode), tempfile.TemporaryDirectory() as temporary:
+                path = Path(temporary) / "dist"
+                manifest = fixture(path, bilingual=True)
+                if mode.startswith("missing-"):
+                    name = {"missing-i18n": "i18n.js", "missing-locales": "locales.js", "missing-pattern": "patterns.js"}[mode]
+                    (path / name).unlink()
+                    manifest["files"] = [v for v in manifest["files"] if v["path"] != name]
+                elif mode == "base-contracts": manifest["api_contracts"] = sorted(importer.CONTRACTS)
+                elif mode == "unknown-contract": manifest["api_contracts"].append("unknown/v1")
+                elif mode == "extra": (path / "extra.js").write_bytes(b"extra")
+                elif mode == "tampered": (path / "locales.js").write_bytes(b"tampered")
+                elif mode == "substituted-pattern":
+                    for name in ["patterns.js", "patterns.css"]: (path / name).unlink()
+                    manifest["files"] = [v for v in manifest["files"] if (path / v["path"]).exists()]
+                elif mode == "base-plus-locales":
+                    for name in ["patterns.html", "patterns.js", "patterns.css"]: (path / name).unlink()
+                    manifest["files"] = [v for v in manifest["files"] if (path / v["path"]).exists()]
+                    manifest["api_contracts"] = sorted(importer.CONTRACTS)
+                write_manifest(path, manifest)
+                before = snapshot(path)
+                with self.assertRaises(importer.InvalidBundle): validate(path)
+                self.assertEqual(snapshot(path), before)
+
     def test_pattern_profile_upgrade_rollback_and_explicit_legacy_restore(self):
         with tempfile.TemporaryDirectory() as temporary:
             root=Path(temporary)

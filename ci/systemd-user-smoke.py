@@ -219,8 +219,8 @@ class Smoke:
         require(result.returncode in allowed, label + " failed (exit " + str(result.returncode) + ")")
         return result.stdout.decode("utf-8", "strict"), result.returncode
 
-    def host(self, label, name, *args, allowed=(0,)):
-        return self.command(label, self.privilege + [self.tools[name], *args], "host-fixture", allowed)
+    def host(self, label, name, *args, allowed=(0,), timeout=45):
+        return self.command(label, self.privilege + [self.tools[name], *args], "host-fixture", allowed, timeout=timeout)
 
     def user_command(self, label, argv, allowed=(0,), overrides=None, timeout=45):
         require(not self.user_commands_closed, "runuser is forbidden after final manager shutdown begins")
@@ -694,9 +694,9 @@ class Smoke:
         self.creation_attempted = True  # before even a failing/timed-out useradd
         self.report["creation"]["attempted"] = True
         try:
-            self.host("create-fresh-user", "useradd", "--create-home", "--home-dir", fresh_home, "--user-group",
-                      "--groups", "", "--comment", self.creation_marker, "--no-log-init",
-                      "--shell", "/bin/sh", self.user)
+            self.host("create-fresh-user", "useradd", "--no-log-init", "--create-home", "--home-dir", fresh_home, "--user-group",
+                      "--groups", "", "--comment", self.creation_marker,
+                      "--shell", "/bin/sh", self.user, timeout=120)
         except (SmokeError, OSError):
             self.creation_timed_out = any(entry.get("label") == "create-fresh-user" and entry.get("status") == "TIMEOUT"
                                           for entry in self.report["commands"])

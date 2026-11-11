@@ -21,10 +21,11 @@ import stat
 import subprocess
 import sys
 import time
+import urllib.error
 import urllib.request
 
 UNIT = "nb1.service"
-SERIAL = "00000000"  # argv fixture only; never used to open a device
+SERIAL = "00000000"  # Fixture argv; native phase first requires empty discovery.
 USER_PATTERN = re.compile(r"nb1ci-[0-9a-f]{12}\Z")
 PROPERTIES = (
     "Id", "LoadState", "ActiveState", "SubState", "FragmentPath", "SourcePath",
@@ -384,6 +385,81 @@ class Smoke:
         require(all(not item["exists"] for item in files.values()), "uninstall left unit or enable link behind")
         require(native.get("MainPID", "0") == "0", "uninstalled manager still reports a process")
         self.report["checks"].append({"check": "uninstall-no-unit-link-process", "status": "PASS", "native": native, "files": files})
+
+    def actual_daemon(self):
+        """Run the real installed CLI/server, separately from the stdlib fixture."""
+        self.report["actual_daemon"] = {"status": "RUNNING", "real_device_commands": False,
+                                        "native_discovery": True}
+        discovered, _ = self.user_command("actual-native-discovery", [self.cli_path, "list"])
+        require("No blink(1) devices found." in discovered, "native phase requires empty blink(1) discovery")
+        self.absent()
+        # Omit --binary: this also checks current-executable discovery on Linux.
+        installed = self.cli("install", "--devices", SERIAL, "--listen", self.listen)
+        require(installed.get("config", {}).get("binary") == self.cli_path, "install did not select its current executable")
+        files = self.installed_inactive()
+        opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+
+        def request(path, data=None):
+            body = None if data is None else json.dumps(data).encode()
+            req = urllib.request.Request("http://" + self.listen + path, data=body,
+                                         headers={"Content-Type": "application/json"})
+            try:
+                response = opener.open(req, timeout=2)
+            except urllib.error.HTTPError as error:
+                response = error
+            with response:
+                raw = response.read(65537)
+                require(len(raw) <= 65536, "actual daemon response exceeds evidence budget")
+                return response.code, json.loads(raw)
+
+        def running():
+            native = self.wait_native("active")
+            identity = self.process(int(native.get("MainPID", "0")))
+            require(identity.get("exists") and identity.get("exe") == self.cli_path,
+                    "systemd did not start the actual installed nb1 executable")
+            status = identity.get("status", {})
+            require(status.get("Uid", "").split() == [str(self.account.pw_uid)] * 4 and status.get("NoNewPrivs") == "1",
+                    "actual nb1 did not retain its ordinary UID and NoNewPrivs")
+            self.fixture_identity = identity  # Existing cleanup verifies this PID exited.
+            deadline = time.monotonic() + 8
+            while time.monotonic() < deadline:
+                try:
+                    health_code, _ = request("/healthz")
+                    devices_code, devices = request("/v1/devices")
+                    text = json.dumps(devices)
+                    if health_code == devices_code == 200 and SERIAL in text and '"offline"' in text:
+                        self.report["checks"].append({"check": "actual-nb1-http-pid-offline", "status": "PASS",
+                                                      "native": native, "process": identity})
+                        return identity
+                except (OSError, ValueError):
+                    pass
+                time.sleep(0.1)
+            raise SmokeError("actual nb1 did not provide healthy offline HTTP")
+
+        self.cli("start")
+        first = running()
+        code, _ = request("/v1/preview", {"action": {"kind": "set", "color": "red"}})
+        require(code == 200, "actual daemon pure preview failed")
+        code, _ = request("/v1/jobs", {"id": "j_7K3XJNY9ZM", "serial": SERIAL,
+                                      "action": {"kind": "set", "color": "red"}})
+        require(code == 503 and request("/healthz")[0] == 200, "offline Job was not rejected while HTTP remained healthy")
+        self.user_command("actual-cli-devices", [self.cli_path, "control", "--endpoint", "http://" + self.listen, "devices"])
+        self.cli("stop")
+        self.exited(first)
+        stopped = self.wait_native("inactive")
+        require(stopped.get("Result") == "success" and stopped.get("ExecMainCode") == "1" and stopped.get("ExecMainStatus") == "0",
+                "actual nb1 did not exit normally after service stop")
+        require(self.own_files() == files, "actual daemon stop changed persistent service configuration")
+        self.user_command("actual-cli-stopped", [self.cli_path, "control", "--endpoint", "http://" + self.listen, "devices"], allowed=(1,))
+        require(self.wait_native("inactive").get("MainPID") == "0", "failed CLI request started a daemon")
+        self.cli("start")
+        second = running()
+        require((first["pid"], first["start_ticks"]) != (second["pid"], second["start_ticks"]), "restart reused the prior process identity")
+        self.cli("uninstall", "--stop")
+        self.exited(second)
+        self.absent()
+        self.report["actual_daemon"]["status"] = "PASS"
+        self.report["checks"].append({"check": "actual-nb1-install-start-api-stop-restart-uninstall", "status": "PASS"})
 
     def inject_file(self, path, content):
         state = self.helper("create", path, content.hex())
@@ -751,6 +827,8 @@ class Smoke:
             self.positive()
             for case in self.args.negative_case:
                 self.negative(case)
+            if self.args.actual_daemon:
+                self.actual_daemon()
             self.report["status"] = "PASS"
         except (SmokeError, OSError, ValueError, KeyError, KeyboardInterrupt) as error:
             self.report["status"] = "ENVIRONMENT_UNAVAILABLE" if str(error).startswith("ENVIRONMENT_UNAVAILABLE:") else "FAIL"
@@ -767,6 +845,7 @@ def parser():
     command.add_argument("--execute", action="store_true", help="opt in to host fixture creation; requires all environment guards")
     command.add_argument("--binary", help="explicit absolute path to the real Linux nb1 CLI")
     command.add_argument("--fixture", help="explicit absolute path to the separately built USB-free Linux fixture")
+    command.add_argument("--actual-daemon", action="store_true", help="also start the actual CLI binary as a service; requires empty native discovery")
     command.add_argument("--negative-case", choices=sorted(NEGATIVES), action="append", default=[], help="optional independent native refusal case")
     command.add_argument("--output", type=pathlib.Path, help="new evidence directory; refuses an existing directory")
     return command

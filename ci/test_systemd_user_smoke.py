@@ -18,7 +18,7 @@ spec.loader.exec_module(smoke)
 
 
 def args(**kwargs):
-    values = {"execute": False, "binary": None, "fixture": None, "negative_case": [], "output": None}
+    values = {"execute": False, "binary": None, "fixture": None, "negative_case": [], "output": None, "actual_daemon": False}
     values.update(kwargs)
     return argparse.Namespace(**values)
 
@@ -138,6 +138,22 @@ class ExecutionTests(unittest.TestCase):
         obj.positive = mock.Mock()
         obj.cleanup = lambda: obj.report.update(cleanup_failed=True)
         self.assertEqual(obj.execute()["status"], "FAIL")
+
+    def test_actual_daemon_failure_prevents_pass_and_still_cleans_up(self):
+        obj = smoke.Smoke(args(execute=True, actual_daemon=True))
+        obj.setup = mock.Mock(); obj.positive = mock.Mock(); obj.cleanup = mock.Mock()
+        obj.actual_daemon = mock.Mock(side_effect=smoke.SmokeError("actual daemon did not start"))
+        report = obj.execute()
+        self.assertEqual(report["status"], "FAIL")
+        obj.actual_daemon.assert_called_once()
+        obj.cleanup.assert_called_once()
+
+    def test_actual_daemon_is_not_started_by_default(self):
+        obj = smoke.Smoke(args(execute=True))
+        obj.setup = mock.Mock(); obj.positive = mock.Mock(); obj.cleanup = mock.Mock()
+        obj.actual_daemon = mock.Mock(side_effect=RuntimeError("must not run"))
+        self.assertEqual(obj.execute()["status"], "PASS")
+        obj.actual_daemon.assert_not_called()
 
     def test_changed_account_refuses_all_cleanup_actions(self):
         obj = self.prepared()

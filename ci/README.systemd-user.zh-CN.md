@@ -1,5 +1,7 @@
 # Linux 用户服务原生验收工具
 
+2026-11-11 更新：独立CI已执行真实 systemd 用户manager的fixture生命周期与全部6类拒绝检查。当前完整范围与新增真实nb1 server阶段见 [English acceptance guide](README.daemon-service.md)；每次是否通过以对应run的results/verdict和明确清理记录为准。
+
 当前交付状态：**工具已准备，尚未在真实 Linux systemd 上执行**。本机语法、fake 回归和 Go 1.18 fixture 编译不构成 Linux 服务 PASS。主线已整合 Linux 服务工厂和 `NoNewPrivileges=yes` 模板；下一步通过独立 runner job 执行原生验收，接线见 [CI 说明](README.systemd-user-ci.zh-CN.md)。
 
 `systemd-user-smoke.py` 只允许在 `GITHUB_ACTIONS=true`、Linux、PID 1 为 systemd 的环境中显式 `--execute`。建议选择 `ubuntu-24.04` 的完整 GitHub 托管 VM，不能使用 `ubuntu-slim` 容器。GitHub 官方说明了 VM 与容器的区别及 Linux runner 的管理权限：[GitHub 托管 runner](https://docs.github.com/en/actions/reference/runners/github-hosted-runners)。环境不满足时返回非零及 `ENVIRONMENT_UNAVAILABLE`，不跳过为 PASS。

@@ -19,15 +19,15 @@ defaults:
 jobs:
   systemd-user-lifecycle:
     # A fresh hosted VM runs a stdlib fixture as a dedicated ordinary user.
-    # This exercises the real user manager, never the USB backend or nb1 server.
-    name: Linux systemd user lifecycle / USB-free fixture
+    # Native discovery and an offline real daemon follow the isolated fixture checks.
+    name: Linux systemd user lifecycle / fixture and actual daemon
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     permissions:
       contents: read
     env:
       GOWORK: "off"
-      CGO_ENABLED: "0"
+      CGO_ENABLED: "1"
       GOTOOLCHAIN: local
     steps:
       - uses: actions/checkout@v7
@@ -64,16 +64,16 @@ jobs:
           toolchain = json.loads(subprocess.check_output(
               ["go", "env", "-json", "GOVERSION", "GOOS", "GOARCH", "CGO_ENABLED", "GOWORK", "GOTOOLCHAIN"], text=True,
           ))
-          if toolchain["GOOS"] != "linux" or toolchain["CGO_ENABLED"] != "0" or toolchain["GOWORK"] != "off":
+          if toolchain["GOOS"] != "linux" or toolchain["CGO_ENABLED"] != "1" or toolchain["GOWORK"] != "off":
               raise SystemExit("USB-free standalone Linux build environment was not established")
           metadata = {"source_revision": os.environ["GITHUB_SHA"], "modules": modules, "toolchain": toolchain,
-                      "scope": "Real Linux user-manager lifecycle with a USB-free stdlib fixture; no real USB acceptance."}
+                      "scope": "Real Linux user-manager lifecycle with a stdlib fixture and actual CGO nb1 daemon; no real USB acceptance."}
           destination = Path(os.environ["RUNNER_TEMP"]) / "nb1-systemd-user-evidence" / "build-metadata.json"
           destination.write_text(json.dumps(metadata, indent=2, sort_keys=True) + "\n")
           print(json.dumps(metadata, sort_keys=True))
           PY
           go build -mod=readonly -o "$RUNNER_TEMP/nb1-systemd-cli" . 2>&1 | tee "$RUNNER_TEMP/nb1-systemd-user-evidence/build.log"
-          go build -mod=readonly -o "$RUNNER_TEMP/nb1-systemd-fixture" ./ci/systemd-user-fixture 2>&1 | tee -a "$RUNNER_TEMP/nb1-systemd-user-evidence/build.log"
+          CGO_ENABLED=0 go build -mod=readonly -o "$RUNNER_TEMP/nb1-systemd-fixture" ./ci/systemd-user-fixture 2>&1 | tee -a "$RUNNER_TEMP/nb1-systemd-user-evidence/build.log"
       - name: Exercise native user lifecycle and every refusal case
         working-directory: cli
         run: |
@@ -83,6 +83,7 @@ jobs:
           python3 ci/systemd-user-smoke.py --execute \
             --binary "$RUNNER_TEMP/nb1-systemd-cli" \
             --fixture "$RUNNER_TEMP/nb1-systemd-fixture" \
+            --actual-daemon \
             --negative-case external-enable \
             --negative-case dropin \
             --negative-case mask \
@@ -113,6 +114,8 @@ jobs:
               guard = report.get("guard", {})
               if not all(guard.get(key) is True for key in ("github_actions_true", "linux", "systemd_pid1")):
                   failures.append("required hosted Linux/systemd environment was not established")
+              if report.get("actual_daemon", {}).get("status") != "PASS":
+                  failures.append("actual nb1 daemon service phase did not PASS")
               negatives = report.get("negative_cases", {})
               expected = {"external-enable", "dropin", "mask", "transient", "need-reload", "bus-loss"}
               if not expected.issubset(negatives) or any(case.get("status") != "PASS" for case in negatives.values()):
@@ -123,7 +126,7 @@ jobs:
           except (OSError, ValueError, TypeError, AttributeError) as error:
               failures.append("native evidence missing or invalid: " + str(error))
           verdict = {"status": "FAIL" if failures else "PASS", "failures": failures,
-                     "scope": "USB-free fixture service acceptance; not Linux USB, login or reboot acceptance."}
+                     "scope": "Fixture and actual nb1 offline service acceptance; not Linux USB, login or reboot acceptance."}
           (evidence / "verdict.json").write_text(json.dumps(verdict, indent=2, sort_keys=True) + "\n")
           print(json.dumps(verdict, sort_keys=True))
           raise SystemExit(1 if failures else 0)

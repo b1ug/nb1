@@ -464,4 +464,4 @@ func printControlJSON(output io.Writer, value interface{}) error {
 	return encoder.Encode(value)
 }
 
-func init() { rootCmd.AddCommand(newControlCommand()) }
+func init() { rootCmd.AddCommand(newSequenceControlCommand()) }

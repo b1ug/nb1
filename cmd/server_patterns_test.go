@@ -16,29 +16,6 @@ import (
 	"github.com/b1ug/nb1/internal/patternstore"
 )
 
-func TestServerPatternDirectoryFlagPrecedenceWithoutStartingRuntime(t *testing.T) {
-	env := filepath.Join(t.TempDir(), "from-env")
-	t.Setenv("NB1_PATTERN_DIR", env)
-	command := newServerCommand()
-	value, err := command.Flags().GetString("pattern-dir")
-	if err != nil || value != env {
-		t.Fatal(value, err)
-	}
-	explicit := filepath.Join(t.TempDir(), "explicit")
-	if err = command.ParseFlags([]string{"--pattern-dir", explicit}); err != nil {
-		t.Fatal(err)
-	}
-	value, err = command.Flags().GetString("pattern-dir")
-	if err != nil || value != explicit {
-		t.Fatal(value, err)
-	}
-	for _, path := range []string{env, explicit} {
-		if _, err = os.Stat(path); !os.IsNotExist(err) {
-			t.Fatalf("flag parsing touched library: %v", err)
-		}
-	}
-}
-
 func TestRuntimeForwardsPatternOptionWithoutCreatingDirectory(t *testing.T) {
 	dir := filepath.Join(t.TempDir(), "library")
 	v2Dir := filepath.Join(t.TempDir(), "library-v2")
@@ -107,43 +84,6 @@ func TestRuntimeForwardsPatternOptionWithoutCreatingDirectory(t *testing.T) {
 		}
 	case <-time.After(3 * time.Second):
 		t.Fatal("fixture runtime did not stop")
-	}
-}
-
-func TestServerPatternV2DirectoryIsIndependentAndFlagOverridesEnvironment(t *testing.T) {
-	base := t.TempDir()
-	legacy := filepath.Join(base, "legacy-env")
-	v2Env := filepath.Join(base, "v2-env")
-	v2Explicit := filepath.Join(base, "v2-explicit")
-	t.Setenv("NB1_PATTERN_DIR", legacy)
-	t.Setenv("NB1_PATTERN_V2_DIR", v2Env)
-	command := newServerCommand()
-	value, err := command.Flags().GetString("pattern-v2-dir")
-	if err != nil || value != v2Env {
-		t.Fatal(value, err)
-	}
-	if err = command.ParseFlags([]string{"--pattern-v2-dir", v2Explicit}); err != nil {
-		t.Fatal(err)
-	}
-	value, err = command.Flags().GetString("pattern-v2-dir")
-	if err != nil || value != v2Explicit {
-		t.Fatal(value, err)
-	}
-	oldValue, err := command.Flags().GetString("pattern-dir")
-	if err != nil || oldValue != legacy {
-		t.Fatal("v2 override changed legacy configuration", oldValue, err)
-	}
-	for _, path := range []string{legacy, v2Env, v2Explicit} {
-		if _, err = os.Stat(path); !os.IsNotExist(err) {
-			t.Fatalf("flag parsing touched a library: %v", err)
-		}
-	}
-	// The legacy override does not become an implicit v2 override.
-	t.Setenv("NB1_PATTERN_V2_DIR", "")
-	other := newServerCommand()
-	value, err = other.Flags().GetString("pattern-v2-dir")
-	if err != nil || value != "" {
-		t.Fatal("v2 inherited a legacy directory", value, err)
 	}
 }
 

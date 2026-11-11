@@ -38,6 +38,7 @@ type ErrorResponse struct {
 
 type handler struct {
 	service      control.Service
+	sequenceAPI  bool
 	patterns     PatternStore
 	patternPath  string
 	patternErr   error
@@ -63,6 +64,9 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// hosts and same-origin browser requests may address this unauthenticated API.
 	if !localHost(r.Host) || !sameOrigin(r) {
 		writeError(w, http.StatusForbidden, "local_only", "use a loopback host and a same-origin or non-browser client")
+		return
+	}
+	if h.sequenceAPI && h.serveSequenceAPI(w, r) {
 		return
 	}
 	if h.serveNativeInspection(w, r) || h.serveFrames(w, r) || h.serveLightV2(w, r) || h.serveLight(w, r) {
@@ -308,25 +312,33 @@ func method(w http.ResponseWriter, r *http.Request, want string) bool {
 }
 
 func decodeJSON(w http.ResponseWriter, r *http.Request, out interface{}) bool {
+	body, ok := readJSONBody(w, r)
+	if !ok {
+		return false
+	}
+	if err := jsoninput.DecodeObject(body, out); err != nil {
+		return jsonError(w, err)
+	}
+	return true
+}
+
+func readJSONBody(w http.ResponseWriter, r *http.Request) ([]byte, bool) {
 	contentType, _, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
 	if err != nil || contentType != "application/json" {
 		writeError(w, http.StatusUnsupportedMediaType, "json_required", "Content-Type must be application/json")
-		return false
+		return nil, false
 	}
 	body, err := io.ReadAll(io.LimitReader(r.Body, MaxBodyBytes+1))
 	if err != nil {
-		return jsonError(w, err)
+		return nil, jsonError(w, err)
 	}
 	if len(body) > MaxBodyBytes {
 		w.Header().Set("Connection", "close")
 		r.Close = true
 		writeError(w, http.StatusRequestEntityTooLarge, "body_too_large", "request body exceeds 1 MiB")
-		return false
+		return nil, false
 	}
-	if err = jsoninput.DecodeObject(body, out); err != nil {
-		return jsonError(w, err)
-	}
-	return true
+	return body, true
 }
 
 func jsonError(w http.ResponseWriter, err error) bool {

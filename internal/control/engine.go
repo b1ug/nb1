@@ -67,6 +67,7 @@ type Engine struct {
 	droppedEvents  uint64
 	deviceSessions uint64 // Successful connections, scoped to this Engine instance.
 	receipts       *receiptState
+	sequenceJobs   sequenceJobStore
 }
 
 func New(driver Driver, options Options) (*Engine, error) {
@@ -88,7 +89,13 @@ func New(driver Driver, options Options) (*Engine, error) {
 	if options.QueueSize < 1 || options.QueueSize > 1024 || options.MaxHistory < 1 || options.MaxHistory > 100000 || options.PollInterval < 10*time.Millisecond || (options.ShutdownMode != "off" && options.ShutdownMode != "hold") {
 		return nil, fmt.Errorf("%w: invalid runtime limits or shutdown mode", ErrInvalid)
 	}
-	e := &Engine{driver: driver, options: options, workers: make(map[string]*worker), jobs: make(map[string]*record), stop: make(chan struct{}), done: make(chan struct{}), events: make(chan ConnectionEvent, connectionEventBufferSize)}
+	e := &Engine{
+		driver: driver, options: options,
+		workers: make(map[string]*worker), jobs: make(map[string]*record),
+		stop: make(chan struct{}), done: make(chan struct{}),
+		events:       make(chan ConnectionEvent, connectionEventBufferSize),
+		sequenceJobs: newSequenceJobStore(),
+	}
 	for _, serial := range options.Serials {
 		if !ValidDeviceSerial(serial) {
 			return nil, fmt.Errorf("%w: invalid device serial", ErrInvalid)
@@ -382,6 +389,10 @@ func (e *Engine) finishLocked(r *record, status string, err error) {
 		if r.receipt.expiresAtMS < r.receipt.acceptUntilMS {
 			r.receipt.expiresAtMS = r.receipt.acceptUntilMS
 		}
+	}
+	if r.origin == originSequenceJob {
+		e.sequenceJobs.entries[r.state.ID].expiresAt = e.sequenceJobs.now().Add(SequenceJobRetention)
+		return
 	}
 	e.history = append(e.history, r.state.ID)
 	for len(e.history) > e.options.MaxHistory {

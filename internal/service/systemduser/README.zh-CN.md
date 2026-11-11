@@ -6,7 +6,7 @@
 
 ## 安装、活动和启用分别处理
 
-生产构造只在Linux普通UID下可用，拒绝root、sudo身份切换；固定选择系统的 `/usr/bin/systemctl` 或 `/bin/systemctl`，不搜索用户PATH、不接任意unit、UID、host、machine或shell命令。配置根来自 `os.UserConfigDir()`；Linux默认是 `~/.config`，标准XDG覆盖须为安全的当前用户目录。最终归属还必须与manager的 `FragmentPath` 对上，客户端和manager的XDG环境不一致不会被当作安装成功。
+生产构造只在Linux普通UID下可用，拒绝root、sudo身份切换；固定选择系统的 `/usr/bin/systemctl` 或 `/bin/systemctl`，不搜索用户PATH、不接任意unit、UID、host、machine或shell命令。配置根与应用配置、库和设备锁共用 `userconfig.RootDir()`；Linux默认是 `~/.config`，非空 `XDG_CONFIG_HOME` 必须是绝对路径且为安全的当前用户目录。最终归属还必须与manager的 `FragmentPath` 对上，客户端和manager的XDG环境不一致不会被当作安装成功。
 
 | 接口 | 默认行为 |
 | --- | --- |

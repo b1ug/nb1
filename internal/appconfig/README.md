@@ -4,7 +4,7 @@ This package loads typed configuration for the current CLI and v1 daemon. It
 does not select USB hardware, start a daemon, write library records or move locks.
 
 `Select(flagPath, envPath)` chooses `--config`, then `NB1_CONFIG`, then
-`config.yaml` in the stable `os.UserConfigDir()/nb1` directory. It returns absolute
+`config.yaml` in the shared `userconfig.AppDir()` directory. It returns absolute
 paths and a `Required` marker. It does not create directories. A missing default
 file uses defaults; a missing explicitly selected file is an error.
 
@@ -12,13 +12,17 @@ The default application directory is:
 
 | System | Directory |
 | --- | --- |
-| macOS | `~/Library/Application Support/nb1` |
-| Linux | `$XDG_CONFIG_HOME/nb1`, or `~/.config/nb1` |
+| macOS and Linux | `$XDG_CONFIG_HOME/nb1`, or `~/.config/nb1` |
 | Windows | `%AppData%\nb1` |
 
 Selecting another configuration file does **not** relocate the default library
-or ownership directory. Locks remain under the existing persistent application
-root's `device-locks` directory; this package does not change ownership settings.
+or ownership directory. Locks remain under the existing native OS application
+root's `device-locks` directory; on macOS that is still
+`~/Library/Application Support/nb1/device-locks`. `XDG_CONFIG_HOME` must be absolute; a relative
+value is an error even if `--config` explicitly selects a different file. Older
+macOS profile/library locations are not aliases or automatically migrated. See
+[configuration and coordination roots](../userconfig/README.md) before operating a
+candidate alongside an older daemon.
 
 ```yaml
 device: ""

@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/b1ug/nb1/internal/userconfig"
 	"gopkg.in/yaml.v3"
 )
 
@@ -51,11 +52,7 @@ type Selection struct {
 }
 
 func DefaultBaseDir() (string, error) {
-	base, err := os.UserConfigDir()
-	if err != nil {
-		return "", fmt.Errorf("find user configuration directory: %w", err)
-	}
-	return filepath.Abs(filepath.Join(base, "nb1"))
+	return userconfig.AppDir()
 }
 
 // Select implements --config > NB1_CONFIG > the user's nb1/config.yaml.

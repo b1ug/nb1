@@ -15,6 +15,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/b1ug/nb1/internal/service"
+	"github.com/b1ug/nb1/internal/userconfig"
 )
 
 type Manager struct {
@@ -33,7 +34,7 @@ func New() (*Manager, error) {
 	if uid <= 0 || os.Getuid() != uid {
 		return nil, fmt.Errorf("请使用当前普通用户；不支持root、sudo或身份切换")
 	}
-	configRoot, err := os.UserConfigDir()
+	configRoot, err := userconfig.RootDir()
 	if err != nil {
 		return nil, err
 	}

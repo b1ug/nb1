@@ -15,7 +15,7 @@ func TestSelectionPrecedenceDoesNotCreateStorage(t *testing.T) {
 	root := t.TempDir()
 	if runtime.GOOS == "windows" {
 		t.Setenv("AppData", filepath.Join(root, "roaming"))
-	} else if runtime.GOOS != "darwin" {
+	} else {
 		t.Setenv("XDG_CONFIG_HOME", filepath.Join(root, "xdg"))
 	}
 	base, err := DefaultBaseDir()

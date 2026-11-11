@@ -10,6 +10,8 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+
+	"github.com/b1ug/nb1/internal/userconfig"
 )
 
 // ErrBusy means another lease already owns the selected device.
@@ -27,12 +29,14 @@ type Lease struct {
 // create it. Direct and daemon controllers must use the same directory.
 func DefaultDir() (string, error) {
 	// A cache location may be purged while a process still holds the old lock
-	// inode. Keep ownership files in persistent per-user application storage.
-	base, err := os.UserConfigDir()
+	// inode. This native coordination root deliberately stays stable when the
+	// user configuration or library moves to XDG storage. Existing controllers
+	// may still own handles protected by these same lock files.
+	base, err := userconfig.NativeAppDir()
 	if err != nil {
 		return "", fmt.Errorf("find ownership directory: %w", err)
 	}
-	return filepath.Join(base, "nb1", "device-locks"), nil
+	return filepath.Join(base, "device-locks"), nil
 }
 
 // Acquire immediately acquires ownership of serial, or returns ErrBusy. An

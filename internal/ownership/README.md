@@ -15,7 +15,8 @@ if err != nil {
 defer device.Close() // 后注册，先关闭设备，再释放所有权
 ```
 
-- 默认目录为 `os.UserConfigDir()/nb1/device-locks`，使用持久应用目录，避免缓存清理重建锁文件。Unix 创建目录0700、文件0600，拒绝共享权限的现有目录、最终目录符号链接和锁文件符号链接。Windows 继承用户应用目录的 ACL；Unix 权限数字不等于 Windows ACL。锁文件必须是普通文件，FIFO 等特殊文件会被拒绝。
+- 默认目录通过 `userconfig.NativeAppDir()` 保留既有 `os.UserConfigDir()/nb1/device-locks`：macOS 仍是 `~/Library/Application Support/nb1/device-locks`，与当前日常程序使用同一把锁；Linux 使用 `$XDG_CONFIG_HOME/nb1/device-locks`，变量为空时使用 `~/.config/nb1/device-locks`；Windows 保留 `%AppData%\nb1\device-locks`。Linux 非空 `XDG_CONFIG_HOME` 必须是绝对路径，不能按工作目录解释。持久应用目录避免缓存清理重建锁文件。Unix 创建目录0700、文件0600，拒绝共享权限的现有目录、最终目录符号链接和锁文件符号链接。Windows 继承用户应用目录的 ACL；Unix 权限数字不等于 Windows ACL。锁文件必须是普通文件，FIFO 等特殊文件会被拒绝。
+- macOS 用户配置和默认库改用 XDG，不迁移设备所有权锁；配置文件位置与跨进程协调位置是两项设置。显式 `NB1_LOCK_DIR`/`--lock-dir` 仍须由控制同一硬件的所有进程保持一致。服务管理协调锁也保留原生固定位置；不自动迁移、探测或删除旧根和锁文件。[配置与协调根说明](../userconfig/README.md)
 - 文件名为 serial 的 SHA-256，不把任意设备字符串当路径，也不写 PID、时间或用户信息。
 - macOS/Linux 使用非阻塞 `flock`；Windows 使用 `LockFileEx` 的排他、立即失败标志。锁由打开的文件描述符持有，进程退出后由操作系统释放。没有依赖 PID 检测或超时清理。
 - `Lease.Close` 可重复或并发调用。必须先停止原生 I/O 并关闭 HID，随后才释放 lease。原生调用尚未结束时提前释放会允许新控制器进入。

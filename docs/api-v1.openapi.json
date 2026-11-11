@@ -56,7 +56,7 @@
     "terminal_job_eviction": "LRU, only terminal records",
     "ttl_refresh_on_access": false,
     "active_jobs": "pinned until terminal cleanup",
-    "number_spelling": "Integer fields reject signs, decimal fractions and exponent notation. HSV accepts at most six ordinary fractional decimal digits. JSON Schema validates mathematical values and cannot distinguish all these token spellings.",
+    "number_spelling": "Integer tokens reject fractions and exponent notation. Action and RGB8 integer fields require unsigned digit tokens. Sequence integer fields accept JSON -0 where zero is within the numeric bounds. HSV accepts unsigned ordinary decimals with at most six fractional digits. JSON Schema validates mathematical values and cannot distinguish all these token spellings.",
     "cross_field_constraints": [
       "len(sequence.steps) * repeat <= 1024",
       "nominal duration <= 86400000 ms",
@@ -3297,19 +3297,19 @@
             "type": "integer",
             "minimum": 0,
             "maximum": 255,
-            "x-json-number-syntax": "ordinary nonnegative integer without sign, fraction or exponent"
+            "x-json-number-syntax": "ordinary JSON integer with no fraction or exponent; numeric bounds apply"
           },
           "g": {
             "type": "integer",
             "minimum": 0,
             "maximum": 255,
-            "x-json-number-syntax": "ordinary nonnegative integer without sign, fraction or exponent"
+            "x-json-number-syntax": "ordinary JSON integer with no fraction or exponent; numeric bounds apply"
           },
           "b": {
             "type": "integer",
             "minimum": 0,
             "maximum": 255,
-            "x-json-number-syntax": "ordinary nonnegative integer without sign, fraction or exponent"
+            "x-json-number-syntax": "ordinary JSON integer with no fraction or exponent; numeric bounds apply"
           }
         },
         "required": [
@@ -3403,7 +3403,7 @@
         "type": "integer",
         "minimum": 0,
         "maximum": 2,
-        "x-json-number-syntax": "ordinary nonnegative integer without sign, fraction or exponent",
+        "x-json-number-syntax": "ordinary JSON integer with no fraction or exponent; numeric bounds apply",
         "default": 0,
         "description": "0 addresses both outputs. 1 and 2 select physical output channels."
       },
@@ -3411,7 +3411,7 @@
         "type": "integer",
         "minimum": 0,
         "maximum": 600000,
-        "x-json-number-syntax": "ordinary nonnegative integer without sign, fraction or exponent",
+        "x-json-number-syntax": "ordinary JSON integer with no fraction or exponent; numeric bounds apply",
         "multipleOf": 10,
         "default": 0
       },
@@ -3419,21 +3419,21 @@
         "type": "integer",
         "minimum": 10,
         "maximum": 600000,
-        "x-json-number-syntax": "ordinary nonnegative integer without sign, fraction or exponent",
+        "x-json-number-syntax": "ordinary JSON integer with no fraction or exponent; numeric bounds apply",
         "multipleOf": 10
       },
       "HoldMS": {
         "type": "integer",
         "minimum": 0,
         "maximum": 3600000,
-        "x-json-number-syntax": "ordinary nonnegative integer without sign, fraction or exponent",
+        "x-json-number-syntax": "ordinary JSON integer with no fraction or exponent; numeric bounds apply",
         "default": 0
       },
       "IntervalMS": {
         "type": "integer",
         "minimum": 50,
         "maximum": 600000,
-        "x-json-number-syntax": "ordinary nonnegative integer without sign, fraction or exponent"
+        "x-json-number-syntax": "ordinary JSON integer with no fraction or exponent; numeric bounds apply"
       },
       "Target": {
         "type": "object",
@@ -3442,7 +3442,7 @@
             "type": "integer",
             "minimum": 0,
             "maximum": 2,
-            "x-json-number-syntax": "ordinary nonnegative integer without sign, fraction or exponent"
+            "x-json-number-syntax": "ordinary JSON integer with no fraction or exponent; numeric bounds apply"
           },
           "color": {
             "$ref": "#/components/schemas/ExactColor"
@@ -3461,7 +3461,7 @@
             "type": "integer",
             "minimum": 0,
             "maximum": 2,
-            "x-json-number-syntax": "ordinary nonnegative integer without sign, fraction or exponent"
+            "x-json-number-syntax": "ordinary JSON integer with no fraction or exponent; numeric bounds apply"
           },
           "color": {
             "$ref": "#/components/schemas/CanonicalColor"
@@ -3592,7 +3592,7 @@
             "type": "integer",
             "minimum": 1,
             "maximum": 1024,
-            "x-json-number-syntax": "ordinary nonnegative integer without sign, fraction or exponent",
+            "x-json-number-syntax": "ordinary JSON integer with no fraction or exponent; numeric bounds apply",
             "default": 1
           },
           "on_finish": {
@@ -3667,7 +3667,7 @@
             "type": "integer",
             "minimum": 1,
             "maximum": 1024,
-            "x-json-number-syntax": "ordinary nonnegative integer without sign, fraction or exponent",
+            "x-json-number-syntax": "ordinary JSON integer with no fraction or exponent; numeric bounds apply",
             "default": 1
           },
           "on_finish": {
@@ -3845,7 +3845,7 @@
             "type": "integer",
             "minimum": 1,
             "maximum": 1024,
-            "x-json-number-syntax": "ordinary nonnegative integer without sign, fraction or exponent",
+            "x-json-number-syntax": "ordinary JSON integer with no fraction or exponent; numeric bounds apply",
             "default": 1
           },
           "on_finish": {
@@ -3904,7 +3904,7 @@
             "type": "integer",
             "minimum": 1,
             "maximum": 1024,
-            "x-json-number-syntax": "ordinary nonnegative integer without sign, fraction or exponent",
+            "x-json-number-syntax": "ordinary JSON integer with no fraction or exponent; numeric bounds apply",
             "default": 1
           },
           "on_finish": {
@@ -3997,7 +3997,8 @@
         "additionalProperties": false,
         "x-compiled-steps-per-cycle": 1,
         "x-runtime-constraints": [
-          "Compiled nominal duration must be <= 86400000 ms."
+          "Compiled nominal duration must be <= 86400000 ms.",
+          "Action integer tokens use unsigned digits, with no fraction or exponent."
         ],
         "description": "Ends in hold after one step.",
         "examples": [
@@ -4023,7 +4024,8 @@
         "additionalProperties": false,
         "x-compiled-steps-per-cycle": 1,
         "x-runtime-constraints": [
-          "Compiled nominal duration must be <= 86400000 ms."
+          "Compiled nominal duration must be <= 86400000 ms.",
+          "Action integer tokens use unsigned digits, with no fraction or exponent."
         ],
         "description": "Ends in hold after one step.",
         "examples": [
@@ -4056,7 +4058,8 @@
         "additionalProperties": false,
         "x-compiled-steps-per-cycle": 1,
         "x-runtime-constraints": [
-          "Compiled nominal duration must be <= 86400000 ms."
+          "Compiled nominal duration must be <= 86400000 ms.",
+          "Action integer tokens use unsigned digits, with no fraction or exponent."
         ],
         "description": "Ends in hold after one step.",
         "examples": [
@@ -4083,21 +4086,21 @@
             "type": "integer",
             "minimum": 10,
             "maximum": 3600010,
-            "x-json-number-syntax": "ordinary nonnegative integer without sign, fraction or exponent",
+            "x-json-number-syntax": "ordinary JSON integer with no fraction or exponent; numeric bounds apply",
             "default": 250
           },
           "off_ms": {
             "type": "integer",
             "minimum": 10,
             "maximum": 3600010,
-            "x-json-number-syntax": "ordinary nonnegative integer without sign, fraction or exponent",
+            "x-json-number-syntax": "ordinary JSON integer with no fraction or exponent; numeric bounds apply",
             "default": 250
           },
           "cycles": {
             "type": "integer",
             "minimum": 1,
             "maximum": 512,
-            "x-json-number-syntax": "ordinary nonnegative integer without sign, fraction or exponent",
+            "x-json-number-syntax": "ordinary JSON integer with no fraction or exponent; numeric bounds apply",
             "default": 1
           },
           "on_finish": {
@@ -4111,7 +4114,8 @@
         "additionalProperties": false,
         "x-compiled-steps-per-cycle": 2,
         "x-runtime-constraints": [
-          "Compiled nominal duration must be <= 86400000 ms."
+          "Compiled nominal duration must be <= 86400000 ms.",
+          "Action integer tokens use unsigned digits, with no fraction or exponent."
         ],
         "description": "Finite host Action compiled and executed by the core.",
         "examples": [
@@ -4142,14 +4146,14 @@
             "type": "integer",
             "minimum": 330,
             "maximum": 9600314,
-            "x-json-number-syntax": "ordinary nonnegative integer without sign, fraction or exponent",
+            "x-json-number-syntax": "ordinary JSON integer with no fraction or exponent; numeric bounds apply",
             "default": 2000
           },
           "cycles": {
             "type": "integer",
             "minimum": 1,
             "maximum": 60,
-            "x-json-number-syntax": "ordinary nonnegative integer without sign, fraction or exponent",
+            "x-json-number-syntax": "ordinary JSON integer with no fraction or exponent; numeric bounds apply",
             "default": 1
           },
           "on_finish": {
@@ -4163,7 +4167,8 @@
         "additionalProperties": false,
         "x-compiled-steps-per-cycle": 17,
         "x-runtime-constraints": [
-          "Compiled nominal duration must be <= 86400000 ms."
+          "Compiled nominal duration must be <= 86400000 ms.",
+          "Action integer tokens use unsigned digits, with no fraction or exponent."
         ],
         "description": "Finite host Action compiled and executed by the core.",
         "examples": [
@@ -4197,14 +4202,14 @@
             "type": "integer",
             "minimum": 0,
             "maximum": 3600000,
-            "x-json-number-syntax": "ordinary nonnegative integer without sign, fraction or exponent",
+            "x-json-number-syntax": "ordinary JSON integer with no fraction or exponent; numeric bounds apply",
             "default": 700
           },
           "cycles": {
             "type": "integer",
             "minimum": 1,
             "maximum": 341,
-            "x-json-number-syntax": "ordinary nonnegative integer without sign, fraction or exponent",
+            "x-json-number-syntax": "ordinary JSON integer with no fraction or exponent; numeric bounds apply",
             "default": 1
           },
           "on_finish": {
@@ -4218,7 +4223,8 @@
         "additionalProperties": false,
         "x-compiled-steps-per-cycle": 3,
         "x-runtime-constraints": [
-          "Compiled nominal duration must be <= 86400000 ms."
+          "Compiled nominal duration must be <= 86400000 ms.",
+          "Action integer tokens use unsigned digits, with no fraction or exponent."
         ],
         "description": "Finite host Action compiled and executed by the core.",
         "examples": [
@@ -4244,14 +4250,14 @@
             "type": "integer",
             "minimum": 40,
             "maximum": 7200040,
-            "x-json-number-syntax": "ordinary nonnegative integer without sign, fraction or exponent",
+            "x-json-number-syntax": "ordinary JSON integer with no fraction or exponent; numeric bounds apply",
             "default": 2000
           },
           "cycles": {
             "type": "integer",
             "minimum": 1,
             "maximum": 256,
-            "x-json-number-syntax": "ordinary nonnegative integer without sign, fraction or exponent",
+            "x-json-number-syntax": "ordinary JSON integer with no fraction or exponent; numeric bounds apply",
             "default": 1
           },
           "on_finish": {
@@ -4265,7 +4271,8 @@
         "additionalProperties": false,
         "x-compiled-steps-per-cycle": 4,
         "x-runtime-constraints": [
-          "Compiled nominal duration must be <= 86400000 ms."
+          "Compiled nominal duration must be <= 86400000 ms.",
+          "Action integer tokens use unsigned digits, with no fraction or exponent."
         ],
         "description": "Finite host Action compiled and executed by the core.",
         "examples": [
@@ -4294,14 +4301,14 @@
             "type": "integer",
             "minimum": 200,
             "maximum": 2400000,
-            "x-json-number-syntax": "ordinary nonnegative integer without sign, fraction or exponent",
+            "x-json-number-syntax": "ordinary JSON integer with no fraction or exponent; numeric bounds apply",
             "default": 3000
           },
           "cycles": {
             "type": "integer",
             "minimum": 1,
             "maximum": 256,
-            "x-json-number-syntax": "ordinary nonnegative integer without sign, fraction or exponent",
+            "x-json-number-syntax": "ordinary JSON integer with no fraction or exponent; numeric bounds apply",
             "default": 1
           },
           "on_finish": {
@@ -4315,7 +4322,8 @@
         "additionalProperties": false,
         "x-compiled-steps-per-cycle": 4,
         "x-runtime-constraints": [
-          "Compiled nominal duration must be <= 86400000 ms."
+          "Compiled nominal duration must be <= 86400000 ms.",
+          "Action integer tokens use unsigned digits, with no fraction or exponent."
         ],
         "description": "Finite host Action compiled and executed by the core.",
         "examples": [
@@ -4342,14 +4350,14 @@
             "type": "integer",
             "minimum": 150,
             "maximum": 4200143,
-            "x-json-number-syntax": "ordinary nonnegative integer without sign, fraction or exponent",
+            "x-json-number-syntax": "ordinary JSON integer with no fraction or exponent; numeric bounds apply",
             "default": 3000
           },
           "cycles": {
             "type": "integer",
             "minimum": 1,
             "maximum": 128,
-            "x-json-number-syntax": "ordinary nonnegative integer without sign, fraction or exponent",
+            "x-json-number-syntax": "ordinary JSON integer with no fraction or exponent; numeric bounds apply",
             "default": 1
           },
           "on_finish": {
@@ -4362,7 +4370,8 @@
         "additionalProperties": false,
         "x-compiled-steps-per-cycle": 8,
         "x-runtime-constraints": [
-          "Compiled nominal duration must be <= 86400000 ms."
+          "Compiled nominal duration must be <= 86400000 ms.",
+          "Action integer tokens use unsigned digits, with no fraction or exponent."
         ],
         "description": "Finite host Action compiled and executed by the core.",
         "examples": [
@@ -4632,13 +4641,13 @@
             "type": "integer",
             "minimum": 1,
             "maximum": 1024,
-            "x-json-number-syntax": "ordinary nonnegative integer without sign, fraction or exponent"
+            "x-json-number-syntax": "ordinary JSON integer with no fraction or exponent; numeric bounds apply"
           },
           "nominal_duration_ms": {
             "type": "integer",
             "minimum": 1,
             "maximum": 86400000,
-            "x-json-number-syntax": "ordinary nonnegative integer without sign, fraction or exponent"
+            "x-json-number-syntax": "ordinary JSON integer with no fraction or exponent; numeric bounds apply"
           },
           "required_capabilities": {
             "type": "array",
@@ -4693,13 +4702,13 @@
             "type": "integer",
             "minimum": 0,
             "maximum": 1024,
-            "x-json-number-syntax": "ordinary nonnegative integer without sign, fraction or exponent"
+            "x-json-number-syntax": "ordinary JSON integer with no fraction or exponent; numeric bounds apply"
           },
           "total_steps": {
             "type": "integer",
             "minimum": 1,
             "maximum": 1024,
-            "x-json-number-syntax": "ordinary nonnegative integer without sign, fraction or exponent"
+            "x-json-number-syntax": "ordinary JSON integer with no fraction or exponent; numeric bounds apply"
           },
           "created_at": {
             "type": "string",
@@ -4790,7 +4799,7 @@
             "type": "integer",
             "minimum": 0,
             "maximum": 1024,
-            "x-json-number-syntax": "ordinary nonnegative integer without sign, fraction or exponent"
+            "x-json-number-syntax": "ordinary JSON integer with no fraction or exponent; numeric bounds apply"
           },
           "observed": {
             "oneOf": [

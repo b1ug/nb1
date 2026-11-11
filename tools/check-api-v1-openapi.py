@@ -92,6 +92,9 @@ for path, item in document['paths'].items():
 assert len(operations) == 15 and len(document['paths']) == 13
 rank = lambda request: 0 if request['method'] == 'PUT' else 1 if request['operation'] == 'preview' else 2 if request['operation'] == 'submitJob' else 3
 requests.sort(key=rank)
+requests.append({'name': 'sequence-negative-zero', 'method': 'POST', 'path': '/v1/preview',
+                 'body': '{"sequence":{"timing":"serial","steps":[{"targets":[{"led":-0,"color":"#123456"}],"fade_ms":-0,"hold_ms":-0}]}}',
+                 'operation': 'preview', 'valid': True})
 negative = [
     ('integer-token-fraction', '{"action":{"kind":"fade","color":"red","duration_ms":10.0}}'),
     ('duplicate-field', '{"action":{"kind":"off"},"action":{"kind":"off"}}'),

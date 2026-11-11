@@ -1,77 +1,68 @@
 # 命令完成后，用 blink(1) 通知
 
-这个 Python 3 标准库示例包装现有 `nb1` CLI：命令成功显示绿色，失败显示红色，默认显示 1.5 秒，最后熄灯。可用于构建、测试或 Agent 任务结束提醒。使用者必须明确选择 daemon 已配置的设备。
+这个 Python 3 标准库示例调用正式 `nb1 control run`：命令成功显示绿色，失败显示红色，默认停留 1.5 秒后熄灯。灯光由 daemon 编译 Action、执行 Sequence 并发布 Job 终态。示例不直连 USB、不安装服务。
 
-示例不实现 HTTP 客户端、不直连 USB，也不安装服务。底层执行仍由现有 daemon、Program 和实例绑定回执负责。
+## 预览与执行
 
-## 先预览，再执行
-
-准备好 Python 3.8+、当前候选版 `nb1` 和已经运行的本地 daemon。旧版 CLI 或 daemon 可能没有 `control prepare`，会停止通知，不回退到无回执或直控。
-
-默认是 dry-run：**既不执行用户命令，也不调用 nb1**，只输出命令 argv 和成功/失败两种 Program。
+准备 Python 3.8+、支持 Action／Sequence／Job API 的 nb1 和已配置设备的本地 daemon。默认 dry-run 既不执行用户命令，也不调用 nb1，只显示 argv 和两种 Action 输入：
 
 ```sh
 python3 examples/command-notify/notify.py --serial 20005601 -- go test ./...
 ```
 
-明确加 `--execute` 才执行命令并发送灯光通知。每次执行需要一个**尚不存在**的报告文件，避免覆盖上一任务的未知回执：
+明确加 `--execute` 才执行命令并通知。每次使用尚不存在的报告文件：
 
 ```sh
 python3 examples/command-notify/notify.py \
   --execute --nb1-binary /absolute/path/to/nb1 \
-  --endpoint http://127.0.0.1:8931 --serial 20005601 \
+  --endpoint http://127.0.0.1:18000 --serial 20005601 \
   --report ./build-notify-001.json -- go test ./...
 ```
 
-Windows PowerShell 中使用当前安装的 Python 命令和 `.exe` 路径，例如：
+示例 endpoint 需替换为使用者自己的本地 daemon 地址。Windows PowerShell 可使用 `py -3` 和对应 `nb1.exe` 路径。`--` 后的参数原样传给 subprocess，使用 `shell=False`，不展开管道、重定向或 shell 表达式。子命令输出保留；通知摘要写 stderr，完整报告写入 JSON。
 
-```powershell
-py -3 examples/command-notify/notify.py --execute --nb1-binary C:\tools\nb1.exe --serial 20005601 --report .\build-notify-001.json -- go test ./...
+## 一个 Action、一个 Job、一次提交
+
+通知输入使用一个有限 `blink` Action：
+
+```json
+{"action":{"kind":"blink","led":0,"color":"#00a000","on_ms":1500,"off_ms":10,"cycles":1,"on_finish":"off"}}
 ```
 
-`--` 后是可执行文件及其逐项参数，按 argv 传给 `subprocess`，没有 `eval` 或隐式 shell。管道、重定向和 `&&` 不会自行展开；需要脚本时直接调用相应脚本解释器。子命令 stdout/stderr 原样保留；最终结果摘要写到 stderr，完整 JSON 写入 `--report`。
-
-## 一个 Program，一次提交
-
-命令结束后，示例调用一次 `control prepare`，保存原 `request_id`、`expected_daemon_instance_id`、设备、策略和完整 Program，再调用一次：
+它停留指定颜色、停留黑色 10ms，再由同一个 Job 完成结束清理。示例先生成并持久保存 Job ID、原输入和查询 argv，再调用一次：
 
 ```text
-nb1 control --mode daemon --endpoint <origin> --timeout <remaining>s 
-  run <serial> <temporary-program.json> --policy reject
-  --request-id <original-request> --expected-daemon-instance-id <original-instance> --wait
+nb1 control --endpoint <origin> --timeout <remaining>s
+  run <serial> <temporary-action.json> --id <saved-id> --wait
 ```
 
-Program 是“指定颜色 → 短时停留 → 黑色”，并带 `repeat: 1`、`on_finish: off`。熄灯属于同一个任务，不再追加第二个设色请求。`--wait` 由现有 CLI 使用原回执查询终态。成功/失败颜色可通过 `--success-color '#00a000'`、`--failure-color '#b40000'` 修改；`--duration-ms` 接受 10–10000 毫秒、10 毫秒的整数倍。
+CLI 只向 `POST /v1/jobs` 提交一次，之后用 `GET /v1/jobs/<id>` 等待终态。设备忙时由正式入口拒绝新工作，不抢占现有任务。成功／失败颜色可用 `--success-color`、`--failure-color` 修改；`--duration-ms` 接受 10–10000ms、10ms 的整数倍。`--notify-timeout` 默认 10 秒，覆盖提交与等待；超时不会取消 daemon 中的任务。
 
-默认 `--policy reject`，设备已有任务时不打断。`queue` 或 `replace` 必须显式指定；排队可能超过通知等待预算。`--notify-timeout` 默认 10 秒，覆盖 prepare、提交和等待，不能强制终止 daemon 或正在执行的原生 USB 调用。
-
-## 命令结果与通知结果分开
-
-包装器的退出码保留子命令结果：成功为 0，失败保留原码，无法启动为 127；POSIX 信号退出转换为 `128 + signal`。灯通知失败不把成功构建改为失败，也不把失败构建改为成功。参数或报告创建失败时返回 2，且命令尚未执行。需要强制检查灯通知的流水线应另读报告：
+报告格式为 schema_version 2：
 
 | 字段 | 含义 |
 | --- | --- |
-| `command.exit_code` | 子命令原始退出码；POSIX 信号在这里仍是负数 |
-| `notification.state` | `not_submitted` / `prepared` / `unknown` / `succeeded` / `failed` |
-| `notification.outcome_unknown` | 是否无法确认已尝试提交的最终结果 |
-| `notification.final_off` | 仅匹配 Program 的成功终态标记 `daemon_job_confirmed`；其余为 `not_confirmed` |
-| `notification.binding` | 原实例与原 request ID，提交前已保存 |
-| `notification.receipt_lookup_argv` | 使用原二元组只读查询的完整 argv |
+| `command.exit_code` | 原始子命令退出码；POSIX 信号在这里仍为负数 |
+| `notification.input` | 提交的原始 Action 封套 |
+| `notification.job_id` | 提交前已保存的唯一 Job ID |
+| `notification.job_lookup_argv` | `control job ID` 的只读查询 argv |
+| `notification.state` | `not_submitted`／`unknown`／`succeeded`／`failed`／`cancelled` |
+| `notification.outcome_unknown` | 尚未确认提交尝试的结果 |
+| `notification.final_off` | 仅匹配 ID、serial 的成功 CLI 终态标为 `daemon_job_confirmed` |
 
-超时、响应丢失、CLI 结果不能解码或实例改变时，示例不重试 POST、不重新 prepare、不换键补发，也不会另发“清理”请求。原任务可能仍在运行，不能承诺此时灯已经熄灭。报告保存了同一 Program，供人工判断和后续查询；不要把 `request_not_found` 当作原任务未执行的证明。
+通知故障不改变子命令结果：成功保留 0、失败保留原码、启动失败为 127；POSIX 信号映射为 `128 + signal`。参数或初次报告创建失败时返回 2，命令尚未开始。命令阶段收到 Ctrl+C 时跳过通知。
 
-`daemon_job_confirmed` 表示当前 daemon 已确认该任务与其结束清理成功，仍是软件/读回证据，不是摄像头或未来不会被其他任务改色的保证。回执保存在 daemon 内存中，不保证跨重启去重。中断包装器不等于取消已提交任务；命令执行阶段收到 Ctrl+C 时跳过通知。
+响应丢失、超时、拒绝或无效 CLI 输出均不自动重放；无法从输出确认结果时保守记为 unknown。使用报告保存的 `job_lookup_argv` 查询同一个 Job。确需取消时显式执行 `nb1 control --endpoint <origin> cancel <saved-id> --wait`。包装器不自动补发取消或熄灯请求。
 
-## 支持与验证边界
+`daemon_job_confirmed` 是 daemon 的完成／清理证据，不是摄像头验收。Job 保存在内存中，重启或保留期结束可能使其不可查询；查询不到不能证明从未执行，也不能据此自动生成新 ID 重播。
 
-代码只使用 Python 标准库，按跨平台 argv、临时文件关闭后再交给 CLI、原子替换报告文件的方式编写。Windows 使用可执行的 `nb1.exe`，macOS/Linux 使用对应平台 CLI；不依赖 shell 脚本、Node、外部 Python 包或 Windows SCM。
-
-软件契约测试覆盖成功与失败命令、原样 argv、prepare 失败、通知超时/结果未知不重复提交、终态失败不夸大熄灯、报告持久化失败不提交，以及旧报告不覆盖：
+## 软件验证与 Stop 示例
 
 ```sh
-python3 -m unittest discover -s examples/command-notify -p 'test_*.py' -v
+NB1_NOTIFY_TEST_BINARY=/absolute/path/to/current/nb1 \
+  python3 -m unittest discover -s examples/command-notify -p 'test_*.py' -v
 ```
 
-如已有当前 `nb1` 二进制，可设置 `NB1_NOTIFY_TEST_BINARY` 指向它，再运行相同测试命令；额外三项本地 HTTP fixture 测试会调用真实 CLI，验证命令成功/失败、实例绑定、响应丢失和超时只提交一次。未设置时这三项明确跳过。fixture 不连接 USB，也不启动真实 daemon。
+14 项测试包含控制流、当前真实 CLI＋临时端口 synthetic HTTP、合成 Stop JSON。覆盖退出码、单次 POST、有限 Action、Job 终态、响应丢失后原 ID 查询、超时／忙／离线／无效响应、报告保存失败与重复事件。未设置二进制时，真实 CLI 的测试明确跳过。
 
-本轮验证环境为当前 macOS；fake CLI 与真实 CLI 的本地 HTTP fixture 验证仅证明软件约定。Windows/Linux 上机运行、各系统 USB 实物、旧 OS、mk3 和真实拔插仍分别待验。包装器不会扩大底层 SDK/GID 的已验证支持范围。
+[Codex Stop 示例](CODEX.md) 复用相同通知实现，默认仅预览。synthetic 测试不等于 live hook：没有启动真实 Codex 回合、修改用户 hook 配置或验证灯具联动。当前软件验证也不替代其他 OS、旧系统、USB 型号或 MK3 的实物验收。

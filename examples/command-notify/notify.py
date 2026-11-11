@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run an argv command, then notify through the existing receipt-aware nb1 CLI."""
+"""Run an argv command, then notify through the current nb1 Job CLI."""
 
 import argparse
 import json
@@ -11,21 +11,17 @@ import subprocess
 import sys
 import tempfile
 import time
+import uuid
 
 
-def program(color, duration_ms):
-    return {
-        "steps": [
-            {"led": 0, "color": color, "fade_ms": 0, "hold_ms": duration_ms},
-            {"led": 0, "color": "#000000", "fade_ms": 0, "hold_ms": 0},
-        ],
-        "repeat": 1,
-        "on_finish": "off",
-    }
+def action(color, duration_ms):
+    # One blink holds the color, then black, and completes with off cleanup.
+    return {"kind": "blink", "led": 0, "color": color, "on_ms": duration_ms,
+            "off_ms": 10, "cycles": 1, "on_finish": "off"}
 
 
 def save_report(path, report, create=False):
-    """Keep the original request binding durable before the single submission."""
+    """Keep the original Job ID and input durable before the single submission."""
     encoded = json.dumps(report, ensure_ascii=False, indent=2) + "\n"
     if create:
         with path.open("x", encoding="utf-8") as output:
@@ -46,7 +42,7 @@ def save_report(path, report, create=False):
 
 
 def cli_prefix(options, seconds):
-    return [options.nb1_binary, "control", "--mode", "daemon", "--endpoint",
+    return [options.nb1_binary, "control", "--endpoint",
             options.endpoint, "--timeout", "{:.6f}s".format(seconds)]
 
 
@@ -71,41 +67,22 @@ def notify(options, report, report_path):
             raise subprocess.TimeoutExpired("nb1", options.notify_timeout)
         return budget
 
-    # prepare only reads the daemon instance and generates a binding in the CLI.
-    try:
-        seconds = remaining()
-        result, binding = cli_json(cli_prefix(options, seconds) + ["prepare"], seconds)
-    except (OSError, subprocess.TimeoutExpired) as error:
-        notification.update(state="not_submitted", error=str(error))
-        return
-    if (result.returncode != 0 or not isinstance(binding, dict)
-            or not isinstance(binding.get("request_id"), str) or not binding["request_id"]
-            or not isinstance(binding.get("expected_daemon_instance_id"), str)
-            or not binding["expected_daemon_instance_id"]):
-        notification.update(state="not_submitted", error="prepare did not return a valid binding",
-                            cli_exit_code=result.returncode, cli_stderr=result.stderr)
-        return
-
-    notification.update(state="prepared", binding=binding)
-    notification["receipt_lookup_argv"] = cli_prefix(options, options.notify_timeout) + [
-        "request", options.serial, binding["request_id"],
-        "--expected-daemon-instance-id", binding["expected_daemon_instance_id"]]
-    # If this fails, no POST has been attempted. Never lose the binding and then
-    # submit anyway. The report includes the exact Program and admission policy.
+    job_id = "notify_" + uuid.uuid4().hex
+    notification["job_id"] = job_id
+    notification["job_lookup_argv"] = cli_prefix(options, options.notify_timeout) + ["job", job_id]
+    # Never submit unless the exact input and original Job ID are durable.
     save_report(report_path, report)
 
     with tempfile.TemporaryDirectory(prefix="nb1-notify-") as directory:
-        path = Path(directory) / "notification.program.json"
-        path.write_text(json.dumps(notification["program"]), encoding="utf-8")
+        path = Path(directory) / "notification.action.json"
+        path.write_text(json.dumps(notification["input"]), encoding="utf-8")
         try:
             seconds = remaining()
         except subprocess.TimeoutExpired as error:
             notification.update(state="not_submitted", error=str(error))
             return
         argv = cli_prefix(options, seconds) + [
-            "run", options.serial, str(path), "--policy", options.policy,
-            "--request-id", binding["request_id"],
-            "--expected-daemon-instance-id", binding["expected_daemon_instance_id"], "--wait"]
+            "run", options.serial, str(path), "--id", job_id, "--wait"]
         # From this point, any interrupted/invalid CLI result is conservative:
         # the daemon may already have admitted the task. There is no second POST.
         notification.update(state="unknown", outcome_unknown=True)
@@ -116,17 +93,17 @@ def notify(options, report, report_path):
             notification["error"] = str(error)
             return
         notification.update(cli_exit_code=result.returncode, cli_stderr=result.stderr)
-        if (isinstance(job, dict) and isinstance(job.get("id"), str) and job["id"]
-                and job.get("device") == options.serial
-                and job.get("program") == notification["program"]
+        if (isinstance(job, dict) and job.get("id") == job_id
+                and job.get("serial") == options.serial
                 and job.get("status") in ("succeeded", "failed", "cancelled")):
             notification.update(job=job, outcome_unknown=False)
             if result.returncode == 0 and job["status"] == "succeeded":
                 notification.update(state="succeeded", final_off="daemon_job_confirmed")
             else:
-                notification.update(state="failed", final_off="not_confirmed")
+                notification.update(state=job["status"] if job["status"] != "succeeded" else "failed",
+                                    final_off="not_confirmed")
         else:
-            notification["error"] = "CLI did not confirm a matching terminal job; query the original receipt"
+            notification["error"] = "CLI did not confirm a matching terminal Job; query the original Job ID"
 
 
 def parse_args(argv):
@@ -141,8 +118,7 @@ def parse_args(argv):
     parser.add_argument("--success-color", default="#00a000")
     parser.add_argument("--failure-color", default="#b40000")
     parser.add_argument("--duration-ms", type=int, default=1500)
-    parser.add_argument("--notify-timeout", type=float, default=10.0, help="shared prepare/submit/wait budget in seconds")
-    parser.add_argument("--policy", choices=("reject", "queue", "replace"), default="reject")
+    parser.add_argument("--notify-timeout", type=float, default=10.0, help="shared submit/wait budget in seconds")
     parser.add_argument("command", nargs=argparse.REMAINDER, help="-- command and its literal argv")
     options = parser.parse_args(argv)
     if options.command and options.command[0] == "--":
@@ -160,20 +136,20 @@ def parse_args(argv):
     if not math.isfinite(options.notify_timeout) or not 0 < options.notify_timeout <= 120:
         parser.error("--notify-timeout must be finite, positive and at most 120 seconds")
     if options.execute and options.report is None:
-        parser.error("--execute requires a new --report path to preserve the binding before submission")
+        parser.error("--execute requires a new --report path to preserve the Job ID before submission")
     return options
 
 
 def main(argv=None):
     options = parse_args(argv)
-    report = {"schema_version": 1, "mode": "execute" if options.execute else "dry_run",
+    report = {"schema_version": 2, "mode": "execute" if options.execute else "dry_run",
               "command": {"argv": options.command, "state": "not_run", "exit_code": None},
               "notification": {"state": "not_submitted", "serial": options.serial,
-                               "endpoint": options.endpoint, "policy": options.policy,
+                               "endpoint": options.endpoint,
                                "outcome_unknown": False, "final_off": "not_confirmed"}}
     if not options.execute:
-        report["notification"]["success_program"] = program(options.success_color, options.duration_ms)
-        report["notification"]["failure_program"] = program(options.failure_color, options.duration_ms)
+        report["notification"]["success_input"] = {"action": action(options.success_color, options.duration_ms)}
+        report["notification"]["failure_input"] = {"action": action(options.failure_color, options.duration_ms)}
         print(json.dumps(report, ensure_ascii=False, indent=2))
         return 0
     try:
@@ -190,8 +166,8 @@ def main(argv=None):
     except KeyboardInterrupt:
         report["command"].update(state="interrupted", exit_code=130)
     exit_code = report["command"]["exit_code"]
-    report["notification"]["program"] = program(options.success_color if exit_code == 0 else options.failure_color,
-                                                  options.duration_ms)
+    report["notification"]["input"] = {"action": action(options.success_color if exit_code == 0 else options.failure_color,
+                                                       options.duration_ms)}
     try:
         if report["command"]["state"] != "interrupted":
             notify(options, report, options.report)

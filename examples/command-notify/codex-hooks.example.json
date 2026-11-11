@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/absolute/path/to/python3 /absolute/path/to/nb1/examples/command-notify/codex_stop.py --execute --nb1-binary /absolute/path/to/nb1-binary --endpoint http://127.0.0.1:18000 --serial your-device-serial --report-dir /absolute/path/to/private-reports",
+            "timeout": 6
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -46,7 +46,7 @@ An omitted or empty `id` generates `j_` followed by ten random Crockford Base32 
 
 The daemon keeps each active Job. Terminal Jobs remain in a cache for up to thirty minutes and may be evicted sooner when the cache is full. Job lookups, matching duplicate submissions and terminal cancellation queries update their LRU order while leaving the original expiration time intact. A duplicate ID with the same device and JSON input returns the existing Job with HTTP 200. Different input or device returns HTTP 409. Input identity ignores object-key ordering and preserves array order and number spelling.
 
-The cache holds up to 4,096 terminal Jobs and evicts the least recently used terminal record when that limit is exceeded. Active Jobs stay pinned and release their execution plans when they become terminal. Device ownership and per-Sequence limits govern new execution. Cache capacity does not reject new Jobs.
+The cache holds up to 16,384 terminal Jobs and evicts the least recently used terminal record when that limit is exceeded. Active Jobs stay pinned and release their execution plans when they become terminal. Device ownership and per-Sequence limits govern new execution. Cache capacity does not reject new Jobs.
 
 Deduplication applies while the original record is retained. After expiration or eviction, submitting the same ID can start a new Job. The records belong to the current daemon process's memory.
 

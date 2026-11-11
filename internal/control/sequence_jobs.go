@@ -20,7 +20,7 @@ var (
 
 const (
 	SequenceJobRetention                       = 30 * time.Minute
-	sequenceJobMaxTerminalEntries              = 4096
+	sequenceJobMaxTerminalEntries              = 16384
 	originSequenceJob             recordOrigin = originPatternV2 + 1
 )
 

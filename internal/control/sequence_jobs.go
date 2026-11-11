@@ -48,9 +48,10 @@ type SequenceService interface {
 }
 
 type sequenceJobEntry struct {
-	fingerprint [32]byte
-	record      *record
-	expiresAt   time.Time
+	fingerprint     [32]byte
+	record          *record
+	expiresAt       time.Time
+	retainedTargets int
 }
 
 type sequenceJobStore struct {
@@ -152,7 +153,7 @@ func (e *Engine) SubmitSequence(ctx context.Context, serial, id string, fingerpr
 		}
 	}
 	candidate.state = recordState{ID: id, Device: serial, Status: "queued", CreatedAt: store.now().UTC()}
-	store.entries[id] = &sequenceJobEntry{fingerprint: fingerprint, record: candidate}
+	store.entries[id] = &sequenceJobEntry{fingerprint: fingerprint, record: candidate, retainedTargets: cost}
 	store.retainedTargets += cost
 	e.publishLocked(w, candidate, "reject")
 	return candidate.sequenceSnapshot(), false, nil
@@ -193,6 +194,16 @@ func (e *Engine) allocateSequenceJobIDLocked() (string, error) {
 	return "", errors.New("sequence job ID collision limit exceeded")
 }
 
+// Release the plan at terminal publication. Active execution reaches this
+// after cleanup and its final read. Identity and diagnostic metadata remain.
+func (e *Engine) finishSequenceJobLocked(r *record) {
+	entry := e.sequenceJobs.entries[r.state.ID]
+	entry.expiresAt = e.sequenceJobs.now().Add(SequenceJobRetention)
+	e.sequenceJobs.retainedTargets -= entry.retainedTargets
+	entry.retainedTargets = 0
+	r.program, r.frames = nil, nil
+}
+
 func (e *Engine) pruneSequenceJobsLocked() {
 	store := &e.sequenceJobs
 	now := store.now()
@@ -202,7 +213,6 @@ func (e *Engine) pruneSequenceJobsLocked() {
 		}
 		delete(store.entries, id)
 		delete(e.jobs, id)
-		store.retainedTargets -= entry.record.retainedCost()
 	}
 }
 

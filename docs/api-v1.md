@@ -46,7 +46,7 @@ An omitted or empty `id` generates `j_` followed by ten random Crockford Base32 
 
 The daemon keeps each active Job and retains terminal Jobs for thirty minutes. Lookups and duplicate submissions leave the original expiration time intact. A duplicate ID with the same device and JSON input returns the existing Job with HTTP 200. Different input or device returns HTTP 409. Input identity ignores object-key ordering and preserves array order and number spelling.
 
-The store holds up to 4,096 Jobs and 65,536 retained targets. New admission returns HTTP 429 when that budget is full. Active and retained terminal Jobs remain queryable throughout their window. State is held in the current daemon process's memory.
+The store holds up to 4,096 Jobs and 65,536 targets in active execution plans. A terminal Job retains its identity, status, progress and deduplication metadata while releasing its execution plan and target budget. New admission returns HTTP 429 when either budget is full. Active and retained terminal Jobs remain queryable throughout their window. State is held in the current daemon process's memory.
 
 ## Local colors and Patterns
 

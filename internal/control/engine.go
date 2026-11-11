@@ -391,7 +391,7 @@ func (e *Engine) finishLocked(r *record, status string, err error) {
 		}
 	}
 	if r.origin == originSequenceJob {
-		e.sequenceJobs.entries[r.state.ID].expiresAt = e.sequenceJobs.now().Add(SequenceJobRetention)
+		e.finishSequenceJobLocked(r)
 		return
 	}
 	e.history = append(e.history, r.state.ID)

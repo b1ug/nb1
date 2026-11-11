@@ -215,3 +215,6 @@ $RECYCLE.BIN/
 /*.txt
 /*.json
 /*.star
+
+# Python validation caches
+__pycache__/

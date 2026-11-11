@@ -338,7 +338,7 @@ class Smoke:
         raw, _ = self.user_command("homebrew-install-upgrade-service", [self.tools["python3"], self.account.pw_dir + "/brew-check.py",
             "--execute", "--brew", prefix + "/bin/brew", "--source-archive", self.account.pw_dir + "/brew-source.tar.gz",
             "--source-commit", self.args.source_commit, "--template", self.account.pw_dir + "/brew-template.rb.in",
-            "--baseline-cli", self.cli_path, "--output", self.account.pw_dir + "/brew-evidence"], allowed=(0, 1), timeout=900)
+            "--baseline-cli", self.cli_path, "--output", self.account.pw_dir + "/brew-evidence"], allowed=(0, 1), timeout=1300)
         report = json.loads(raw)
         self.report["homebrew_upgrade"] = report
         require(report.get("status") == "PASS" and report.get("service_mode") == "available", "combined Homebrew/service acceptance did not PASS")

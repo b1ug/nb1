@@ -44,6 +44,8 @@ class Acceptance:
         self.tapped = self.may_have_package = self.may_have_service = False
         self.child = None
         self.known_processes = []
+        self.deadline = time.monotonic()+1000
+        self.cleaning = False
         self.output_owned = False
         self.opener = build_opener(ProxyHandler({}))
         self.report = {'status': 'RUNNING', 'checks': [], 'commands': [], 'cleanup': [],
@@ -53,15 +55,21 @@ class Acceptance:
 
     def run(self, label, argv, expected=0, timeout=30, retain=True):
         began = time.monotonic()
+        timeout = min(timeout, 60 if self.cleaning else self.deadline-began)
+        require(timeout > 0, 'acceptance time budget exhausted before '+label)
         result = subprocess.run([str(x) for x in argv], capture_output=True, text=True,
-                                timeout=timeout, env=self.env, stdin=subprocess.DEVNULL)
+                                timeout=timeout, env=self.env, stdin=subprocess.DEVNULL, cwd=self.out)
         self.report['commands'].append({'label': label, 'exit_code': result.returncode,
                                        'seconds': round(time.monotonic()-began, 3)})
         if retain:
             stem = self.out/(str(len(self.report['commands'])).zfill(2)+'-'+label)
             stem.with_suffix('.stdout').write_text(result.stdout)
             stem.with_suffix('.stderr').write_text(result.stderr)
-        require(result.returncode == expected, label+' failed: '+result.stderr[-1600:])
+        if result.returncode != expected:
+            self.report['failure_output'] = {'label': label, 'stdout_tail': result.stdout[-8000:],
+                                             'stderr_tail': result.stderr[-8000:],
+                                             'truncated': len(result.stdout) > 8000 or len(result.stderr) > 8000}
+            raise CheckError(label+' failed: '+result.stderr[-1600:])
         require('panic:' not in result.stdout+result.stderr, label+' produced a panic')
         return result
 
@@ -305,6 +313,7 @@ class Acceptance:
         self.report['status'] = 'PASS'
 
     def cleanup(self):
+        self.cleaning = True
         service_clean = True
         package_clean = not self.may_have_package
         if self.may_have_service:

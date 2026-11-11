@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/fs"
 	"mime"
 	"net/http"
 	"strconv"
@@ -272,12 +271,6 @@ func (h *handler) serveLightDemo(w http.ResponseWriter, r *http.Request) {
 	}
 	data, err := webui.ReadFile(file)
 	if err != nil {
-		// A valid legacy bundle need not include Pattern or locale resources.
-		// Validation failure, including a missing required file, stays a 500.
-		if errors.Is(err, fs.ErrNotExist) && webui.Validate() == nil {
-			writeError(w, http.StatusNotFound, "not_found", "demo resource is not included in this build")
-			return
-		}
 		writeError(w, http.StatusInternalServerError, "internal_error", "embedded demo resource unavailable")
 		return
 	}

@@ -72,6 +72,10 @@ func publicSequenceDevice(state control.DeviceState) sequenceDeviceState {
 }
 
 func (h *handler) serveSequenceAPI(w http.ResponseWriter, r *http.Request) bool {
+	if r.URL.Path == "/demo" || strings.HasPrefix(r.URL.Path, "/demo/") {
+		h.serveLightDemo(w, r)
+		return true
+	}
 	switch r.URL.Path {
 	case "/healthz", "/v1/transport-metrics":
 		return false // Shared runtime read routes.

@@ -20,9 +20,10 @@ import (
 const maxBundleBytes = 256 * 1024
 const maxManifestBytes = 16 * 1024
 
-var assetNames = []string{"LICENSE.txt", "demo.css", "demo.js", "index.html", "orbit.css", "orbit.html", "orbit.js"}
-var patternAssetNames = []string{"patterns.css", "patterns.html", "patterns.js"}
-var bilingualAssetNames = []string{"i18n.js", "locales.js"}
+var assetNames = []string{
+	"LICENSE.txt", "demo.css", "demo.js", "index.html", "orbit.css", "orbit.html", "orbit.js",
+	"patterns.css", "patterns.html", "patterns.js", "i18n.js", "locales.js",
+}
 
 //go:embed all:dist manifest.lock.json
 var bundled embed.FS
@@ -82,16 +83,6 @@ func ReadFile(name string) ([]byte, error) {
 
 func knownAsset(name string) bool {
 	for _, allowed := range assetNames {
-		if name == allowed {
-			return true
-		}
-	}
-	for _, allowed := range patternAssetNames {
-		if name == allowed {
-			return true
-		}
-	}
-	for _, allowed := range bilingualAssetNames {
 		if name == allowed {
 			return true
 		}
@@ -226,37 +217,10 @@ func validateBundle(files fs.FS) error {
 			return fmt.Errorf("invalid web build tool version")
 		}
 	}
-	contracts := map[string]bool{"nb1-light-action/v1": false, "nb1-light-action/experimental-v2": false}
-	expectedAssets := len(assetNames)
-	hasPatterns, hasBilingual := false, false
-	switch len(record.Files) {
-	case len(assetNames):
-	case len(assetNames) + len(patternAssetNames):
-		hasPatterns = true
-	case len(assetNames) + len(patternAssetNames) + len(bilingualAssetNames):
-		hasPatterns, hasBilingual = true, true
-	default:
-		return fmt.Errorf("incomplete web asset set")
+	if len(record.APIContracts) != 1 || record.APIContracts[0] != "nb1-api/v1" {
+		return fmt.Errorf("web bundle requires the nb1-api/v1 contract")
 	}
-	if hasPatterns {
-		expectedAssets += len(patternAssetNames)
-		contracts["nb1-pattern-library/experimental-v2"] = false
-		contracts["nb1-pattern-record/experimental-v2"] = false
-	}
-	if hasBilingual {
-		expectedAssets += len(bilingualAssetNames)
-	}
-	if len(record.APIContracts) != len(contracts) {
-		return fmt.Errorf("invalid web API contract set")
-	}
-	for _, name := range record.APIContracts {
-		seen, known := contracts[name]
-		if !known || seen {
-			return fmt.Errorf("invalid web API contract set")
-		}
-		contracts[name] = true
-	}
-	if len(record.Files) != expectedAssets {
+	if len(record.Files) != len(assetNames) {
 		return fmt.Errorf("incomplete web asset set")
 	}
 	expected := map[string]bool{"manifest.json": true}
@@ -280,21 +244,9 @@ func validateBundle(files fs.FS) error {
 			return fmt.Errorf("web bundle exceeds %d bytes", maxBundleBytes)
 		}
 	}
-	// The extended profile is all-or-nothing. A complete declaration count
-	// cannot substitute an optional asset for one of the base resources.
 	for _, name := range assetNames {
 		if !expected[name] {
-			return fmt.Errorf("incomplete base web asset set")
-		}
-	}
-	for _, name := range patternAssetNames {
-		if expected[name] != hasPatterns {
-			return fmt.Errorf("incomplete Pattern web asset profile")
-		}
-	}
-	for _, name := range bilingualAssetNames {
-		if expected[name] != hasBilingual {
-			return fmt.Errorf("incomplete bilingual Pattern web asset profile")
+			return fmt.Errorf("incomplete web asset set")
 		}
 	}
 	if treeDigest(contents) != record.Source.TreeSHA256 {

@@ -12,7 +12,7 @@ func bundleFixture(t *testing.T) (fstest.MapFS, manifest) {
 	t.Helper()
 	files := fstest.MapFS{}
 	clean := false
-	record := manifest{SchemaVersion: 1, Product: "nb1-web", AssetBase: "./", Source: sourceRecord{Repository: "local:nb1-web", Commit: strings.Repeat("1", 40), Dirty: &clean, TreeSHA256: strings.Repeat("2", 64)}, Build: buildRecord{Tool: "copy-static/v1", Node: "v24.0.0", LockfileSHA256: strings.Repeat("3", 64)}, APIContracts: []string{"nb1-light-action/v1", "nb1-light-action/experimental-v2"}}
+	record := manifest{SchemaVersion: 1, Product: "nb1-web", AssetBase: "./", Source: sourceRecord{Repository: "local:nb1-web", Commit: strings.Repeat("1", 40), Dirty: &clean, TreeSHA256: strings.Repeat("2", 64)}, Build: buildRecord{Tool: "copy-static/v1", Node: "v24.0.0", LockfileSHA256: strings.Repeat("3", 64)}, APIContracts: []string{"nb1-api/v1"}}
 	for _, name := range assetNames {
 		data := []byte("fixture " + name)
 		size := int64(len(data))
@@ -70,7 +70,7 @@ func TestBundleValidation(t *testing.T) {
 		{"absolute", func(_ fstest.MapFS, r *manifest) { r.Files[0].Path = "/LICENSE.txt" }},
 		{"missing-bytes", func(_ fstest.MapFS, r *manifest) { r.Files[0].Bytes = nil }},
 		{"unknown-contract", func(_ fstest.MapFS, r *manifest) { r.APIContracts[0] = "other" }},
-		{"duplicate-contract", func(_ fstest.MapFS, r *manifest) { r.APIContracts[0] = r.APIContracts[1] }},
+		{"duplicate-contract", func(_ fstest.MapFS, r *manifest) { r.APIContracts = append(r.APIContracts, r.APIContracts[0]) }},
 		{"changed-asset", func(f fstest.MapFS, _ *manifest) { f["dist/demo.js"].Data = []byte("changed") }},
 		{"extra", func(f fstest.MapFS, _ *manifest) { f["dist/.env"] = &fstest.MapFile{Data: []byte("fixture")} }},
 		{"directory", func(f fstest.MapFS, _ *manifest) { f["dist/demo.js"].Mode = fs.ModeDir }},
@@ -166,158 +166,14 @@ func TestEmbeddedBundle(t *testing.T) {
 	}
 }
 
-func patternBundleFixture(t *testing.T) (fstest.MapFS, manifest) {
-	t.Helper()
-	files, record := bundleFixture(t)
-	for _, name := range patternAssetNames {
-		data := []byte("fixture " + name)
-		size := int64(len(data))
-		files["dist/"+name] = &fstest.MapFile{Data: data}
-		record.Files = append(record.Files, assetRecord{Path: name, Bytes: &size, SHA256: digest(data)})
-	}
-	record.APIContracts = append(record.APIContracts, "nb1-pattern-library/experimental-v2", "nb1-pattern-record/experimental-v2")
-	refreshProfileFixture(t, files, &record)
-	return files, record
-}
-
-func refreshProfileFixture(t *testing.T, files fstest.MapFS, record *manifest) {
-	t.Helper()
-	contents := map[string][]byte{}
-	for _, item := range record.Files {
-		contents[item.Path] = files["dist/"+item.Path].Data
-	}
-	record.Source.TreeSHA256 = treeDigest(contents)
-	setFixtureManifest(t, files, *record)
-}
-
-func TestPatternBundleProfileIsCompleteAndBoundToContracts(t *testing.T) {
-	files, _ := patternBundleFixture(t)
-	if err := validateBundle(files); err != nil {
-		t.Fatal(err)
-	}
-	for _, name := range patternAssetNames {
-		t.Run("missing/"+name, func(t *testing.T) {
-			files, record := patternBundleFixture(t)
+func TestBundleRequiresEveryRuntimeAsset(t *testing.T) {
+	for _, name := range assetNames {
+		t.Run(name, func(t *testing.T) {
+			files, _ := bundleFixture(t)
 			delete(files, "dist/"+name)
-			for i, item := range record.Files {
-				if item.Path == name {
-					record.Files = append(record.Files[:i], record.Files[i+1:]...)
-					break
-				}
-			}
-			refreshProfileFixture(t, files, &record)
 			if err := validateBundle(files); err == nil {
-				t.Fatal("partial Pattern profile accepted")
+				t.Fatal("missing required asset accepted")
 			}
 		})
-	}
-	for _, mode := range []string{"base-contracts", "unknown-contract", "substituted-base-resource"} {
-		t.Run(mode, func(t *testing.T) {
-			files, record := patternBundleFixture(t)
-			switch mode {
-			case "base-contracts":
-				record.APIContracts = record.APIContracts[:2]
-			case "unknown-contract":
-				record.APIContracts[3] = "unknown/v1"
-			case "substituted-base-resource":
-				files, record = bundleFixture(t)
-				item := &record.Files[0]
-				delete(files, "dist/"+item.Path)
-				item.Path = "patterns.html"
-				files["dist/"+item.Path] = &fstest.MapFile{Data: []byte("substitution")}
-				size := int64(len(files["dist/"+item.Path].Data))
-				item.Bytes, item.SHA256 = &size, digest(files["dist/"+item.Path].Data)
-			}
-			refreshProfileFixture(t, files, &record)
-			if err := validateBundle(files); err == nil {
-				t.Fatal("mismatched asset/contract profile accepted")
-			}
-		})
-	}
-}
-
-func bilingualBundleFixture(t *testing.T) (fstest.MapFS, manifest) {
-	t.Helper()
-	files, record := patternBundleFixture(t)
-	for _, name := range bilingualAssetNames {
-		data := []byte("fixture " + name)
-		size := int64(len(data))
-		files["dist/"+name] = &fstest.MapFile{Data: data}
-		record.Files = append(record.Files, assetRecord{Path: name, Bytes: &size, SHA256: digest(data)})
-	}
-	refreshProfileFixture(t, files, &record)
-	return files, record
-}
-
-func TestBilingualBundleProfilePreservesClosedLegacyProfiles(t *testing.T) {
-	for _, fixture := range []struct {
-		name string
-		make func(*testing.T) (fstest.MapFS, manifest)
-	}{{"base", bundleFixture}, {"patterns", patternBundleFixture}, {"bilingual-patterns", bilingualBundleFixture}} {
-		t.Run(fixture.name, func(t *testing.T) {
-			files, _ := fixture.make(t)
-			if err := validateBundle(files); err != nil {
-				t.Fatal(err)
-			}
-		})
-	}
-	for _, mode := range []string{"missing-i18n", "missing-locales", "missing-pattern", "base-contracts", "extra", "tampered", "substituted-pattern", "base-plus-locales", "budget"} {
-		t.Run(mode, func(t *testing.T) {
-			files, record := bilingualBundleFixture(t)
-			remove := func(names ...string) {
-				for _, name := range names {
-					delete(files, "dist/"+name)
-					for i, item := range record.Files {
-						if item.Path == name {
-							record.Files = append(record.Files[:i], record.Files[i+1:]...)
-							break
-						}
-					}
-				}
-			}
-			switch mode {
-			case "missing-i18n":
-				remove("i18n.js")
-			case "missing-locales":
-				remove("locales.js")
-			case "missing-pattern":
-				remove("patterns.js")
-			case "base-contracts":
-				record.APIContracts = record.APIContracts[:2]
-			case "extra":
-				files["dist/extra.js"] = &fstest.MapFile{Data: []byte("extra")}
-			case "tampered":
-				files["dist/locales.js"].Data = []byte("tampered")
-			case "substituted-pattern":
-				remove("patterns.js", "patterns.css")
-			case "base-plus-locales":
-				remove("patterns.html", "patterns.js", "patterns.css")
-				record.APIContracts = record.APIContracts[:2]
-			case "budget":
-				for i := range record.Files {
-					if record.Files[i].Path == "locales.js" {
-						data := []byte(strings.Repeat("x", maxBundleBytes))
-						size := int64(len(data))
-						files["dist/locales.js"].Data = data
-						record.Files[i].Bytes, record.Files[i].SHA256 = &size, digest(data)
-					}
-				}
-			}
-			refreshProfileFixture(t, files, &record)
-			if err := validateBundle(files); err == nil {
-				t.Fatal("incomplete, substituted, changed or oversized bilingual profile accepted")
-			}
-		})
-	}
-}
-
-func TestEmbeddedBilingualAssets(t *testing.T) {
-	if err := Validate(); err != nil {
-		t.Fatal(err)
-	}
-	for _, name := range bilingualAssetNames {
-		if data, err := ReadFile(name); err != nil || len(data) == 0 {
-			t.Fatalf("embedded %s: %v", name, err)
-		}
 	}
 }

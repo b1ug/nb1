@@ -13,11 +13,11 @@ import tempfile
 
 MAX_BYTES = 256 * 1024
 MAX_MANIFEST_BYTES = 16 * 1024
-ASSETS = frozenset(("index.html", "demo.css", "demo.js", "orbit.html", "orbit.css", "orbit.js", "LICENSE.txt"))
-CONTRACTS = frozenset(("nb1-light-action/v1", "nb1-light-action/experimental-v2"))
-PATTERN_ASSETS = ASSETS | {"patterns.html", "patterns.js", "patterns.css"}
-BILINGUAL_ASSETS = PATTERN_ASSETS | {"i18n.js", "locales.js"}
-PATTERN_CONTRACTS = CONTRACTS | {"nb1-pattern-library/experimental-v2", "nb1-pattern-record/experimental-v2"}
+ASSETS = frozenset((
+    "index.html", "demo.css", "demo.js", "orbit.html", "orbit.css", "orbit.js", "LICENSE.txt",
+    "patterns.html", "patterns.js", "patterns.css", "i18n.js", "locales.js",
+))
+CONTRACTS = frozenset(("nb1-api/v1",))
 PENDING = b"Waiting for verified nb1-web dist.\n"
 
 
@@ -125,7 +125,7 @@ def names(directory):
     result = set()
     with os.scandir(str(directory)) as entries:
         for entry in entries:
-            require(len(result) < len(BILINGUAL_ASSETS) + 1, "too many dist entries")
+            require(len(result) < len(ASSETS) + 1, "too many dist entries")
             result.add(entry.name)
     return result
 
@@ -135,14 +135,8 @@ def validate_directory(directory, expected_commit, expected_manifest_sha):
     require(hex_value(expected_manifest_sha, 64), "expected manifest SHA-256 must be 64 lowercase hex characters")
     directory = Path(directory)
     present = names(directory)
-    if present == ASSETS | {"manifest.json"}:
-        assets, required_contracts = ASSETS, CONTRACTS
-    elif present == PATTERN_ASSETS | {"manifest.json"}:
-        assets, required_contracts = PATTERN_ASSETS, PATTERN_CONTRACTS
-    elif present == BILINGUAL_ASSETS | {"manifest.json"}:
-        assets, required_contracts = BILINGUAL_ASSETS, PATTERN_CONTRACTS
-    else:
-        raise InvalidBundle("dist must match the complete base, Pattern or bilingual Pattern asset profile and manifest.json")
+    require(present == ASSETS | {"manifest.json"}, "dist must match the complete 13-file v1 asset profile")
+    assets, required_contracts = ASSETS, CONTRACTS
     wanted = assets | {"manifest.json"}
     data = read_plain(directory / "manifest.json", MAX_MANIFEST_BYTES)
     require(sha(data) == expected_manifest_sha, "manifest SHA-256 differs from the explicit pin")

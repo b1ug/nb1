@@ -1,4 +1,3 @@
-import copy
 import importlib.util
 import json
 import tempfile
@@ -21,15 +20,10 @@ def build_text():
     return "\n".join(lines) + "\n"
 
 
-def pulse_preview():
-    program = {"steps": [
-        {"led": 0, "color": "#000000", "fade_ms": 0, "hold_ms": 0},
-        {"led": 0, "color": "#00ff00", "fade_ms": 60, "hold_ms": 0},
-        {"led": 0, "color": "#000000", "fade_ms": 240, "hold_ms": 700}], "repeat": 3, "on_finish": "off"}
-    return {"result": {"contract": "nb1-light-action/v1", "action": {"kind": "pulse", "color": "#00ff00"},
-                        "program": copy.deepcopy(program)},
-            "preview": {"program": program, "nominal_duration_ms": 3090, "total_steps": 9,
-                        "validation": {"program": "valid", "device": "not_requested"}}}
+def help_evidence():
+    return {"schema_version": 1, "validation": "cli_help_only", "checks": [
+        {"arguments": arguments, "stdout": "\n".join(markers)}
+        for arguments, markers in ARTIFACT.HELP_CHECKS]}
 
 
 class CandidateTests(unittest.TestCase):
@@ -57,31 +51,33 @@ class CandidateTests(unittest.TestCase):
             with self.subTest(broken=broken), self.assertRaises(ValueError):
                 ARTIFACT.module_documents("\n".join(map(json.dumps, broken)))
 
-    def test_preview_rejects_execution_or_changed_compilation(self):
-        ARTIFACT.check_preview(pulse_preview())
+    def test_smoke_rejects_missing_commands_and_runtime_claims(self):
+        ARTIFACT.check_smoke(help_evidence())
         for mutate in [lambda x: x.update(job={"status": "queued"}),
-                       lambda x: x["preview"].update(device={"serial": "20005601"}),
-                       lambda x: x["preview"].update(nominal_duration_ms=3000),
-                       lambda x: x["preview"]["program"].update(on_finish="hold"),
-                       lambda x: x["preview"]["validation"].update(device="supported")]:
-            value = pulse_preview(); mutate(value)
+                       lambda x: x.update(validation="preview_compiled"),
+                       lambda x: x.update(schema_version=True),
+                       lambda x: x["checks"].pop(),
+                       lambda x: x["checks"][1].update(arguments=["control", "--mode", "direct"]),
+                       lambda x: x["checks"][2].update(stdout="old CLI help")]:
+            value = help_evidence(); mutate(value)
             with self.assertRaises(ValueError):
-                ARTIFACT.check_preview(value)
+                ARTIFACT.check_smoke(value)
 
-    def test_preview_runs_only_pure_action_with_isolated_config_and_blocked_lock(self):
+    def test_smoke_runs_only_help_with_isolated_config(self):
         scratch_paths = []
+        calls = []
         def fake_command(args, cwd):
             self.assertEqual(args[2], cwd / "setting.yaml")
-            self.assertEqual(args[3:7], ["control", "--mode", "direct", "--endpoint"])
-            self.assertIn("not-an-origin", args)
-            self.assertIn(cwd / "not-a-lock-directory", args)
-            self.assertEqual(args[-3:-1], ["light", "preview"])
+            self.assertEqual(args[-1], "--help")
+            arguments, markers = ARTIFACT.HELP_CHECKS[len(calls)]
+            self.assertEqual(args[3:], arguments)
             self.assertEqual((cwd / "setting.yaml").read_text(), "{}\n")
             scratch_paths.append(cwd)
-            return json.dumps(pulse_preview())
+            calls.append(arguments)
+            return "\n".join(markers)
         with patch.object(ARTIFACT, "command", fake_command):
-            ARTIFACT.preview(Path("/not-executed/nb1"))
-        self.assertTrue(scratch_paths)
+            ARTIFACT.smoke(Path("/not-executed/nb1"))
+        self.assertEqual(len(calls), 3)
         self.assertFalse(scratch_paths[0].exists())
 
     def test_verify_fails_on_tampering_missing_extra_or_symlink(self):
@@ -90,9 +86,9 @@ class CandidateTests(unittest.TestCase):
             (root / "nb1").write_bytes(b"candidate")
             (root / "LICENSE").write_bytes(b"license")
             ARTIFACT.write_json(root / "build.json", {"target": {"GOOS": "darwin"}})
-            ARTIFACT.write_json(root / "preview.json", pulse_preview())
-            names = ["LICENSE", "build.json", "nb1", "preview.json"]
-            checksum = "".join(ARTIFACT.digest(root / n) + "  " + n + "\n" for n in names)
+            ARTIFACT.write_json(root / "cli-help.json", help_evidence())
+            names = ["LICENSE", "build.json", "nb1", "cli-help.json"]
+            checksum = "".join(ARTIFACT.digest(root / n) + "  " + n + "\n" for n in sorted(names))
             (root / "SHA256SUMS").write_text(checksum)
             ARTIFACT.verify(root)
             (root / "nb1").write_bytes(b"tampered")

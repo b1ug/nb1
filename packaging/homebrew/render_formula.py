@@ -49,7 +49,7 @@ def validate(value):
             if part.isdigit() and len(part) > 1 and part.startswith("0"):
                 raise ValueError("numeric prerelease components cannot have leading zeroes")
     if tuple(map(int, version.split("-", 1)[0].split("."))) <= (0, 0, 1):
-        raise ValueError("historical v0.0.1 does not provide this draft's high-level preview test")
+        raise ValueError("historical v0.0.1 does not provide this draft's API v1 CLI commands")
     expected_url = "https://github.com/b1ug/nb1/archive/refs/tags/v" + version + ".tar.gz"
     if value["source_url"] != expected_url:
         raise ValueError("source_url must be the exact versioned upstream tag archive; no Actions/latest/branch URL")

@@ -57,7 +57,7 @@ define force-push
 endef
 
 # commands
-.PHONY: default run preview clean build build_windows build_mac build_linux install test bench doc build_docker rebuild_docker run_docker bash_docker publish_docker artifact
+.PHONY: default run smoke clean build build_windows build_mac build_linux install test bench doc build_docker rebuild_docker run_docker bash_docker publish_docker artifact
 default:
 	@echo "build target is required for $(BINARY)"
 	@exit 1
@@ -65,8 +65,8 @@ default:
 # basic commands
 run:
 	$(GORUN) . v
-preview:
-	python3 ci/check-build-artifact.py preview --binary ./$(BINARY)
+smoke:
+	python3 ci/check-build-artifact.py smoke --binary ./$(BINARY)
 clean:
 	rm -f $(BINARY)*
 

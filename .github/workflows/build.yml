@@ -56,6 +56,14 @@ jobs:
         run: |
           mkdir -p "$(dirname "$NB1_CANDIDATE_BINARY")"
           go build -mod=readonly -trimpath -o "$NB1_CANDIDATE_BINARY" .
+      - name: Check Formula help calls against the native Mac candidate without Homebrew
+        if: runner.os == 'macOS'
+        working-directory: packaging/homebrew
+        env:
+          NB1_HOMEBREW_TEST_BINARY: ${{ runner.temp }}/nb1-candidate-build/nb1
+        run: |
+          ruby --version
+          python3 -B -m unittest test_render_formula.FormulaDraftTests.test_rendered_formula_help_calls_use_current_binary -v
       - name: Stage and verify source-bound candidate without USB
         env:
           NB1_CANDIDATE_BINARY: ${{ runner.temp }}/nb1-candidate-build/nb1${{ matrix.extension }}

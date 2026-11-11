@@ -2,7 +2,7 @@
 
 这是一份本地审查材料，**没有可安装的 Formula、tap 或新 Release**。`nb1.rb.in` 不是 `.rb` 配方；`release-input.required.json` 的版本、URL、SHA、源码提交、最低macOS和组件范围均未填写。生成器遇到这些缺项就拒绝输出，不填虚构下载地址或校验和；测试中的合成 Formula 文本仅在内存渲染，CLI 负例使用会自动清理的临时fixture JSON，禁止将合成输入写成 `.rb` 配方。
 
-本片从 `85a3abd615a6bed6500fc255369d0dbd5dc46d85` 准备，只涉及打包设计及离线材料，没有运行brew、创建全局tap、安装、发布、调用USB或启动服务。tap仓库与Formula名称尚未最终批准，模板暂用 `Nb1`，不得把它当成已存在的安装命令。
+当前材料只涉及打包设计及离线检查，没有运行brew、创建全局tap、安装、发布、调用USB或启动服务。tap仓库与Formula名称尚未最终批准，模板暂用 `Nb1`，不得把它当成已存在的安装命令。
 
 ## 1. 两条路线，先把差别讲清楚
 
@@ -15,7 +15,7 @@ Homebrew官方区分源码Formula与预编译cask；homebrew/core的收录政策
 
 ## 2. Actions候选离可安装Release包还缺什么
 
-现有85a工作流只生成 `nb1-candidate-SOURCE-OS-ARCH` Actions artifact：二进制、LICENSE、build.json、preview.json和SHA256SUMS；CGO1、公开SDK/GID版本、干净VCS和Web manifest有本机软件核对。它没有正式版本、tar/zip安装布局、稳定Release资产、签名、最低OS或跨平台干净安装结论。SHA256SUMS只证明包内当前字节一致，不防文件和checksum一起被改，不是独立来源认证。
+现有工作流只生成 `nb1-candidate-SOURCE-OS-ARCH` Actions artifact：二进制、LICENSE、build.json、cli-help.json和SHA256SUMS；CGO1、公开SDK/GID版本、干净VCS和Web manifest有本机软件核对。它没有正式版本、tar/zip安装布局、稳定Release资产、签名、最低OS或跨平台干净安装结论。SHA256SUMS只证明包内当前字节一致，不防文件和checksum一起被改，不是独立来源认证。
 
 建议下一片包装约定（**名字/目录尚是提案**）：
 
@@ -29,20 +29,20 @@ nb1_VERSION_OS_ARCH/
   SHA256SUMS
 ```
 
-Unix用tar.gz保留可执行位；Windows用zip。归档只允许一个确定顶层目录、有限文件数/总字节、普通文件和受控目录，不放用户配置/图案库/锁文件/凭据，不自动展开到全局路径。拒绝绝对路径、`..`、符号/硬链接和大小写冲突；校验包外SHA及解包后的文件清单，再在新的私有临时目录做纯高级preview。这样把解压/布局问题与USB验收分开。
+Unix用tar.gz保留可执行位；Windows用zip。归档只允许一个确定顶层目录、有限文件数/总字节、普通文件和受控目录，不放用户配置/图案库/锁文件/凭据，不自动展开到全局路径。拒绝绝对路径、`..`、符号/硬链接和大小写冲突；校验包外SHA及解包后的文件清单，再在新的私有临时目录检查当前 CLI 帮助。这样把解压/布局问题与USB验收分开。
 
-最终Release还需真实tag与对应source、资产URL和单独下载校验值；旧v0.0.1保留。它早于本模板的high-level preview，不能把2023旧包当新功能的Homebrew来源。root与MCP是两个Go module；`nb1-mcp`若独立用`go install`发布，标签需 `adapters/mcp/vX.Y.Z`，root标签不会自动替代子module标签。[Go多模块标签](https://go.dev/doc/modules/managing-source)
+最终Release还需真实tag与对应source、资产URL和单独下载校验值；旧v0.0.1保留。它早于本模板要求的 API v1 CLI 命令，不能把2023旧包当新功能的Homebrew来源。root与MCP是两个Go module；`nb1-mcp`若独立用`go install`发布，标签需 `adapters/mcp/vX.Y.Z`，root标签不会自动替代子module标签。[Go多模块标签](https://go.dev/doc/modules/managing-source)
 
 ## 3. 原生动态库与平台补证
 
 | 平台 | 已有代码事实 | 下一包的实际检查 |
 | --- | --- | --- |
-| macOS arm64/Intel | GID37链接CoreFoundation/IOKit；非外部hidapi/libusb；CGO必需。 | 每架构Mach-O与`otool -L`、最低部署版本、非开发机下载运行；签名/公证策略另定。模板最低macOS必须显式填，不把CI runner名称自动变成承诺。 |
+| macOS arm64/Intel | GID原生后端链接CoreFoundation/IOKit；非外部hidapi/libusb；CGO必需。 | 每架构Mach-O与`otool -L`、最低部署版本、非开发机下载运行；签名/公证策略另定。模板最低macOS必须显式填，不把CI runner名称自动变成承诺。 |
 | Linux amd64/arm64 | GID内嵌HIDAPI/libusb头，链接rt；现有规则无libusb/libudev pkg-config。 | ELF interpreter/NEEDED、glibc/内核和目标发行版；真实普通用户设备权限与USB另测。不要凭印象添加系统依赖，也不默认sudo/chmod广泛授权。 |
 | Windows amd64 | GID链接Setupapi/hid，CGO/MinGW。 | PE/DLL imports、MinGW runtime是否随包需要、干净Windows无开发环境运行、路径空格/升级回退。Homebrew草案不覆盖原生Windows；Windows仍走自己的zip分发。 |
 | Windows386 | 有WOW64软件和StoreV2 NTFS证据。 | 32位依赖/OS/USB仍独立；不在首轮增加发行架构。 |
 
-这些检查不能由Linux容器或交叉编译替代。当前SDK b3/GID37矩阵7/11是平台中断下的分项证据，不是当前候选五平台全绿；MK3没有实体。外层nb1 MIT与依赖的完整notice范围要沿用现有GID来源审计，模板 `license "MIT"` 描述nb1项目声明，不替代内嵌依赖归属。审查工作区的 `gid/docs/dependency-sources.md` 有逐项记录；[GID源码](https://github.com/b1ug/gid)不能只按最外层MIT推断全部内嵌来源。
+这些检查不能由Linux容器或交叉编译替代。历史SDK b3/GID37矩阵7/11是平台中断下的分项证据，不是当前候选五平台全绿；MK3没有实体。外层nb1 MIT与依赖的完整notice范围要沿用现有GID来源审计，模板 `license "MIT"` 描述nb1项目声明，不替代内嵌依赖归属。审查工作区的 `gid/docs/dependency-sources.md` 有逐项记录；[GID源码](https://github.com/b1ug/gid)不能只按最外层MIT推断全部内嵌来源。
 
 ## 4. 当前源码Formula模板具体做什么
 
@@ -51,10 +51,10 @@ Unix用tar.gz保留可执行位；Windows用zip。归档只允许一个确定顶
 - 声明Go build依赖，CGO=1、GOWORK=off、GOTOOLCHAIN=local；不用当前Makefile里的时间/主机/分支注入。
 - 按官方当前Go流程，在fetch阶段下载并verify锁定module，install阶段通过`std_go_args`及`-mod=readonly`构建，不在构建阶段临时下载未知依赖。Homebrew当前Go可能与Actions固定Go不同，最终需记录实际编译器，不承诺两者逐字节相同。[Go Formula指引](https://docs.brew.sh/Language-Specific-Formulae)
 - 源码归档没有`.git`，Go build info未必有VCS。模板把显式source_commit/版本写入现有config的GitCommit/GitSummary供version查看；这不是独立证明那个归档确实对应此commit，仍须发布前核对tag/archive/hash。doctor的Go VCS字段不得因此冒称存在。
-- `test do`测试真正高级Pulse纯编译，使用显式临时config、无效endpoint和普通文件lock，不枚举USB/连接daemon；核对颜色、程序一致性、9步/3090ms/off和无Job。它不是只测help/version，也不播放灯。[Formula功能测试](https://docs.brew.sh/Formula-Cookbook)
+- `test do`仅检查安装后二进制的 `--help`、`control --help`、`control run --help`，使用显式临时config并核对 API v1 命令存在，不枚举USB或连接daemon。此检查不编译Action、不预览Sequence，不验证HTTP或硬件行为；Formula的功能与原生安装验收仍需另做。[Formula功能测试](https://docs.brew.sh/Formula-Cookbook)
 - 没有service、post_install、权限修改、自动自启、MCP宿主注册或用户库初始化。安装与启用daemon分别由用户明确选择。
 
-这里仅做Python本地fixture和生成文本的Ruby语法检查；没运行Homebrew DSL、brew style/audit/install/test/bottle，不能称模板已通过Homebrew验收。
+这里仅做Python本地fixture、生成文本的Ruby语法检查，以及用当前二进制实际执行模板的help调用；没运行Homebrew DSL、brew style/audit/install/test/bottle，不能称模板已通过Homebrew验收。
 
 ## 5. 离线工具如何审查
 
@@ -64,13 +64,15 @@ python3 packaging/homebrew/render_formula.py \
   --input packaging/homebrew/release-input.required.json --check-only
 ```
 
+可选真实命令检查（需要Ruby和当前Mac二进制）：`NB1_HOMEBREW_TEST_BINARY=/absolute/path/nb1 python3 -B -m unittest discover -s packaging/homebrew -p 'test_*.py' -v`。它在内存中渲染fixture，用最小DSL适配执行模板原有的三个help调用，不运行brew、不写合成`.rb`。Mac候选Actions在构建后执行同一检查；默认五项离线校验不设置该变量时会跳过这项真实命令检查。
+
 第二条当前必须非零退出，因为真实release值缺失。生成器还拒绝重复/未知/过大JSON、null/空值、错误SemVer、移动branch/latest/Actions URL、伪造格式的hash、缺省最低系统和未实现的MCP捆绑；synthetic fixture只能check-only，不能写`.rb`。若日后值齐全，显式`--out`只新建所指定的本地`.rb`，不覆盖现有文件、不创建tap目录、不联网或运行brew。
 
 **离线验证只能检查形状和绑定关系，不能证明URL现在可下载、tag真指向指定commit、SHA来自可信发布者或软件可安装。** 这些事实必须从真实已选发布包取得；目前全都没有填写，因此本片没有产出任何可安装的`.rb`。`remote_url_and_source_identity_verified:false`会出现在工具状态中，避免把本地格式检查当成远端认证。
 
 ## 6. MCP选择、命名与后续切片
 
-当前生成器只支持nb1-only，这是这一片的能力边界，不是用户永久放弃MCP。后续可选：
+当前生成器只支持nb1-only，这是当前能力边界，不是用户永久放弃MCP。后续可选：
 
 1. nb1和nb1-mcp分开包/配方，各自版本与Go下限清楚；适合只用CLI的用户。
 2. 同套件显式含两binary，清单分别记录来源/module/版本；release仍要处理root与子module标签。MCP不需要USB库，也不该为了它申请设备权限。

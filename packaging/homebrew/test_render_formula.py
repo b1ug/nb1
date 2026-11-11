@@ -1,5 +1,7 @@
 import hashlib
 import json
+import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -21,7 +23,7 @@ def fixture():
 
 
 class FormulaDraftTests(unittest.TestCase):
-    def test_synthetic_render_is_memory_only_and_keeps_native_shared_api(self):
+    def test_synthetic_render_is_memory_only_and_checks_current_help(self):
         data = fixture(); text = render(data, allow_fixture=True)
         self.assertNotIn("@@", text)
         self.assertIn('ENV["CGO_ENABLED"] = "1"', text)
@@ -29,10 +31,50 @@ class FormulaDraftTests(unittest.TestCase):
         self.assertIn('system "go", "mod", "download"', text)
         self.assertIn('"-mod=readonly"', text)
         self.assertIn('"--config", testpath/"setting.yaml"', text)
-        self.assertIn('"light", "preview"', text)
+        self.assertIn('[["control", "--help"], "nb1 control [command]"]', text)
+        self.assertIn('[["control", "run", "--help"], "nb1 control run SERIAL FILE"]', text)
+        self.assertNotIn('"--mode"', text)
         self.assertNotIn("service do", text)
         self.assertNotIn("post_install", text)
         with self.assertRaises(ValueError): render(data)
+
+    @unittest.skipUnless(os.environ.get("NB1_HOMEBREW_TEST_BINARY") and shutil.which("ruby"),
+                         "set NB1_HOMEBREW_TEST_BINARY to a current nb1 executable and provide Ruby")
+    def test_rendered_formula_help_calls_use_current_binary(self):
+        # Evaluate the actual in-memory test block. The DSL shim does not fetch,
+        # build, install or run Homebrew; only Open3's help calls are executed.
+        harness = r'''
+require "pathname"
+class Formula
+  class << self
+    attr_reader :test_block
+    def desc(*args); end
+    def homepage(*args); end
+    def url(*args); end
+    def version(*args); end
+    def sha256(*args); end
+    def license(*args); end
+    def depends_on(*args); end
+    def deny_network_access!; end
+    def test(&block); @test_block = block; end
+  end
+  def bin; Pathname.new(ENV.fetch("NB1_HOMEBREW_TEST_BINARY")).dirname; end
+  def testpath; Pathname.new(ENV.fetch("NB1_FORMULA_TESTPATH")); end
+  def assert(value, message = nil); raise(message || "assertion failed") unless value; end
+  def assert_match(expected, actual); assert(actual.include?(expected), actual); end
+  def assert_equal(expected, actual); assert(expected == actual, actual); end
+end
+'''
+        binary = Path(os.environ["NB1_HOMEBREW_TEST_BINARY"]).resolve(strict=True)
+        self.assertEqual(binary.name, "nb1", "the macOS Formula installs a binary named nb1")
+        text = render(fixture(), allow_fixture=True)
+        with tempfile.TemporaryDirectory(prefix="nb1-formula-help-") as temporary:
+            result = subprocess.run(["ruby", "-e", harness + text + "\nNb1.new.instance_eval(&Nb1.test_block)\n"],
+                                    env=dict(os.environ, NB1_HOMEBREW_TEST_BINARY=str(binary),
+                                             NB1_FORMULA_TESTPATH=temporary),
+                                    cwd=temporary, capture_output=True, text=True, timeout=30)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            self.assertEqual(sorted(p.name for p in Path(temporary).iterdir()), ["setting.yaml"])
 
     def test_required_real_release_values_are_not_available(self):
         data = read_input(DIRECTORY / "release-input.required.json")

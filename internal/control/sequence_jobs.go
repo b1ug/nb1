@@ -1,6 +1,7 @@
 package control
 
 import (
+	"container/list"
 	"context"
 	"crypto/rand"
 	"errors"
@@ -14,14 +15,12 @@ import (
 
 var (
 	ErrSequenceJobConflict = errors.New("sequence job ID has a different accepted payload")
-	ErrSequenceJobCapacity = errors.New("sequence job capacity exhausted")
 	ErrSequenceCapability  = errors.New("sequence device capability missing")
 )
 
 const (
 	SequenceJobRetention                       = 30 * time.Minute
-	sequenceJobMaxEntries                      = 4096
-	sequenceJobMaxRetainedTargets              = 65536
+	sequenceJobMaxTerminalEntries              = 4096
 	originSequenceJob             recordOrigin = originPatternV2 + 1
 )
 
@@ -48,28 +47,26 @@ type SequenceService interface {
 }
 
 type sequenceJobEntry struct {
-	fingerprint     [32]byte
-	record          *record
-	expiresAt       time.Time
-	retainedTargets int
+	fingerprint [32]byte
+	record      *record
+	expiresAt   time.Time
+	terminal    *list.Element
 }
 
 type sequenceJobStore struct {
-	entries         map[string]*sequenceJobEntry
-	retainedTargets int
-	maxEntries      int
-	maxTargets      int
-	now             func() time.Time
-	random          io.Reader
+	entries            map[string]*sequenceJobEntry
+	terminals          list.List
+	maxTerminalEntries int
+	now                func() time.Time
+	random             io.Reader
 }
 
 func newSequenceJobStore() sequenceJobStore {
 	return sequenceJobStore{
-		entries:    make(map[string]*sequenceJobEntry),
-		maxEntries: sequenceJobMaxEntries,
-		maxTargets: sequenceJobMaxRetainedTargets,
-		now:        time.Now,
-		random:     rand.Reader,
+		entries:            make(map[string]*sequenceJobEntry),
+		maxTerminalEntries: sequenceJobMaxTerminalEntries,
+		now:                time.Now,
+		random:             rand.Reader,
 	}
 }
 
@@ -135,10 +132,6 @@ func (e *Engine) SubmitSequence(ctx context.Context, serial, id string, fingerpr
 		return SequenceJob{}, false, err
 	}
 	store := &e.sequenceJobs
-	cost := candidate.retainedCost()
-	if len(store.entries) >= store.maxEntries || cost > store.maxTargets-store.retainedTargets {
-		return SequenceJob{}, false, ErrSequenceJobCapacity
-	}
 	w, err := e.canAdmitLocked(serial, "reject")
 	if err != nil {
 		return SequenceJob{}, false, err
@@ -153,8 +146,7 @@ func (e *Engine) SubmitSequence(ctx context.Context, serial, id string, fingerpr
 		}
 	}
 	candidate.state = recordState{ID: id, Device: serial, Status: "queued", CreatedAt: store.now().UTC()}
-	store.entries[id] = &sequenceJobEntry{fingerprint: fingerprint, record: candidate, retainedTargets: cost}
-	store.retainedTargets += cost
+	store.entries[id] = &sequenceJobEntry{fingerprint: fingerprint, record: candidate}
 	e.publishLocked(w, candidate, "reject")
 	return candidate.sequenceSnapshot(), false, nil
 }
@@ -170,6 +162,7 @@ func (e *Engine) sequenceReplayLocked(serial, id string, fingerprint [32]byte) (
 	if entry.record.state.Device != serial || entry.fingerprint != fingerprint {
 		return SequenceJob{}, false, ErrSequenceJobConflict
 	}
+	e.touchSequenceJobLocked(entry)
 	return entry.record.sequenceSnapshot(), true, nil
 }
 
@@ -199,20 +192,38 @@ func (e *Engine) allocateSequenceJobIDLocked() (string, error) {
 func (e *Engine) finishSequenceJobLocked(r *record) {
 	entry := e.sequenceJobs.entries[r.state.ID]
 	entry.expiresAt = e.sequenceJobs.now().Add(SequenceJobRetention)
-	e.sequenceJobs.retainedTargets -= entry.retainedTargets
-	entry.retainedTargets = 0
 	r.program, r.frames = nil, nil
+	entry.terminal = e.sequenceJobs.terminals.PushFront(entry)
+	for e.sequenceJobs.terminals.Len() > e.sequenceJobs.maxTerminalEntries {
+		oldest := e.sequenceJobs.terminals.Back().Value.(*sequenceJobEntry)
+		e.evictSequenceJobLocked(oldest)
+	}
+}
+
+func (e *Engine) touchSequenceJobLocked(entry *sequenceJobEntry) {
+	if entry.terminal != nil {
+		e.sequenceJobs.terminals.MoveToFront(entry.terminal)
+	}
+}
+
+func (e *Engine) evictSequenceJobLocked(entry *sequenceJobEntry) {
+	if entry.terminal == nil {
+		return
+	}
+	e.sequenceJobs.terminals.Remove(entry.terminal)
+	entry.terminal = nil
+	delete(e.sequenceJobs.entries, entry.record.state.ID)
+	delete(e.jobs, entry.record.state.ID)
 }
 
 func (e *Engine) pruneSequenceJobsLocked() {
 	store := &e.sequenceJobs
 	now := store.now()
-	for id, entry := range store.entries {
+	for _, entry := range store.entries {
 		if entry.expiresAt.IsZero() || now.Before(entry.expiresAt) {
 			continue
 		}
-		delete(store.entries, id)
-		delete(e.jobs, id)
+		e.evictSequenceJobLocked(entry)
 	}
 }
 
@@ -227,6 +238,7 @@ func (e *Engine) SequenceJob(id string) (SequenceJob, error) {
 	if entry == nil {
 		return SequenceJob{}, ErrNotFound
 	}
+	e.touchSequenceJobLocked(entry)
 	return entry.record.sequenceSnapshot(), nil
 }
 
@@ -245,6 +257,7 @@ func (e *Engine) CancelSequence(ctx context.Context, id string) (SequenceJob, er
 		return SequenceJob{}, ErrNotFound
 	}
 	e.cancelRecordLocked(entry.record)
+	e.touchSequenceJobLocked(entry)
 	return entry.record.sequenceSnapshot(), nil
 }
 

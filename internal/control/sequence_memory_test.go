@@ -28,7 +28,7 @@ func largeSequenceMemoryInput(timing string) sequence.Sequence {
 	return input
 }
 
-func assertSequenceMemory(t *testing.T, e *Engine, id string, targets int, hasPlan bool) {
+func assertSequenceMemory(t *testing.T, e *Engine, id string, hasPlan bool) {
 	t.Helper()
 	e.mu.Lock()
 	defer e.mu.Unlock()
@@ -37,9 +37,6 @@ func assertSequenceMemory(t *testing.T, e *Engine, id string, targets int, hasPl
 		t.Fatal("job identity reservation was lost")
 	}
 	r := entry.record
-	if entry.retainedTargets != targets || e.sequenceJobs.retainedTargets != targets {
-		t.Fatalf("retained targets entry=%d store=%d, want %d", entry.retainedTargets, e.sequenceJobs.retainedTargets, targets)
-	}
 	if (r.program != nil || r.frames != nil) != hasPlan {
 		t.Fatalf("execution plan retention differs from %v", hasPlan)
 	}
@@ -56,14 +53,9 @@ func TestSequenceTerminalReleasesLargePlansAfterCleanup(t *testing.T) {
 		t.Run(timing, func(t *testing.T) {
 			e, backend := startScopeEngine(t, time.Hour)
 			input := largeSequenceMemoryInput(timing)
-			cost := sequence.MaxExecutedSteps
-			if timing == sequence.TimingInterval {
-				cost = 2 + 2*sequence.MaxExecutedSteps
-			}
 			clock := time.Now()
 			e.mu.Lock()
 			e.sequenceJobs.now = func() time.Time { return clock }
-			e.sequenceJobs.maxTargets = cost
 			e.mu.Unlock()
 			advance := func(delta time.Duration) {
 				e.mu.Lock()
@@ -88,24 +80,24 @@ func TestSequenceTerminalReleasesLargePlansAfterCleanup(t *testing.T) {
 			}
 			awaitEngineSignal(t, setGate.entered)
 			advance(time.Hour)
-			assertSequenceMemory(t, e, job.ID, cost, true)
-			if _, _, err := e.SubmitSequence(ctx, "a", "budget-before", [32]byte{}, prepareSequenceTest); !errors.Is(err, ErrSequenceJobCapacity) {
-				t.Fatalf("active target budget: %v", err)
+			assertSequenceMemory(t, e, job.ID, true)
+			if _, _, err := e.SubmitSequence(ctx, "a", "while-active", [32]byte{}, prepareSequenceTest); !errors.Is(err, ErrBusy) {
+				t.Fatalf("active device ownership: %v", err)
 			}
 			cancelled, err := e.CancelSequence(ctx, job.ID)
 			if err != nil || cancelled.Status != "cancelling" {
 				t.Fatalf("cancel: %+v, %v", cancelled, err)
 			}
-			assertSequenceMemory(t, e, job.ID, cost, true)
+			assertSequenceMemory(t, e, job.ID, true)
 			setGate.open()
 			awaitEngineSignal(t, cleanupGate.entered)
-			assertSequenceMemory(t, e, job.ID, cost, true)
+			assertSequenceMemory(t, e, job.ID, true)
 			cleanupGate.open()
 			terminal := awaitSequenceTerminal(t, e, job.ID, "cancelled")
 			if terminal.TotalSteps != sequence.MaxExecutedSteps {
 				t.Fatalf("large plan lost its logical size: %+v", terminal)
 			}
-			assertSequenceMemory(t, e, job.ID, 0, false)
+			assertSequenceMemory(t, e, job.ID, false)
 			phases := map[transporttrace.Phase]bool{}
 			for _, call := range backend.traces() {
 				if call.scope.JobID == job.ID {
@@ -116,13 +108,13 @@ func TestSequenceTerminalReleasesLargePlansAfterCleanup(t *testing.T) {
 				t.Fatalf("cancellation diagnostic phases: %+v", phases)
 			}
 
-			// The first Job remains retained while a new plan uses its target budget.
-			next, _, err := e.SubmitSequence(ctx, "a", "budget-after", [32]byte{}, prepareSequenceTest)
+			// A completed Job remains available while the device accepts another plan.
+			next, _, err := e.SubmitSequence(ctx, "a", "following-job", [32]byte{}, prepareSequenceTest)
 			if err != nil {
-				t.Fatalf("terminal job retained target capacity: %v", err)
+				t.Fatalf("terminal job blocked new execution: %v", err)
 			}
 			awaitSequenceTerminal(t, e, next.ID, "succeeded")
-			assertSequenceMemory(t, e, next.ID, 0, false)
+			assertSequenceMemory(t, e, next.ID, false)
 
 			advance(SequenceJobRetention - time.Nanosecond)
 			replayed, duplicate, err := e.SubmitSequence(ctx, "a", job.ID, fingerprint, nil)
@@ -146,7 +138,7 @@ func TestSequenceTerminalReleasesLargePlansAfterCleanup(t *testing.T) {
 				t.Fatalf("reuse after expiration: %+v, %v, %v", fresh, duplicate, err)
 			}
 			awaitSequenceTerminal(t, e, fresh.ID, "succeeded")
-			assertSequenceMemory(t, e, fresh.ID, 0, false)
+			assertSequenceMemory(t, e, fresh.ID, false)
 		})
 	}
 }
@@ -163,5 +155,5 @@ func TestSequenceFailedJobReleasesPlanAndKeepsError(t *testing.T) {
 	if terminal.Error != "fake device write failure" {
 		t.Fatalf("terminal error lost: %+v", terminal)
 	}
-	assertSequenceMemory(t, e, job.ID, 0, false)
+	assertSequenceMemory(t, e, job.ID, false)
 }

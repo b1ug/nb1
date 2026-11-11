@@ -44,9 +44,11 @@ All runtime routes use the loopback and browser-origin checks. Preview performs 
 
 An omitted or empty `id` generates `j_` followed by ten random Crockford Base32 characters. Custom IDs accept 1–64 ASCII letters, digits, hyphens and underscores. The CLI generates its ID before submission so it can report that ID when a response is lost.
 
-The daemon keeps each active Job and retains terminal Jobs for thirty minutes. Lookups and duplicate submissions leave the original expiration time intact. A duplicate ID with the same device and JSON input returns the existing Job with HTTP 200. Different input or device returns HTTP 409. Input identity ignores object-key ordering and preserves array order and number spelling.
+The daemon keeps each active Job. Terminal Jobs remain in a cache for up to thirty minutes and may be evicted sooner when the cache is full. Job lookups, matching duplicate submissions and terminal cancellation queries update their LRU order while leaving the original expiration time intact. A duplicate ID with the same device and JSON input returns the existing Job with HTTP 200. Different input or device returns HTTP 409. Input identity ignores object-key ordering and preserves array order and number spelling.
 
-The store holds up to 4,096 Jobs and 65,536 targets in active execution plans. A terminal Job retains its identity, status, progress and deduplication metadata while releasing its execution plan and target budget. New admission returns HTTP 429 when either budget is full. Active and retained terminal Jobs remain queryable throughout their window. State is held in the current daemon process's memory.
+The cache holds up to 4,096 terminal Jobs and evicts the least recently used terminal record when that limit is exceeded. Active Jobs stay pinned and release their execution plans when they become terminal. Device ownership and per-Sequence limits govern new execution. Cache capacity does not reject new Jobs.
+
+Deduplication applies while the original record is retained. After expiration or eviction, submitting the same ID can start a new Job. The records belong to the current daemon process's memory.
 
 ## Local colors and Patterns
 

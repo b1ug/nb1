@@ -111,7 +111,6 @@ func TestSequenceRetentionStartsAtTerminalAndSurvivesLegacyHistory(t *testing.T)
 	clock := time.Now()
 	e.mu.Lock()
 	e.sequenceJobs.now = func() time.Time { return clock }
-	e.sequenceJobs.maxEntries = 1
 	e.mu.Unlock()
 	advance := func(delta time.Duration) {
 		e.mu.Lock()
@@ -132,8 +131,8 @@ func TestSequenceRetentionStartsAtTerminalAndSurvivesLegacyHistory(t *testing.T)
 	if active, err := e.SequenceJob(job.ID); err != nil || active.Status != "running" {
 		t.Fatalf("active job expired: %+v, %v", active, err)
 	}
-	if _, _, err := e.SubmitSequence(ctx, "a", "new-active", fingerprint, prepareSequenceTest); !errors.Is(err, ErrSequenceJobCapacity) {
-		t.Fatalf("active record must consume capacity: %v", err)
+	if _, _, err := e.SubmitSequence(ctx, "a", "new-active", fingerprint, prepareSequenceTest); !errors.Is(err, ErrBusy) {
+		t.Fatalf("active device ownership: %v", err)
 	}
 	gate.open()
 	terminal := awaitSequenceTerminal(t, e, job.ID, "succeeded")
@@ -149,9 +148,6 @@ func TestSequenceRetentionStartsAtTerminalAndSurvivesLegacyHistory(t *testing.T)
 		t.Fatalf("legacy history did not evict its older entry: %v", err)
 	}
 	advance(SequenceJobRetention - time.Nanosecond)
-	if _, _, err := e.SubmitSequence(ctx, "a", "new-terminal", fingerprint, prepareSequenceTest); !errors.Is(err, ErrSequenceJobCapacity) {
-		t.Fatalf("terminal record must retain capacity: %v", err)
-	}
 	snapshot, replayed, err := e.SubmitSequence(ctx, "a", job.ID, fingerprint, nil)
 	if err != nil || !replayed || snapshot.Status != "succeeded" || !snapshot.FinishedAt.Equal(*terminal.FinishedAt) {
 		t.Fatalf("retained terminal replay: %+v, %v, %v", snapshot, replayed, err)
@@ -166,7 +162,7 @@ func TestSequenceRetentionStartsAtTerminalAndSurvivesLegacyHistory(t *testing.T)
 		t.Fatalf("read/replay/cancel refreshed expiration: %v", err)
 	}
 	if _, _, err := e.SubmitSequence(ctx, "a", "new-terminal", fingerprint, prepareSequenceTest); err != nil {
-		t.Fatalf("expired entry retained capacity: %v", err)
+		t.Fatalf("new Job admission failed: %v", err)
 	}
 }
 

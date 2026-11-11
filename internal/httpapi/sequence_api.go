@@ -398,8 +398,6 @@ func sequenceAPIError(w http.ResponseWriter, err error) {
 		writeError(w, http.StatusServiceUnavailable, "unavailable", "request ended before the operation could complete")
 	case errors.Is(err, control.ErrSequenceJobConflict):
 		writeError(w, http.StatusConflict, "job_conflict", err.Error())
-	case errors.Is(err, control.ErrSequenceJobCapacity):
-		writeError(w, http.StatusTooManyRequests, "job_capacity", err.Error())
 	case errors.Is(err, control.ErrSequenceCapability):
 		writeError(w, http.StatusUnprocessableEntity, "unsupported_capability", "required device capabilities missing")
 	case errors.Is(err, control.ErrBusy), errors.Is(err, control.ErrQueueFull):

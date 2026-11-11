@@ -44,6 +44,12 @@ All runtime routes use the loopback and browser-origin checks. Preview performs 
 
 Device state contains cached RGB values with an observation timestamp. During interval playback the worker defers periodic RGB queries to preserve scheduling, so the last observation may predate the current Job. Track the Job for progress; final cleanup performs a fresh readback before a successful or cancelled terminal state. Use camera observation separately to assess the light during playback.
 
+## CLI connection policy
+
+The agreed default for `nb1 control` is to report that the daemon is unavailable and let the user explicitly choose to start a daemon or use direct access. It must not start a daemon or fall back to USB automatically. Starting `nb1 server` does not install a system service.
+
+The current `control` implementation uses HTTP; standalone basic commands provide explicit direct access. A unified Action/Sequence direct entry and guided connection-failure prompt remain follow-up work under this policy.
+
 ## Job IDs and deduplication
 
 An omitted or empty `id` generates `j_` followed by ten random Crockford Base32 characters. Custom IDs accept 1–64 ASCII letters, digits, hyphens and underscores. The CLI generates its ID before submission so it can report that ID when a response is lost.

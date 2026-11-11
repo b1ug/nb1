@@ -158,7 +158,7 @@ func initConfig() {
 		for _, directory := range []string{".", filepath.Join(home, ".config", config.AppName)} {
 			for _, name := range []string{"setting.yaml", "setting.yml"} {
 				path, _ := filepath.Abs(filepath.Join(directory, name))
-				if _, err := os.Lstat(path); !os.IsNotExist(err) {
+				if _, err := os.Lstat(path); err == nil {
 					selected.Path, selected.Required = path, true
 					break search
 				}

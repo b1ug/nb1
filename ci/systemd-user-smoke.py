@@ -451,28 +451,45 @@ class Smoke:
                 return response.code, json.loads(raw)
 
         def running():
-            native = self.wait_native("active")
-            identity = self.process(int(native.get("MainPID", "0")))
-            require(identity.get("exists") and identity.get("exe") == self.cli_path,
-                    "systemd did not start the actual installed nb1 executable")
-            status = identity.get("status", {})
-            require(status.get("Uid", "").split() == [str(self.account.pw_uid)] * 4 and status.get("NoNewPrivs") == "1",
-                    "actual nb1 did not retain its ordinary UID and NoNewPrivs")
-            self.fixture_identity = identity  # Existing cleanup verifies this PID exited.
+            # Active registration may precede exec or application readiness.
+            # Keep the actual PID/executable and HTTP checks in the same bounded
+            # handshake instead of accepting one manager snapshot as readiness.
             deadline = time.monotonic() + 8
+            native, identity = {}, {}
             while time.monotonic() < deadline:
-                try:
-                    health_code, _ = request("/healthz")
-                    devices_code, devices = request("/v1/devices")
-                    text = json.dumps(devices)
-                    if health_code == devices_code == 200 and SERIAL in text and '"offline"' in text:
-                        self.report["checks"].append({"check": "actual-nb1-http-pid-offline", "status": "PASS",
-                                                      "native": native, "process": identity})
-                        return identity
-                except (OSError, ValueError):
-                    pass
+                native = self.native()
+                self.report["actual_daemon"]["last_native"] = native
+                pid = int(native.get("MainPID", "0"))
+                if native.get("ActiveState") == "active" and pid > 0:
+                    identity = self.process(pid)
+                    self.report["actual_daemon"]["last_process"] = identity
+                    if identity.get("exists") and identity.get("exe") == self.cli_path:
+                        status = identity.get("status", {})
+                        require(status.get("Uid", "").split() == [str(self.account.pw_uid)] * 4 and status.get("NoNewPrivs") == "1",
+                                "actual nb1 did not retain its ordinary UID and NoNewPrivs")
+                        self.fixture_identity = identity
+                        try:
+                            health_code, _ = request("/healthz")
+                            devices_code, devices = request("/v1/devices")
+                            text = json.dumps(devices)
+                            if health_code == devices_code == 200 and SERIAL in text and '\"offline\"' in text:
+                                self.report["checks"].append({"check": "actual-nb1-http-pid-offline", "status": "PASS",
+                                                              "native": native, "process": identity})
+                                return identity
+                        except (OSError, ValueError):
+                            pass
+                if native.get("ActiveState") == "failed":
+                    break
                 time.sleep(0.1)
-            raise SmokeError("actual nb1 did not provide healthy offline HTTP")
+            # Only this fresh UID's fixed unit is queried. Never read /proc/environ
+            # or broaden journal permissions to diagnose a failed candidate.
+            try:
+                journal, _ = self.user_command("actual-startup-journal", [trusted_tool("journalctl"), "--user", "--unit", UNIT,
+                    "--lines=15", "--output=cat", "--no-pager"], allowed=(0, 1))
+                self.report["actual_daemon"]["startup_journal_tail"] = journal[-8192:]
+            except (SmokeError, OSError) as error:
+                self.report["actual_daemon"]["journal_error"] = str(error)
+            raise SmokeError("actual nb1 did not establish its PID/executable and healthy offline HTTP: " + json.dumps(native, sort_keys=True))
 
         self.cli("start")
         first = running()

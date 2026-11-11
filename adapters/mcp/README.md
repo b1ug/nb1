@@ -79,7 +79,7 @@ Each tool returns matching JSON in `structuredContent` and its text fallback. Th
 
 A definite API rejection preserves its error code and HTTP status. HTTP timeouts and MCP session closure leave accepted daemon Jobs under daemon control. Cancellation is a separate `cancel_job` operation; inspect `get_job` while status is `cancelling`.
 
-Successful tool transport does not establish a successful lighting task. Inspect `data.status` for `queued`, `running`, `cancelling`, `succeeded`, `cancelled` or `failed`. Job deduplication applies during active execution and the retained terminal record's lifetime. Terminal records have a thirty-minute expiration and bounded LRU retention; daemon restart clears memory. An unavailable record leaves the earlier execution outcome unresolved.
+Successful tool transport does not establish a successful lighting task. Inspect `data.status` for `queued`, `running`, `cancelling`, `succeeded`, `cancelled` or `failed`. Job deduplication applies during active execution and the retained terminal record's lifetime. Terminal records default to a thirty-minute expiration and 16,384-entry LRU retention. The daemon can configure these startup limits through `jobs.terminal_ttl` and `jobs.terminal_limit`; capacity eviction can occur before the TTL, and daemon restart clears memory. An unavailable record leaves the earlier execution outcome unresolved.
 
 Local color and Pattern saves also send one PUT. A transport failure can leave their save outcome unknown. Inspect `list_colors` or `get_pattern` before deciding whether to save again.
 

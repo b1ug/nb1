@@ -7,11 +7,11 @@ import math
 import os
 from pathlib import Path
 import re
+import secrets
 import subprocess
 import sys
 import tempfile
 import time
-import uuid
 
 
 def action(color, duration_ms):
@@ -24,7 +24,8 @@ def save_report(path, report, create=False):
     """Keep the original Job ID and input durable before the single submission."""
     encoded = json.dumps(report, ensure_ascii=False, indent=2) + "\n"
     if create:
-        with path.open("x", encoding="utf-8") as output:
+        fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+        with os.fdopen(fd, "w", encoding="utf-8") as output:
             output.write(encoded)
             output.flush()
             os.fsync(output.fileno())
@@ -67,7 +68,7 @@ def notify(options, report, report_path):
             raise subprocess.TimeoutExpired("nb1", options.notify_timeout)
         return budget
 
-    job_id = "notify_" + uuid.uuid4().hex
+    job_id = "j_" + "".join(secrets.choice("0123456789ABCDEFGHJKMNPQRSTVWXYZ") for _ in range(10))
     notification["job_id"] = job_id
     notification["job_lookup_argv"] = cli_prefix(options, options.notify_timeout) + ["job", job_id]
     # Never submit unless the exact input and original Job ID are durable.

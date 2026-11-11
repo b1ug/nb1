@@ -1,5 +1,7 @@
 # 命令完成后，用 blink(1) 通知
 
+[English](README.md)
+
 这个 Python 3 标准库示例调用正式 `nb1 control run`：命令成功显示绿色，失败显示红色，默认停留 1.5 秒后熄灯。灯光由 daemon 编译 Action、执行 Sequence 并发布 Job 终态。示例不直连 USB、不安装服务。
 
 ## 预览与执行

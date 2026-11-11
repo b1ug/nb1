@@ -30,6 +30,7 @@ Starting `server` does not install a startup service. Run it in a terminal, mana
 
 ## Interfaces
 
+- [OpenAPI 3.1](docs/api-v1.openapi.json): machine-readable current HTTP contract.
 - [API v1 reference](docs/api-v1.md): Actions, Sequences, Jobs, colors, Patterns and limits.
 - [Terminology](docs/api-v1-terminology.md): names shared by all interfaces.
 - [MCP adapter](adapters/mcp/README.md): real stdio MCP to local HTTP.

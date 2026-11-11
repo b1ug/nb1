@@ -22,6 +22,7 @@ Matching ID, serial and input is deduplicated while retained. Active Jobs stay p
 
 ## References
 
+- [OpenAPI 3.1](docs/api-v1.openapi.json): current machine-readable HTTP contract.
 - [API v1](docs/api-v1.md): HTTP/CLI contract, colors, Patterns and limits.
 - [Terminology](docs/api-v1-terminology.md): Action, Sequence, Step, Job, Pattern and DeviceSequence.
 - [Agent skill](skills/blink1-control/SKILL.md): expression selection, tracking and recovery.

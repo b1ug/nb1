@@ -74,6 +74,12 @@ nb1 control patterns list
 
 Pattern saving fixes the resolved Sequence. Updating a color or Pattern affects new Jobs. Repeated submission of an accepted Job returns that Job before reading the library, including when its referenced record is updated or temporarily unavailable.
 
+## Initial delivery scope
+
+The agreed first delivery targets the currently verified Mac/MK2 setup: macOS 27.2 on arm64, blink(1) MK2 with firmware 204. Other operating systems, architectures and device generations must show their actual evidence level separately: software tests, compilation, physical USB, or not yet tested. A software CI result does not establish physical-device support.
+
+This scope does not require every platform or MK3 hardware to be qualified before the first delivery. Existing recovered I/O retries remain a known limitation; confirming scope does not create a tag or publish a release. Work continues in order: hardware, daemon/CLI, Web and packaging, then the surrounding integrations.
+
 ## Implementation sequence
 
 The source delivery includes the core execution path, local library, HTTP operations above, CLI commands, embedded Web controls and MCP adapter. Software checks cover the integrated routes and Agent workflows. Finite CLI/HTTP checks on the local macOS 27.2 / MK2 FW204 candidate cover serial and interval playback, Orbit, Job replay, busy rejection, cancellation, final RGB readback and ownership. Web and MCP physical acceptance, broader platform/device qualification, and replacement of the daily installation remain pending. DeviceSequence routes are planned. The [terminology table](api-v1-terminology.md) governs names across those surfaces.

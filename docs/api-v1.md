@@ -4,6 +4,33 @@ This development candidate provides the Action → Sequence → Job execution pa
 
 The [OpenAPI 3.1 contract](api-v1.openapi.json) describes the current HTTP operations, request and response schemas, constraints and software-fixture examples. The valid saved-color name `resolve` has a concrete PUT operation alongside POST color resolution.
 
+## User configuration
+
+The per-user profile is `os.UserConfigDir()/nb1/config.yaml`. This follows the platform's user configuration directory. Select a file with `--config`, then `NB1_CONFIG`, then the default profile path, in that order. When the optional default profile is absent, the existing `setting.yaml` lookup remains available. An explicitly selected missing or invalid file reports an error.
+
+```sh
+nb1 config path
+nb1 config init
+nb1 config show
+```
+
+`config init` targets the selected profile path, creates a private template and refuses to overwrite an existing file. Before that profile exists, `config path` and `config show` may report the existing `setting.yaml` fallback. Its empty `device` and `server.devices` fields leave device selection to the user. These commands do not enumerate USB or start a daemon. `config show` reports settings resolved from the selected file, defaults and environment, including `NB1_DEVICE`, `NB1_PORT` and `NB1_LIBRARY_DIR`. It does not inspect or reload the running daemon.
+
+```yaml
+device: ""
+server:
+  devices: []
+  listen: "127.0.0.1:8931"
+jobs:
+  terminal_limit: 16384
+  terminal_ttl: 30m
+library_dir: ""
+```
+
+`device` is an empty string or a quoted eight-hexadecimal-digit serial. `server.devices` is an explicit list of such strings. `jobs.terminal_limit` is a positive integer and `jobs.terminal_ttl` is a positive duration, such as `30m` or `1h`. These are defaults that users may change. An empty `library_dir` selects the stable per-user `nb1/library` directory. A custom library path must be absolute.
+
+Selecting a different configuration file keeps the application's default storage base stable. The default device ownership directory remains `os.UserConfigDir()/nb1/device-locks`, so separate profiles still arbitrate the same hardware. An explicit lock-directory override remains a deliberate runtime setting.
+
 ## Actions and sequences
 
 Actions are `set`, `off`, `fade`, `blink`, `breathe`, `pulse`, `alternate`, `orbit` and `rainbow`. The compiler produces one normalized Sequence with `timing` set to `serial` or `interval` and an ordered `steps` array. Orbit uses four paired transitions. Rainbow uses seven color anchors and returns to red.
@@ -16,10 +43,15 @@ Create an input file with one Action or Sequence, for example `{"action":{"kind"
 
 ```sh
 nb1 control --endpoint http://127.0.0.1:8931 preview action.json
-nb1 control --endpoint http://127.0.0.1:8931 run DEVICE_SERIAL action.json --wait
+nb1 control --endpoint http://127.0.0.1:8931 run action.json --wait
+nb1 control --endpoint http://127.0.0.1:8931 state
 nb1 control --endpoint http://127.0.0.1:8931 job j_7K3XJNY9ZM
 nb1 control --endpoint http://127.0.0.1:8931 cancel j_7K3XJNY9ZM --wait
 ```
+
+For `control run [SERIAL] FILE` and `control state [SERIAL]`, select the device from an explicit positional serial, root `--device`, `NB1_DEVICE`, or profile `device`, in that order. With none selected, the client reads the daemon's cached device list and uses it only when exactly one device is configured. Multiple devices require an explicit choice. This lookup does not enumerate USB, launch the daemon or switch to direct access.
+
+`control preview FILE` leaves `serial` absent by default, including when the profile has a preferred device. Add `--serial SERIAL` explicitly for the selected device's cached capability check.
 
 ## Daemon selection and connection failures
 
@@ -72,21 +104,23 @@ nb1 service install --devices DEVICE_SERIAL --start
 
 Omitting `--binary` selects the current process's executable through the operating system. It does not search PATH for another installation. An explicit `--binary /absolute/path/to/nb1` overrides that selection. The native manager validates the file and resolves symlinks before saving the configuration. Without `--start`, installation enables login loading without requesting immediate startup.
 
+Service installation resolves devices and listen address from its flags and selected profile. It records the actual configuration file's absolute path when a file is selected, and stores device/listen values as explicit startup arguments. Those arguments keep the installed device selection and address stable when the profile is edited. Library and Job-cache settings are read from the profile on restart. Update the managed service configuration explicitly when changing its device list or listen address.
+
 Cross-platform `service render` still requires an explicit target `--binary` path. Windows service installation remains unsupported. Automatic path selection does not implement service upgrade migration: package version paths, including Homebrew Cellar targets, still need upgrade and rollback qualification.
 
 ## Job IDs and deduplication
 
 An omitted or empty `id` generates `j_` followed by ten random Crockford Base32 characters. Custom IDs accept 1–64 ASCII letters, digits, hyphens and underscores. The CLI generates its ID before submission so it can report that ID when a response is lost.
 
-The daemon keeps each active Job. Terminal Jobs remain in a cache for up to thirty minutes and may be evicted sooner when the cache is full. Job lookups, matching duplicate submissions and terminal cancellation queries update their LRU order while leaving the original expiration time intact. A duplicate ID with the same device and JSON input returns the existing Job with HTTP 200. Different input or device returns HTTP 409. Input identity ignores object-key ordering and preserves array order and number spelling.
+The daemon keeps each active Job. Terminal Jobs use a configurable soft TTL measured from terminal completion, defaulting to thirty minutes. LRU pressure or a daemon restart can remove records sooner. Job lookups, matching duplicate submissions and terminal cancellation queries update their LRU order while leaving the original expiration time intact. A duplicate ID with the same device and JSON input returns the existing Job with HTTP 200. Different input or device returns HTTP 409. Input identity ignores object-key ordering and preserves array order and number spelling.
 
-The cache holds up to 16,384 terminal Jobs and evicts the least recently used terminal record when that limit is exceeded. Active Jobs stay pinned and release their execution plans when they become terminal. Device ownership and per-Sequence limits govern new execution. Cache capacity does not reject new Jobs.
+The terminal cache defaults to 16,384 Jobs. Set its positive capacity with profile `jobs.terminal_limit` or server `--job-cache-size`, and set its positive TTL with `jobs.terminal_ttl` or `--job-cache-ttl`. Explicit server flags override profile values. Restart the daemon to apply changes. When the selected limit is exceeded, the least recently used terminal record is evicted. Active Jobs stay pinned and release their execution plans when they become terminal. Device ownership and per-Sequence limits govern new execution. Cache capacity does not reject new Jobs.
 
-Deduplication applies while the original record is retained. After expiration or eviction, submitting the same ID can start a new Job. The records belong to the current daemon process's memory.
+Deduplication applies while the original record is retained. After expiration or eviction, submitting the same ID can start a new Job. The records belong to the current daemon process's memory. The default thirty-minute TTL is an upper retention bound, not a guaranteed deduplication window or exactly-once execution guarantee.
 
 ## Local colors and Patterns
 
-The daemon uses `--library-dir`, `NB1_LIBRARY_DIR`, or the current user's `nb1/library` configuration directory. Reads return saved records or empty lists. A write creates the directories and replaces one record atomically. The library supports 256 named colors and 128 Patterns, with records up to 1 MiB and titles up to 256 Unicode characters. Writer contention is bounded to two seconds.
+The daemon selects its library from `--library-dir`, `NB1_LIBRARY_DIR`, profile `library_dir`, or the stable per-user `nb1/library` default, in that order. Colors and Patterns are already stored there. A custom `--config` path alone does not relocate the library. Reads return saved records or empty lists. A write creates the directories and replaces one record atomically. The library supports 256 named colors and 128 Patterns, with records up to 1 MiB and titles up to 256 Unicode characters. Writer contention is bounded to two seconds.
 
 ```sh
 nb1 control colors set status-ok lime

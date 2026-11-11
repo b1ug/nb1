@@ -51,8 +51,6 @@
     "max_executed_steps": 1024,
     "max_nominal_duration_ms": 86400000,
     "selected_devices_max": 64,
-    "terminal_job_cache_max": 16384,
-    "terminal_job_ttl_ms": 1800000,
     "terminal_job_eviction": "LRU, only terminal records",
     "ttl_refresh_on_access": false,
     "active_jobs": "pinned until terminal cleanup",
@@ -77,6 +75,24 @@
       "on_finish_hold_adds": [
         "hold"
       ]
+    },
+    "terminal_job_cache_default_limit": 16384,
+    "terminal_job_default_ttl_ms": 1800000,
+    "terminal_job_configuration": {
+      "limit": {
+        "profile_field": "jobs.terminal_limit",
+        "server_flag": "--job-cache-size",
+        "constraint": "positive integer"
+      },
+      "ttl": {
+        "profile_field": "jobs.terminal_ttl",
+        "server_flag": "--job-cache-ttl",
+        "constraint": "positive duration",
+        "measured_from": "terminal completion"
+      },
+      "precedence": "explicit server flag overrides profile; defaults apply when omitted",
+      "activation": "daemon startup; restart required after changes",
+      "retention": "soft TTL; LRU eviction or restart can remove records earlier; no fixed-window or exactly-once guarantee"
     }
   },
   "tags": [
@@ -1732,7 +1748,7 @@
             }
           }
         },
-        "description": "The device must be idle and support the compiled Sequence. The daemon owns timing after admission. A lost HTTP response or client timeout can leave an accepted Job running. Query the original ID. Retained matching IDs replay before resolving mutable color or Pattern references. A changed source or serial conflicts. Terminal records use a 16,384-entry LRU and expire at a fixed time up to 30 minutes after completion. Active Jobs stay pinned. Cache pressure evicts terminal records and does not reject new execution. After expiration or eviction the same ID can execute again."
+        "description": "The device must be idle and support the compiled Sequence. The daemon owns timing after admission. A lost HTTP response or client timeout can leave an accepted Job running. Query the original ID. Retained matching IDs replay before resolving mutable color or Pattern references. A changed source or serial conflicts. Terminal records use configurable LRU capacity and a soft TTL from completion, defaulting to 16,384 entries and 30 minutes. Profile jobs.terminal_limit / jobs.terminal_ttl or server --job-cache-size / --job-cache-ttl select these values at daemon startup. Restart is required for changes. LRU eviction or restart may remove records earlier; the TTL does not guarantee a deduplication window. Active Jobs stay pinned. Cache pressure evicts terminal records and does not reject new execution. After expiration or eviction the same ID can execute again."
       }
     },
     "/v1/jobs/{id}": {

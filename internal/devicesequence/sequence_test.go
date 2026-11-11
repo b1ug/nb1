@@ -13,7 +13,7 @@ func document(lines string) []byte {
 	return []byte(`{"contract":"nb1-device-sequence/draft-1","color_space":"device-rgb8","lines":[` + lines + `]}`)
 }
 
-const redRow = `{"led":"all","color":"red","duration_ms":500}`
+const redRow = `{"led":0,"color":"red","duration_ms":500}`
 const blueRow = `{"led":2,"color":"#00f","duration_ms":500}`
 
 func pointer(n int) *int { return &n }
@@ -32,7 +32,7 @@ func hasIssue(issues []Issue, code string) bool {
 func TestCompileColorInputsPreserveSource(t *testing.T) {
 	for _, color := range []string{`"red"`, `"#f00"`, `"#ff0000"`, `{"space":"rgb8","r":255,"g":0,"b":0}`, `{"space":"hsv","h_deg":0,"s_pct":100,"v_pct":100}`} {
 		t.Run(color, func(t *testing.T) {
-			input := document(`{"led":"all","color":` + color + `,"duration_ms":500}`)
+			input := document(`{"led":0,"color":` + color + `,"duration_ms":500}`)
 			original := append([]byte(nil), input...)
 			got, err := CompileJSON(input)
 			if err != nil {
@@ -49,13 +49,13 @@ func TestCompileColorInputsPreserveSource(t *testing.T) {
 				t.Fatal("source storage aliases caller")
 			}
 			canonical, _ := json.Marshal(got.Sequence)
-			if !strings.Contains(string(canonical), `"led":"all"`) {
+			if !strings.Contains(string(canonical), `"led":0`) {
 				t.Fatal(string(canonical))
 			}
 		})
 	}
 	a, _ := CompileJSON(document(redRow))
-	b, _ := CompileJSON(document(`{"duration_ms":500,"color":"#f00","led":"all"}`))
+	b, _ := CompileJSON(document(`{"duration_ms":500,"color":"#f00","led":0}`))
 	if a.Digest != b.Digest {
 		t.Fatal("equivalent normalized rows have different digests")
 	}
@@ -71,7 +71,14 @@ func TestRejectInvalidAuthorDocuments(t *testing.T) {
 		"negative":                 document(`{"led":1,"color":"red","duration_ms":-500}`),
 		"wire overflow":            document(`{"led":1,"color":"red","duration_ms":655360}`),
 		"duplicate":                document(`{"led":1,"l\u0065d":2,"color":"red","duration_ms":500}`),
-		"invalid led":              document(`{"led":0,"color":"red","duration_ms":500}`),
+		"invalid led":              document(`{"led":3,"color":"red","duration_ms":500}`),
+		"string all LED":           document(`{"led":"all","color":"red","duration_ms":500}`),
+		"quoted zero LED":          document(`{"led":"0","color":"red","duration_ms":500}`),
+		"fractional LED":           document(`{"led":0.0,"color":"red","duration_ms":500}`),
+		"exponent LED":             document(`{"led":1e0,"color":"red","duration_ms":500}`),
+		"negative zero LED":        document(`{"led":-0,"color":"red","duration_ms":500}`),
+		"missing LED":              document(`{"color":"red","duration_ms":500}`),
+		"null LED":                 document(`{"led":null,"color":"red","duration_ms":500}`),
 		"flags":                    document(`{"led":129,"color":"red","duration_ms":500}`),
 		"targets":                  document(`{"led":[1,2],"color":"red","duration_ms":500}`),
 		"null":                     document(`null`),

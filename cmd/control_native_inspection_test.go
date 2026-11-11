@@ -100,7 +100,7 @@ func TestControlNativeInspectionOneGETAndJSON(t *testing.T) {
 			if err != nil || decodeErr != nil || !got.Complete || atomic.LoadInt32(&calls) != 1 || got.Contract != nativeinspection.Contract {
 				t.Fatalf("read failed/retried: err=%v decode=%v calls=%d output=%s", err, decodeErr, calls, output)
 			}
-			if got.RAM != nil && (got.RAM.Sequence == nil || got.RAM.Sequence.Lines[0].LED != 0 || !strings.Contains(output, `"led": "all"`)) {
+			if got.RAM != nil && (got.RAM.Sequence == nil || got.RAM.Sequence.Lines[0].LED != 0 || !strings.Contains(output, `"led": 0`)) {
 				t.Fatalf("nullable/raw/all-LED result changed: %s", output)
 			}
 		})

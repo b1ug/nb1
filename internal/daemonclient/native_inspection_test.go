@@ -133,6 +133,9 @@ func TestNativeClientInvalidInputsSendNoHTTP(t *testing.T) {
 func TestNativeClientDecodesAllLEDAndExplicitNulls(t *testing.T) {
 	request := nativeinspection.Request{Kind: nativeinspection.RAM, Range: &devicesequence.Range{LineCount: 1}}
 	_, body := nativeClientFixture(t, request, nativeClientReader{all: true})
+	if !strings.Contains(string(body), `"led":0`) || strings.Contains(string(body), `"led":"all"`) {
+		t.Fatalf("all-output destination must use numeric zero: %s", body)
+	}
 	var calls int32
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		atomic.AddInt32(&calls, 1)

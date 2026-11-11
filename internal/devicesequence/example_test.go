@@ -3,7 +3,7 @@ package devicesequence
 import "fmt"
 
 func ExampleCompileJSON() {
-	result, err := CompileJSON([]byte(`{"contract":"nb1-device-sequence/draft-1","color_space":"device-rgb8","lines":[{"led":"all","color":"red","duration_ms":500}]}`))
+	result, err := CompileJSON([]byte(`{"contract":"nb1-device-sequence/draft-1","color_space":"device-rgb8","lines":[{"led":0,"color":"red","duration_ms":500}]}`))
 	if err != nil {
 		panic(err)
 	}

@@ -39,17 +39,15 @@ func (e *InputError) Error() string            { return e.Code + " at " + e.Path
 func (e *InputError) Unwrap() error            { return ErrInvalid }
 func invalid(code, path, message string) error { return &InputError{Issue{code, path, message}} }
 
-// LED uses wire codes internally but spells all as a word in the author format.
+// LED uses the same numeric channel selection in JSON and native rows.
+// Zero selects all outputs; one and two select individual physical channels.
 type LED byte
 
 func (led LED) MarshalJSON() ([]byte, error) {
-	if led == 0 {
-		return []byte(`"all"`), nil
-	}
-	if led == 1 || led == 2 {
+	if led <= 2 {
 		return []byte(strconv.Itoa(int(led))), nil
 	}
-	return nil, invalid("unsupported_led", "led", "Only all, LED1 and LED2 are authorable.")
+	return nil, invalid("unsupported_led", "led", "Use the integer 0 (all outputs), 1 or 2.")
 }
 
 type Line struct {
@@ -95,16 +93,9 @@ func CompileJSON(data []byte) (Compiled, error) {
 		if err != nil {
 			return Compiled{}, err
 		}
-		var led LED
-		switch string(bytes.TrimSpace(line["led"])) {
-		case "1":
-			led = 1
-		case "2":
-			led = 2
-		default:
-			if !literal(line["led"], "all") {
-				return Compiled{}, invalid("unsupported_led", path+".led", "Use all, 1 or 2; one row cannot contain two different colors.")
-			}
+		led, err := decodeLED(line["led"], path+".led")
+		if err != nil {
+			return Compiled{}, err
 		}
 		duration, err := integer(line["duration_ms"], path+".duration_ms", 1, WireMaxDurationMS)
 		if err != nil {

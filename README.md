@@ -38,7 +38,7 @@ The macOS/Linux candidate provides `nb1 service install --devices DEVICE_SERIAL 
 - [MCP adapter](adapters/mcp/README.md): real stdio MCP to local HTTP.
 - [Agent skill](skills/blink1-control/SKILL.md) and [llms.txt](llms.txt): guidance for AI clients.
 
-Actions are `set`, `off`, `fade`, `blink`, `breathe`, `pulse`, `alternate`, `orbit` and `rainbow`. Colors accept names, Hex, RGB8, HSV/HSB and local `@name` references. Patterns are saved on the computer. Native DeviceSequence storage has separate limits and deployment requirements.
+Actions are `set`, `off`, `fade`, `blink`, `breathe`, `pulse`, `alternate`, `orbit` and `rainbow`. Colors accept names, Hex, RGB8, HSV/HSB and local `@name` references. Patterns are saved on the computer. Native DeviceSequence rows use required numeric `led` values `0` (all outputs), `1` or `2`, matching Action and Step. Device storage has separate limits and deployment requirements. [Device-native draft](docs/device-native-sequence.md)
 
 MCP provides 12 tools for this contract. The bilingual Web workbench is embedded at `/demo/`; opening or previewing does not play a Job. The adapter is a separate Go 1.25 module; the core retains its Go 1.18 baseline. Independently maintained [nb1-web](https://github.com/b1ug/nb1-web) source becomes a pinned bundle embedded in nb1. The [nb1-site](https://github.com/b1ug/nb1-site) repository contains initial documentation website content; both repositories are private during development.
 

@@ -83,6 +83,44 @@ func TestRAMCollectionPreservesImageAndDoesNotClaimFlashOrRecipe(t *testing.T) {
 	}
 }
 
+func TestRAMSequenceLEDUsesRequiredNumericChannels(t *testing.T) {
+	request := ramRequest(0, 1)
+	for _, led := range []byte{0, 1, 2} {
+		t.Run(fmt.Sprint(led), func(t *testing.T) {
+			reader := &fakeReader{line: func(position int) (LineRead, error) {
+				reply := fixtureReply('R')
+				reply.Bytes[7] = led
+				return LineRead{Position: position, Reply: reply}, nil
+			}}
+			result, err := collectFixture(t, reader, request, fixtureProfile())
+			if err != nil || result.RAM.Sequence == nil {
+				t.Fatalf("known native LED rejected: %v", err)
+			}
+			data, err := MarshalResult(result, result.Device.Serial, request)
+			if err != nil || !bytes.Contains(data, []byte(fmt.Sprintf(`"led":%d`, led))) {
+				t.Fatalf("numeric LED missing from response: %s %v", data, err)
+			}
+			decoded, err := DecodeResult(data, result.Device.Serial, request)
+			if err != nil || decoded.RAM.Sequence.Lines[0].LED != devicesequence.LED(led) || *decoded.RAM.Rows[0].LEDCode != led {
+				t.Fatalf("numeric LED or raw observation changed: %v", err)
+			}
+			if led != 0 {
+				return
+			}
+			for _, token := range []string{`"all"`, `"0"`, `"1"`, `"2"`, `0.0`, `1.0`, `1e0`, `-0`, `-1`, `3`, `null`} {
+				malformed := bytes.Replace(data, []byte(`"led":0`), []byte(`"led":`+token), 1)
+				if _, err := DecodeResult(malformed, result.Device.Serial, request); err == nil {
+					t.Fatalf("accepted derived Sequence LED %s", token)
+				}
+			}
+			missing := bytes.Replace(data, []byte(`"led":0,`), nil, 1)
+			if _, err := DecodeResult(missing, result.Device.Serial, request); err == nil {
+				t.Fatal("missing derived Sequence LED became a plausible all-output zero")
+			}
+		})
+	}
+}
+
 func TestRawZeroUnknownAndAllLEDReadbackRemainInspectable(t *testing.T) {
 	for _, tc := range []struct {
 		name     string

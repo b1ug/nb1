@@ -1,28 +1,24 @@
 package devicesequence
 
-import (
-	"bytes"
-	"encoding/json"
-)
+import "bytes"
 
-// UnmarshalJSON is the read-side counterpart of MarshalJSON. It preserves the
-// draft's explicit all/1/2 vocabulary instead of silently accepting numeric0.
+// UnmarshalJSON accepts exactly the integer tokens 0, 1 and 2.
 func (led *LED) UnmarshalJSON(data []byte) error {
 	if led == nil {
 		return invalid("unsupported_led", "led", "An LED destination is required.")
 	}
-	switch string(bytes.TrimSpace(data)) {
-	case "1":
-		*led = 1
-		return nil
-	case "2":
-		*led = 2
-		return nil
+	value, err := decodeLED(data, "led")
+	if err != nil {
+		return err
 	}
-	var text string
-	if json.Unmarshal(data, &text) == nil && text == "all" {
-		*led = 0
-		return nil
+	*led = value
+	return nil
+}
+
+func decodeLED(data []byte, path string) (LED, error) {
+	data = bytes.TrimSpace(data)
+	if len(data) == 1 && data[0] >= '0' && data[0] <= '2' {
+		return LED(data[0] - '0'), nil
 	}
-	return invalid("unsupported_led", "led", "Use all, 1 or 2.")
+	return 0, invalid("unsupported_led", path, "Use the integer 0 (all outputs), 1 or 2.")
 }

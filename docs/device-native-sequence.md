@@ -2,20 +2,22 @@
 
 The `internal/devicesequence` package implements offline author parsing, placement/playback checks, raw row inspection and playback-register inspection. It does not add HTTP routes, CLI commands, MCP tools, SDK pin changes, a device executor or new artistic actions. `spin`, `swap` and `switch` remain on hold.
 
-High/low describes abstraction, host/device describes execution location, and RAM/Flash describes lifetime. These axes are independent. A native sequence is an explicit limited row language, not an alias for a complete host Program or FrameProgram.
+High/low describes abstraction, host/device describes execution location, and RAM/Flash describes lifetime. These axes are independent. A native sequence is an explicit limited row language, not an alias for a complete host Sequence.
 
 ```json
 {
   "contract": "nb1-device-sequence/draft-1",
   "color_space": "device-rgb8",
   "lines": [
-    {"led": "all", "color": "red", "duration_ms": 500},
+    {"led": 0, "color": "red", "duration_ms": 500},
     {"led": 2, "color": "#00f", "duration_ms": 500}
   ]
 }
 ```
 
-Each row has one RGB color, one LED selection (`all`, `1`, or `2`) and one duration shared by firmware fading and row scheduling. It does not imply an instantaneous color switch, independent fade/hold, simultaneous different-color targets, a one-time initial or a final off action. Repeat, memory target and startup are separate concerns.
+Each row has one RGB color, one numeric LED selection (`0`, `1`, or `2`) and one duration shared by firmware fading and row scheduling. It does not imply an instantaneous color switch, independent fade/hold, simultaneous different-color targets, a one-time initial or a final off action. Repeat, memory target and startup are separate concerns.
+
+The `led` field is required. Integer `0` selects all outputs, and `1` or `2` selects the corresponding physical channel, matching Action and Step. Quoted numbers, `"all"`, fractions, exponents, signs, null and values outside `0..2` are rejected. Decoded native sequences use the same numeric form. Unknown raw `led_code` values remain readable observations and cannot be converted into an authorable row.
 
 `CompileJSON` accepts the same bounded ColorInput grammar as the existing color resolver: names, Hex3/6, RGB8 and HSV objects. It freezes normalized Hex6 RGB8 without gamma, retains a separate caller-owned copy of the exact source bytes, and hashes a deterministic normalized sequence. Durations require ordinary integers, positive multiples of 10ms and at most655350ms. That last value is a **wire encoding bound**, not a qualified fader limit. Explicit nulls, duplicate fields, extra fields, fractions/exponents, invalid UTF-8, excessive depth and more than32 rows are rejected.
 

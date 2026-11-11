@@ -48,7 +48,7 @@ class Nb1 < Formula
     checks = [
       [["--help"], "nb1 [command]"],
       [["control", "--help"], "nb1 control [command]"],
-      [["control", "run", "--help"], "nb1 control run SERIAL FILE"],
+      [["control", "run", "--help"], "nb1 control run [SERIAL] FILE"],
       [["service", "render", "--platform", platform, "--binary", (bin/"nb1").to_s,
         "--devices", "00000000"], OS.mac? ? "<key>ProgramArguments</key>" : "ExecStart="],
     ]

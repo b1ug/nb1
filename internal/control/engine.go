@@ -86,6 +86,15 @@ func New(driver Driver, options Options) (*Engine, error) {
 	if options.ShutdownMode == "" {
 		options.ShutdownMode = "off"
 	}
+	if options.TerminalJobLimit == 0 {
+		options.TerminalJobLimit = sequenceJobMaxTerminalEntries
+	}
+	if options.TerminalJobTTL == 0 {
+		options.TerminalJobTTL = SequenceJobRetention
+	}
+	if options.TerminalJobLimit < 1 || options.TerminalJobTTL <= 0 {
+		return nil, fmt.Errorf("%w: terminal Job limit and TTL must be positive", ErrInvalid)
+	}
 	if options.QueueSize < 1 || options.QueueSize > 1024 || options.MaxHistory < 1 || options.MaxHistory > 100000 || options.PollInterval < 10*time.Millisecond || (options.ShutdownMode != "off" && options.ShutdownMode != "hold") {
 		return nil, fmt.Errorf("%w: invalid runtime limits or shutdown mode", ErrInvalid)
 	}
@@ -96,6 +105,8 @@ func New(driver Driver, options Options) (*Engine, error) {
 		events:       make(chan ConnectionEvent, connectionEventBufferSize),
 		sequenceJobs: newSequenceJobStore(),
 	}
+	e.sequenceJobs.maxTerminalEntries = options.TerminalJobLimit
+	e.sequenceJobs.retention = options.TerminalJobTTL
 	for _, serial := range options.Serials {
 		if !ValidDeviceSerial(serial) {
 			return nil, fmt.Errorf("%w: invalid device serial", ErrInvalid)

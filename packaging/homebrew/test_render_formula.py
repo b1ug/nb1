@@ -32,7 +32,7 @@ class FormulaDraftTests(unittest.TestCase):
         self.assertIn('"-mod=readonly"', text)
         self.assertIn('"--config", testpath/"setting.yaml"', text)
         self.assertIn('[["control", "--help"], "nb1 control [command]"]', text)
-        self.assertIn('[["control", "run", "--help"], "nb1 control run SERIAL FILE"]', text)
+        self.assertIn('[["control", "run", "--help"], "nb1 control run [SERIAL] FILE"]', text)
         self.assertIn('[["service", "render", "--platform", platform', text)
         self.assertIn('on_macos do\n    depends_on macos:', text)
         self.assertNotIn('depends_on :macos', text)

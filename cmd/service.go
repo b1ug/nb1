@@ -60,6 +60,7 @@ func newServiceCommandForRuntime(management userServiceRuntime) *cobra.Command {
 	render.Flags().StringSliceVar(&config.Devices, "devices", nil, "comma-separated exact device serials")
 	render.Flags().StringVar(&config.Listen, "listen", "127.0.0.1:8931", "stable loopback host:port")
 	render.Flags().StringVar(&config.LockDir, "lock-dir", "", "optional absolute shared ownership directory; otherwise the service account's default")
+	render.Flags().StringVar(&config.ConfigFile, "config-file", "", "optional absolute target-platform user configuration file")
 	render.Flags().StringVar(&output, "output", "", "new staging file; default writes configuration to stdout, existing files are not replaced")
 	_ = render.MarkFlagRequired("platform")
 	_ = render.MarkFlagRequired("binary")
@@ -76,12 +77,34 @@ func newServiceInstallCommand(management userServiceRuntime) *cobra.Command {
 		Use: "install", Short: "Install the current user's service on macOS or Linux",
 		Long: "Install a macOS LaunchAgent or Linux systemd user service for login loading. " +
 			"Use the running nb1 executable unless --binary explicitly selects another absolute executable path. Homebrew builds use their validated stable package entry so upgrades do not pin a deleted Cellar version. " +
-			"Device serials must be selected explicitly. Installation does not request immediate startup unless --start is provided. " +
+			"Device serials come from explicit flags or user configuration. Installation does not request immediate startup unless --start is provided. " +
 			"Existing unknown or different configurations are not replaced. No manual daemon is stopped and no system service or elevation is used.",
 		Args:    cobra.NoArgs,
 		Example: "  nb1 service install --devices 20000001\n  nb1 service install --devices 20000001 --start\n  nb1 service install --binary /absolute/path/nb1 --devices 20000001 --start",
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			if management.goos == "darwin" || management.goos == "linux" {
+				settings, selected, err := applicationSettings(cmd)
+				if err != nil {
+					return err
+				}
+				config.Devices, err = configuredServerSerials(cmd, settings, config.Devices)
+				if err != nil {
+					return err
+				}
+				if !cmd.Flags().Changed("listen") {
+					config.Listen, err = serverAddress(cmd, settings.Server.Listen)
+				}
+				if err != nil {
+					return err
+				}
+				if selected.Required {
+					config.ConfigFile = selected.Path
+				} else if _, err := os.Stat(selected.Path); err == nil {
+					config.ConfigFile = selected.Path
+				}
+				if !cmd.Flags().Changed("lock-dir") {
+					config.LockDir = os.Getenv("NB1_LOCK_DIR")
+				}
 				if cmd.Flags().Changed("binary") {
 					config.BinaryRoot = ""
 					if config.Binary == "" {
@@ -104,7 +127,6 @@ func newServiceInstallCommand(management userServiceRuntime) *cobra.Command {
 	command.Flags().StringVar(&config.LockDir, "lock-dir", "", "optional absolute shared ownership directory")
 	command.Flags().BoolVar(&start, "start", false, "request immediate startup as well as login loading")
 	command.Flags().BoolVar(&asJSON, "json", false, "print the host platform's service status as JSON")
-	_ = command.MarkFlagRequired("devices")
 	return command
 }
 

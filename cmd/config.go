@@ -20,6 +20,7 @@ var configCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(configCmd)
+	addProfileCommands(configCmd)
 
 	// Configuration settings
 

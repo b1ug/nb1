@@ -2,6 +2,7 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -13,6 +14,7 @@ import (
 	"github.com/b1ug/nb1/config"
 	"github.com/b1ug/nb1/exchange"
 	"github.com/b1ug/nb1/hdwr"
+	"github.com/b1ug/nb1/internal/appconfig"
 	"github.com/b1ug/nb1/util"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -54,6 +56,14 @@ var rootCmd = &cobra.Command{
   nb1 --device DEVICE_SERIAL on`,
 	SilenceUsage:  true,
 	SilenceErrors: true,
+	PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
+		// Recovery and service stop/status must remain available even if a
+		// configuration file was removed or edited incorrectly after install.
+		if cmd.Parent() != nil && ((cmd.Parent().Name() == "config" && (cmd.Name() == "path" || cmd.Name() == "init")) || (cmd.Parent().Name() == "service" && cmd.Name() != "install")) {
+			return nil
+		}
+		return configurationInitError
+	},
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -74,12 +84,13 @@ func Execute() {
 
 // for flags
 var (
-	cfgFile      string
-	logFile      string
-	logLevel     string
-	debugMode    bool
-	waitComplete bool
-	allowAbsent  bool
+	cfgFile                string
+	logFile                string
+	logLevel               string
+	debugMode              bool
+	waitComplete           bool
+	allowAbsent            bool
+	configurationInitError error
 )
 
 func init() {
@@ -91,7 +102,7 @@ func init() {
 	rootCmd.SuggestionsMinimumDistance = 2
 
 	// Persistent flags defined here will be global for your application.
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is setting.yaml)")
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "configuration file (NB1_CONFIG or per-user nb1/config.yaml; established setting.yaml is a fallback)")
 	rootCmd.PersistentFlags().StringVar(&logFile, "log-file", "", "log file path (if non-empty, use this log file)")
 	rootCmd.PersistentFlags().StringVar(&logLevel, "log-level", "info", "log level (debug, info, warn, error, panic, fatal)")
 	rootCmd.PersistentFlags().BoolVarP(&debugMode, "debug", "D", false, "enable debug mode (if true, also use debug log level)")
@@ -109,6 +120,7 @@ func init() {
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
+	configurationInitError = nil
 	// init logger
 	lg := hlog.NewPersistentLogger(logFile, debugMode)
 	if debugMode {
@@ -123,21 +135,41 @@ func initConfig() {
 	hdwr.SetLog(log)
 	exchange.SetLog(log)
 
-	// init config
-	if cfgFile != "" {
-		// Use config file from the flag.
-		viper.SetConfigFile(cfgFile)
-	} else {
-		// Find home and config directory.
-		home, err := os.UserHomeDir()
-		cobra.CheckErr(err)
-		configDir := filepath.Join(home, ".config", config.AppName)
+	if rootCmd.PersistentFlags().Changed("config") && cfgFile == "" {
+		configurationInitError = fmt.Errorf("--config must name a file")
+		return
+	}
 
-		// Search config in current and config directory with name app name (without extension).
-		viper.AddConfigPath(".")
-		viper.AddConfigPath(configDir)
-		viper.SetConfigType("yaml")
-		viper.SetConfigName("setting")
+	// Prefer the per-user profile; retain the established setting.yaml lookup
+	// only when no profile was selected or created. Validate before Viper can
+	// open a special file such as a FIFO.
+	selected, err := appconfig.Select(cfgFile, os.Getenv("NB1_CONFIG"))
+	if err != nil {
+		configurationInitError = err
+		return
+	}
+	if _, err := os.Lstat(selected.Path); os.IsNotExist(err) && !selected.Required {
+		home, homeErr := os.UserHomeDir()
+		if homeErr != nil {
+			configurationInitError = homeErr
+			return
+		}
+	search:
+		for _, directory := range []string{".", filepath.Join(home, ".config", config.AppName)} {
+			for _, name := range []string{"setting.yaml", "setting.yml"} {
+				path, _ := filepath.Abs(filepath.Join(directory, name))
+				if _, err := os.Lstat(path); !os.IsNotExist(err) {
+					selected.Path, selected.Required = path, true
+					break search
+				}
+			}
+		}
+	}
+	viper.SetConfigFile(selected.Path)
+	viper.SetConfigType("yaml")
+	if _, err := appconfig.Load(selected); err != nil {
+		configurationInitError = err
+		return
 	}
 
 	// set default values
@@ -152,16 +184,19 @@ func initConfig() {
 
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err != nil {
-		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
+		if _, ok := err.(viper.ConfigFileNotFoundError); !selected.Required && (ok || os.IsNotExist(err)) {
 			// Config file not found; ignore error if desired
 			log.Debugw("config file not found")
 		} else {
 			// Config file was found but another error was produced
 			log.Debugw("fail to read config file", zap.Error(err))
+			configurationInitError = fmt.Errorf("read configuration: %w", err)
 		}
 	} else {
 		// Config file found and successfully parsed
 		cfp := viper.ConfigFileUsed()
 		log.Debugw("using config file", "path", cfp)
+		selected.Path, selected.Required = cfp, true
+		_, configurationInitError = appconfig.Load(selected)
 	}
 }

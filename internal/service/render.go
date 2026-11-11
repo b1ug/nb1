@@ -25,6 +25,7 @@ type Config struct {
 	Platform   string   `json:"platform"`
 	Binary     string   `json:"binary"`
 	BinaryRoot string   `json:"binary_root,omitempty"`
+	ConfigFile string   `json:"config_file,omitempty"`
 	Devices    []string `json:"devices"`
 	Listen     string   `json:"listen"`
 	LockDir    string   `json:"lock_dir"`
@@ -46,11 +47,11 @@ func validate(c Config) error {
 			return fmt.Errorf("binary_root requires an absolute Unix package directory")
 		}
 	}
-	for name, value := range map[string]string{"binary": c.Binary, "lock directory": c.LockDir} {
+	for name, value := range map[string]string{"binary": c.Binary, "lock directory": c.LockDir, "configuration file": c.ConfigFile} {
 		if !utf8.ValidString(value) || strings.IndexFunc(value, unicode.IsControl) >= 0 {
 			return fmt.Errorf("%s must be valid UTF-8 without control characters", name)
 		}
-		if name == "lock directory" && value == "" {
+		if name != "binary" && value == "" {
 			continue
 		}
 		if !absoluteTargetPath(c.Platform, value) {
@@ -110,6 +111,9 @@ func arguments(c Config) []string {
 	args := []string{"server", "--devices", strings.Join(c.Devices, ","), "--listen", c.Listen}
 	if c.LockDir != "" {
 		args = append(args, "--lock-dir", c.LockDir)
+	}
+	if c.ConfigFile != "" {
+		args = append(args, "--config", c.ConfigFile)
 	}
 	return args
 }

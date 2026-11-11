@@ -84,10 +84,14 @@ type Driver interface {
 }
 
 type Options struct {
-	Serials      []string
-	QueueSize    int
-	PollInterval time.Duration
-	MaxHistory   int
+	// TerminalJobLimit and TerminalJobTTL bound the v1 Job identity cache.
+	// Zero selects defaults; active Jobs never consume terminal capacity.
+	TerminalJobLimit int
+	TerminalJobTTL   time.Duration
+	Serials          []string
+	QueueSize        int
+	PollInterval     time.Duration
+	MaxHistory       int
 	// Default off for daemon shutdown; direct commands may release a completed
 	// stable state with hold. Interrupted active jobs always clean up with off.
 	ShutdownMode string

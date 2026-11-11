@@ -8,6 +8,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/b1ug/nb1/internal/appconfig"
 	"github.com/b1ug/nb1/internal/control"
 	"github.com/b1ug/nb1/internal/daemonclient"
 	"github.com/b1ug/nb1/internal/sequence"
@@ -17,6 +18,7 @@ import (
 type sequenceControlFlags struct {
 	endpoint string
 	timeout  time.Duration
+	settings appconfig.Config
 }
 
 func newSequenceControlCommand() *cobra.Command {
@@ -25,9 +27,21 @@ func newSequenceControlCommand() *cobra.Command {
 		Long: "Control a running local daemon over HTTP. If it is unavailable, explicitly start nb1 server or an installed user service. Basic USB commands such as nb1 --device SERIAL read state are separate direct operations. This command never starts a daemon or silently opens USB."}
 	command.PersistentFlags().StringVar(&options.endpoint, "endpoint", daemonclient.DefaultEndpoint, "loopback daemon HTTP origin")
 	command.PersistentFlags().DurationVar(&options.timeout, "timeout", 30*time.Second, "maximum time to wait for the daemon")
-	command.PersistentPreRunE = func(_ *cobra.Command, _ []string) error {
+	command.PersistentPreRunE = func(cmd *cobra.Command, _ []string) error {
 		if options.timeout <= 0 {
 			return fmt.Errorf("--timeout must be positive")
+		}
+		settings, _, err := applicationSettings(cmd)
+		if err != nil {
+			return err
+		}
+		options.settings = settings
+		if !cmd.Flags().Changed("endpoint") {
+			address, err := serverAddress(cmd, settings.Server.Listen)
+			if err != nil {
+				return err
+			}
+			options.endpoint = "http://" + address
 		}
 		return nil
 	}
@@ -51,11 +65,15 @@ func newSequenceControlCommand() *cobra.Command {
 	preview.Flags().StringVar(&previewSerial, "serial", "", "check the selected device's capabilities")
 	var id string
 	var runWait bool
-	run := &cobra.Command{Use: "run SERIAL FILE", Short: "Run one action, sequence or saved pattern", Args: cobra.ExactArgs(2), RunE: func(cmd *cobra.Command, args []string) error {
-		if !control.ValidDeviceSerial(args[0]) {
+	run := &cobra.Command{Use: "run [SERIAL] FILE", Short: "Run one action, sequence or saved pattern", Args: cobra.RangeArgs(1, 2), RunE: func(cmd *cobra.Command, args []string) error {
+		explicit := ""
+		if len(args) == 2 {
+			explicit = args[0]
+		}
+		if len(args) == 2 && !control.ValidDeviceSerial(explicit) {
 			return fmt.Errorf("invalid device serial")
 		}
-		input, err := readSequenceControlFile(args[1])
+		input, err := readSequenceControlFile(args[len(args)-1])
 		if err != nil {
 			return err
 		}
@@ -69,7 +87,11 @@ func newSequenceControlCommand() *cobra.Command {
 			return fmt.Errorf("--id must contain 1 to 64 ASCII letters, digits, hyphens or underscores")
 		}
 		return options.withClient(cmd, func(ctx context.Context, client *daemonclient.Client) error {
-			job, err := client.SubmitSequence(ctx, input, args[0], id)
+			serial, err := resolveControlSerial(ctx, client, cmd, options.settings, explicit)
+			if err != nil {
+				return err
+			}
+			job, err := client.SubmitSequence(ctx, input, serial, id)
 			if err != nil {
 				var rejection *daemonclient.Error
 				if errors.As(err, &rejection) && rejection.Status >= 400 && rejection.Status < 500 {
@@ -129,12 +151,20 @@ func newSequenceControlCommand() *cobra.Command {
 			return printControlJSON(cmd.OutOrStdout(), result)
 		})
 	}}
-	state := &cobra.Command{Use: "state SERIAL", Short: "Read a device's cached state", Args: cobra.ExactArgs(1), RunE: func(cmd *cobra.Command, args []string) error {
-		if !control.ValidDeviceSerial(args[0]) {
+	state := &cobra.Command{Use: "state [SERIAL]", Short: "Read a device's cached state", Args: cobra.MaximumNArgs(1), RunE: func(cmd *cobra.Command, args []string) error {
+		explicit := ""
+		if len(args) == 1 {
+			explicit = args[0]
+		}
+		if len(args) == 1 && !control.ValidDeviceSerial(explicit) {
 			return fmt.Errorf("invalid device serial")
 		}
 		return options.withClient(cmd, func(ctx context.Context, client *daemonclient.Client) error {
-			result, err := client.Device(ctx, args[0])
+			serial, err := resolveControlSerial(ctx, client, cmd, options.settings, explicit)
+			if err != nil {
+				return err
+			}
+			result, err := client.Device(ctx, serial)
 			if err != nil {
 				return err
 			}

@@ -24,6 +24,14 @@ const (
 	originSequenceJob             recordOrigin = originPatternV2 + 1
 )
 
+// SequenceJobLimits reports this daemon's startup policy, not a guaranteed
+// deduplication interval. Capacity eviction and restart can remove records sooner.
+func (e *Engine) SequenceJobLimits() (int, time.Duration) {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	return e.sequenceJobs.maxTerminalEntries, e.sequenceJobs.retention
+}
+
 // SequenceJob is the current status of an accepted v1 job. TotalSteps counts
 // repeated steps; initialization and final cleanup do not count as steps.
 type SequenceJob struct {
@@ -57,6 +65,7 @@ type sequenceJobStore struct {
 	entries            map[string]*sequenceJobEntry
 	terminals          list.List
 	maxTerminalEntries int
+	retention          time.Duration
 	now                func() time.Time
 	random             io.Reader
 }
@@ -65,6 +74,7 @@ func newSequenceJobStore() sequenceJobStore {
 	return sequenceJobStore{
 		entries:            make(map[string]*sequenceJobEntry),
 		maxTerminalEntries: sequenceJobMaxTerminalEntries,
+		retention:          SequenceJobRetention,
 		now:                time.Now,
 		random:             rand.Reader,
 	}
@@ -191,7 +201,7 @@ func (e *Engine) allocateSequenceJobIDLocked() (string, error) {
 // after cleanup and its final read. Identity and diagnostic metadata remain.
 func (e *Engine) finishSequenceJobLocked(r *record) {
 	entry := e.sequenceJobs.entries[r.state.ID]
-	entry.expiresAt = e.sequenceJobs.now().Add(SequenceJobRetention)
+	entry.expiresAt = e.sequenceJobs.now().Add(e.sequenceJobs.retention)
 	r.program, r.frames = nil, nil
 	entry.terminal = e.sequenceJobs.terminals.PushFront(entry)
 	for e.sequenceJobs.terminals.Len() > e.sequenceJobs.maxTerminalEntries {

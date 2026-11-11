@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/b1ug/nb1/config"
+	"github.com/b1ug/nb1/internal/appconfig"
 	"github.com/b1ug/nb1/internal/control"
 	"github.com/b1ug/nb1/internal/devicebackend"
 	"github.com/b1ug/nb1/internal/httpapi"
@@ -31,12 +32,21 @@ func newServerCommand() *cobra.Command {
 	var serials []string
 	var shutdownTimeout time.Duration
 	var transportTrace bool
+	var jobCacheSize int
+	var jobCacheTTL time.Duration
 	command := &cobra.Command{
 		Use: "server", Aliases: aliasesServer, Short: "Run the local blink(1) device daemon",
 		Long:    "Keep explicitly selected devices open and serve the v1 HTTP API on loopback. API, CLI and agents share each device worker. Stop with Ctrl-C or SIGTERM; shutdown cancels jobs and turns devices off. No system service is installed.",
 		Args:    cobra.NoArgs,
 		Example: "  nb1 server --devices 20005601\n  nb1 --device 20005601 server --listen 127.0.0.1:8931\n  nb1 server --devices 20005601 --port 8932",
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			settings, _, err := applicationSettings(cmd)
+			if err != nil {
+				return err
+			}
+			if !cmd.Flags().Changed("listen") {
+				listen = settings.Server.Listen
+			}
 			address, err := serverAddress(cmd, listen)
 			if err != nil {
 				return err
@@ -44,29 +54,36 @@ func newServerCommand() *cobra.Command {
 			if base := config.GetBaseURL(); base != "" && base != "/" {
 				return fmt.Errorf("--base/base_url is not supported by the v1 API; use the root endpoint")
 			}
-			if len(serials) == 0 {
-				if preferred := strings.TrimSpace(config.GetPreferredDevice()); preferred != "" {
-					serials = []string{preferred}
-				}
+			serials, err = configuredServerSerials(cmd, settings, serials)
+			if err != nil {
+				return err
 			}
-			if len(serials) == 0 {
-				return fmt.Errorf("select device serials with --devices or --device; the daemon does not select the first HID device")
+			if !cmd.Flags().Changed("job-cache-size") {
+				jobCacheSize = settings.Jobs.TerminalLimit
+			}
+			if !cmd.Flags().Changed("job-cache-ttl") {
+				jobCacheTTL = settings.Jobs.TerminalTTL
+			}
+			if jobCacheSize <= 0 || jobCacheTTL <= 0 {
+				return fmt.Errorf("Job cache size and TTL must be positive")
 			}
 			if shutdownTimeout <= 0 {
 				return fmt.Errorf("--shutdown-timeout must be positive")
 			}
 			if libraryDir == "" {
-				base, err := os.UserConfigDir()
-				if err != nil {
-					return err
-				}
-				libraryDir = filepath.Join(base, "nb1", "library")
+				libraryDir = settings.LibraryDir
+			}
+			if !filepath.IsAbs(libraryDir) {
+				return fmt.Errorf("library directory must be an absolute path")
 			}
 			if lockDir == "" {
 				lockDir, err = ownership.DefaultDir()
 				if err != nil {
 					return err
 				}
+			}
+			if !filepath.IsAbs(lockDir) {
+				return fmt.Errorf("ownership directory must be an absolute path")
 			}
 			// Bind first so a port conflict cannot open or reset hardware.
 			listener, err := net.Listen("tcp", address)
@@ -83,7 +100,7 @@ func newServerCommand() *cobra.Command {
 				recorder = transporttrace.New()
 				driver = devicebackend.NewWithTrace(lockDir, recorder)
 			}
-			engine, err := control.New(driver, control.Options{Serials: serials, ShutdownMode: "off"})
+			engine, err := control.New(driver, control.Options{Serials: serials, ShutdownMode: "off", TerminalJobLimit: jobCacheSize, TerminalJobTTL: jobCacheTTL})
 			if err != nil {
 				listener.Close()
 				return err
@@ -104,6 +121,8 @@ func newServerCommand() *cobra.Command {
 	command.Flags().StringVar(&libraryDir, "library-dir", os.Getenv("NB1_LIBRARY_DIR"), "local color and Pattern directory (NB1_LIBRARY_DIR or per-user config/nb1/library)")
 	command.Flags().DurationVar(&shutdownTimeout, "shutdown-timeout", 10*time.Second, "maximum time to await graceful cleanup; does not cancel blocked native I/O")
 	command.Flags().BoolVar(&transportTrace, "transport-trace", false, "opt-in bounded private native-attempt diagnostics in this daemon's log; no extra USB calls")
+	command.Flags().IntVar(&jobCacheSize, "job-cache-size", appconfig.DefaultTerminalLimit, "maximum retained terminal Jobs; evict older records rather than reject new Jobs")
+	command.Flags().DurationVar(&jobCacheTTL, "job-cache-ttl", appconfig.DefaultTerminalTTL, "maximum terminal Job retention since completion; LRU eviction and restart may remove records sooner")
 	command.Flags().Uint32("port", 8931, "compatibility flag for a loopback port; cannot be combined with --listen")
 	command.Flags().String("base", "", "reserved legacy base URL; the v1 API uses the root endpoint")
 	_ = viper.BindPFlag("port", command.Flags().Lookup("port"))
@@ -116,7 +135,7 @@ func serverAddress(cmd *cobra.Command, listen string) (string, error) {
 		return "", fmt.Errorf("choose either --listen or --port")
 	}
 	envValue, envPort := os.LookupEnv("NB1_PORT")
-	if !cmd.Flags().Changed("listen") && (cmd.Flags().Changed("port") || viper.InConfig("port") || envPort) {
+	if !cmd.Flags().Changed("listen") && (cmd.Flags().Changed("port") || (viper.InConfig("port") && !viper.InConfig("server.listen")) || envPort) {
 		portValue := fmt.Sprint(viper.Get("port"))
 		if cmd.Flags().Changed("port") {
 			port, err := cmd.Flags().GetUint32("port")
@@ -180,7 +199,8 @@ func serveRuntimeWithTrace(parent context.Context, listener net.Listener, engine
 	// The caller never joins the logger as part of native/lease cleanup.
 	lifecycle := make(chan runtimeShutdownRecord, 2)
 	defer close(lifecycle)
-	logging := startRuntimeLoggingWithLifecycle(engine, output, map[string]interface{}{"event": "daemon_listening", "url": "http://" + listener.Addr().String(), "api_version": "v1", "devices": engine.Devices()}, lifecycle, recorder)
+	cacheSize, cacheTTL := engine.SequenceJobLimits()
+	logging := startRuntimeLoggingWithLifecycle(engine, output, map[string]interface{}{"event": "daemon_listening", "url": "http://" + listener.Addr().String(), "api_version": "v1", "devices": engine.Devices(), "job_cache": map[string]interface{}{"terminal_limit": cacheSize, "terminal_ttl": cacheTTL.String()}}, lifecycle, recorder)
 	selected := waitRuntimeShutdown(parent, engine.Done(), served, logging.startupErrors)
 	began := time.Now()
 	instance := engine.Instance().DaemonInstanceID

@@ -23,12 +23,17 @@ var (
 	errInvalidColor      = errors.New("color is invalid")
 )
 
+var openBasicDevice = hdwr.OpenBlink1Device
+
 // openBlink1Device works as a PersistentPreRunE function that opens a blink(1) device for use.
 func openBlink1Device(cmd *cobra.Command, args []string) error {
+	if configurationInitError != nil {
+		return configurationInitError
+	}
 	if err := validateLEDSelection(cmd); err != nil {
 		return err
 	}
-	err := hdwr.OpenBlink1Device(config.GetPreferredDevice())
+	err := openBasicDevice(config.GetPreferredDevice())
 	if allowAbsent {
 		return nil
 	}

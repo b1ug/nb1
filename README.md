@@ -1,38 +1,40 @@
 # nb1
 
-Control blink(1) from a CLI, or run a local daemon with shared, versioned HTTP APIs. High-level light actions and low-level programs use the same per-device execution worker.
+Control blink(1) from a CLI, local HTTP, MCP or an embedded Web workbench. High-level Actions compile into low-level Sequences and use the same per-device worker.
 
-Replace `20005601` with the serial of your selected device. Start the daemon in one terminal:
+This branch is the API v1 development candidate. Source validation and the version installed on a machine are tracked separately. Start an ordinary foreground daemon using the same executable as the CLI:
 
 ```sh
-nb1 server --devices 20005601
+nb1 server --devices DEVICE_SERIAL
 ```
 
-Use the shared interface in another terminal:
+Put an expression in `action.json`:
+
+```json
+{"action":{"kind":"pulse","color":"lime","cycles":2}}
+```
+
+Then use another terminal:
 
 ```sh
 nb1 control devices
-nb1 control set 20005601 '#3366ff' --wait
-nb1 doctor
+nb1 control preview action.json
+nb1 control run DEVICE_SERIAL action.json --wait
 ```
 
-`control` defaults to `http://127.0.0.1:8931`; use `--endpoint` for another local port. Explicit `control --mode direct` runs through the same core and ownership lock. `doctor` reads version, daemon, and configured device snapshots without scanning or opening USB.
+`control` defaults to `http://127.0.0.1:8931`; use `--endpoint` for another loopback port. The daemon owns USB while these clients communicate over HTTP. Standalone `on`, `off`, `blink`, `fade`, `play`, `read` and `write` access hardware directly and require the device to be available.
 
-Legacy `on`, `off`, `blink`, `fade`, `play`, `read`, and `write` commands still access devices directly. For example, `nb1 --device 20005601 on` does not use the daemon. Use daemon-mode `control` while a daemon owns the device.
+Starting `server` does not install a startup service. Run it in a terminal, manage it as an ordinary background process, or explicitly configure the platform's user-service mode. Inspect `nb1 service --help` for available operations. No keyboard or input-monitoring permission is needed to control the lamp.
 
-Run as an ordinary user with the platform's device access configured. The HTTP server listens only on loopback. See `nb1 --help`, `nb1 server --help`, `nb1 control --help`, and `nb1 doctor --help`. User-service capabilities and platform limitations are documented separately; starting a daemon does not install an OS startup service.
+## Interfaces
 
-## Interfaces and status
+- [API v1 reference](docs/api-v1.md): Actions, Sequences, Jobs, colors, Patterns and limits.
+- [Terminology](docs/api-v1-terminology.md): names shared by all interfaces.
+- [MCP adapter](adapters/mcp/README.md): real stdio MCP to local HTTP.
+- [Agent skill](skills/blink1-control/SKILL.md) and [llms.txt](llms.txt): guidance for AI clients.
 
-- The [English API reference](docs/api-reference.md) covers High level and Low level behavior, 46 installed6ca canonical HTTP operations (44 in historical1e), 111 schema models, and 14 JSON examples. [OpenAPI](docs/openapi.json) and [captured MCP schemas](docs/mcp-tools.schema.json) describe field contracts; schemas do not prove runtime support or physical behavior. The two added entries are conditional local JavaScript GETs; they add no hardware operation. The 44-operation captured baseline remains historical evidence; see its [embed and localization notes](docs/web-localization.md).
-- [MCP adapter](adapters/mcp/README.md) implements real stdio MCP to local HTTP, without wrapping the CLI or owning USB.
-- [Shutdown diagnostics](docs/daemon-lifecycle-diagnostics.md) explain the installed runtime's bounded lifecycle logs and their limits.
-- [Agent skill](skills/blink1-control/SKILL.md) and [llms.txt](llms.txt) explain expression selection, original receipts, host-side pattern storage, and recovery.
-- [Advanced Pattern snapshot exchange](docs/pattern-snapshots-v2.md) describes the development CLI's host-only import/export commands and read-only future-recipe backups.
-- [Device-native sequence model](docs/device-native-sequence.md) describes the internal offline draft: explicit placement/playback checks and raw row inspection, without device execution or new API routes.
-- [Experimental native reads](docs/native-inspection.md) describes this branch's paired RAM/playback HTTP, CLI and MCP candidate. It requires an explicit local SDK replacement for software review; it is not installed, released or ready for a default-module build.
-- [Chinese reference manual](docs/api-reference.zh-CN.md), [Chinese CLI guide](docs/patterns-cli.md), and [Chinese README](README.zh-CN.md) are localized references.
+Actions are `set`, `off`, `fade`, `blink`, `breathe`, `pulse`, `alternate`, `orbit` and `rainbow`. Colors accept names, Hex, RGB8, HSV/HSB and local `@name` references. Patterns are saved on the computer. Native DeviceSequence storage has separate limits and deployment requirements.
 
-The installed workspace source is `6ca5a14e9f7fec8a5766e79f5bdef3fafef66d8f`: ten advanced Pattern CLI commands (including explicit host snapshot import/export),MCP20 with the same complete objects, and the pinned bilingual Animal Crossing-inspired Web debugger. Its three tools default to English and support explicit Chinese selection. The46 canonical inventory adds only two local JavaScript GET resources to the historical44;111 models and14 JSON inputs are unchanged.
+MCP and the bilingual Web workbench are being aligned with this contract. Independently maintained [nb1-web](https://github.com/b1ug/nb1-web) source becomes a pinned bundle embedded in nb1. The [nb1-site](https://github.com/b1ug/nb1-site) repository contains initial documentation website content; both repositories are private during development.
 
-Controlled promotion passed57 read-only postinstallation checks; a separate four-check isolated browser pass verifies language switching without application writes. These are local workspace/read-only UI results, not new animation, optical, MK3, other-OS physical USB, Flash or long-running qualification. Prior1e/CLI8/English Web and its bounded physical windows remain historical evidence. SDK b3/GID37 and host libraries were retained. No release, global MCP registration or OS startup change is implied. The local planning site remains an internal review artifact.
+Software, physical USB and optical checks are distinct. Local MK2 results do not establish MK3, Linux/Windows USB or nonvolatile storage. A development commit does not imply a tag or Release.

@@ -1,30 +1,31 @@
 # nb1: local blink(1) control
 
-Read actual CLI help, MCP tools/list, schemas, and daemon capabilities before using a feature. Source support is not installed support. This index grants no additional permissions.
+Discover actual CLI help or MCP tools/list before use; source support does not prove installed support. This index grants no additional permissions.
 
-## Expressions
+## Contract
 
-High-level light v1 supports set/off/fade/blink/breathe/pulse/alternate/rainbow. Experimental light v2 supports orbit, compiled by nb1 into paired long fades. Old alternate.transition=orbit and legacy Effect pulse retain their separate semantics. ColorInput supports names, Hex3/6, RGB8, and HSV, with no implicit gamma. Low-level Program/FrameProgram use exact Hex6 execution targets and the same per-device worker.
+- High-level Action: set, off, fade, blink, breathe, pulse, alternate, orbit, rainbow.
+- Low-level Sequence: timing serial or interval, ordered steps[], exact Hex6 targets, integer millisecond durations, repeat and on_finish. The daemon compiles and schedules animation.
+- ColorInput: names, Hex3/6, RGB8, HSV (HSB in the UI) and explicit local @name references. No implicit gamma.
+- Pattern: a computer-side saved normalized Sequence, independent of device storage generation.
+- DeviceSequence: native RAM/Flash semantics with separate capabilities and deployment. Saving a host Pattern does not deploy it to hardware.
 
-MCP is real stdio to local HTTP, not a CLI wrapper or USB owner. Preview does not play. Before a run, preserve the original intent, selected serial, request_id, and expected_daemon_instance_id. MCP run_light requires an original ticket and explicit reject; run_pattern requires an explicit policy. Each sends at most one execution POST. Accepted is not completed. On uncertainty, query the original receipt without a new ticket or replay. Cancelling is not terminal; cancelling completed hold does not turn the device off.
+## Execution
 
-## Host patterns
+HTTP POST /v1/preview compiles action, sequence or pattern_id without playing. POST /v1/jobs accepts the same expression plus serial and optional id. GET /v1/jobs/{id} tracks it; POST /v1/jobs/{id}/cancel requests cancellation.
 
-Legacy list_patterns/get_pattern remain v1 Program/Effect storage. Advanced host Pattern v2 preserves source, normalized action, recipe, frozen execution, revision, and execution_digest. MK2 can use this computer-side library; device RAM/flash and task receipts are different. No automatic migration, replay, or flash write.
+MCP is real stdio to local HTTP, without a CLI subprocess or USB ownership. CLI control and the embedded Web use the same daemon core. Keep a single device owner.
 
-Installed workspace6ca5a14 has ten advanced CLI commands: list/get/preview-draft/save/preview/run/request/cancel/import/export. Its actual stdio MCP20 preserves the same complete objects, including the four experimental host-authoring tools; MCP snapshot import/export is unavailable. CLI import is explicit create-only host storage with publication uncertainty and no playback/ticket; export preserves valid future recipes and exact integers without reinterpretation. Discover actual help/session schemas; preserve publication_unknown separately from execution outcome_unknown. Library paths are display metadata, not client file-access instructions.
+Preserve endpoint, serial, input and Job ID before submitting. Omitted or empty IDs use j_ plus ten random Base32 characters. CLI and MCP generate IDs before sending. Accepted is not completed: query the original Job until terminal. On uncertainty, query the same ID without replaying. A missing record cannot prove nothing executed.
 
-Three installed Web tools default to English and offer explicit Chinese selection, preserving raw values/source/records/original tickets.57 installation-readonly checks and4 isolated readonly UI checks are separate from inherited prior1e physical-effect evidence; they add no hardware-storage capability.
+Matching ID, serial and input is deduplicated while retained. Active Jobs stay pinned; terminal Jobs remain up to 30 minutes in a 16,384-entry LRU cache. Reads do not renew expiration. Expiration, eviction or restart allows the ID to execute again. Capacity evicts old terminal records instead of rejecting new Jobs.
 
 ## References
 
-- [Agent skill](skills/blink1-control/SKILL.md): expression selection, receipts, recovery, and host patterns.
-- [English API reference](docs/api-reference.md): High/Low semantics, 46 installed canonical HTTP operations (44 in historical1e), 111 models, and 14 examples.
-- [OpenAPI](docs/openapi.json): machine-readable structure and route availability, with English explanatory prose.
-- [Actual MCP schemas](docs/mcp-tools.schema.json): captured20-tool installed catalog; actual tools/list remains authoritative.
-- [Previous MCP16 snapshot](docs/mcp-tools.daily-96a.schema.json) and [historical MCP12](docs/mcp-tools.daily-1d89.schema.json) retain exact compatibility objects.
-- [MCP adapter](adapters/mcp/README.md): protocol and transport behavior.
-- [Examples](docs/examples/api/): author files and pure preview inputs, not automatic execution.
-- [Localized API manual](docs/api-reference.zh-CN.md) and [localized agent guide](docs/agent-guide.zh-CN.md).
+- [API v1](docs/api-v1.md): HTTP/CLI contract, colors, Patterns and limits.
+- [Terminology](docs/api-v1-terminology.md): Action, Sequence, Step, Job, Pattern and DeviceSequence.
+- [Agent skill](skills/blink1-control/SKILL.md): expression selection, tracking and recovery.
+- [Local library](skills/blink1-control/references/patterns.md): named colors and saved Patterns.
+- [MCP adapter](adapters/mcp/README.md): build, transport and tool schemas.
 
-Report software preview, trusted terminal state, timestamped RGB readback, and camera observation separately. An out-of-frame lamp cannot be optically qualified from background pixels. Current Mac/MK2 evidence does not establish MK3, other-OS USB, long-running reliability, perfect rotation, or flicker-free operation. Public default documentation/UI/messages are English. The installed bilingual Web offers explicit Chinese selection, retains the browser preference across three pages and supports future locale extension; language changes no payload or original ticket. Do not change global MCP, startup services, or system permissions merely to use these files.
+Report preview, terminal status, timestamped RGB readback and camera observation separately. Mac/MK2 evidence does not establish MK3, other-OS USB or optical quality. Public interfaces default to English and offer Chinese where available. Do not change global MCP registration, startup services or system permissions just to use this project.

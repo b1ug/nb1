@@ -87,9 +87,13 @@ work; installing a new package alone does not prove that an existing service
 will survive removal of its old Cellar directory. This upgrade lifecycle has
 not been accepted by the container check above.
 
-Before publication, choose real release inputs and a tap repository, perform
-native macOS installation and upgrade checks, and test the Linux service on a
-system with a running ordinary-user manager. No tag, release or public tap is
+The actual CGO daemon has now passed a separate Ubuntu 24.04 systemd user-service
+job; see the [native acceptance guide](../../ci/README.daemon-service.md). The
+Homebrew-installed binary still needs combined service and upgrade acceptance
+on a host with a running user manager.
+
+Before publication, choose real release inputs and a tap repository and perform
+native macOS installation and upgrade checks. No tag, release or public tap is
 created by the renderer or local container validation.
 
 References: [Homebrew on Linux](https://docs.brew.sh/Homebrew-on-Linux),

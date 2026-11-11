@@ -1,11 +1,13 @@
 # Linux systemd 用户服务 CI 接线
 
-`.github/workflows/runtime.yml` 新增独立的 `systemd-user-lifecycle` job，显示名为 **Linux systemd user lifecycle / USB-free fixture**。它与既有9个软件/原生构建job分开，在 `ubuntu-24.04` 完整GitHub托管VM中运行，不使用容器或本机服务。当前提交只完成workflow静态验证；须以真实Actions结果及artifact确认原生PASS，不能先当作Linux实测通过。
+当前独立验收入口为 `.github/workflows/daemon-service.yml`；[Actions 43052023721](https://github.com/b1ug/nb1/actions/runs/43052023721) 已在Ubuntu24.04/amd64完整VM通过fixture、真实nb1 server和全部6类拒绝检查，清理通过。源码 `afa2477`，Go1.27.4，产品CLI为CGO1，独立fixture为CGO0。详见 [English guide](README.daemon-service.md)。
+
+`.github/workflows/runtime.yml` 仍有独立的 **Linux systemd user lifecycle / USB-free fixture** job；它只覆盖fixture模式，与既有软件矩阵分开。下面说明这条接线，不把它与新增真实server阶段混为一谈。
 
 job使用现有 `actions/checkout@v7`、`actions/setup-go@v7` 和Go 1.27.x，保持 `contents: read`、`persist-credentials: false`，不声明secrets。独立模块构建关闭GOWORK并核对与既有runtime-native基线一致的SDK/GID pin：
 
-- blink1-go：`v0.0.2-0.20261109021311-c87c7c4888a0`，源码commit `c87c7c4888a037fcd08572e3dbe1272568e01d39`。
-- GID：`v0.0.3-0.20261109020519-8915ba6f4beb`，源码commit `8915ba6f4beb8c6411b2e4d8051f7a75df898ac5`。
+- blink1-go：`v0.0.2-0.20261110161339-17f690dc746c`，源码commit `17f690dc746c2368f04fbfedfae5fc6cb36b6db5`。
+- GID：`v0.0.3-0.20261110160506-7858785cfdf0`，源码commit `7858785cfdf0ccc811ec3864508e70c5fa95bca8`。
 
 CLI与独立stdlib fixture都以 `CGO_ENABLED=0` 构建。被安装运行的是fixture，产品CLI只管理服务；这验证真实systemd用户manager、普通UID、NoNewPrivileges与生命周期，**不验证Linux USB或运行真实nb1 server**。验收工具范围见[工具说明](README.systemd-user.zh-CN.md)。
 

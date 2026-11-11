@@ -1,8 +1,6 @@
 # Linux 用户服务原生验收工具
 
-2026-11-11 更新：独立CI已执行真实 systemd 用户manager的fixture生命周期与全部6类拒绝检查。当前完整范围与新增真实nb1 server阶段见 [English acceptance guide](README.daemon-service.md)；每次是否通过以对应run的results/verdict和明确清理记录为准。
-
-当前交付状态：**工具已准备，尚未在真实 Linux systemd 上执行**。本机语法、fake 回归和 Go 1.18 fixture 编译不构成 Linux 服务 PASS。主线已整合 Linux 服务工厂和 `NoNewPrivileges=yes` 模板；下一步通过独立 runner job 执行原生验收，接线见 [CI 说明](README.systemd-user-ci.zh-CN.md)。
+当前交付状态，2026-11-11：**真实 Ubuntu24.04/systemd 用户manager验收已通过**。[Actions 43052023721](https://github.com/b1ug/nb1/actions/runs/43052023721) 的源码为 `afa2477`，包含fixture生命周期、全部6类拒绝检查及真实CGO nb1 server阶段，共77条检查记录，明确清理通过。完整范围见 [English acceptance guide](README.daemon-service.md)。这不等于Linux USB、登录/重启或Homebrew升级验收。
 
 `systemd-user-smoke.py` 只允许在 `GITHUB_ACTIONS=true`、Linux、PID 1 为 systemd 的环境中显式 `--execute`。建议选择 `ubuntu-24.04` 的完整 GitHub 托管 VM，不能使用 `ubuntu-slim` 容器。GitHub 官方说明了 VM 与容器的区别及 Linux runner 的管理权限：[GitHub 托管 runner](https://docs.github.com/en/actions/reference/runners/github-hosted-runners)。环境不满足时返回非零及 `ENVIRONMENT_UNAVAILABLE`，不跳过为 PASS。
 
@@ -12,7 +10,7 @@
 python3 ci/systemd-user-smoke.py
 ```
 
-在上述专用 runner 中，由后续 workflow 显式执行以下步骤。`CGO_ENABLED=0` 的 CLI 足以验证服务管理路径，不验证 HID；fixture 自身只有 Go 标准库，无 USB 代码。
+只验证fixture服务管理路径时，在上述专用runner中使用下面的CGO0构建；fixture自身只有Go标准库。额外选择 `--actual-daemon` 时，先以CGO1构建真实CLI，再运行同一工具；独立daemon-service工作流还会验证构建元数据并要求该阶段明确PASS。
 
 ```sh
 GOWORK=off CGO_ENABLED=0 go build -o "$RUNNER_TEMP/nb1-systemd-cli" .

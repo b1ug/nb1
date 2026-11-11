@@ -43,8 +43,8 @@ func validate(c Config) error {
 	if c.Platform != "darwin" && c.Platform != "linux" && c.Platform != "windows" {
 		return fmt.Errorf("platform must be darwin, linux or windows")
 	}
-	if c.UserConfigRoot != "" && c.Platform != "linux" {
-		return fmt.Errorf("user_config_root is supported by Linux user services")
+	if c.UserConfigRoot != "" && c.Platform != "darwin" && c.Platform != "linux" {
+		return fmt.Errorf("user_config_root is supported by macOS and Linux user services")
 	}
 	if c.BinaryRoot != "" {
 		if c.Platform == "windows" || !strings.HasPrefix(c.BinaryRoot, "/") || !utf8.ValidString(c.BinaryRoot) || strings.IndexFunc(c.BinaryRoot, unicode.IsControl) >= 0 {
@@ -173,7 +173,13 @@ func renderLaunchd(c Config) []byte {
 		_ = xml.EscapeText(&b, []byte(arg))
 		b.WriteString("</string>\n")
 	}
-	b.WriteString("  </array>\n  <key>RunAtLoad</key><true/>\n  <key>KeepAlive</key><true/>\n  <key>ThrottleInterval</key><integer>10</integer>\n  <key>ExitTimeOut</key><integer>20</integer>\n</dict>\n</plist>\n")
+	b.WriteString("  </array>\n")
+	if c.UserConfigRoot != "" {
+		b.WriteString("  <key>EnvironmentVariables</key>\n  <dict>\n    <key>XDG_CONFIG_HOME</key>\n    <string>")
+		_ = xml.EscapeText(&b, []byte(c.UserConfigRoot))
+		b.WriteString("</string>\n  </dict>\n")
+	}
+	b.WriteString("  <key>RunAtLoad</key><true/>\n  <key>KeepAlive</key><true/>\n  <key>ThrottleInterval</key><integer>10</integer>\n  <key>ExitTimeOut</key><integer>20</integer>\n</dict>\n</plist>\n")
 	return b.Bytes()
 }
 

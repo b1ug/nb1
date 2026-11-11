@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/b1ug/nb1/internal/ownership"
+	"github.com/b1ug/nb1/internal/userconfig"
 )
 
 var ErrUserServiceUnsupported = errors.New("自动用户服务管理目前只支持macOS；其他平台仍可使用 service render，不会调用launchctl")
@@ -208,6 +209,14 @@ func (m *UserManager) Install(ctx context.Context, config Config, start bool) (U
 	defer cancel()
 	status := m.initialStatus()
 	config.Platform = "darwin"
+	configRoot, err := userconfig.RootDir()
+	if err != nil {
+		return status, err
+	}
+	if config.UserConfigRoot != "" && config.UserConfigRoot != configRoot {
+		return status, fmt.Errorf("service configuration root must match the current user's configuration root")
+	}
+	config.UserConfigRoot = configRoot
 	if config.Listen == "" {
 		config.Listen = "127.0.0.1:8931"
 	}
@@ -215,7 +224,6 @@ func (m *UserManager) Install(ctx context.Context, config Config, start bool) (U
 		return status, err
 	}
 	// Retain an explicit absolute executable and verify it without executing it.
-	var err error
 	if config.BinaryRoot == "" {
 		config.Binary, err = executablePath(config.Binary)
 	} else {

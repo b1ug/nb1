@@ -31,6 +31,55 @@ func TestLinuxConfigurationRootUsesLiteralEnvironmentValue(t *testing.T) {
 	}
 }
 
+func TestLaunchdConfigurationRootRoundTripsAsOneEnvironmentValue(t *testing.T) {
+	root := `/Users/灯 & 家/<xdg> "quoted"\100%/$literal`
+	c := Config{Platform: "darwin", Binary: "/Applications/nb1", Devices: []string{"20005601"}, UserConfigRoot: root}
+	artifact, err := Render(c)
+	if err != nil {
+		t.Fatal(err)
+	}
+	decoder := xml.NewDecoder(bytes.NewReader(artifact.Content))
+	var key string
+	var roots []string
+	for {
+		token, err := decoder.Token()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			t.Fatal(err)
+		}
+		start, ok := token.(xml.StartElement)
+		if !ok {
+			continue
+		}
+		if start.Name.Local == "key" {
+			if err := decoder.DecodeElement(&key, &start); err != nil {
+				t.Fatal(err)
+			}
+		} else if start.Name.Local == "string" && key == "XDG_CONFIG_HOME" {
+			var value string
+			if err := decoder.DecodeElement(&value, &start); err != nil {
+				t.Fatal(err)
+			}
+			roots = append(roots, value)
+		}
+	}
+	if len(roots) != 1 || roots[0] != root || !bytes.Contains(artifact.Content, []byte("<key>EnvironmentVariables</key>")) {
+		t.Fatalf("XDG root did not round-trip literally: %q, %s", roots, artifact.Content)
+	}
+	for _, invalid := range []string{"relative", "/Users/test/invalid\nroot"} {
+		c.UserConfigRoot = invalid
+		if _, err := Render(c); err == nil {
+			t.Fatalf("invalid launchd root accepted: %q", invalid)
+		}
+	}
+	c.Platform, c.Binary, c.UserConfigRoot = "windows", `C:\nb1.exe`, `C:\Users\test\config`
+	if _, err := Render(c); err == nil {
+		t.Fatal("Windows accepted an XDG root override")
+	}
+}
+
 func TestLaunchdArgumentsRoundTrip(t *testing.T) {
 	c := Config{Platform: "darwin", Binary: `/Applications/灯 & 家/<nb1> "quoted"/bin\nb1`, Devices: []string{"20005601", "30000001"}, Listen: "[::1]:8931", LockDir: `/Users/用户/100%/<locks> & "one"\tail`}
 	artifact, err := Render(c)

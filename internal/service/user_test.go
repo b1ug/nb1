@@ -60,11 +60,15 @@ func fixtureManager(t *testing.T) (*UserManager, *fakeLaunchctl, Config) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	// Keep profile selection isolated and deterministic even when the caller's
+	// shell or CI user manager exports another account's XDG_CONFIG_HOME.
+	root := filepath.Join(m.home, "fixture-config")
+	t.Setenv("XDG_CONFIG_HOME", root)
 	binary := filepath.Join(m.home, "nb1 & fixture program")
 	if err := os.WriteFile(binary, []byte("this fixture must never be executed\n"), 0700); err != nil {
 		t.Fatal(err)
 	}
-	return m, runner, Config{Platform: "darwin", Binary: binary, Devices: []string{"20005601"}, Listen: "127.0.0.1:8931"}
+	return m, runner, Config{Platform: "darwin", Binary: binary, UserConfigRoot: root, Devices: []string{"20005601"}, Listen: "127.0.0.1:8931"}
 }
 
 func absentCalls(m *UserManager) []fakeCall {
@@ -111,6 +115,67 @@ func TestUserConfigOnlyStatusHasNoWritesOrCommands(t *testing.T) {
 	if err != nil || status.ConfigState != "absent" || status.Registration != "not_checked" || len(runner.calls) != 0 || len(before) != len(after) {
 		t.Fatalf("config-only status had side effects: %+v %v", status, err)
 	}
+}
+
+func TestUserInstallPinsCurrentXDGRootWithoutMovingNativeServicePaths(t *testing.T) {
+	m, runner, config := fixtureManager(t)
+	wantRoot := config.UserConfigRoot
+	config.UserConfigRoot = ""
+	runner.steps = absentCalls(m)
+	status, err := m.Install(context.Background(), config, false)
+	if err != nil || status.Config == nil || status.Config.UserConfigRoot != wantRoot {
+		t.Fatalf("installer failed to bind XDG: %+v %v", status, err)
+	}
+	if status.PlistPath != filepath.Join(m.home, "Library", "LaunchAgents", Label+".plist") {
+		t.Fatalf("native service path moved: %q", status.PlistPath)
+	}
+	file, err := m.readManaged()
+	if err != nil || file == nil || file.definition.Config.UserConfigRoot != wantRoot || !bytes.Contains(file.content, []byte("<key>EnvironmentVariables</key>")) {
+		t.Fatalf("bound root not preserved in complete metadata/plist: %+v %v", file, err)
+	}
+	if _, err := os.Stat(wantRoot); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("installation created profile/library storage: %v", err)
+	}
+	config.UserConfigRoot = filepath.Join(m.home, "another-root")
+	calls := len(runner.calls)
+	if _, err := m.Install(context.Background(), config, false); err == nil || len(runner.calls) != calls {
+		t.Fatalf("mismatched root reached launchctl or was accepted: %v", err)
+	}
+}
+
+func TestUserInstallRejectsRelativeXDGRootBeforeCommandsOrWrites(t *testing.T) {
+	m, runner, config := fixtureManager(t)
+	t.Setenv("XDG_CONFIG_HOME", "relative-root")
+	config.UserConfigRoot = ""
+	if _, err := m.Install(context.Background(), config, false); err == nil || len(runner.calls) != 0 {
+		t.Fatalf("invalid XDG reached launchctl: %v", err)
+	}
+	if _, err := os.Stat(m.plistPath()); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("invalid XDG wrote a plist: %v", err)
+	}
+}
+
+func TestOldManagedPlistWithoutXDGRemainsReadableAndRecoverable(t *testing.T) {
+	m, runner, config := fixtureManager(t)
+	config.UserConfigRoot = ""
+	old := putManaged(t, m, config)
+	if bytes.Contains(old, []byte("EnvironmentVariables")) || bytes.Contains(old, []byte("user_config_root")) {
+		t.Fatal("empty optional field changed the old artifact")
+	}
+	// Start/stop use the saved definition, even if the current profile root is
+	// broken. They neither rewrite old metadata nor import the caller's value.
+	t.Setenv("XDG_CONFIG_HOME", "relative-root")
+	runner.steps = append(absentCalls(m), fakeCall{args: []string{"bootstrap", m.domain(), m.plistPath()}}, registeredCall(m, config))
+	status, err := m.Start(context.Background())
+	if err != nil || status.Config == nil || status.Config.UserConfigRoot != "" {
+		t.Fatalf("old service could not start: %+v %v", status, err)
+	}
+	runner.steps = []fakeCall{registeredCall(m, config), {args: []string{"bootout", m.target()}}}
+	runner.steps = append(runner.steps, absentCalls(m)...)
+	if _, err := m.Stop(context.Background()); err != nil {
+		t.Fatalf("old service could not stop: %v", err)
+	}
+	assertContent(t, m.plistPath(), old)
 }
 
 func TestUserInstallDefaultChecksLaunchdAndEnablesFutureLoginOnly(t *testing.T) {

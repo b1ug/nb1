@@ -11,23 +11,43 @@ import (
 	"github.com/b1ug/nb1/internal/appconfig"
 	"github.com/b1ug/nb1/internal/control"
 	"github.com/b1ug/nb1/internal/daemonclient"
+	"github.com/b1ug/nb1/internal/devicebackend"
 	"github.com/b1ug/nb1/internal/sequence"
 	"github.com/spf13/cobra"
 )
 
 type sequenceControlFlags struct {
-	endpoint string
-	timeout  time.Duration
-	settings appconfig.Config
+	endpoint        string
+	timeout         time.Duration
+	settings        appconfig.Config
+	direct          bool
+	lockDir         string
+	shutdownTimeout time.Duration
+	driver          func(string) control.Driver
 }
 
 func newSequenceControlCommand() *cobra.Command {
-	options := &sequenceControlFlags{}
+	return newSequenceControlCommandWithDriver(devicebackend.New)
+}
+
+func newSequenceControlCommandWithDriver(driver func(string) control.Driver) *cobra.Command {
+	options := &sequenceControlFlags{driver: driver}
 	command := &cobra.Command{Use: "control", Short: "Preview and run light actions and sequences",
-		Long: "Control a running local daemon over HTTP. If it is unavailable, explicitly start nb1 server or an installed user service. Basic USB commands such as nb1 --device SERIAL read state are separate direct operations. This command never starts a daemon or silently opens USB."}
+		Long: "Use a running local daemon over HTTP, or explicitly choose control --direct run for one foreground Action, Sequence or local Pattern. Direct execution always waits and keeps its Job only in this process; it does not contact a daemon. Other control commands use HTTP. No command starts a daemon or silently switches to USB."}
 	command.PersistentFlags().StringVar(&options.endpoint, "endpoint", daemonclient.DefaultEndpoint, "loopback daemon HTTP origin")
-	command.PersistentFlags().DurationVar(&options.timeout, "timeout", 30*time.Second, "maximum time to wait for the daemon")
+	command.PersistentFlags().DurationVar(&options.timeout, "timeout", 30*time.Second, "daemon request/wait limit; direct has no overall deadline unless explicitly set")
+	command.PersistentFlags().BoolVar(&options.direct, "direct", false, "run in the foreground using USB; only supported by run")
+	command.PersistentFlags().StringVar(&options.lockDir, "lock-dir", os.Getenv("NB1_LOCK_DIR"), "shared device ownership directory for explicit direct run")
 	command.PersistentPreRunE = func(cmd *cobra.Command, _ []string) error {
+		if options.direct && cmd.Name() != "run" {
+			return fmt.Errorf("--direct is only supported by control run; Job queries and library commands use the daemon")
+		}
+		if options.direct && cmd.Flags().Changed("endpoint") {
+			return fmt.Errorf("--endpoint cannot be combined with --direct")
+		}
+		if !options.direct && cmd.Flags().Changed("lock-dir") {
+			return fmt.Errorf("--lock-dir requires control --direct run")
+		}
 		if options.timeout <= 0 {
 			return fmt.Errorf("--timeout must be positive")
 		}
@@ -36,7 +56,7 @@ func newSequenceControlCommand() *cobra.Command {
 			return err
 		}
 		options.settings = settings
-		if !cmd.Flags().Changed("endpoint") {
+		if !options.direct && !cmd.Flags().Changed("endpoint") {
 			address, err := serverAddress(cmd, settings.Server.Listen)
 			if err != nil {
 				return err
@@ -77,6 +97,18 @@ func newSequenceControlCommand() *cobra.Command {
 		if err != nil {
 			return err
 		}
+		if options.direct {
+			if cmd.Flags().Changed("id") {
+				return fmt.Errorf("--id requires the daemon; each direct invocation is a new foreground run without retained deduplication")
+			}
+			if options.shutdownTimeout <= 0 {
+				return fmt.Errorf("--shutdown-timeout must be positive")
+			}
+			return options.runSequenceDirect(cmd, explicit, input)
+		}
+		if cmd.Flags().Changed("shutdown-timeout") {
+			return fmt.Errorf("--shutdown-timeout requires --direct")
+		}
 		if id == "" {
 			id, err = control.NewSequenceJobID()
 			if err != nil {
@@ -108,8 +140,9 @@ func newSequenceControlCommand() *cobra.Command {
 			return printSequenceControlJob(cmd, job, false)
 		})
 	}}
-	run.Flags().StringVar(&id, "id", "", "job ID to preserve for queries and repeated submissions")
-	run.Flags().BoolVar(&runWait, "wait", false, "wait for the Job to reach a terminal state")
+	run.Flags().StringVar(&id, "id", "", "daemon-only Job ID to preserve for queries and repeated submissions")
+	run.Flags().BoolVar(&runWait, "wait", false, "wait for a daemon Job's terminal state; direct always waits")
+	run.Flags().DurationVar(&options.shutdownTimeout, "shutdown-timeout", 10*time.Second, "direct-only maximum cleanup wait; cannot interrupt blocked native I/O")
 	job := &cobra.Command{Use: "job ID", Short: "Read a Job's status", Args: cobra.ExactArgs(1), RunE: func(cmd *cobra.Command, args []string) error {
 		if !control.ValidSequenceJobID(args[0]) {
 			return fmt.Errorf("invalid job ID")

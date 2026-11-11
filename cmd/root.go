@@ -40,6 +40,8 @@ var rootCmd = &cobra.Command{
 		control previews Actions and Sequences, submits Jobs and manages the local
 		color and Pattern library through HTTP. doctor inspects build information,
 		daemon status and cached device snapshots without scanning or opening USB.
+		Use control --direct run for one foreground Action, Sequence or local
+		Pattern without a daemon. Its Job is local to that invocation.
 
 		Standalone commands on, off, blink, fade, play, read and write access the
 		device directly and require it to be available. Use nb1 <command> --help.
@@ -52,6 +54,7 @@ var rootCmd = &cobra.Command{
   nb1 control preview action.json
   nb1 control run DEVICE_SERIAL action.json --wait
   nb1 control job j_7K3XJNY9ZM
+  nb1 control --direct run DEVICE_SERIAL action.json
   nb1 doctor
   nb1 --device DEVICE_SERIAL on`,
 	SilenceUsage:  true,

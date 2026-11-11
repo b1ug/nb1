@@ -35,22 +35,23 @@ var rootCmd = &cobra.Command{
 		configured devices with the CLI and other clients through versioned HTTP APIs.
 
 		Start the daemon with server --devices, then use control to send requests.
-		control connects to the local daemon by default. Temporary direct access
-		requires explicit control --mode direct. doctor inspects build information,
-		daemon status and configured device snapshots without scanning or opening USB.
+		control previews Actions and Sequences, submits Jobs and manages the local
+		color and Pattern library through HTTP. doctor inspects build information,
+		daemon status and cached device snapshots without scanning or opening USB.
 
-		Legacy commands such as on, off, blink, fade, play, read and write access
-		the device directly. Read each command's options with nb1 <command> --help.
+		Standalone commands on, off, blink, fade, play, read and write access the
+		device directly and require it to be available. Use nb1 <command> --help.
 
 		Run as a regular user with the required device access configured.
-		server listens on the local loopback interface.
+		server listens on loopback. Starting it does not install a startup service.
 `),
-	Example: `  nb1 server --devices 20005601
+	Example: `  nb1 server --devices DEVICE_SERIAL
   nb1 control devices
-  nb1 control set 20005601 '#3366ff' --wait
+  nb1 control preview action.json
+  nb1 control run DEVICE_SERIAL action.json --wait
+  nb1 control job j_7K3XJNY9ZM
   nb1 doctor
-  nb1 control --mode direct state 20005601
-  nb1 --device 20005601 on`,
+  nb1 --device DEVICE_SERIAL on`,
 	SilenceUsage:  true,
 	SilenceErrors: true,
 }

@@ -5,7 +5,7 @@ Discover actual CLI help or MCP tools/list before use; source support does not p
 ## Contract
 
 - High-level Action: set, off, fade, blink, breathe, pulse, alternate, orbit, rainbow.
-- Low-level Sequence: timing serial or interval, ordered steps[], exact Hex6 targets, integer millisecond durations, repeat and on_finish. The daemon compiles and schedules animation.
+- Low-level Sequence: timing serial or interval, ordered steps[], exact Hex6 targets, integer millisecond durations, repeat and on_finish. The nb1 core compiles and schedules playback.
 - ColorInput: names, Hex3/6, RGB8, HSV (HSB in the UI) and explicit local @name references. No implicit gamma.
 - Pattern: a computer-side saved normalized Sequence, independent of device storage generation.
 - DeviceSequence: native RAM/Flash semantics with separate capabilities and deployment. Saving a host Pattern does not deploy it to hardware.
@@ -14,11 +14,15 @@ Discover actual CLI help or MCP tools/list before use; source support does not p
 
 HTTP POST /v1/preview compiles action, sequence or pattern_id without playing. POST /v1/jobs accepts the same expression plus serial and optional id. GET /v1/jobs/{id} tracks it; POST /v1/jobs/{id}/cancel requests cancellation.
 
-MCP is real stdio to local HTTP, without a CLI subprocess or USB ownership. CLI control and the embedded Web use the same daemon core. Keep a single device owner.
+MCP is real stdio to local HTTP, without a CLI subprocess or USB ownership. HTTP CLI calls and the embedded Web use the running daemon. MCP selects its endpoint with --endpoint, defaults to http://127.0.0.1:8931 and does not read nb1 YAML; the HTTP CLI can derive its endpoint from profile server.listen. Point all clients at the intended daemon. An unavailable daemon never triggers an automatic start or USB fallback.
 
-Preserve endpoint, serial, input and Job ID before submitting. Omitted or empty IDs use j_ plus ten random Base32 characters. CLI and MCP generate IDs before sending. Accepted is not completed: query the original Job until terminal. On uncertainty, query the same ID without replaying. A missing record cannot prove nothing executed.
+For daemon submissions, preserve endpoint, serial, input and Job ID. Omitted or empty IDs use j_ plus ten random Base32 characters. HTTP CLI and MCP generate IDs before sending. Accepted is not completed: query the original Job until terminal. HTTP client timeout or MCP closure does not cancel an accepted Job. On uncertainty, query the same ID without replaying. A missing record cannot prove nothing executed.
 
-Matching ID, serial and input is deduplicated while retained. Active Jobs stay pinned; terminal Jobs remain up to 30 minutes in a 16,384-entry LRU cache. Reads do not renew expiration. Expiration, eviction or restart allows the ID to execute again. Capacity evicts old terminal records instead of rejecting new Jobs.
+Matching ID, serial and input is deduplicated while retained. Active Jobs stay pinned. Terminal cache defaults are 30 minutes and 16,384 entries, configurable through jobs.terminal_ttl and jobs.terminal_limit. Reads do not renew expiration. Capacity eviction or daemon restart can remove records earlier. A lost record permits the ID to execute again, so do not infer permanent deduplication.
+
+Only nb1 control --direct run [SERIAL] FILE supports foreground direct Action/Sequence/Pattern execution. It uses local compilation and the local library, always waits, rejects --id, and starts no HTTP server. Its Job belongs only to that process, with no HTTP lookup or cross-process deduplication. There is no default total deadline; explicit --timeout requests cancellation and cleanup with a separate bounded context. Ctrl-C requests cancellation and cleanup too. Inspect exit status and JSON fields mode, job, and engine_closed: engine_closed alone proves neither success nor an extinguished light. A successful hold can leave color behind. Never apply daemon Job recovery or automatic replay to an uncertain direct result.
+
+Use nb1 config path and nb1 config show to inspect settings without USB. Profile and default-library roots use XDG_CONFIG_HOME/nb1 or ~/.config/nb1 on macOS/Linux, and native user configuration on Windows. Device ownership locks keep the native platform root independently of the profile/library; all owners must agree on any lock-directory override.
 
 ## References
 

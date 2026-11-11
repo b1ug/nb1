@@ -7,7 +7,7 @@ description: Control blink(1) through nb1 MCP, CLI or HTTP; preview Actions and 
 
 Inspect actual MCP `tools/list` or `nb1 control --help` before choosing an interface: source support can be newer than the running daemon. Use the device and interface covered by the user's request. This project skill does not install services, register MCP servers or change system permissions.
 
-MCP implements stdio directly to local HTTP. It does not invoke the CLI or own USB. CLI `control`, Web and MCP share the daemon's compiler and device worker. Keep one owner per device; an unavailable daemon does not authorize starting a second owner.
+MCP implements stdio directly to local HTTP. It does not invoke the CLI or own USB. HTTP CLI calls, Web and MCP share the running daemon's compiler and device worker. For a finite foreground task, `nb1 control --direct run` uses the same core in its own process. Keep every owner on the same device-lock directory. An unavailable daemon never triggers an automatic USB fallback or daemon start.
 
 ## Choose an expression
 
@@ -24,7 +24,7 @@ Actions compile inside nb1 into Sequences. Do not stream animation steps from th
 
 Action colors accept names, Hex3/6, RGB8, HSV (HSB in the UI), and local `@name` references. Use `resolve_color` for conversion without a device. Sequence targets use exact `#RRGGBB`. No implicit gamma correction is applied.
 
-## Preview and run
+## Preview and run through the daemon
 
 1. For device work, use `list_devices` to select a configured serial. `get_device_state` returns cached state; inspect `observed.sampled_at` before interpreting RGB. Interval playback defers RGB polling until cleanup, so the cached color may predate the Job. Host-only storage and conversion need no device discovery.
 2. Supply exactly one of `action`, `sequence` or `pattern_id` to `preview_light`. Optional `serial` enables cached capability checks. Preview does not play or write USB.
@@ -47,13 +47,29 @@ nb1 control job j_7K3XJNY9ZM
 nb1 control cancel j_7K3XJNY9ZM --wait
 ```
 
-Use `control --endpoint URL --timeout DURATION` as needed. Defaults are `http://127.0.0.1:8931` and a 30-second CLI time budget.
+The HTTP CLI uses a 30-second time budget by default and selects its endpoint from `--endpoint` or the selected profile's `server.listen`, whose built-in default is `127.0.0.1:8931`. MCP has its own `--endpoint` argument, defaults to `http://127.0.0.1:8931`, and does not read nb1 YAML. Use the actual daemon endpoint for all clients, especially when another installation uses the default port.
 
-## Recover without replay
+## Run a finite task directly
+
+Only `control --direct run [SERIAL] FILE` supports this mode. The expression may contain an Action, Sequence or `pattern_id`; compilation and color/Pattern resolution use the local library. It does not start an HTTP server. For example:
+
+```sh
+nb1 control --direct run DEVICE_SERIAL action.json
+```
+
+Direct execution always waits in the foreground. Do not pass `--id`: direct Jobs exist only in that process, cannot be tracked over HTTP, and provide no deduplication across separate invocations. The default HTTP timeout does not apply; direct mode has no total deadline unless the caller supplies `--timeout`. An explicit deadline requests cancellation, followed by cleanup with its own bounded context. Ctrl-C also requests cancellation and cleanup.
+
+Inspect the command's exit status and JSON `mode`, `job` and `engine_closed`. `engine_closed` alone proves neither Job success nor that the light is off; a successful `hold` can leave its color behind. If no trustworthy result is available, report uncertainty instead of querying an unrelated daemon or automatically running the expression again.
+
+## Configuration and local storage
+
+Use `nb1 config path` and `nb1 config show` to inspect the selected settings without USB access. macOS and Linux use `$XDG_CONFIG_HOME/nb1`, or `~/.config/nb1` when unset, for the profile and default library. Windows uses its native user-configuration directory. A selected profile's `library_dir` or an explicit library override can choose another library. Device locks retain the native platform configuration root independently of the profile/library choice; inspect `device_lock_dir` rather than deriving it from a library path. Custom device-lock overrides must agree across owners.
+
+## Recover HTTP Jobs without replay
 
 On a lost response, timeout or malformed result, retain the original endpoint and ID and query that Job. Do not automatically resend or change the ID. A 404 does not prove nothing ran.
 
-Matching ID, serial and JSON input returns the retained Job; changed input conflicts. Object key order is ignored. Active Jobs remain retained; terminal records live up to 30 minutes and may be evicted sooner by bounded LRU. Queries do not extend expiration. Eviction or daemon restart removes deduplication protection, so replay after uncertainty needs a new user decision.
+Matching ID, serial and JSON input returns the retained Job; changed input conflicts. Object key order is ignored. Active Jobs remain retained. The daemon's terminal cache defaults to a 30-minute TTL and 16,384-entry LRU limit, configurable through `jobs.terminal_ttl` and `jobs.terminal_limit`. Capacity pressure or a restart can remove records earlier; queries do not extend expiration. After a record is lost, replay needs a new user decision. These HTTP recovery rules do not make a completed direct command's Job available to another process.
 
 ## Evidence and capabilities
 

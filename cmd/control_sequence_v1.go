@@ -21,7 +21,8 @@ type sequenceControlFlags struct {
 
 func newSequenceControlCommand() *cobra.Command {
 	options := &sequenceControlFlags{}
-	command := &cobra.Command{Use: "control", Short: "Preview and run light actions and sequences"}
+	command := &cobra.Command{Use: "control", Short: "Preview and run light actions and sequences",
+		Long: "Control a running local daemon over HTTP. If it is unavailable, explicitly start nb1 server or an installed user service. Basic USB commands such as nb1 --device SERIAL read state are separate direct operations. This command never starts a daemon or silently opens USB."}
 	command.PersistentFlags().StringVar(&options.endpoint, "endpoint", daemonclient.DefaultEndpoint, "loopback daemon HTTP origin")
 	command.PersistentFlags().DurationVar(&options.timeout, "timeout", 30*time.Second, "maximum time to wait for the daemon")
 	command.PersistentPreRunE = func(_ *cobra.Command, _ []string) error {
@@ -152,7 +153,7 @@ func (options *sequenceControlFlags) withClient(cmd *cobra.Command, run func(con
 	defer client.Close()
 	ctx, cancel := context.WithTimeout(cmd.Context(), options.timeout)
 	defer cancel()
-	return run(ctx, client)
+	return sequenceControlConnectionError(cmd, options.endpoint, run(ctx, client))
 }
 
 func readSequenceControlFile(path string) (daemonclient.SequenceInput, error) {

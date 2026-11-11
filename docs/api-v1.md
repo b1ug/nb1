@@ -21,6 +21,20 @@ nb1 control --endpoint http://127.0.0.1:8931 job j_7K3XJNY9ZM
 nb1 control --endpoint http://127.0.0.1:8931 cancel j_7K3XJNY9ZM --wait
 ```
 
+## Daemon selection and connection failures
+
+`control` calls the selected loopback daemon. It does not start a daemon or
+silently fall back to USB. A failed connection gives commands for explicitly
+starting `nb1 server --devices SERIAL --listen HOST:PORT`, starting a previously
+installed user service with `nb1 service start`, or inspecting USB directly with
+the separate basic command `nb1 --device SERIAL read state`.
+
+The hint uses the requested device and endpoint when known. A lost submission
+response still preserves its original Job ID and query command; it is not
+treated as proof that the daemon never received the request. No automatic
+resubmission occurs. Direct Action/Sequence execution is separate pending work;
+the basic USB inspection command does not replay the failed request.
+
 ## HTTP operations
 
 | Request | Behavior |

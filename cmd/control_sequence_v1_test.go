@@ -3,6 +3,8 @@ package cmd
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -175,6 +177,52 @@ func TestSequenceControlV1LostSubmitResponseReportsOriginalIDWithoutRetry(t *tes
 	submittedID := capturedID.Load().(string)
 	if err == nil || submittedID == "" || !strings.Contains(err.Error(), "outcome unknown") || !strings.Contains(err.Error(), "control --endpoint "+server.URL+" job "+submittedID) || atomic.LoadInt32(&posts) != 1 {
 		t.Fatalf("lost response error = %v, ID %q, requests %d", err, submittedID, posts)
+	}
+	if strings.Contains(err.Error(), "Start a daemon explicitly") {
+		t.Fatalf("lost response misreported as a failed connection: %v", err)
+	}
+}
+
+func TestSequenceControlUnavailableDaemonGuidesWithoutLosingJobIdentity(t *testing.T) {
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	address := listener.Addr().String()
+	if err := listener.Close(); err != nil {
+		t.Fatal(err)
+	}
+	endpoint := "http://" + address
+	file := sequenceControlFile(t, sequenceControlInput)
+	for _, tc := range []struct {
+		name, serial string
+		args         []string
+	}{
+		{"run", "20000001", []string{"run", "20000001", file, "--id", "j_7K3XJNY9ZM"}},
+		{"state", "20000001", []string{"state", "20000001"}},
+		{"preview", "20000001", []string{"preview", file, "--serial", "20000001"}},
+		{"devices", "SERIAL", []string{"devices"}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := executeSequenceControl(t, endpoint, tc.args...)
+			var network *net.OpError
+			if err == nil || !errors.As(err, &network) {
+				t.Fatalf("lost underlying network error: %v", err)
+			}
+			for _, text := range []string{
+				"cannot connect to daemon at " + endpoint,
+				"nb1 server --devices " + tc.serial + " --listen " + address,
+				"nb1 service start",
+				"nb1 --device " + tc.serial + " read state",
+			} {
+				if !strings.Contains(err.Error(), text) {
+					t.Errorf("missing usable guidance %q: %v", text, err)
+				}
+			}
+			if tc.name == "run" && !strings.Contains(err.Error(), "control --endpoint "+endpoint+" job j_7K3XJNY9ZM") {
+				t.Fatalf("connection error discarded the original Job query: %v", err)
+			}
+		})
 	}
 }
 

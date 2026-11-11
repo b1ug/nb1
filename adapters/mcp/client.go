@@ -8,233 +8,106 @@ import (
 	"fmt"
 	"io"
 	"mime"
-	"net"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
-	"unicode/utf8"
+
+	"github.com/b1ug/nb1/internal/daemonclient"
+	"github.com/b1ug/nb1/internal/jsoninput"
 )
 
-const defaultEndpoint = "http://127.0.0.1:8931"
-const maxResponseBytes = 2 << 20
+const defaultEndpoint = daemonclient.DefaultEndpoint
 
 type daemon struct {
 	endpoint string
-	client   *http.Client
-}
-
-type failure struct {
-	Code       string `json:"code"`
-	Message    string `json:"message"`
-	HTTPStatus int    `json:"http_status,omitempty"`
-	// A transport error after POST cannot prove that the daemon rejected it.
-	// An expired/missing receipt or changed instance can also leave the old
-	// keyed intent unknown, even when its lookup returns a definite HTTP error.
-	OutcomeUnknown bool `json:"outcome_unknown,omitempty"`
-}
-
-type output struct {
-	Kind          string         `json:"kind"`
-	Data          any            `json:"data,omitempty"`
-	Accepted      bool           `json:"accepted"`
-	DryRun        bool           `json:"dry_run,omitempty"`
-	PollAfterMS   int            `json:"poll_after_ms,omitempty"`
-	Error         *failure       `json:"error,omitempty"`
-	RequestTicket *requestTicket `json:"request_ticket,omitempty"`
-	// Only emitted for keyed dry-runs. Local syntax checks cannot verify the
-	// daemon instance, receipt existence or monotonic admission deadline.
-	InstanceBindingVerified *bool `json:"instance_binding_verified,omitempty"`
+	timeout  time.Duration
+	core     *daemonclient.Client
+	http     *http.Client
 }
 
 func newDaemon(endpoint string, timeout time.Duration) (*daemon, error) {
-	u, err := url.Parse(endpoint)
-	if err != nil {
-		return nil, fmt.Errorf("invalid daemon endpoint: %w", err)
-	}
-	ip := net.ParseIP(u.Hostname())
-	if u.Scheme != "http" || u.Host == "" || u.User != nil || u.RawQuery != "" || u.Fragment != "" || u.Opaque != "" || (u.Path != "" && u.Path != "/") || !(strings.EqualFold(u.Hostname(), "localhost") || ip != nil && ip.IsLoopback()) {
-		return nil, errors.New("endpoint must be a loopback HTTP origin")
-	}
 	if timeout <= 0 {
-		return nil, errors.New("timeout must be positive")
+		return nil, fmt.Errorf("timeout must be positive")
+	}
+	client, err := daemonclient.New(endpoint)
+	if err != nil {
+		return nil, err
 	}
 	transport := http.DefaultTransport.(*http.Transport).Clone()
 	transport.Proxy = nil
-	return &daemon{endpoint: strings.TrimRight(u.String(), "/"), client: &http.Client{Transport: transport, Timeout: timeout, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}}, nil
+	return &daemon{endpoint: strings.TrimRight(endpoint, "/"), timeout: timeout, core: client,
+		http: &http.Client{Transport: transport, Timeout: timeout, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}}, nil
 }
 
-func (d *daemon) close() { d.client.CloseIdleConnections() }
-
-func (d *daemon) request(ctx context.Context, method, path, kind string, input any) output {
-	return d.requestBound(ctx, method, path, kind, input, nil)
+func (d *daemon) close() {
+	d.core.Close()
+	d.http.CloseIdleConnections()
 }
 
-// A non-nil binding is used only by the explicit receipt extension. Ordinary
-// tool calls retain their original response/error semantics.
-func (d *daemon) requestBound(ctx context.Context, method, path, kind string, input any, binding *receiptBinding) output {
-	return d.requestMode(ctx, method, path, kind, input, binding, false)
+type resolvedColor struct {
+	Color string `json:"color"`
 }
 
-// Read-only software operations use POST for structured input. They cannot admit a job;
-// transport errors must not inherit the job submission's unknown-outcome warning.
-func (d *daemon) requestSoftware(ctx context.Context, method, path, kind string, input any) output {
-	return d.requestMode(ctx, method, path, kind, input, nil, true)
-}
-
-func (d *daemon) requestMode(ctx context.Context, method, path, kind string, input any, binding *receiptBinding, software bool) output {
-	uncertainPost := method == http.MethodPost && !software
-	patternWire := kind == "pattern_preview" || kind == "pattern_job"
-	patternJob := kind == "pattern_job"
-	var body io.Reader
-	if input != nil {
-		encoded, err := json.Marshal(input)
-		if err != nil {
-			return errorOutput("invalid_request", err.Error(), 0, false)
-		}
-		body = bytes.NewReader(encoded)
-	}
-	req, err := http.NewRequestWithContext(ctx, method, d.endpoint+path, body)
+// Color resolution uses the current small v1 response. The shared client's
+// existing ResolveColor method belongs to an earlier response contract.
+func (d *daemon) resolveColor(ctx context.Context, raw json.RawMessage) (resolvedColor, error) {
+	body, err := json.Marshal(struct {
+		Color json.RawMessage `json:"color"`
+	}{Color: raw})
 	if err != nil {
-		return errorOutput("invalid_request", err.Error(), 0, false)
+		return resolvedColor{}, err
 	}
-	if input != nil {
-		req.Header.Set("Content-Type", "application/json")
-	}
-	response, err := d.client.Do(req)
+	request, err := http.NewRequestWithContext(ctx, http.MethodPost, d.endpoint+"/v1/colors/resolve", bytes.NewReader(body))
 	if err != nil {
-		message := fmt.Sprintf("contact daemon: %v", err)
-		if uncertainPost {
-			message += "; outcome unknown: inspect the daemon before retrying"
-		}
-		return errorOutput("daemon_unreachable", message, 0, uncertainPost)
+		return resolvedColor{}, err
+	}
+	request.Header.Set("Content-Type", "application/json")
+	request.GetBody = nil
+	response, err := d.http.Do(request)
+	if err != nil {
+		return resolvedColor{}, err
 	}
 	defer response.Body.Close()
-	limit := maxResponseBytes
-	if patternWire {
-		limit = maxPatternResponseBytes
-	}
-	data, err := io.ReadAll(io.LimitReader(response.Body, int64(limit)+1))
+	data, err := io.ReadAll(io.LimitReader(response.Body, (2<<20)+1))
 	if err != nil {
-		return errorOutput("invalid_daemon_response", err.Error(), response.StatusCode, uncertainPost)
+		return resolvedColor{}, err
 	}
-	if len(data) > limit {
-		message := "daemon response exceeds 2 MiB"
-		if patternWire {
-			message = "Pattern response exceeds 1 MiB"
-		}
-		return errorOutput("invalid_daemon_response", message, response.StatusCode, uncertainPost)
+	media, _, mediaErr := mime.ParseMediaType(response.Header.Get("Content-Type"))
+	if len(data) > 2<<20 || !jsoninput.ValidUnicode(data) || mediaErr != nil || media != "application/json" {
+		return resolvedColor{}, &daemonclient.DecodeError{Status: response.StatusCode, Err: fmt.Errorf("invalid color response")}
 	}
-	if kind == "light_job" || kind == "light_preview" || kind == "orbit_preview" || kind == "frame_job" || patternWire {
-		// Validate the raw representation before either the success or error
-		// branch can discard duplicate fields, nulls or malformed text. The
-		// existing eight tools deliberately retain their response contracts.
-		contentTypes := response.Header.Values("Content-Type")
-		if len(contentTypes) != 1 {
-			return errorOutput("invalid_daemon_response", "light responses require exactly one Content-Type", response.StatusCode, uncertainPost)
-		}
-		media, _, mediaErr := mime.ParseMediaType(contentTypes[0])
-		if mediaErr != nil || media != "application/json" || !utf8.Valid(data) {
-			return errorOutput("invalid_daemon_response", "light responses require valid UTF-8 application/json", response.StatusCode, uncertainPost)
-		}
-		if err := validateRawArguments(data); err != nil {
-			return errorOutput("invalid_daemon_response", err.Error(), response.StatusCode, uncertainPost)
-		}
-		if err := validateLightUnicodeEscapes(data); err != nil {
-			return errorOutput("invalid_daemon_response", err.Error(), response.StatusCode, uncertainPost)
-		}
-		if response.StatusCode < 200 || response.StatusCode >= 300 {
-			if err := validateLightErrorResponse(data); err != nil {
-				return errorOutput("invalid_daemon_response", err.Error(), response.StatusCode, uncertainPost)
-			}
-		}
-	}
-	if response.StatusCode < 200 || response.StatusCode >= 300 {
-		if software && !patternWire && (response.StatusCode == http.StatusNotFound || response.StatusCode == http.StatusNotImplemented) {
-			return errorOutput("unsupported", "daemon does not support the requested read-only software route; no job was submitted", response.StatusCode, false)
-		}
-		var problem struct {
+	if response.StatusCode != http.StatusOK {
+		var failure struct {
 			Error struct {
 				Code    string `json:"code"`
 				Message string `json:"message"`
+				Field   string `json:"field,omitempty"`
 			} `json:"error"`
 		}
-		code, message := "http_error", response.Status
-		if json.Unmarshal(data, &problem) == nil && problem.Error.Code != "" {
-			code, message = problem.Error.Code, problem.Error.Message
+		if err := jsoninput.DecodeObject(data, &failure); err != nil || failure.Error.Code == "" {
+			return resolvedColor{}, &daemonclient.DecodeError{Status: response.StatusCode, Err: fmt.Errorf("invalid color error response")}
 		}
-		return errorOutput(code, message, response.StatusCode, uncertainPost && response.StatusCode >= 500)
+		return resolvedColor{}, &daemonclient.Error{Status: response.StatusCode, Code: failure.Error.Code, Message: failure.Error.Message}
 	}
-	if software {
-		if response.StatusCode != http.StatusOK {
-			return errorOutput("invalid_daemon_response", "read-only software responses require HTTP200", response.StatusCode, false)
-		}
-		media, _, err := mime.ParseMediaType(response.Header.Get("Content-Type"))
-		if err != nil || media != "application/json" {
-			return errorOutput("invalid_daemon_response", "read-only software responses require application/json", response.StatusCode, false)
-		}
-		if patternWire && (len(response.Header.Values("Location")) != 0 || len(response.Header.Values("X-NB1-Replayed")) != 0 || len(response.Header.Values("X-NB1-Daemon-Instance-ID")) != 0) {
-			return errorOutput("invalid_daemon_response", "pattern preview unexpectedly contained submission metadata", response.StatusCode, false)
-		}
-		value, err := validateSoftwareResponse(data, kind, input)
-		if err != nil {
-			return errorOutput("invalid_daemon_response", err.Error(), response.StatusCode, false)
-		}
-		return output{Kind: kind, Data: value, Accepted: false}
+	var result resolvedColor
+	if err := jsoninput.DecodeObject(data, &result); err != nil || len(result.Color) != 7 || result.Color[0] != '#' || strings.ToLower(result.Color) != result.Color {
+		return resolvedColor{}, &daemonclient.DecodeError{Status: response.StatusCode, Err: fmt.Errorf("invalid resolved color")}
 	}
-	if kind == "frame_job" {
-		return frameResponse(method, path, response.StatusCode, response.Header, data, binding)
-	}
-	if kind == "light_job" || patternJob {
-		kind = "job"
-	}
-	var value any
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.UseNumber()
-	if err = decoder.Decode(&value); err != nil {
-		return errorOutput("invalid_daemon_response", err.Error(), response.StatusCode, method == http.MethodPost)
-	}
-	var extra any
-	if err = decoder.Decode(&extra); err != io.EOF {
-		return errorOutput("invalid_daemon_response", "expected exactly one JSON response", response.StatusCode, method == http.MethodPost)
-	}
-	if kind == "devices" {
-		if _, ok := value.([]any); !ok {
-			return errorOutput("invalid_daemon_response", "expected a device array", response.StatusCode, false)
-		}
-	} else if _, ok := value.(map[string]any); !ok {
-		return errorOutput("invalid_daemon_response", "expected a JSON object", response.StatusCode, method == http.MethodPost)
-	}
-	out := output{Kind: kind, Data: value, Accepted: response.StatusCode == http.StatusAccepted}
-	if kind == "job" {
-		job := value.(map[string]any)
-		status, _ := job["status"].(string)
-		switch status {
-		case "queued", "running", "cancelling":
-			out.PollAfterMS = 200
-		case "succeeded", "cancelled", "failed":
-		default:
-			return errorOutput("invalid_daemon_response", "unrecognized job status", response.StatusCode, method == http.MethodPost)
-		}
-		if id, ok := job["id"].(string); !ok || !validToken(id) {
-			return errorOutput("invalid_daemon_response", "missing or invalid job id", response.StatusCode, method == http.MethodPost)
-		}
-		if binding != nil {
-			if err := validateReceiptResponse(method, response.StatusCode, response.Header, job, *binding); err != nil {
-				return errorOutput("invalid_daemon_response", err.Error(), response.StatusCode, true)
-			}
-			if patternJob {
-				locations := response.Header.Values("Location")
-				want := "/v1/devices/" + url.PathEscape(binding.serial) + "/requests/" + url.PathEscape(binding.ticket.RequestID) + "?expected_daemon_instance_id=" + url.QueryEscape(binding.ticket.ExpectedDaemonInstanceID)
-				if len(locations) != 1 || locations[0] != want {
-					return errorOutput("invalid_daemon_response", "Pattern Job Location does not bind the original receipt", response.StatusCode, true)
-				}
-			}
+	for _, value := range result.Color[1:] {
+		if !(value >= '0' && value <= '9' || value >= 'a' && value <= 'f') {
+			return resolvedColor{}, &daemonclient.DecodeError{Status: response.StatusCode, Err: fmt.Errorf("invalid resolved color")}
 		}
 	}
-	return out
+	return result, nil
 }
 
-func errorOutput(code, message string, status int, unknown bool) output {
-	return output{Kind: "error", Error: &failure{Code: code, Message: message, HTTPStatus: status, OutcomeUnknown: unknown}}
+func uncertainWrite(err error) bool {
+	var rejected *daemonclient.Error
+	if errors.As(err, &rejected) {
+		return rejected.Status >= 500
+	}
+	var malformed *daemonclient.DecodeError
+	var transport *url.Error
+	return errors.As(err, &malformed) || errors.As(err, &transport) || errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded)
 }

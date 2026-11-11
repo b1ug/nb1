@@ -2,174 +2,200 @@ package main
 
 import (
 	"context"
-	"net/http"
+	"encoding/json"
+	"errors"
+	"fmt"
 	"net/url"
-	"strings"
 
+	"github.com/b1ug/nb1/internal/control"
+	"github.com/b1ug/nb1/internal/daemonclient"
+	"github.com/b1ug/nb1/internal/jsoninput"
+	"github.com/b1ug/nb1/internal/sequence"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
-type deviceArgs struct {
-	Serial string `json:"serial"`
+type toolError struct {
+	Code           string `json:"code"`
+	Message        string `json:"message"`
+	HTTPStatus     int    `json:"http_status,omitempty"`
+	OutcomeUnknown bool   `json:"outcome_unknown,omitempty"`
 }
-type listArgs struct {
-	PrepareRequest      bool `json:"prepare_request,omitempty"`
-	IncludeCapabilities bool `json:"include_capabilities,omitempty"`
+
+type output struct {
+	Endpoint string     `json:"endpoint"`
+	ID       string     `json:"id,omitempty"`
+	Name     string     `json:"name,omitempty"`
+	Data     any        `json:"data,omitempty"`
+	Error    *toolError `json:"error,omitempty"`
 }
-type jobArgs struct {
-	ID string `json:"id"`
-}
-type getJobArgs struct {
-	ID                       string `json:"id,omitempty"`
-	Serial                   string `json:"serial,omitempty"`
-	RequestID                string `json:"request_id,omitempty"`
-	ExpectedDaemonInstanceID string `json:"expected_daemon_instance_id,omitempty"`
-	JobKind                  string `json:"job_kind,omitempty"`
-}
-type setArgs struct {
-	Serial                   string `json:"serial"`
-	Color                    string `json:"color"`
-	LED                      int    `json:"led,omitempty"`
-	FadeMS                   int    `json:"fade_ms,omitempty"`
-	HoldMS                   int    `json:"hold_ms,omitempty"`
-	Policy                   string `json:"policy,omitempty"`
-	DryRun                   bool   `json:"dry_run,omitempty"`
-	RequestID                string `json:"request_id,omitempty"`
-	ExpectedDaemonInstanceID string `json:"expected_daemon_instance_id,omitempty"`
-}
-type runArgs struct {
-	Serial                   string      `json:"serial"`
-	Program                  *program    `json:"program,omitempty"`
-	Effect                   *effect     `json:"effect,omitempty"`
-	PatternRef               *patternRef `json:"pattern_ref,omitempty"`
-	Policy                   string      `json:"policy,omitempty"`
-	DryRun                   bool        `json:"dry_run,omitempty"`
-	RequestID                string      `json:"request_id,omitempty"`
-	ExpectedDaemonInstanceID string      `json:"expected_daemon_instance_id,omitempty"`
+
+type toolArgs struct {
+	Serial    string          `json:"serial,omitempty"`
+	ID        string          `json:"id,omitempty"`
+	Name      string          `json:"name,omitempty"`
+	Title     string          `json:"title,omitempty"`
+	Color     json.RawMessage `json:"color,omitempty"`
+	Action    json.RawMessage `json:"action,omitempty"`
+	Sequence  json.RawMessage `json:"sequence,omitempty"`
+	PatternID *string         `json:"pattern_id,omitempty"`
+	input     daemonclient.SequenceInput
 }
 
 func newServer(d *daemon) *mcp.Server {
-	s := mcp.NewServer(&mcp.Implementation{Name: "nb1-local-device-adapter", Version: "0.1.0-dev"}, &mcp.ServerOptions{Instructions: "Use only devices selected by the local daemon. RGB values are exact raw #RRGGBB, without implicit gamma. Job acceptance is not completion: inspect get_job and its actual status. cancel_job may return cancelling until hardware cleanup succeeds. HTTP timeout or closing this MCP session does not cancel accepted daemon jobs. This adapter never opens USB or silently falls back to direct control. Optional request tickets bind one intent to its original daemon instance; save the complete ticket before submission and keep it when an outcome is unknown. The adapter never automatically retries writes or replaces old tickets after expiry or restart. The existing dry_run option sends no HTTP request and cannot verify instance identity or deadlines: raw Programs are validated locally, while Effects receive only structure_only, compiled:false checks. Use preview_program for authoritative daemon compilation of either Program or Effect without creating a Job. Only the daemon compiles Effects and validates their total duration. Use resolve_color for read-only color notation conversion, then use its canonical_color in existing Program/Effect/set; those fields still require raw #RRGGBB. Color resolution does not execute a Job or authenticate the source. Use preview_light for versioned light actions and run_light only with a complete original ticket. run_light performs one read-only target preview then at most one execution POST; it never prepares or replaces tickets. New light pulse is attack/decay/rest while legacy effect pulse remains unchanged. For stored Patterns, use list_patterns and get_pattern, then preview_program with the exact pattern_ref. run_program with pattern_ref requires explicit reject and a complete original ticket; no dry_run, automatic preparation, latest-version substitution or retry. Its read-only preflight does not settle any earlier use of that ticket. The same preview_light/run_light tools accept explicit nb1-light-action/experimental-v2 for high-level Orbit; use job_kind:frame for receipt-only lookup of its FrameJob, and keep raw Program tools for their separate purpose. Experimental-v2 Pattern Records use preview_pattern/run_pattern/get_pattern_request/cancel_pattern_request with the exact record_contract, ID and revision. Existing list_patterns/get_pattern remain v1-only. run_pattern submits the original Ref once without an implicit preview, never sends raw frozen frames as a substitute, and requires explicit policy and original ticket. Pattern receipt query/cancel do not require the library; preserve their outer provenance envelope and use the original ticket after unknown outcomes. The adapter verifies the typed execution digest, while the daemon verifies author source and recipe." + patternAuthorInstructions})
-	s.AddReceivingMiddleware(rawArgumentsGuard)
-	s.AddReceivingMiddleware(patternAuthorArgumentsGuard)
-	registerPatternTools(s, d)
-	registerPatternV2Tools(s, d)
-	registerPatternAuthorTools(s, d)
-	mcp.AddTool(s, tool("list_devices", "List configured daemon devices. Optional include_capabilities returns data {devices,capabilities} with the daemon's software compiler catalog; default data remains a device array. Optional prepare_request independently returns a fresh request_ticket bound to this daemon instance, without submitting or reserving a job; save it before submission. Repeated preparation creates different tickets.", objectSchema(map[string]any{"prepare_request": map[string]any{"type": "boolean"}, "include_capabilities": map[string]any{"type": "boolean"}}), true, true), func(ctx context.Context, _ *mcp.CallToolRequest, args listArgs) (*mcp.CallToolResult, output, error) {
-		return result(listDevicesWithCapabilities(ctx, d, args.PrepareRequest, args.IncludeCapabilities))
-	})
-	mcp.AddTool(s, tool("get_device_state", "Get the daemon's latest observed raw RGB and timestamp; this is a snapshot, not a camera measurement.", objectSchema(map[string]any{"serial": tokenSchema()}, "serial"), true, true), func(ctx context.Context, _ *mcp.CallToolRequest, args deviceArgs) (*mcp.CallToolResult, output, error) {
-		if !validToken(args.Serial) {
-			return invalid("invalid serial")
-		}
-		return result(d.request(ctx, http.MethodGet, "/v1/devices/"+url.PathEscape(args.Serial), "device", nil))
-	})
-	setProperties := map[string]any{"serial": tokenSchema(), "color": colorSchema(), "led": map[string]any{"type": "integer", "enum": []int{0, 1, 2}, "description": "0=both, 1=top, 2=bottom"}, "fade_ms": fadeSchema(), "hold_ms": holdSchema(), "policy": policySchema(), "dry_run": map[string]any{"type": "boolean", "description": "Validate and return the program without contacting the daemon"}}
-	mcp.AddTool(s, tool("set_device_state", "Submit one exact RGB state; successful completion retains the color. Optional request_id and expected_daemon_instance_id must be supplied together and are never regenerated or retried automatically. Returns a job, not completion. dry_run only checks local syntax; it does not verify instance binding.", submissionSchema(setProperties, "serial", "color"), false, false), func(ctx context.Context, _ *mcp.CallToolRequest, args setArgs) (*mcp.CallToolResult, output, error) {
-		return submit(ctx, d, args.Serial, program{Steps: []step{{LED: args.LED, Color: args.Color, FadeMS: args.FadeMS, HoldMS: args.HoldMS}}, Repeat: 1, OnFinish: "hold"}, args.Policy, args.DryRun, args.RequestID, args.ExpectedDaemonInstanceID)
-	})
-	mcp.AddTool(s, tool("run_program", "Submit exactly one raw program, high-level effect intent (steady/pulse), or fixed pattern_ref. Pattern references require explicit reject, a complete original request ticket and no dry_run; first performs one target preview and then at most one execution POST, binding the Job to the frozen Program. The daemon alone compiles effects and validates total duration. Effect dry_run is structure_only and compiled:false, with no HTTP; it cannot confirm compilation or instance binding. replace cancels old work, queue is bounded, reject reports busy. Optional request_id and expected_daemon_instance_id must be supplied together; no automatic submission retry or rebinding.", runSchema(), false, false), func(ctx context.Context, _ *mcp.CallToolRequest, args runArgs) (*mcp.CallToolResult, output, error) {
-		return run(ctx, d, args)
-	})
-	mcp.AddTool(s, tool("preview_program", "Ask the daemon to preview exactly one program, steady/pulse effect, or fixed pattern_ref without creating a job, receipt or USB access. Pattern references return kind:pattern_preview and data:{pattern_ref,preview}; other inputs retain kind:program_preview and their original data shape. Optional serial checks only cached device capabilities, not execution or admission. Returns authoritative program_preview with accepted:false. Unlike existing dry_run, this sends one read-only HTTP POST; no retry or direct fallback, and errors do not imply an unknown job outcome.", previewSchema(), true, true), func(ctx context.Context, _ *mcp.CallToolRequest, args previewArgs) (*mcp.CallToolResult, output, error) {
-		return preview(ctx, d, args)
-	})
-	colorTool := tool("resolve_color", "Resolve one color notation through the daemon without a Job, USB access, Gamma or brightness correction. Accept a string (#RRGGBB/#RGB or fixed CSS name), closed rgb8 object, or closed hsv object. RGB8 channels are integers 0–255; HSV uses degrees 0–360 and percentages 0–100, plain decimal with at most six fractional digits, no exponent or negative zero. Returns color_resolution, accepted:false. The daemon validates numeric lexemes and owns CSS names/HSV conversion; use canonical_color in existing Program/Effect/set. Unknown route/errors never fall back or retry and do not imply an unknown Job outcome.", resolveColorSchema(), true, true)
-	colorTool.OutputSchema = resolveColorOutputSchema()
-	mcp.AddTool(s, colorTool, func(ctx context.Context, request *mcp.CallToolRequest, _ resolveColorArgs) (*mcp.CallToolResult, output, error) {
-		// The SDK validates the union schema through a map and re-marshals it.
-		// Decode its untouched original request, not typed normalized numbers.
-		return resolveColor(ctx, d, request.Params.Arguments)
-	})
-	lightPreviewTool := tool("preview_light", "Compile one versioned light action through one read-only daemon POST, without a Job or ticket. set/off/fade and artistic blink/breathe/pulse/alternate/rainbow share contract nb1-light-action/v1. Explicit nb1-light-action/experimental-v2 supports Orbit with 4 or 8 paired long-fade segments and returns a separate FrameProgram. Optional serial checks cached capabilities only. Colors accept the resolve_color grammar. Returns light_preview, accepted:false; no local effect compilation, retry or direct fallback. Legacy pulse and v1 actions retain their original behavior.", lightPreviewSchema(), true, true)
-	lightPreviewTool.OutputSchema = lightPreviewOutputSchema()
-	mcp.AddTool(s, lightPreviewTool, func(ctx context.Context, request *mcp.CallToolRequest, _ lightPreviewArgs) (*mcp.CallToolResult, output, error) {
-		return previewLight(ctx, d, request.Params.Arguments)
-	})
-	mcp.AddTool(s, tool("run_light", "Run one versioned light action with a complete original request ticket and reject policy only. Explicit nb1-light-action/experimental-v2 Orbit uses the daemon's high-level v2 route and returns a FrameJob; v1 actions remain unchanged. First performs one read-only target preview, then at most one execution POST and checks the returned Job against that preview. Never prepares/replaces tickets, retries a write or submits a low-level frame as a substitute for the high-level action. Job acceptance is not completion; use get_job. No dry_run: use preview_light.", lightRunSchema(), false, false), func(ctx context.Context, request *mcp.CallToolRequest, _ lightRunArgs) (*mcp.CallToolResult, output, error) {
-		return runLight(ctx, d, request.Params.Arguments)
-	})
-	mcp.AddTool(s, tool("get_job", "Inspect actual job status using id, or the mutually exclusive serial plus complete original request ticket. framejob_ IDs select the frame route; receipt-only lookup requires job_kind:frame for FrameJobs and otherwise retains the legacy Program route. No probing two routes. Receipt lookup never submits work. Expired receipts or changed daemon instances leave the old outcome unknown; keep the original ticket. History is bounded and not persistent.", getJobSchema(), true, true), func(ctx context.Context, _ *mcp.CallToolRequest, args getJobArgs) (*mcp.CallToolResult, output, error) {
-		return result(getJob(ctx, d, args))
-	})
-	mcp.AddTool(s, tool("cancel_job", "Request cancellation of a daemon job. A returned cancelling status is still in progress; poll get_job. Repeated cancellation is safe.", objectSchema(map[string]any{"id": tokenSchema()}, "id"), false, true), func(ctx context.Context, _ *mcp.CallToolRequest, args jobArgs) (*mcp.CallToolResult, output, error) {
-		if !validToken(args.ID) {
-			return invalid("invalid job id")
-		}
-		if strings.HasPrefix(args.ID, "framejob_") {
-			if !validLowerHexID(args.ID, "framejob_") {
-				return invalid("invalid frame job id")
+	server := mcp.NewServer(&mcp.Implementation{Name: "nb1", Version: "1.0.0-dev"}, &mcp.ServerOptions{Instructions: "Control the devices selected by the local nb1 daemon. Preview an Action, Sequence or saved pattern_id before running it. run_light submits once and returns a Job, whose status is read with get_job. A cancelling Job is still cleaning up. Keep its ID and endpoint when a response is lost and query that ID without submitting it again. Closing the MCP session leaves daemon Jobs running. Job records cover active execution and thirty minutes after completion, subject to bounded terminal history and daemon lifetime. Colors and Patterns are saved on the local computer. This adapter connects over HTTP and never opens USB or executes the CLI."})
+	for _, spec := range toolSpecifications() {
+		name := spec.Name
+		server.AddTool(spec, func(ctx context.Context, request *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+			args, err := decodeArguments(name, request.Params.Arguments)
+			if err != nil {
+				return toolResult(output{Endpoint: d.endpoint, Error: &toolError{Code: "invalid_request", Message: err.Error()}})
 			}
-			return result(d.request(ctx, http.MethodPost, "/v1/frame-jobs/"+url.PathEscape(args.ID)+"/cancel", "frame_job", nil))
+			ctx, cancel := context.WithTimeout(ctx, d.timeout)
+			defer cancel()
+			return toolResult(invoke(ctx, d, name, args))
+		})
+	}
+	return server
+}
+
+func decodeArguments(name string, raw json.RawMessage) (toolArgs, error) {
+	if len(raw) == 0 {
+		raw = json.RawMessage(`{}`)
+	}
+	if len(raw) > sequence.MaxInputBytes || !jsoninput.ValidUnicode(raw) {
+		return toolArgs{}, fmt.Errorf("arguments must contain valid Unicode and be at most 1 MiB")
+	}
+	var fields map[string]json.RawMessage
+	if err := jsoninput.DecodeObject(raw, &fields); err != nil {
+		return toolArgs{}, err
+	}
+	allowed, required := argumentFields(name)
+	for field := range fields {
+		if !contains(allowed, field) {
+			return toolArgs{}, fmt.Errorf("unknown field %q", field)
 		}
-		return result(d.request(ctx, http.MethodPost, "/v1/jobs/"+url.PathEscape(args.ID)+"/cancel", "job", nil))
-	})
-	registerNativeInspectionTools(s, d)
-	return s
-}
-
-func submit(ctx context.Context, d *daemon, serial string, p program, policy string, dry bool, requestID, instanceID string) (*mcp.CallToolResult, output, error) {
-	if !validToken(serial) {
-		return invalid("invalid serial")
 	}
-	p, err := normalizeProgram(p)
-	if err != nil {
-		return invalid(err.Error())
-	}
-	policy, err = normalizePolicy(policy)
-	if err != nil {
-		return invalid(err.Error())
-	}
-	ticket, err := optionalTicket(requestID, instanceID)
-	if err != nil {
-		return invalid(err.Error())
-	}
-	request := submission{Program: p, Policy: policy, RequestID: requestID, ExpectedDaemonInstanceID: instanceID}
-	if dry {
-		out := output{Kind: "preview", DryRun: true, Data: map[string]any{"serial": serial, "request": request}, RequestTicket: ticket}
-		if ticket != nil {
-			verified := false
-			out.InstanceBindingVerified = &verified
+	for _, field := range required {
+		if fields[field] == nil {
+			return toolArgs{}, fmt.Errorf("%s is required", field)
 		}
-		return result(out)
 	}
-	return result(d.requestJob(ctx, http.MethodPost, "/v1/devices/"+url.PathEscape(serial)+"/jobs", request, serial, ticket))
+	var args toolArgs
+	if err := jsoninput.DecodeObject(raw, &args); err != nil {
+		return toolArgs{}, err
+	}
+	if contains(required, "serial") || fields["serial"] != nil {
+		if !control.ValidDeviceSerial(args.Serial) {
+			return toolArgs{}, fmt.Errorf("invalid device serial")
+		}
+	}
+	if contains(required, "id") || args.ID != "" {
+		if !control.ValidSequenceJobID(args.ID) {
+			return toolArgs{}, fmt.Errorf("id must contain 1–64 ASCII letters, digits, hyphens or underscores")
+		}
+	}
+	if name == "save_color" && !daemonclient.ValidSequenceColorName(args.Name) {
+		return toolArgs{}, fmt.Errorf("invalid color name")
+	}
+	if name == "preview_light" || name == "run_light" || name == "save_pattern" {
+		input, err := inputFor(args)
+		if err != nil {
+			return toolArgs{}, err
+		}
+		if name == "save_pattern" && input.PatternID != nil {
+			return toolArgs{}, fmt.Errorf("saving a Pattern requires an Action or Sequence")
+		}
+		args.input = input
+	}
+	return args, nil
 }
 
-func result(out output) (*mcp.CallToolResult, output, error) {
-	return &mcp.CallToolResult{IsError: out.Error != nil}, out, nil
-}
-func invalid(message string) (*mcp.CallToolResult, output, error) {
-	return result(errorOutput("invalid_request", message, 0, false))
+func inputFor(args toolArgs) (daemonclient.SequenceInput, error) {
+	raw, err := json.Marshal(daemonclient.SequenceInput{Action: args.Action, Sequence: args.Sequence, PatternID: args.PatternID})
+	if err != nil {
+		return daemonclient.SequenceInput{}, err
+	}
+	return daemonclient.DecodeSequenceInput(raw)
 }
 
-func tool(name, description string, schema any, readOnly, idempotent bool) *mcp.Tool {
-	closed, destructive := false, !readOnly
-	return &mcp.Tool{Name: name, Description: description, InputSchema: schema, Annotations: &mcp.ToolAnnotations{ReadOnlyHint: readOnly, IdempotentHint: idempotent, OpenWorldHint: &closed, DestructiveHint: &destructive}}
-}
-func objectSchema(properties map[string]any, required ...string) map[string]any {
-	schema := map[string]any{"type": "object", "properties": properties, "additionalProperties": false}
-	if len(required) > 0 {
-		schema["required"] = required
+func invoke(ctx context.Context, d *daemon, name string, args toolArgs) output {
+	out := output{Endpoint: d.endpoint, ID: args.ID, Name: args.Name}
+	var err error
+	switch name {
+	case "list_devices":
+		out.Data, err = d.core.Devices(ctx)
+	case "get_device_state":
+		out.Data, err = d.core.Device(ctx, args.Serial)
+	case "resolve_color":
+		out.Data, err = d.resolveColor(ctx, args.Color)
+	case "preview_light":
+		out.Data, err = d.core.PreviewSequence(ctx, args.input, args.Serial)
+	case "run_light":
+		if out.ID == "" {
+			out.ID, err = control.NewSequenceJobID()
+			if err != nil {
+				break
+			}
+		}
+		out.Data, err = d.core.SubmitSequence(ctx, args.input, args.Serial, out.ID)
+	case "get_job":
+		out.Data, err = d.core.SequenceJob(ctx, args.ID)
+	case "cancel_job":
+		out.Data, err = d.core.CancelSequenceJob(ctx, args.ID)
+	case "list_colors":
+		out.Data, err = d.core.SequenceColors(ctx)
+	case "save_color":
+		out.Data, err = d.core.SaveSequenceColor(ctx, args.Name, args.Color)
+	case "list_patterns":
+		out.Data, err = d.core.SequencePatterns(ctx)
+	case "get_pattern":
+		out.Data, err = d.core.SequencePattern(ctx, args.ID)
+	case "save_pattern":
+		out.Data, err = d.core.SaveSequencePattern(ctx, args.ID, args.input, args.Title)
 	}
-	return schema
+	if err == nil {
+		return out
+	}
+	out.Data = nil
+	out.Error = &toolError{Code: "invalid_request", Message: err.Error()}
+	var rejected *daemonclient.Error
+	if errors.As(err, &rejected) {
+		out.Error.Code, out.Error.HTTPStatus = rejected.Code, rejected.Status
+	}
+	var malformed *daemonclient.DecodeError
+	if errors.As(err, &malformed) {
+		out.Error.Code = "invalid_daemon_response"
+		out.Error.HTTPStatus = malformed.Status
+	}
+	var transport *url.Error
+	if errors.As(err, &transport) {
+		out.Error.Code = "daemon_unreachable"
+	}
+	if name == "run_light" || name == "cancel_job" || name == "save_color" || name == "save_pattern" {
+		out.Error.OutcomeUnknown = uncertainWrite(err)
+	}
+	if out.Error.OutcomeUnknown && (name == "run_light" || name == "cancel_job") {
+		out.Error.Message += fmt.Sprintf("; query get_job with id %q on endpoint %s", out.ID, out.Endpoint)
+	}
+	if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
+		out.Error.Code = "request_timeout"
+	}
+	return out
 }
-func tokenSchema() map[string]any {
-	return map[string]any{"type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[A-Za-z0-9_-]+$"}
+
+func toolResult(out output) (*mcp.CallToolResult, error) {
+	raw, err := json.Marshal(out)
+	if err != nil {
+		return nil, err
+	}
+	return &mcp.CallToolResult{IsError: out.Error != nil, StructuredContent: json.RawMessage(raw), Content: []mcp.Content{&mcp.TextContent{Text: string(raw)}}}, nil
 }
-func colorSchema() map[string]any {
-	return map[string]any{"type": "string", "pattern": "^#[0-9a-fA-F]{6}$", "description": "Exact raw device RGB, without implicit gamma"}
-}
-func fadeSchema() map[string]any {
-	return map[string]any{"type": "integer", "minimum": 0, "maximum": 600000, "multipleOf": 10}
-}
-func holdSchema() map[string]any {
-	return map[string]any{"type": "integer", "minimum": 0, "maximum": 3600000}
-}
-func policySchema() map[string]any {
-	return map[string]any{"type": "string", "enum": []string{"replace", "queue", "reject"}}
-}
-func programSchema() map[string]any {
-	step := objectSchema(map[string]any{"led": map[string]any{"type": "integer", "enum": []int{0, 1, 2}}, "color": colorSchema(), "fade_ms": fadeSchema(), "hold_ms": holdSchema()}, "color")
-	return objectSchema(map[string]any{"steps": map[string]any{"type": "array", "minItems": 1, "maxItems": 1024, "items": step}, "repeat": map[string]any{"type": "integer", "minimum": 0, "maximum": 10000, "description": "Omit or use zero to run once; zero does not mean infinite"}, "on_finish": map[string]any{"type": "string", "enum": []string{"off", "hold"}}}, "steps")
+
+func contains(values []string, target string) bool {
+	for _, value := range values {
+		if value == target {
+			return true
+		}
+	}
+	return false
 }

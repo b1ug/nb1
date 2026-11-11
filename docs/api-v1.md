@@ -42,6 +42,8 @@ nb1 control --endpoint http://127.0.0.1:8931 cancel j_7K3XJNY9ZM --wait
 
 All runtime routes use the loopback and browser-origin checks. Preview performs pure compilation and cached capability checks.
 
+Device state contains cached RGB values with an observation timestamp. During interval playback the worker defers periodic RGB queries to preserve scheduling, so the last observation may predate the current Job. Track the Job for progress; final cleanup performs a fresh readback before a successful or cancelled terminal state. Use camera observation separately to assess the light during playback.
+
 ## Job IDs and deduplication
 
 An omitted or empty `id` generates `j_` followed by ten random Crockford Base32 characters. Custom IDs accept 1–64 ASCII letters, digits, hyphens and underscores. The CLI generates its ID before submission so it can report that ID when a response is lost.

@@ -1,151 +1,21 @@
 <!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="color-scheme" content="light">
-  <meta name="theme-color" content="#fbf6e7">
-  <title>nb1 · Local light workbench</title>
-  <link rel="stylesheet" href="./demo.css">
-  <script defer src="./locales.js"></script>
-  <script defer src="./i18n.js"></script>
-  <script defer src="./demo.js"></script>
-</head>
-<body class="workbench-page">
-  <a class="skip-link" href="#main-content">Skip to light workbench</a>
-  <main class="workbench">
-    <nav class="workbench-topbar" aria-label="Workbench navigation">
-      <a class="brand" href="./" aria-label="nb1 Local light workbench"><svg class="brand-mark" viewBox="0 0 28 28" aria-hidden="true"><path d="M19 9h6v10h-6" fill="#b9bfb1"/><rect x="3" y="7" width="18" height="15" rx="4" fill="#fff8df"/><path d="M7 19h12" stroke="#bbc1b1" stroke-width="3" stroke-linecap="round"/></svg>nb1 <small>Little light workbench</small></a>
-      <div class="top-nav"><a href="./" aria-current="page">Workbench</a><a href="./orbit.html">Orbit lab ↗</a><a href="./patterns.html">Pattern Book</a></div>
-    <label class="locale-control" for="locale-select"><span id="locale-label">Language</span><select id="locale-select" aria-labelledby="locale-label"><option value="en" lang="en">English</option><option value="zh-CN" lang="zh-CN">中文</option></select></label>
-  </nav>
-    <header class="masthead">
-      <div><p class="eyebrow">A LITTLE LIGHT, LOCALLY.</p><h1>Give this moment<br><span>a little color.</span></h1><p class="intro">Choose an action and a color you like. Preview the request, then light up the blink(1) on your desk.</p><p class="footnote"><span class="local-badge">Local only · same origin</span></p></div>
-      <div class="hero-art"><svg viewBox="0 0 230 125" aria-hidden="true"><ellipse cx="117" cy="103" rx="76" ry="8" fill="#b6c8a3" opacity=".45"/><rect x="139" y="34" width="57" height="41" rx="3" fill="#c8cac0" stroke="#9fa698" stroke-width="2"/><path d="M163 44h10v7h-10zm16 0h10v7h-10z" fill="#777f73"/><rect x="34" y="31" width="119" height="64" rx="14" fill="#dddcd1" stroke="#a6afa0" stroke-width="2"/><rect x="34" y="24" width="119" height="59" rx="14" fill="#fffdf2" stroke="#b5bfa0" stroke-width="2"/><path d="M54 83h78q13 0 17-12v10q-3 12-17 12H54q-10 0-13-8" fill="#b5b9ad"/><path d="M51 32h82" stroke="#fff" stroke-width="4" stroke-linecap="round"/></svg><small>blink(1) mk2 · simplified housing</small></div>
-    </header>
-
-    <section class="device-bar" id="main-content" tabindex="-1" aria-labelledby="device-heading">
-      <div><h2 id="device-heading"><span class="step-number">01</span>Find your light</h2><p id="device-help">Select a device configured by the local service. Connecting does not turn it on.</p></div>
-      <div class="device-controls"><label class="sr-only" for="device-select">Device serial</label><select id="device-select"><option value="">Reading devices…</option></select><button id="connect" class="secondary" disabled>Connect selected device</button><button id="refresh" class="text-button">Refresh</button></div>
-    </section>
-
-    <div id="notice" class="notice" role="status" aria-live="polite">Connecting to the local nb1 service…</div>
-
-    <div class="workspace">
-      <section class="panel composer" aria-labelledby="compose-heading">
-        <div class="section-title"><h2 id="compose-heading"><span class="step-number">02</span>Make a little light</h2><span id="kind-label" class="tag">Basic · set</span></div>
-        <div class="action-grid" role="group" aria-label="Light actions">
-          <button type="button" data-action="set" class="action selected" aria-pressed="true"><span>●</span>Steady<small>set</small></button>
-          <button type="button" data-action="fade" class="action" aria-pressed="false"><span>◐</span>Fade<small>fade</small></button>
-          <button type="button" data-action="off" class="action" aria-pressed="false"><span>○</span>Off<small>off</small></button>
-          <button type="button" data-action="blink" class="action" aria-pressed="false"><span>✦</span>Blink<small>blink</small></button>
-          <button type="button" data-action="breathe" class="action" aria-pressed="false"><span>∿</span>Breathe<small>breathe</small></button>
-          <button type="button" data-action="pulse" class="action" aria-pressed="false"><span>⌁</span>Pulse<small>pulse</small></button>
-          <button type="button" data-action="alternate" class="action" aria-pressed="false" title="Swap two colors directly"><span>⇄</span>Alternate<small>alternate</small></button>
-          <button type="button" data-action="orbit" class="action" aria-pressed="false" title="Legacy sequential transition. Use Orbit lab for overlapping long fades."><span>◌</span>Orbit<small>orbit · legacy</small></button>
-          <button type="button" data-action="rainbow" class="action" aria-pressed="false"><span>◒</span>Rainbow<small>rainbow</small></button>
-          <button type="button" id="pattern-action" data-action="pattern" class="action" aria-pressed="false" aria-controls="library-select" aria-describedby="pattern-entry-help" title="Load a Pattern from this computer without playing it"><span>▣</span>Saved Patterns<small>pattern</small></button>
-          <button type="button" data-action="program" class="action" aria-pressed="false"><span>≡</span>Exact sequence<small>run</small></button>
-        </div>
-
-        <p id="pattern-entry-help" class="footnote">Patterns are saved on this computer. Load one from the library before choosing Play.</p>
-        <p id="action-description" class="description">Hold this color until another action or an explicit off command.</p>
-        <div id="pattern-row" class="pattern-current" hidden><strong id="pattern-loaded">No Pattern loaded.</strong><p>Fixed revisions are read-only. Playback uses the frozen Program without recompiling its old source.</p><button id="pattern-edit-copy" type="button" class="secondary" disabled>Edit a copy as an exact sequence</button></div>
-        <form id="parameters" novalidate>
-          <div id="single-color-row" class="field-row color-field">
-            <label for="color">Color <small>Palette / picker / name or hex</small></label>
-            <div class="color-entry"><input id="color-picker" type="color" value="#00a060" aria-label="Choose a color"><input id="color" value="#00a060" maxlength="64" autocomplete="off" spellcheck="false" aria-describedby="color-hint"></div>
-            <div class="color-palette" data-color-for="color" role="group" aria-label="Single-color palette"></div>
-            <p id="color-hint" class="color-hint"></p>
-          </div>
-          <div id="alternate-row" class="field-row color-pair-row" hidden>
-            <label for="color-one">Two colors <small>Choose each color, then alternate them</small></label>
-            <div class="color-pair">
-              <div class="color-field">
-                <label for="color-one">First color</label>
-                <div class="color-entry"><input id="color-one-picker" type="color" value="#ff0000" aria-label="Choose the first color"><input id="color-one" value="red" maxlength="64" autocomplete="off" spellcheck="false" aria-label="First color" aria-describedby="color-one-hint"></div>
-                <div class="color-palette" data-color-for="color-one" role="group" aria-label="First-color palette"></div>
-                <p id="color-one-hint" class="color-hint"></p>
-              </div>
-              <div class="color-field">
-                <label for="color-two">Second color</label>
-                <div class="color-entry"><input id="color-two-picker" type="color" value="#0000ff" aria-label="Choose the second color"><input id="color-two" value="blue" maxlength="64" autocomplete="off" spellcheck="false" aria-label="Second color" aria-describedby="color-two-hint"></div>
-                <div class="color-palette" data-color-for="color-two" role="group" aria-label="Second-color palette"></div>
-                <p id="color-two-hint" class="color-hint"></p>
-              </div>
-            </div>
-          </div>
-          <div id="led-row" class="field-row"><label for="led">LED output</label><select id="led"><option value="0">Both LEDs</option><option value="1">LED 1</option><option value="2">LED 2</option></select></div>
-          <div id="duration-row" class="field-row" hidden><label for="duration">Fade duration <small>ms</small></label><input id="duration" type="number" min="10" max="10000" step="10" value="800"></div>
-          <div id="period-row" class="field-row" hidden><label for="period">Cycle duration <small>ms</small></label><input id="period" type="number" min="400" max="10000" step="10" value="2000"></div>
-          <div id="transition-row" class="field-row transition-field" hidden>
-            <label for="transition">Transition <small>Compiled by the nb1 core</small></label>
-            <select id="transition" aria-describedby="transition-help"><option value="cut">Direct swap · cut</option><option value="linear">Linear fade · linear</option><option value="sine">Sine fade · sine</option><option value="orbit">Orbit phase · orbit</option></select>
-            <p id="transition-help" class="transition-help" aria-live="polite"></p>
-          </div>
-          <div id="blink-row" class="field-row" hidden><label for="on-ms">On / off duration <small>ms</small></label><div class="two-fields"><input id="on-ms" type="number" min="200" max="5000" step="10" value="350" aria-label="On duration in milliseconds"><input id="off-ms" type="number" min="200" max="5000" step="10" value="350" aria-label="Off duration in milliseconds"></div></div>
-          <div id="pulse-row" class="field-row" hidden><label for="attack">Attack / decay / rest <small>ms</small></label><div class="three-fields"><input id="attack" type="number" min="10" max="5000" step="10" value="60" aria-label="Attack duration in milliseconds"><input id="decay" type="number" min="10" max="5000" step="10" value="240" aria-label="Decay duration in milliseconds"><input id="rest" type="number" min="0" max="5000" step="10" value="700" aria-label="Rest duration in milliseconds"></div></div>
-          <div id="cycles-row" class="field-row" hidden><label for="cycles">Cycles <small>Finite playback</small></label><input id="cycles" type="number" min="1" max="10" step="1" value="3"></div>
-          <div id="finish-row" class="field-row" hidden><label for="finish">On finish</label><select id="finish"><option value="off">Off</option><option value="hold">Hold final state</option></select></div>
-          <div id="program-row" hidden><label for="program">Raw Program <small>Validated and scheduled by the same worker</small></label><textarea id="program" rows="11" spellcheck="false">{
-  "steps": [
-    {"led": 0, "color": "#ff0000", "fade_ms": 100, "hold_ms": 450},
-    {"led": 0, "color": "#0000ff", "fade_ms": 100, "hold_ms": 450}
-  ],
-  "repeat": 2,
-  "on_finish": "off"
-}</textarea></div>
-        </form>
-
-        <div class="execution-controls"><button id="preview" class="secondary">Preview only</button><button id="play" class="primary" disabled>Play on device →</button></div>
-        <p class="footnote">Preview does not light the device. Playback uses reject and does not preempt other jobs. The local service completes finite jobs even after this page closes.</p>
-      </section>
-
-      <aside class="panel monitor" aria-labelledby="monitor-heading">
-        <div class="section-title"><h2 id="monitor-heading">At the light</h2><span id="connection" class="tag">Disconnected</span></div>
-        <p class="readback-label">Device readback · separate from input colors</p>
-        <div class="readback-swatches" aria-label="Logical LED color samples"><div class="led" id="led-one"><span>LED 1</span></div><div class="led" id="led-two"><span>LED 2</span></div></div>
-        <div class="rgb-values"><code id="rgb-one">—</code><code id="rgb-two">—</code></div>
-        <p id="sample-time" class="muted centered">Waiting for device data</p>
-        <p class="footnote centered">Logical LED channels, not physical positions. USB RGB readback is not a camera image or optical calibration.</p>
-        <dl class="device-facts"><div><dt>Device</dt><dd id="serial">—</dd></div><div><dt>Product / firmware</dt><dd id="product">—</dd></div><div><dt>Current job</dt><dd id="job-status" role="status" aria-live="polite">Not submitted</dd></div><div><dt>Step progress</dt><dd id="job-progress">—</dd></div><div><dt>Job ID</dt><dd><code id="job-id">—</code></dd></div></dl>
-        <div class="progress-track" aria-label="Job progress"><div id="job-progress-bar"></div></div>
-        <button id="stop" class="danger" disabled>Stop this job and turn off</button>
-        <button id="recover" class="text-button" hidden>Query original request receipt</button>
-        <p class="footnote">Cancel only a job confirmed by this page. Query its original receipt when uncertain; never resubmit automatically.</p>
-      </aside>
-    </div>
-
-
-    <section class="panel library" aria-labelledby="library-heading">
-      <div class="section-title"><h2 id="library-heading"><span class="step-number">03</span>Keep your favorite effects</h2><button id="library-refresh" type="button" class="text-button">Refresh library</button></div>
-      <p class="description">This page saves a frozen Program in the local v1 library without playing, acquiring the device, or overwriting an ID. Use Pattern Book for high-level Orbit sources and frame execution.</p>
-      <div class="library-grid">
-        <div class="library-save">
-          <label for="pattern-id">Pattern ID <small>Start with a letter or digit; use - or _; up to 64 characters</small></label><input id="pattern-id" maxlength="64" autocomplete="off" spellcheck="false" placeholder="my-light-pattern">
-          <label for="pattern-title">Display title <small>Up to 256 characters</small></label><input id="pattern-title" maxlength="512" autocomplete="off" placeholder="My light Pattern">
-          <div class="library-buttons"><button id="pattern-save" type="button" class="secondary">Save current effect</button><button id="pattern-check-save" type="button" class="secondary" hidden>Verify save</button></div>
-          <p id="pattern-save-status" class="library-status" role="status" aria-live="polite">Inputs are compiled before saving. No light task is created.</p>
-        </div>
-        <div class="library-browse">
-          <label for="library-select">Saved fixed revisions <small>Up to 128 records</small></label><select id="library-select" size="6" aria-describedby="library-status"><option value="">Reading the library…</option></select>
-          <button id="library-load" type="button" class="secondary" disabled>Load fixed revision</button>
-          <p id="library-status" class="library-status" role="status" aria-live="polite">Library not read yet.</p>
-        </div>
-      </div>
-    </section>
-
-    <section class="panel inspector" aria-labelledby="inspect-heading">
-      <div class="section-title"><h2 id="inspect-heading">What will run?</h2><span id="compile-summary" class="muted">Not compiled</span></div>
-      <p><code id="surface-call">light.set({ color: "#00a060", led: 0 })</code></p>
-      <p class="footnote">The client manages request and service-instance IDs to identify this submission and prevent duplicate admission. No manual IDs are needed.</p>
-      <details id="debug-details"><summary>Request, frozen program, and receipt details</summary>
-      <div class="trace-grid"><div><h3>Actual HTTP request</h3><pre data-i18n-help id="request-json">Choose Preview only to inspect the request.</pre></div><div><h3>nb1 Core compilation result</h3><pre data-i18n-help id="compiled-json">The Go core compiles actions into canonical Programs.</pre></div></div>
-      <details><summary>Job and receipt state</summary><pre data-i18n-help id="job-json">Not submitted.</pre></details>
-      <details><summary>Raw library response</summary><pre data-i18n-help id="library-json">Not read yet.</pre></details>
-      <p class="footnote">breathe is symmetric. This pulse rises quickly, decays, then rests; the old Effect v1 pulse keeps its original meaning. Two-LED alternate swaps colors without establishing a clockwise or counterclockwise direction.</p>
-    </details></section>
-    <footer>nb1 · Local light workbench。Preview does not light the device. Play sends the control request.<span id="contract">nb1-light-action/v1</span></footer>
-  </main>
-</body>
-</html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><meta name="theme-color" content="#fbf6e7"><title>nb1 · Little light workbench</title><link rel="stylesheet" href="./demo.css"><script defer src="./locales.js"></script><script defer src="./i18n.js"></script><script defer src="./demo.js"></script></head>
+<body><a class="skip-link" href="#main-content">Skip to workbench</a><main class="workbench">
+<nav class="workbench-topbar" aria-label="Workbench navigation"><a class="brand" href="./">nb1 <small>Little light workbench</small></a><div class="top-nav"><a href="./" aria-current="page">Workbench</a><a href="./orbit.html" >Orbit</a><a href="./patterns.html" >Pattern Book</a></div><label class="locale-control" for="locale-select"><span>Language</span><select id="locale-select"><option value="en">English</option><option value="zh-CN">中文</option></select></label></nav>
+<header class="masthead"><div><p class="eyebrow">A LITTLE LIGHT, LOCALLY.</p><h1>Give this moment<br><span>a little color.</span></h1><p class="intro">Choose a color and a rhythm. Let nb1 turn your idea into light.</p></div><div class="hero-art"><svg viewBox="0 0 230 125" aria-hidden="true"><ellipse cx="117" cy="103" rx="76" ry="8" fill="#b6c8a3" opacity=".45"/><rect x="139" y="34" width="57" height="41" rx="3" fill="#c8cac0" stroke="#9fa698" stroke-width="2"/><path d="M163 44h10v7h-10zm16 0h10v7h-10z" fill="#777f73"/><rect x="34" y="31" width="119" height="64" rx="14" fill="#dddcd1" stroke="#a6afa0" stroke-width="2"/><rect x="34" y="24" width="119" height="59" rx="14" fill="#fffdf2" stroke="#b5bfa0" stroke-width="2"/><path d="M54 83h78q13 0 17-12v10q-3 12-17 12H54q-10 0-13-8" fill="#b5b9ad"/><path d="M51 32h82" stroke="#fff" stroke-width="4" stroke-linecap="round"/></svg><small>blink(1) mk2 · simplified housing</small></div></header>
+<section class="device-bar" id="main-content" tabindex="-1"><div><h2>Your local light</h2><p id="device-message">Reading the local service…</p></div><div class="device-controls"><label for="device-select" class="sr-only">Device</label><select id="device-select" data-i18n-skip><option value="">—</option></select><button id="refresh" class="secondary">Refresh</button></div></section>
+<div id="notice" class="notice" role="status" aria-live="polite">Ready to make a little light.</div>
+<div class="workspace"><section class="panel composer" id="author"><div class="section-title"><h2>Make a little light</h2><span class="tag">API v1</span></div><div class="editor-tabs" role="tablist" aria-label="Input type"><button id="mode-action" role="tab" aria-selected="true" aria-controls="action-pane">Action</button><button id="mode-sequence" role="tab" aria-selected="false" aria-controls="sequence-pane">Sequence</button><button id="mode-pattern" role="tab" aria-selected="false" aria-controls="pattern-pane">Pattern</button></div>
+<div id="action-pane" role="tabpanel" aria-labelledby="mode-action"><div class="action-grid" role="group" aria-label="Light actions"></div><p id="action-description" class="description"></p>
+<div class="color-pair"><fieldset class="color-card" id="color-card-a"><legend>First color</legend><div class="color-entry"><input type="color" id="picker-a" value="#00a060" aria-label="Color picker"><select id="color-mode-a" aria-label="Color format"><option value="text">Name / Hex / @name</option><option value="rgb8">RGB</option><option value="hsv">HSB</option></select></div><div id="text-a"><label for="color-a" class="sr-only">Color value</label><input id="color-a" value="#00a060" spellcheck="false" autocomplete="off" maxlength="64"></div><div id="channels-a" class="channel-grid" hidden></div><div class="palette" id="palette-a" role="group" aria-label="Color palette"></div><div class="resolve-row"><button type="button" id="resolve-a" class="text-button">Resolve color</button><code id="resolved-a">—</code></div></fieldset>
+<fieldset class="color-card" id="color-card-b" hidden><legend>Second color</legend><div class="color-entry"><input type="color" id="picker-b" value="#0000ff" aria-label="Second color picker"><select id="color-mode-b" aria-label="Second color format"><option value="text">Name / Hex / @name</option><option value="rgb8">RGB</option><option value="hsv">HSB</option></select></div><div id="text-b"><label for="color-b" class="sr-only">Second color value</label><input id="color-b" value="blue" spellcheck="false" autocomplete="off" maxlength="64"></div><div id="channels-b" class="channel-grid" hidden></div><div class="palette" id="palette-b" role="group" aria-label="Second color palette"></div><div class="resolve-row"><button type="button" id="resolve-b" class="text-button">Resolve color</button><code id="resolved-b">—</code></div></fieldset></div>
+<div id="action-fields" class="fields"></div></div>
+<div id="sequence-pane" role="tabpanel" aria-labelledby="mode-sequence" hidden><label for="sequence-json">Sequence JSON</label><textarea id="sequence-json" rows="15" spellcheck="false" autocapitalize="off"></textarea><p class="footnote">Serial steps finish in order. Interval steps can overlap their fades. The core validates the timing.</p></div>
+<div id="pattern-pane" role="tabpanel" aria-labelledby="mode-pattern" hidden><label for="pattern-select">Saved Pattern</label><select id="pattern-select" data-i18n-skip><option value="">—</option></select><button id="load-pattern" class="secondary">Read Pattern</button><p id="selected-pattern" data-i18n-skip>—</p><button id="edit-sequence" class="text-button" disabled>Edit as Sequence</button></div>
+<div class="execution-controls"><button id="preview" class="secondary">Preview only</button><button id="play" class="primary" disabled>Play on device</button></div><p class="footnote">Preview and save keep the light unchanged. Playback starts only when you choose Play.</p>
+</section>
+<aside class="panel monitor"><div class="section-title"><h2>At the light</h2><span id="connection" class="tag">Disconnected</span></div><p class="readback-label">Logical LED channel readback</p><div class="readback-swatches"><div class="led" id="led-one"><span>LED 1</span></div><div class="led" id="led-two"><span>LED 2</span></div></div><div class="rgb-values"><code id="rgb-one">—</code><code id="rgb-two">—</code></div><p id="sample-time" class="muted centered" data-i18n-skip>—</p><p class="footnote centered">Channel colors describe cached RGB values. The housing above has one continuous diffuser.</p><hr><h2>This playback</h2><dl class="device-facts"><div><dt>Job ID</dt><dd><code id="job-id">—</code></dd></div><div><dt>Status</dt><dd id="job-status" role="status" aria-live="polite">Not submitted</dd></div><div><dt>Steps</dt><dd id="job-progress" data-i18n-skip>—</dd></div></dl><progress id="job-progress-bar" value="0" max="1" aria-label="Job progress"></progress><div class="job-buttons"><button id="query" class="secondary" disabled>Query Job</button><button id="stop" class="danger" disabled>Stop this Job</button><button id="new-run" class="text-button" hidden>Keep ID and start a separate run</button></div><p id="job-message" class="footnote">A Job is complete when device cleanup is confirmed.</p></aside></div>
+<section class="panel preview-panel"><div class="section-title"><h2>Understand the request</h2><span id="preview-summary" class="tag">No preview yet</span><button id="use-sequence" class="text-button" disabled>Use compiled Sequence</button></div><div class="preview-grid"><div><h3>Input</h3><pre id="input-detail" data-i18n-skip>{}</pre></div><div><h3>Compiled Sequence</h3><pre id="compiled" data-i18n-skip>{}</pre></div></div><p id="preview-check" class="footnote">Preview will show the device check and nominal duration.</p></section>
+<section class="library-grid"><div class="panel"><div class="section-title"><h2>Your color shelf</h2><button id="colors-refresh" class="text-button">Refresh colors</button></div><label for="color-list">Local colors</label><select id="color-list" size="4" data-i18n-skip></select><button id="use-color" class="secondary">Use selected color</button><label for="color-name">Color name</label><input id="color-name" placeholder="status-ok" maxlength="32" spellcheck="false"><button id="save-color" class="secondary">Save first color</button><p class="footnote">Use @name in an Action. Saving fixes the resolved RGB value.</p></div>
+<div class="panel"><div class="section-title"><h2>Keep this light</h2><button id="patterns-refresh" class="text-button">Refresh Patterns</button></div><label for="pattern-id">Pattern ID</label><input id="pattern-id" placeholder="evening-light" maxlength="64" spellcheck="false"><label for="pattern-title">Title</label><input id="pattern-title" maxlength="512" placeholder="A little evening light"><button id="save-pattern" class="secondary">Save current draft</button><button id="verify-save" class="text-button" hidden>Read saved Pattern</button><p id="save-message" class="footnote">Patterns live on this computer. Saving creates no Job.</p></div></section>
+<details class="panel diagnostics"><summary>Details</summary><pre id="error-detail" data-i18n-skip>—</pre></details><footer>nb1 · Local light, shared ideas.</footer></main></body></html>

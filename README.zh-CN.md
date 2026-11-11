@@ -1,31 +1,42 @@
 # nb1
 
-控制 blink(1) 指示灯的命令行工具，也可作为本机 daemon 提供共享的版本化HTTP API（兼容v1与实验v2）。
+[English](README.md)
 
-将示例中的 `20005601` 换成实际设备序列号。先在一个终端启动 daemon：
+通过 CLI、本机 HTTP、MCP 或内嵌 Web 控制 blink(1)。高级 Action 在 nb1 内编译为低级 Sequence，并交给同一设备 worker 执行。
+
+本分支是 API v1 开发候选，源码验证与机器当前安装版本分别记录。同一个可执行文件可以作为 CLI，也可以前台运行 daemon：
 
 ```sh
-nb1 server --devices 20005601
+nb1 server --devices DEVICE_SERIAL
 ```
 
-在另一个终端通过共享入口操作或诊断：
+将请求保存在 `action.json`：
+
+```json
+{"action":{"kind":"pulse","color":"lime","cycles":2}}
+```
+
+在另一个终端调用：
 
 ```sh
 nb1 control devices
-nb1 control set 20005601 '#3366ff' --wait
-nb1 doctor
+nb1 control preview action.json
+nb1 control run DEVICE_SERIAL action.json --wait
 ```
 
-`control` 默认连接 `http://127.0.0.1:8931`，可用 `--endpoint` 指定本机端口；临时直控使用 `nb1 control --mode direct ...`。`doctor` 只读检查版本、daemon 和已配置设备快照，不扫描或打开 USB。
+`control` 默认连接 `http://127.0.0.1:8931`，可通过 `--endpoint` 指定其他本机端口。daemon 持有 USB，其他入口通过 HTTP 与它交互。一台设备由一个进程拥有。独立的 `on`、`off`、`blink`、`fade`、`play`、`read`、`write` 命令直接访问硬件，需要设备可用。
 
-`on`、`off`、`blink`、`fade`、`play`、`read`、`write` 等旧命令仍直接访问设备。例如 `nb1 --device 20005601 on` 不经过 daemon。已有 daemon 持有设备时，用 `control` 的默认 daemon 模式共享访问。
+`server` 只是启动进程，不自动安装开机服务。可以前台运行、作为普通后台进程管理，也可显式选择相应平台的用户服务模式，操作见 `nb1 service --help`。控制灯不需要键盘或输入监控权限。
 
-日常以普通用户运行，设备访问按系统权限配置；server 仅监听本机回环地址。更多参数与入口见 `nb1 --help`、`nb1 server --help`、`nb1 control --help` 和 `nb1 doctor --help`。
+## 文档与入口
 
-用户启动配置与macOS/Linux托管服务候选的 `install/start/stop/status/uninstall`，以及Windows候选只读 `service status`（管理与可靠stop未实现，普通用户原生查询待独立验收）用法见[用户级服务说明](internal/service/README.zh-CN.md)。
+- [API v1](docs/api-v1.md)：Action、Sequence、Job、颜色、本机 Pattern 和资源限制。
+- [统一术语](docs/api-v1-terminology.md)：各入口共用的概念。
+- [MCP](adapters/mcp/README.md)：真实 stdio 到 HTTP，包含 12 个工具，不包装 CLI，不另占 USB。
+- [Agent Skill](skills/blink1-control/SKILL.md) 与 [llms.txt](llms.txt)：Agent 的选择、跟踪和恢复指南。
 
-## 中文 API 参考
+Web 位于 `/demo/`，默认英文，可切中文。其源码在独立的 nb1-web 私有仓库维护，固定构建结果内嵌到 nb1。官网文档种子在 nb1-site 私有仓库。仅打开网页或预览不会播放。
 
-[完整手册](docs/api-reference.zh-CN.md)说明High/Low分别负责什么、当前完成状态、参数与任务语义；[OpenAPI](docs/openapi.json)、[实际MCP schema](docs/mcp-tools.schema.json)和[JSON示例](docs/examples/api/)供机器与调用方核对。开发接口与本机已安装版本分别标记，阅读不操作设备。
+九个动作分别为 `set`、`off`、`fade`、`blink`、`breathe`、`pulse`、`alternate`、`orbit`、`rainbow`。颜色接受名字、Hex、RGB8、HSV/HSB 和 `@本机名字`。Pattern 存在电脑上；原生 DeviceSequence 的容量与部署另有能力要求。
 
-当前安装为固定`6ca5a14e9f7fec8a5766e79f5bdef3fafef66d8f`：高级图案CLI十命令（含主机快照import/export）、真实stdio MCP20及默认英文可切中文的三页动森Web。受控推广有57项只读后验；隔离只读浏览器另4项通过，不代表动画或光学验收。46操作仅比历史1e的44多两个静态GET；111模型/14 JSON例/20完整MCP对象不变。旧1e/CLI8/英文Web及96a记录保留为历史，SDK b3/GID37与用户主机库未变；没有Release、全局MCP、OS启动服务或新增MK3/Flash/其他系统实体USB资格。
+核心保持 Go 1.18 下限，MCP 适配器为单独的 Go 1.25 模块。软件、实机 USB、安装和相机光学结果分开记录。Mac/MK2 的有限结果不代表 MK3、Linux/Windows USB 或非易失存储已通过。开发提交不等于 tag 或 Release。

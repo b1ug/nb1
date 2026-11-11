@@ -26,7 +26,7 @@ Action colors accept names, Hex3/6, RGB8, HSV (HSB in the UI), and local `@name`
 
 ## Preview and run
 
-1. For device work, use `list_devices` to select a configured serial. `get_device_state` returns cached state; inspect `observed.sampled_at` before interpreting RGB. Host-only storage and conversion need no device discovery.
+1. For device work, use `list_devices` to select a configured serial. `get_device_state` returns cached state; inspect `observed.sampled_at` before interpreting RGB. Interval playback defers RGB polling until cleanup, so the cached color may predate the Job. Host-only storage and conversion need no device discovery.
 2. Supply exactly one of `action`, `sequence` or `pattern_id` to `preview_light`. Optional `serial` enables cached capability checks. Preview does not play or write USB.
 3. Preserve input, endpoint, serial and Job ID before `run_light`. An explicit ID such as `j_7K3XJNY9ZM` is useful across interruptions. The adapter and CLI generate an ID before sending when omitted or empty. Submit once, then use `get_job` with that ID.
 4. HTTP 202 means accepted. Wait for `succeeded`, `cancelled` or `failed`; counters alone do not prove the tail fade and cleanup complete. A client timeout does not cancel playback.

@@ -70,4 +70,4 @@ Pattern saving fixes the resolved Sequence. Updating a color or Pattern affects 
 
 ## Implementation sequence
 
-The source delivery includes the core execution path, local library, HTTP operations above, CLI commands, embedded Web controls and MCP adapter. Software checks cover the integrated routes and Agent workflows. Real-device v1 validation and replacement of the daily installation remain pending. DeviceSequence routes are planned. The [terminology table](api-v1-terminology.md) governs names across those surfaces.
+The source delivery includes the core execution path, local library, HTTP operations above, CLI commands, embedded Web controls and MCP adapter. Software checks cover the integrated routes and Agent workflows. Finite CLI/HTTP checks on the local macOS 27.2 / MK2 FW204 candidate cover serial and interval playback, Orbit, Job replay, busy rejection, cancellation, final RGB readback and ownership. Web and MCP physical acceptance, broader platform/device qualification, and replacement of the daily installation remain pending. DeviceSequence routes are planned. The [terminology table](api-v1-terminology.md) governs names across those surfaces.

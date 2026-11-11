@@ -10,6 +10,7 @@ import (
 	"runtime"
 	"strings"
 
+	buildconfig "github.com/b1ug/nb1/config"
 	"github.com/b1ug/nb1/internal/service"
 	"github.com/b1ug/nb1/internal/service/systemduser"
 	"github.com/b1ug/nb1/internal/service/taskquery"
@@ -17,7 +18,7 @@ import (
 )
 
 func newServiceCommand() *cobra.Command {
-	return newServiceCommandForRuntime(userServiceRuntime{goos: runtime.GOOS, factories: userServiceFactories{
+	return newServiceCommandForRuntime(userServiceRuntime{goos: runtime.GOOS, packagedBinary: buildconfig.ServiceBinary, packagedRoot: buildconfig.ServiceBinaryRoot, factories: userServiceFactories{
 		darwin:  func() (userServiceBackend[service.UserStatus], error) { return service.NewUserManager() },
 		linux:   func() (userServiceBackend[systemduser.Status], error) { return systemduser.New() },
 		windows: func() (windowsServiceReader, error) { return taskquery.New() },
@@ -74,7 +75,7 @@ func newServiceInstallCommand(management userServiceRuntime) *cobra.Command {
 	command := &cobra.Command{
 		Use: "install", Short: "Install the current user's service on macOS or Linux",
 		Long: "Install a macOS LaunchAgent or Linux systemd user service for login loading. " +
-			"Use the running nb1 executable unless --binary explicitly selects another absolute executable path. " +
+			"Use the running nb1 executable unless --binary explicitly selects another absolute executable path. Homebrew builds use their validated stable package entry so upgrades do not pin a deleted Cellar version. " +
 			"Device serials must be selected explicitly. Installation does not request immediate startup unless --start is provided. " +
 			"Existing unknown or different configurations are not replaced. No manual daemon is stopped and no system service or elevation is used.",
 		Args:    cobra.NoArgs,
@@ -82,12 +83,13 @@ func newServiceInstallCommand(management userServiceRuntime) *cobra.Command {
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			if management.goos == "darwin" || management.goos == "linux" {
 				if cmd.Flags().Changed("binary") {
+					config.BinaryRoot = ""
 					if config.Binary == "" {
 						return fmt.Errorf("--binary must name an absolute executable path when provided")
 					}
 				} else {
 					var err error
-					config.Binary, err = management.currentExecutable()
+					config.Binary, config.BinaryRoot, err = management.installExecutable()
 					if err != nil {
 						return err
 					}
@@ -96,7 +98,7 @@ func newServiceInstallCommand(management userServiceRuntime) *cobra.Command {
 			return management.run(cmd, asJSON, userServiceAction{kind: serviceInstall, config: config, start: start})
 		},
 	}
-	command.Flags().StringVar(&config.Binary, "binary", "", "absolute executable path (default: the running nb1 executable; no PATH search)")
+	command.Flags().StringVar(&config.Binary, "binary", "", "pin an absolute executable path (default: the running nb1; Homebrew uses its stable package entry)")
 	command.Flags().StringSliceVar(&config.Devices, "devices", nil, "explicit eight-digit hexadecimal device serials")
 	command.Flags().StringVar(&config.Listen, "listen", "127.0.0.1:8931", "stable loopback host:port")
 	command.Flags().StringVar(&config.LockDir, "lock-dir", "", "optional absolute shared ownership directory")
@@ -187,9 +189,11 @@ type windowsServiceReader interface {
 }
 
 type userServiceRuntime struct {
-	goos       string
-	factories  userServiceFactories
-	executable func() (string, error)
+	goos           string
+	factories      userServiceFactories
+	executable     func() (string, error)
+	packagedBinary string
+	packagedRoot   string
 }
 
 func (management userServiceRuntime) currentExecutable() (string, error) {
@@ -204,9 +208,27 @@ func (management userServiceRuntime) currentExecutable() (string, error) {
 	if !filepath.IsAbs(binary) {
 		return "", fmt.Errorf("the running executable path is not absolute; select an absolute path with --binary")
 	}
-	// Native managers validate the file and resolve symlinks before persisting
-	// the configuration. Neither argv[0] nor a second PATH lookup selects it.
+	// Neither argv[0] nor a second PATH lookup selects this executable.
 	return binary, nil
+}
+
+func (management userServiceRuntime) installExecutable() (string, string, error) {
+	current, err := management.currentExecutable()
+	if err != nil {
+		return "", "", err
+	}
+	if management.packagedBinary == "" && management.packagedRoot == "" {
+		return current, "", nil
+	}
+	target, err := service.ResolveBoundExecutable(management.packagedBinary, management.packagedRoot, os.Geteuid())
+	if err != nil {
+		return "", "", err
+	}
+	running, err := filepath.EvalSymlinks(current)
+	if err != nil || target != running {
+		return "", "", fmt.Errorf("the active package executable differs from this nb1; run the active package or explicitly select --binary")
+	}
+	return management.packagedBinary, management.packagedRoot, nil
 }
 
 type userServiceActionKind int

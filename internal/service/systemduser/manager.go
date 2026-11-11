@@ -199,11 +199,15 @@ func (m *Manager) Install(ctx context.Context, config service.Config, start bool
 	if err != nil || !info.Mode().IsRegular() || info.Mode().Perm()&0111 == 0 {
 		return status, fmt.Errorf("binary必须是明确的已存在绝对可执行普通文件")
 	}
-	config.Binary, err = filepath.EvalSymlinks(config.Binary)
-	if err != nil {
-		return status, err
+	if config.BinaryRoot == "" {
+		config.Binary, err = filepath.EvalSymlinks(config.Binary)
+		if err == nil {
+			err = validateBinary(config.Binary, m.uid)
+		}
+	} else {
+		_, err = service.ResolveBoundExecutable(config.Binary, config.BinaryRoot, m.uid)
 	}
-	if err := validateBinary(config.Binary, m.uid); err != nil {
+	if err != nil {
 		return status, err
 	}
 	content, err = unitContent(definition{Version: 1, Unit: UnitName, UID: m.uid, Config: config})
@@ -350,7 +354,14 @@ func (m *Manager) changeLocked(ctx context.Context, start bool, actions []string
 		return status, fmt.Errorf("unit停止状态未知，未发出命令")
 	}
 	if start {
-		if err := validateBinary(s.unit.definition.Config.Binary, m.uid); err != nil {
+		config := s.unit.definition.Config
+		var err error
+		if config.BinaryRoot == "" {
+			err = validateBinary(config.Binary, m.uid)
+		} else {
+			_, err = service.ResolveBoundExecutable(config.Binary, config.BinaryRoot, m.uid)
+		}
+		if err != nil {
 			return status, err
 		}
 	}

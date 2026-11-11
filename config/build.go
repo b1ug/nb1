@@ -20,6 +20,10 @@ var (
 	GitCommit string
 	// GitSummary is the git summary of the application source code. i.e. git describe --tags --dirty --always
 	GitSummary string
+	// ServiceBinary and ServiceBinaryRoot are bound by the Homebrew Formula.
+	// They are not runtime environment settings. Source builds keep fixed paths.
+	ServiceBinary     string
+	ServiceBinaryRoot string
 )
 
 var (

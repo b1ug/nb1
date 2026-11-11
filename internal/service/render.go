@@ -22,11 +22,12 @@ import (
 const Label = "org.b1ug.nb1"
 
 type Config struct {
-	Platform string   `json:"platform"`
-	Binary   string   `json:"binary"`
-	Devices  []string `json:"devices"`
-	Listen   string   `json:"listen"`
-	LockDir  string   `json:"lock_dir"`
+	Platform   string   `json:"platform"`
+	Binary     string   `json:"binary"`
+	BinaryRoot string   `json:"binary_root,omitempty"`
+	Devices    []string `json:"devices"`
+	Listen     string   `json:"listen"`
+	LockDir    string   `json:"lock_dir"`
 }
 
 type Artifact struct {
@@ -39,6 +40,11 @@ var serialPattern = regexp.MustCompile(`^[0-9a-fA-F]{8}$`)
 func validate(c Config) error {
 	if c.Platform != "darwin" && c.Platform != "linux" && c.Platform != "windows" {
 		return fmt.Errorf("platform must be darwin, linux or windows")
+	}
+	if c.BinaryRoot != "" {
+		if c.Platform == "windows" || !strings.HasPrefix(c.BinaryRoot, "/") || !utf8.ValidString(c.BinaryRoot) || strings.IndexFunc(c.BinaryRoot, unicode.IsControl) >= 0 {
+			return fmt.Errorf("binary_root requires an absolute Unix package directory")
+		}
 	}
 	for name, value := range map[string]string{"binary": c.Binary, "lock directory": c.LockDir} {
 		if !utf8.ValidString(value) || strings.IndexFunc(value, unicode.IsControl) >= 0 {

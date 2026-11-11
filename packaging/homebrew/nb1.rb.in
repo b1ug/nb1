@@ -29,7 +29,9 @@ class Nb1 < Formula
     ENV["GOWORK"] = "off"
     ENV["GOTOOLCHAIN"] = "local"
     ldflags = ["-X", "github.com/b1ug/nb1/config.GitCommit=" + @@SOURCE_COMMIT@@,
-               "-X", "github.com/b1ug/nb1/config.GitSummary=v#{version}"]
+               "-X", "github.com/b1ug/nb1/config.GitSummary=v#{version}",
+               "-X", "github.com/b1ug/nb1/config.ServiceBinary=#{opt_bin}/nb1",
+               "-X", "github.com/b1ug/nb1/config.ServiceBinaryRoot=#{rack}"]
     system "go", "build", *std_go_args(output: bin/"nb1", ldflags: ldflags), "-mod=readonly", "."
     pkgshare.install "LICENSE"
     doc.install "README.md"

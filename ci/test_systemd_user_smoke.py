@@ -18,7 +18,8 @@ spec.loader.exec_module(smoke)
 
 
 def args(**kwargs):
-    values = {"execute": False, "binary": None, "fixture": None, "negative_case": [], "output": None, "actual_daemon": False}
+    values = {"execute": False, "binary": None, "fixture": None, "negative_case": [], "output": None, "actual_daemon": False,
+              "homebrew_archive": None, "source_commit": None}
     values.update(kwargs)
     return argparse.Namespace(**values)
 
@@ -29,6 +30,11 @@ def account(uid=23001, marker="fixture-marker"):
 
 
 class GuardTests(unittest.TestCase):
+    def test_homebrew_revision_is_required_before_any_host_action(self):
+        with mock.patch.object(smoke, 'Smoke') as fixture, self.assertRaises(SystemExit):
+            smoke.main(['--execute', '--binary', '/cli', '--fixture', '/fixture', '--homebrew-archive', '/archive'])
+        fixture.assert_not_called()
+
     def test_three_guards_are_independent_and_exact(self):
         self.assertTrue(all(smoke.environment_guard({"GITHUB_ACTIONS": "true"}, "Linux", "systemd").values()))
         for env, system, pid1 in (({}, "Linux", "systemd"), ({"GITHUB_ACTIONS": "True"}, "Linux", "systemd"),
@@ -154,6 +160,14 @@ class ExecutionTests(unittest.TestCase):
         obj.actual_daemon = mock.Mock(side_effect=RuntimeError("must not run"))
         self.assertEqual(obj.execute()["status"], "PASS")
         obj.actual_daemon.assert_not_called()
+
+    def test_homebrew_failure_cannot_pass_and_retains_cleanup(self):
+        obj = smoke.Smoke(args(execute=True, homebrew_archive="/archive", source_commit="a"*40))
+        obj.setup = mock.Mock(); obj.positive = mock.Mock(); obj.cleanup = mock.Mock()
+        obj.homebrew_upgrade = mock.Mock(side_effect=smoke.SmokeError("upgrade failed"))
+        self.assertEqual(obj.execute()["status"], "FAIL")
+        obj.homebrew_upgrade.assert_called_once()
+        obj.cleanup.assert_called_once()
 
     def test_changed_account_refuses_all_cleanup_actions(self):
         obj = self.prepared()

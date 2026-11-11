@@ -216,7 +216,11 @@ func (m *UserManager) Install(ctx context.Context, config Config, start bool) (U
 	}
 	// Retain an explicit absolute executable and verify it without executing it.
 	var err error
-	config.Binary, err = executablePath(config.Binary)
+	if config.BinaryRoot == "" {
+		config.Binary, err = executablePath(config.Binary)
+	} else {
+		_, err = ResolveBoundExecutable(config.Binary, config.BinaryRoot, m.uid)
+	}
 	if err != nil {
 		return status, err
 	}
@@ -306,11 +310,18 @@ func (m *UserManager) bootstrap(ctx context.Context, status *UserStatus, file *m
 	if status.Registration != "absent" || file == nil {
 		return fmt.Errorf("launchd中已有未确认归属的同名项或注册状态未知；不会bootstrap、替换或停止它")
 	}
-	binary, err := executablePath(file.definition.Config.Binary)
+	configuration := file.definition.Config
+	var binary string
+	var err error
+	if configuration.BinaryRoot == "" {
+		binary, err = executablePath(configuration.Binary)
+	} else {
+		binary, err = ResolveBoundExecutable(configuration.Binary, configuration.BinaryRoot, m.uid)
+	}
 	if err != nil {
 		return err
 	}
-	if binary != file.definition.Config.Binary {
+	if configuration.BinaryRoot == "" && binary != configuration.Binary {
 		return fmt.Errorf("托管二进制路径已变为符号链接；拒绝加载，请重新核对配置")
 	}
 	if err := m.unchanged(file); err != nil {

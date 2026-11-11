@@ -222,7 +222,7 @@ class Smoke:
     def host(self, label, name, *args, allowed=(0,)):
         return self.command(label, self.privilege + [self.tools[name], *args], "host-fixture", allowed)
 
-    def user_command(self, label, argv, allowed=(0,), overrides=None):
+    def user_command(self, label, argv, allowed=(0,), overrides=None, timeout=45):
         require(not self.user_commands_closed, "runuser is forbidden after final manager shutdown begins")
         require(self.account is not None, "fresh account has not been established")
         values = {
@@ -236,7 +236,7 @@ class Smoke:
             values.update(overrides)
         env = [key + "=" + value for key, value in sorted(values.items())]
         command = self.privilege + [self.tools["runuser"], "--user", self.user, "--", self.tools["env"], "-i", *env, *argv]
-        return self.command(label, command, allowed=allowed)
+        return self.command(label, command, allowed=allowed, timeout=timeout)
 
     def helper(self, op, *args):
         raw, _ = self.user_command("user-files-" + op, [self.tools["python3"], "-c", USER_HELPER, op, *args])
@@ -309,6 +309,42 @@ class Smoke:
         payload = self.cli("install", "--binary", self.fixture_path, "--devices", SERIAL, "--listen", self.listen)
         require(payload["config_state"] == "managed", "install did not report a managed configuration")
         return self.installed_inactive()
+
+    def homebrew_upgrade(self):
+        """Install Homebrew for this same isolated UID and exercise its real package."""
+        require(self.args.source_commit and re.fullmatch(r"[0-9a-f]{40}", self.args.source_commit), "Homebrew acceptance requires an exact source commit")
+        archive = pathlib.Path(self.args.homebrew_archive).resolve(strict=True)
+        require(archive.is_file() and archive.stat().st_size <= 64 << 20, "Homebrew source archive is not a bounded regular file")
+        repository = pathlib.Path(__file__).resolve().parents[1]
+        payload = ((archive, self.account.pw_dir + "/brew-source.tar.gz"),
+                   (repository / "packaging/homebrew/nb1.rb.in", self.account.pw_dir + "/brew-template.rb.in"),
+                   (repository / "packaging/homebrew/check_upgrade_service.py", self.account.pw_dir + "/brew-check.py"))
+        for source, destination in payload:
+            self.host("stage-homebrew-payload", "install", "-m", "0644", "-o", self.user,
+                      "-g", str(self.account.pw_gid), str(source), destination)
+        git, ln = trusted_tool("git"), trusted_tool("ln")
+        prefix = self.account.pw_dir + "/b"
+        require(len(prefix.encode()) <= len(b"/home/linuxbrew/.linuxbrew"), "fresh-user Homebrew prefix exceeds the supported relocation length")
+        self.user_command("homebrew-directories", [self.tools["install"], "-d", "-m", "0700", prefix + "/Homebrew", prefix + "/bin"])
+        self.user_command("homebrew-git-init", [git, "-C", prefix + "/Homebrew", "init", "-q"])
+        self.user_command("homebrew-origin", [git, "-C", prefix + "/Homebrew", "remote", "add", "origin", "https://github.com/Homebrew/brew.git"])
+        self.user_command("homebrew-fetch-pinned", [git, "-C", prefix + "/Homebrew", "fetch", "--depth=1", "origin",
+                          "refs/tags/7.0.12:refs/tags/7.0.12"], timeout=180)
+        self.user_command("homebrew-checkout", [git, "-C", prefix + "/Homebrew", "checkout", "--detach", "bf464f57275cae0be106b43d190c98564ac59b0e"])
+        self.user_command("homebrew-launcher", [ln, "-s", "../Homebrew/bin/brew", prefix + "/bin/brew"])
+        # The common checker owns its package/service snapshots. The parent
+        # still verifies the fresh UID, stops its manager and removes its HOME.
+        self.managed_files = {}
+        raw, _ = self.user_command("homebrew-install-upgrade-service", [self.tools["python3"], self.account.pw_dir + "/brew-check.py",
+            "--execute", "--brew", prefix + "/bin/brew", "--source-archive", self.account.pw_dir + "/brew-source.tar.gz",
+            "--source-commit", self.args.source_commit, "--template", self.account.pw_dir + "/brew-template.rb.in",
+            "--baseline-cli", self.cli_path, "--output", self.account.pw_dir + "/brew-evidence"], allowed=(0, 1), timeout=900)
+        report = json.loads(raw)
+        self.report["homebrew_upgrade"] = report
+        require(report.get("status") == "PASS" and report.get("service_mode") == "available", "combined Homebrew/service acceptance did not PASS")
+        require(report.get("cleanup") and all(row.get("status") == "PASS" for row in report["cleanup"]), "Homebrew checker cleanup did not PASS")
+        self.absent()
+        self.report["checks"].append({"check": "homebrew-package-upgrade-cleanup-restart-rollback", "status": "PASS"})
 
     def process(self, pid):
         require(isinstance(pid, int) and pid > 0, "invalid fixture PID")
@@ -829,6 +865,8 @@ class Smoke:
                 self.negative(case)
             if self.args.actual_daemon:
                 self.actual_daemon()
+            if self.args.homebrew_archive:
+                self.homebrew_upgrade()
             self.report["status"] = "PASS"
         except (SmokeError, OSError, ValueError, KeyError, KeyboardInterrupt) as error:
             self.report["status"] = "ENVIRONMENT_UNAVAILABLE" if str(error).startswith("ENVIRONMENT_UNAVAILABLE:") else "FAIL"
@@ -846,6 +884,8 @@ def parser():
     command.add_argument("--binary", help="explicit absolute path to the real Linux nb1 CLI")
     command.add_argument("--fixture", help="explicit absolute path to the separately built USB-free Linux fixture")
     command.add_argument("--actual-daemon", action="store_true", help="also start the actual CLI binary as a service; requires empty native discovery")
+    command.add_argument("--homebrew-archive", help="also verify Homebrew installation, real upgrade, service restart and rollback from this Git archive")
+    command.add_argument("--source-commit", help="exact revision of --homebrew-archive")
     command.add_argument("--negative-case", choices=sorted(NEGATIVES), action="append", default=[], help="optional independent native refusal case")
     command.add_argument("--output", type=pathlib.Path, help="new evidence directory; refuses an existing directory")
     return command
@@ -855,6 +895,8 @@ def main(argv=None):
     args = parser().parse_args(argv)
     if args.execute and (not args.binary or not args.fixture):
         parser().error("--execute requires --binary and --fixture")
+    if args.homebrew_archive and (not args.source_commit or not re.fullmatch(r"[0-9a-f]{40}", args.source_commit)):
+        parser().error("--homebrew-archive requires an exact --source-commit")
     if args.output is not None:
         # Allocate before any host action; never overwrite another run's evidence.
         args.output.mkdir(parents=True, exist_ok=False)

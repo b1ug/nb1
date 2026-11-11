@@ -663,3 +663,77 @@ func TestStartRechecksExecutableAndStopCanCleanUpMissingBinary(t *testing.T) {
 		})
 	}
 }
+
+func TestPackageBindingSurvivesKegCleanupAndRejectsEscape(t *testing.T) {
+	m, f, c := fixture(t)
+	root := filepath.Join(m.configRoot, "brew", "Cellar", "nb1")
+	one, two := filepath.Join(root, "one"), filepath.Join(root, "two")
+	for _, version := range []string{one, two} {
+		if err := os.MkdirAll(filepath.Join(version, "bin"), 0700); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(version, "bin", "nb1"), []byte(version), 0700); err != nil {
+			t.Fatal(err)
+		}
+	}
+	link := filepath.Join(m.configRoot, "brew", "opt", "nb1")
+	if err := os.MkdirAll(filepath.Dir(link), 0700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(one, link); err != nil {
+		t.Fatal(err)
+	}
+	c.Binary, c.BinaryRoot = filepath.Join(link, "bin", "nb1"), root
+	status, err := m.Install(context.Background(), c, false)
+	if err != nil || status.Config.Binary != c.Binary || status.Config.BinaryRoot != root {
+		t.Fatalf("bound install: %+v %v", status, err)
+	}
+	content, err := os.ReadFile(m.unitPath())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := m.Start(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Remove(link); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(two, link); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.RemoveAll(one); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := m.Stop(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := m.Start(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	assertFile(t, m.unitPath(), content)
+	if _, err := m.Stop(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	outside := filepath.Join(m.configRoot, "other")
+	if err := os.MkdirAll(filepath.Join(outside, "bin"), 0700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(outside, "bin", "nb1"), []byte("outside"), 0700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Remove(link); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(outside, link); err != nil {
+		t.Fatal(err)
+	}
+	starts := countAction(f, "start")
+	if _, err := m.Start(context.Background()); err == nil || countAction(f, "start") != starts {
+		t.Fatal("package escape started")
+	}
+	f.active = "active"
+	f.refresh()
+	if _, err := m.Stop(context.Background()); err != nil {
+		t.Fatalf("unsafe replacement prevented cleanup: %v", err)
+	}
+}

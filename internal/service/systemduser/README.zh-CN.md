@@ -44,3 +44,5 @@ unit首行嵌入版本、UID、unit名和明确配置的托管标记，读回必
 已加载属性还要求 `NoNewPrivileges=yes`；false或无法读取时拒绝接管改变。最终集成须使用已经加入该选项的父Render。此隔离分支基于旧父模板，fake runner中的该属性用于协议回归，不能被称为实际Linux执行证明。NoNewPrivileges限制通过exec获得额外权限，并非完整sandbox；本包不盲加未经USB、目录和运行环境验证的额外限制。[官方NoNewPrivileges说明](https://www.freedesktop.org/software/systemd/man/latest/systemd.exec.html#NoNewPrivileges=)
 
 实际Start前还验证binary仍为安全的可执行普通文件，拒绝新symlink或他人可写文件；Stop/Uninstall不会因binary消失而失去清理能力。普通用户本身已有的权限、manager会话环境和不合作同UID进程不能据此被完整隔离。
+
+安装时会把已核验的当前用户配置根目录写入托管定义，并通过unit的`XDG_CONFIG_HOME`固定给子进程。这样即使用户manager继承了其他会话的变量，也不会把配置、默认库或设备锁转向另一个账号的目录；不修改任何目录权限。portable render可显式给`--user-config-root`，原生安装不接受与manager上下文不同的根目录。

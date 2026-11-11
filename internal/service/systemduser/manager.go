@@ -188,6 +188,10 @@ func (m *Manager) Install(ctx context.Context, config service.Config, start bool
 	defer cancel()
 	status := m.initialStatus()
 	config.Platform = "linux"
+	if config.UserConfigRoot != "" && config.UserConfigRoot != m.configRoot {
+		return status, fmt.Errorf("service configuration root must match the current user's systemd configuration root")
+	}
+	config.UserConfigRoot = m.configRoot
 	if config.Listen == "" {
 		config.Listen = "127.0.0.1:8931"
 	}

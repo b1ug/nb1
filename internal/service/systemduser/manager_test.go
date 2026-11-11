@@ -148,7 +148,30 @@ func fixture(t *testing.T) (*Manager, *fakeSystemd, service.Config) {
 	if err := os.WriteFile(binary, []byte("fixture never executed\n"), 0700); err != nil {
 		t.Fatal(err)
 	}
-	return m, f, service.Config{Platform: "linux", Binary: binary, Devices: []string{"20005601"}, Listen: "127.0.0.1:8931"}
+	return m, f, service.Config{Platform: "linux", Binary: binary, UserConfigRoot: m.configRoot, Devices: []string{"20005601"}, Listen: "127.0.0.1:8931"}
+}
+
+func TestInstallPinsUserConfigurationRootInsteadOfInheritingManagerEnvironment(t *testing.T) {
+	m, _, config := fixture(t)
+	config.UserConfigRoot = ""
+	status, err := m.Install(context.Background(), config, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if status.Config == nil || status.Config.UserConfigRoot != m.configRoot {
+		t.Fatalf("configuration root not bound: %+v", status.Config)
+	}
+	data, err := os.ReadFile(m.unitPath())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(data), "Environment=\"XDG_CONFIG_HOME="+m.configRoot+"\"") {
+		t.Fatalf("unit still inherits another session's root: %s", data)
+	}
+	config.UserConfigRoot = filepath.Join(m.configRoot, "another-root")
+	if _, err := m.Install(context.Background(), config, false); err == nil {
+		t.Fatal("an unrelated configuration root was accepted")
+	}
 }
 
 func putUnit(t *testing.T, m *Manager, f *fakeSystemd, c service.Config, enabled bool, active string) []byte {

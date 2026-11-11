@@ -61,6 +61,7 @@ func newServiceCommandForRuntime(management userServiceRuntime) *cobra.Command {
 	render.Flags().StringVar(&config.Listen, "listen", "127.0.0.1:8931", "stable loopback host:port")
 	render.Flags().StringVar(&config.LockDir, "lock-dir", "", "optional absolute shared ownership directory; otherwise the service account's default")
 	render.Flags().StringVar(&config.ConfigFile, "config-file", "", "optional absolute target-platform user configuration file")
+	render.Flags().StringVar(&config.UserConfigRoot, "user-config-root", "", "optional absolute XDG_CONFIG_HOME for a Linux unit; native install binds the current user's root")
 	render.Flags().StringVar(&output, "output", "", "new staging file; default writes configuration to stdout, existing files are not replaced")
 	_ = render.MarkFlagRequired("platform")
 	_ = render.MarkFlagRequired("binary")

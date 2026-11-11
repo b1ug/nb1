@@ -22,13 +22,14 @@ import (
 const Label = "org.b1ug.nb1"
 
 type Config struct {
-	Platform   string   `json:"platform"`
-	Binary     string   `json:"binary"`
-	BinaryRoot string   `json:"binary_root,omitempty"`
-	ConfigFile string   `json:"config_file,omitempty"`
-	Devices    []string `json:"devices"`
-	Listen     string   `json:"listen"`
-	LockDir    string   `json:"lock_dir"`
+	Platform       string   `json:"platform"`
+	Binary         string   `json:"binary"`
+	BinaryRoot     string   `json:"binary_root,omitempty"`
+	ConfigFile     string   `json:"config_file,omitempty"`
+	UserConfigRoot string   `json:"user_config_root,omitempty"`
+	Devices        []string `json:"devices"`
+	Listen         string   `json:"listen"`
+	LockDir        string   `json:"lock_dir"`
 }
 
 type Artifact struct {
@@ -42,12 +43,15 @@ func validate(c Config) error {
 	if c.Platform != "darwin" && c.Platform != "linux" && c.Platform != "windows" {
 		return fmt.Errorf("platform must be darwin, linux or windows")
 	}
+	if c.UserConfigRoot != "" && c.Platform != "linux" {
+		return fmt.Errorf("user_config_root is supported by Linux user services")
+	}
 	if c.BinaryRoot != "" {
 		if c.Platform == "windows" || !strings.HasPrefix(c.BinaryRoot, "/") || !utf8.ValidString(c.BinaryRoot) || strings.IndexFunc(c.BinaryRoot, unicode.IsControl) >= 0 {
 			return fmt.Errorf("binary_root requires an absolute Unix package directory")
 		}
 	}
-	for name, value := range map[string]string{"binary": c.Binary, "lock directory": c.LockDir, "configuration file": c.ConfigFile} {
+	for name, value := range map[string]string{"binary": c.Binary, "lock directory": c.LockDir, "configuration file": c.ConfigFile, "user configuration root": c.UserConfigRoot} {
 		if !utf8.ValidString(value) || strings.IndexFunc(value, unicode.IsControl) >= 0 {
 			return fmt.Errorf("%s must be valid UTF-8 without control characters", name)
 		}
@@ -183,9 +187,13 @@ func renderSystemd(c Config) []byte {
 	for i := range args {
 		args[i] = systemdArgument(args[i])
 	}
+	environment := ""
+	if c.UserConfigRoot != "" {
+		environment = "Environment=" + systemdArgument("XDG_CONFIG_HOME="+c.UserConfigRoot) + "\n"
+	}
 	// The ':' executable prefix disables environment expansion for argv;
 	// percent specifiers still need escaping independently.
-	return []byte("[Unit]\nDescription=nb1 local blink(1) control daemon\n\n[Service]\nType=simple\nExecStart=:" + strings.Join(args, " ") + "\nRestart=on-failure\nRestartSec=5s\nKillSignal=SIGTERM\nTimeoutStopSec=20s\nUMask=0077\nNoNewPrivileges=yes\n\n[Install]\nWantedBy=default.target\n")
+	return []byte("[Unit]\nDescription=nb1 local blink(1) control daemon\n\n[Service]\nType=simple\n" + environment + "ExecStart=:" + strings.Join(args, " ") + "\nRestart=on-failure\nRestartSec=5s\nKillSignal=SIGTERM\nTimeoutStopSec=20s\nUMask=0077\nNoNewPrivileges=yes\n\n[Install]\nWantedBy=default.target\n")
 }
 
 func powershellLiteral(value string) string {

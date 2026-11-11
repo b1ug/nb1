@@ -16,6 +16,21 @@ import (
 	"unicode/utf16"
 )
 
+func TestLinuxConfigurationRootUsesLiteralEnvironmentValue(t *testing.T) {
+	c := Config{Platform: "linux", Binary: "/opt/nb1/nb1", Devices: []string{"20005601"}, Listen: "127.0.0.1:8931", UserConfigRoot: "/home/user/with space/100%/$literal"}
+	artifact, err := Render(c)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(artifact.Content), `Environment="XDG_CONFIG_HOME=/home/user/with space/100%%/$literal"`) {
+		t.Fatalf("configuration environment was not preserved literally: %s", artifact.Content)
+	}
+	c.UserConfigRoot = "relative"
+	if _, err := Render(c); err == nil {
+		t.Fatal("relative configuration root accepted")
+	}
+}
+
 func TestLaunchdArgumentsRoundTrip(t *testing.T) {
 	c := Config{Platform: "darwin", Binary: `/Applications/灯 & 家/<nb1> "quoted"/bin\nb1`, Devices: []string{"20005601", "30000001"}, Listen: "[::1]:8931", LockDir: `/Users/用户/100%/<locks> & "one"\tail`}
 	artifact, err := Render(c)

@@ -14,7 +14,18 @@ import (
 	"github.com/b1ug/nb1/internal/httpapi"
 )
 
-type sequenceRouteBackend struct{ frameRouteBackend }
+type sequenceRouteBackend struct {
+	frameRouteBackend
+	steps []control.Step
+}
+
+func (b *sequenceRouteBackend) Set(step control.Step) error {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	b.operations = append(b.operations, "set")
+	b.steps = append(b.steps, step)
+	return nil
+}
 
 func (*sequenceRouteBackend) Info() control.DeviceInfo {
 	return control.DeviceInfo{Serial: "20000001", Capabilities: []string{"set", "raw-rgb", "program", "hold", "mk2-basic"}}
@@ -24,7 +35,7 @@ type sequenceRouteDriver struct{ backend *sequenceRouteBackend }
 
 func (d sequenceRouteDriver) Open(string) (control.Backend, error) { return d.backend, nil }
 
-func sequenceRouteServer(t *testing.T) (*httptest.Server, *sequenceRouteBackend) {
+func sequenceRouteServer(t *testing.T, options ...httpapi.Option) (*httptest.Server, *sequenceRouteBackend) {
 	t.Helper()
 	backend := &sequenceRouteBackend{}
 	engine, err := control.New(sequenceRouteDriver{backend}, control.Options{Serials: []string{"20000001"}})
@@ -52,7 +63,8 @@ func sequenceRouteServer(t *testing.T) (*httptest.Server, *sequenceRouteBackend)
 		}
 		time.Sleep(time.Millisecond)
 	}
-	server := httptest.NewServer(httpapi.New(engine, httpapi.WithSequenceAPI()))
+	options = append([]httpapi.Option{httpapi.WithSequenceAPI()}, options...)
+	server := httptest.NewServer(httpapi.New(engine, options...))
 	t.Cleanup(server.Close)
 	return server, backend
 }

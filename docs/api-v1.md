@@ -6,7 +6,7 @@ This development candidate provides the Action → Sequence → Job execution pa
 
 Actions are `set`, `off`, `fade`, `blink`, `breathe`, `pulse`, `alternate`, `orbit` and `rainbow`. The compiler produces one normalized Sequence with `timing` set to `serial` or `interval` and an ordered `steps` array. Orbit uses four paired transitions. Rainbow uses seven color anchors and returns to red.
 
-Colors accept names, short or full hex, RGB8 and HSV. The compiled Sequence contains exact RGB values. Sequence input contains exact six-digit hex targets, integer millisecond durations and explicit timing. The core validates executed-step limits, time units, target order and total duration.
+Colors accept names, short or full hex, RGB8, HSV and local references such as `@status-ok`. The compiled Sequence contains exact RGB values. Sequence input contains exact six-digit hex targets, integer millisecond durations and explicit timing. The core validates executed-step limits, time units, target order and total duration.
 
 The preview includes scheduled device-update allowances in its nominal duration. The default pulse expands to 1,030 ms. One default orbit cycle has 3,000 ms of intervals plus 40 ms for initialization and final settling, totaling 3,040 ms. Actual runtime also includes native I/O and cleanup.
 
@@ -23,11 +23,16 @@ nb1 control --endpoint http://127.0.0.1:8931 cancel j_7K3XJNY9ZM --wait
 
 | Request | Behavior |
 | --- | --- |
-| `POST /v1/preview` | Compile `action` or `sequence`, with optional `serial` capability checks. |
-| `POST /v1/jobs` | Accept `action` or `sequence`, required `serial`, and optional `id`. |
+| `POST /v1/preview` | Compile `action`, `sequence` or `pattern_id`, with optional `serial` capability checks. |
+| `POST /v1/jobs` | Accept `action`, `sequence` or `pattern_id`, required `serial`, and optional `id`. |
 | `GET /v1/jobs/{id}` | Read the accepted Job. |
 | `POST /v1/jobs/{id}/cancel` | Request cancellation and read its current status. |
 | `POST /v1/colors/resolve` | Resolve a `color` to exact hex. |
+| `GET /v1/colors` | List locally saved color names and exact values. |
+| `PUT /v1/colors/{name}` | Resolve and save a local color. |
+| `GET /v1/patterns` | List Pattern ID and title summaries. |
+| `GET /v1/patterns/{id}` | Read a saved Pattern and its Sequence. |
+| `PUT /v1/patterns/{id}` | Compile and save one Action or Sequence with an optional title. |
 | `GET /v1/devices` | List configured devices and cached state. |
 | `GET /v1/devices/{serial}` | Read one configured device's cached state. |
 | `GET /healthz` | Read daemon HTTP health. |
@@ -43,6 +48,20 @@ The daemon keeps each active Job and retains terminal Jobs for thirty minutes. L
 
 The store holds up to 4,096 Jobs and 65,536 retained targets. New admission returns HTTP 429 when that budget is full. Active and retained terminal Jobs remain queryable throughout their window. State is held in the current daemon process's memory.
 
+## Local colors and Patterns
+
+The daemon uses `--library-dir`, `NB1_LIBRARY_DIR`, or the current user's `nb1/library` configuration directory. Reads return saved records or empty lists. A write creates the directories and replaces one record atomically. The library supports 256 named colors and 128 Patterns, with records up to 1 MiB and titles up to 256 Unicode characters. Writer contention is bounded to two seconds.
+
+```sh
+nb1 control colors set status-ok lime
+nb1 control colors list
+nb1 control patterns save gentle-pulse action.json --title "Gentle pulse"
+nb1 control patterns get gentle-pulse
+nb1 control patterns list
+```
+
+Pattern saving fixes the resolved Sequence. Updating a color or Pattern affects new Jobs. Repeated submission of an accepted Job returns that Job before reading the library, including when its referenced record is updated or temporarily unavailable.
+
 ## Implementation sequence
 
-The core execution path, HTTP operations above and CLI commands form this delivery. Local named colors, Pattern persistence, DeviceSequence routes, Web controls and MCP are the following integration work. The [terminology table](api-v1-terminology.md) governs names across those surfaces.
+The core execution path, local library, HTTP operations above and CLI commands form this delivery. DeviceSequence routes, Web controls and MCP are the following integration work. The [terminology table](api-v1-terminology.md) governs names across those surfaces.

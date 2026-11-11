@@ -10,9 +10,9 @@ import (
 	"strings"
 
 	"github.com/b1ug/nb1/internal/actionv1"
-	"github.com/b1ug/nb1/internal/colorinput"
 	"github.com/b1ug/nb1/internal/control"
 	"github.com/b1ug/nb1/internal/jsoninput"
+	"github.com/b1ug/nb1/internal/libraryv1"
 	"github.com/b1ug/nb1/internal/sequence"
 )
 
@@ -22,9 +22,10 @@ func WithSequenceAPI() Option {
 }
 
 type sequenceInput struct {
-	Action   json.RawMessage `json:"action,omitempty"`
-	Sequence json.RawMessage `json:"sequence,omitempty"`
-	Serial   *string         `json:"serial,omitempty"`
+	Action    json.RawMessage `json:"action,omitempty"`
+	Sequence  json.RawMessage `json:"sequence,omitempty"`
+	PatternID *string         `json:"pattern_id,omitempty"`
+	Serial    *string         `json:"serial,omitempty"`
 }
 
 type deviceCheck struct {
@@ -87,13 +88,23 @@ func (h *handler) serveSequenceAPI(w http.ResponseWriter, r *http.Request) bool 
 		h.previewSequence(w, r)
 		return true
 	case "/v1/colors/resolve":
-		resolveSequenceColor(w, r)
-		return true
+		if r.Method == http.MethodPost {
+			h.resolveSequenceColor(w, r)
+			return true
+		}
+		if r.Method != http.MethodPut {
+			w.Header().Set("Allow", "POST, PUT")
+			writeError(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
+			return true
+		}
 	case "/v1/jobs":
 		h.submitSequence(w, r)
 		return true
 	}
 	parts := strings.Split(strings.TrimPrefix(r.URL.Path, "/"), "/")
+	if h.serveSequenceLibrary(w, r, parts) {
+		return true
+	}
 	if len(parts) == 3 && parts[0] == "v1" && parts[1] == "devices" && parts[2] != "" {
 		if method(w, r, http.MethodGet) && frameNoBodyOrQuery(w, r) {
 			state, err := h.service.Device(parts[2])
@@ -141,8 +152,22 @@ func sequenceNoQuery(w http.ResponseWriter, r *http.Request) bool {
 }
 
 func (in sequenceInput) validate(w http.ResponseWriter, requireSerial bool) bool {
-	if (in.Action == nil) == (in.Sequence == nil) {
-		writeError(w, http.StatusBadRequest, "invalid_request", "exactly one action or sequence is required")
+	count := 0
+	if in.Action != nil {
+		count++
+	}
+	if in.Sequence != nil {
+		count++
+	}
+	if in.PatternID != nil {
+		count++
+	}
+	if count != 1 {
+		writeError(w, http.StatusBadRequest, "invalid_request", "exactly one action, sequence or pattern_id is required")
+		return false
+	}
+	if in.PatternID != nil && !control.ValidSequenceJobID(*in.PatternID) {
+		writeError(w, http.StatusBadRequest, "invalid_request", "pattern_id must contain 1–64 ASCII letters, digits, hyphens or underscores")
 		return false
 	}
 	if requireSerial && in.Serial == nil || in.Serial != nil && !control.ValidDeviceSerial(*in.Serial) {
@@ -152,9 +177,24 @@ func (in sequenceInput) validate(w http.ResponseWriter, requireSerial bool) bool
 	return true
 }
 
-func (in sequenceInput) compile() (sequence.Sequence, error) {
+func (h *handler) compileSequenceInput(in sequenceInput) (sequence.Sequence, error) {
 	if in.Action != nil {
-		return actionv1.Compile(in.Action, nil)
+		resolver := sequenceColorResolver{store: h.library}
+		compiled, err := actionv1.Compile(in.Action, resolver.resolve)
+		if resolver.unavailable {
+			return sequence.Sequence{}, errSequenceLibraryUnavailable
+		}
+		return compiled, err
+	}
+	if in.PatternID != nil {
+		if h.library == nil {
+			return sequence.Sequence{}, errSequenceLibraryUnavailable
+		}
+		pattern, err := h.library.GetPattern(*in.PatternID)
+		if err != nil {
+			return sequence.Sequence{}, sequenceLibraryError(err)
+		}
+		return sequence.Normalize(pattern.Sequence)
 	}
 	return sequence.Decode(in.Sequence)
 }
@@ -163,6 +203,10 @@ func (in sequenceInput) fingerprint() ([32]byte, error) {
 	kind, raw := "action", in.Action
 	if raw == nil {
 		kind, raw = "sequence", in.Sequence
+	}
+	if in.PatternID != nil {
+		kind = "pattern_id"
+		raw, _ = json.Marshal(*in.PatternID)
 	}
 	// JSON input has already been checked for duplicate keys and null. Preserve
 	// number spelling, array order and strings while normalizing object order.
@@ -187,7 +231,7 @@ func (h *handler) previewSequence(w http.ResponseWriter, r *http.Request) {
 	if !readSequenceJSON(w, r, &input) || !input.validate(w, false) {
 		return
 	}
-	compiled, err := input.compile()
+	compiled, err := h.compileSequenceInput(input)
 	if err != nil {
 		sequenceAPIError(w, err)
 		return
@@ -224,15 +268,16 @@ func (h *handler) submitSequence(w http.ResponseWriter, r *http.Request) {
 	}
 	// Decode with an explicit wire type so strict validation sees every field.
 	var body struct {
-		Action   json.RawMessage `json:"action,omitempty"`
-		Sequence json.RawMessage `json:"sequence,omitempty"`
-		Serial   *string         `json:"serial,omitempty"`
-		ID       string          `json:"id,omitempty"`
+		Action    json.RawMessage `json:"action,omitempty"`
+		Sequence  json.RawMessage `json:"sequence,omitempty"`
+		PatternID *string         `json:"pattern_id,omitempty"`
+		Serial    *string         `json:"serial,omitempty"`
+		ID        string          `json:"id,omitempty"`
 	}
 	if !readSequenceJSON(w, r, &body) {
 		return
 	}
-	input := sequenceInput{Action: body.Action, Sequence: body.Sequence, Serial: body.Serial}
+	input := sequenceInput{Action: body.Action, Sequence: body.Sequence, PatternID: body.PatternID, Serial: body.Serial}
 	if !input.validate(w, true) {
 		return
 	}
@@ -246,10 +291,12 @@ func (h *handler) submitSequence(w http.ResponseWriter, r *http.Request) {
 	}
 	fingerprint, err := input.fingerprint()
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid_request", "invalid action or sequence")
+		writeError(w, http.StatusBadRequest, "invalid_request", "invalid action, sequence or pattern_id")
 		return
 	}
-	job, replayed, err := service.SubmitSequence(r.Context(), *input.Serial, body.ID, fingerprint, input.compile)
+	job, replayed, err := service.SubmitSequence(r.Context(), *input.Serial, body.ID, fingerprint, func() (sequence.Sequence, error) {
+		return h.compileSequenceInput(input)
+	})
 	if err != nil {
 		sequenceAPIError(w, err)
 		return
@@ -304,7 +351,7 @@ func (h *handler) sequenceService(w http.ResponseWriter) (control.SequenceServic
 	return service, ok
 }
 
-func resolveSequenceColor(w http.ResponseWriter, r *http.Request) {
+func (h *handler) resolveSequenceColor(w http.ResponseWriter, r *http.Request) {
 	if !method(w, r, http.MethodPost) {
 		return
 	}
@@ -314,12 +361,16 @@ func resolveSequenceColor(w http.ResponseWriter, r *http.Request) {
 	if !readSequenceJSON(w, r, &input) {
 		return
 	}
-	result, err := colorinput.ResolveJSON(input.Color)
+	result, err := h.resolveSequenceColorInput(input.Color)
 	if err != nil {
+		if errors.Is(err, errSequenceLibraryUnavailable) {
+			sequenceAPIError(w, err)
+			return
+		}
 		writeError(w, http.StatusBadRequest, "invalid_request", err.Error())
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]string{"color": result.CanonicalColor})
+	writeJSON(w, http.StatusOK, map[string]string{"color": result})
 }
 
 func sequenceAPIError(w http.ResponseWriter, err error) {
@@ -335,6 +386,14 @@ func sequenceAPIError(w http.ResponseWriter, err error) {
 		return
 	}
 	switch {
+	case errors.Is(err, errSequenceLibraryUnavailable):
+		writeError(w, http.StatusServiceUnavailable, "unavailable", "local library is unavailable")
+	case errors.Is(err, libraryv1.ErrNotFound):
+		writeError(w, http.StatusNotFound, "not_found", err.Error())
+	case errors.Is(err, libraryv1.ErrCapacity):
+		writeError(w, http.StatusTooManyRequests, "library_capacity", err.Error())
+	case errors.Is(err, libraryv1.ErrInvalid):
+		writeError(w, http.StatusBadRequest, "invalid_request", err.Error())
 	case errors.Is(err, context.Canceled), errors.Is(err, context.DeadlineExceeded):
 		writeError(w, http.StatusServiceUnavailable, "unavailable", "request ended before the operation could complete")
 	case errors.Is(err, control.ErrSequenceJobConflict):

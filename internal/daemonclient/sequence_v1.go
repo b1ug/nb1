@@ -17,8 +17,9 @@ import (
 
 // SequenceInput retains the original author input used to identify a Job.
 type SequenceInput struct {
-	Action   json.RawMessage `json:"action,omitempty"`
-	Sequence json.RawMessage `json:"sequence,omitempty"`
+	Action    json.RawMessage `json:"action,omitempty"`
+	Sequence  json.RawMessage `json:"sequence,omitempty"`
+	PatternID *string         `json:"pattern_id,omitempty"`
 }
 
 type SequenceDeviceCheck struct {
@@ -46,8 +47,24 @@ func DecodeSequenceInput(data []byte) (SequenceInput, error) {
 }
 
 func (input SequenceInput) validate() error {
-	if (input.Action == nil) == (input.Sequence == nil) {
-		return fmt.Errorf("exactly one action or sequence is required")
+	sources := 0
+	if input.Action != nil {
+		sources++
+	}
+	if input.Sequence != nil {
+		sources++
+	}
+	if input.PatternID != nil {
+		sources++
+	}
+	if sources != 1 {
+		return fmt.Errorf("exactly one action, sequence or pattern_id is required")
+	}
+	if input.PatternID != nil {
+		if !control.ValidSequenceJobID(*input.PatternID) {
+			return fmt.Errorf("pattern_id must contain 1 to 64 ASCII letters, digits, hyphens or underscores")
+		}
+		return nil
 	}
 	if input.Sequence != nil {
 		_, err := sequence.Decode(input.Sequence)
@@ -67,10 +84,11 @@ func (c *Client) PreviewSequence(ctx context.Context, input SequenceInput, seria
 		return SequencePreview{}, fmt.Errorf("invalid device serial")
 	}
 	request := struct {
-		Action   json.RawMessage `json:"action,omitempty"`
-		Sequence json.RawMessage `json:"sequence,omitempty"`
-		Serial   string          `json:"serial,omitempty"`
-	}{input.Action, input.Sequence, serial}
+		Action    json.RawMessage `json:"action,omitempty"`
+		Sequence  json.RawMessage `json:"sequence,omitempty"`
+		PatternID *string         `json:"pattern_id,omitempty"`
+		Serial    string          `json:"serial,omitempty"`
+	}{Action: input.Action, Sequence: input.Sequence, PatternID: input.PatternID, Serial: serial}
 	var result SequencePreview
 	if err := c.sequenceV1Request(ctx, http.MethodPost, "/v1/preview", request, &result, http.StatusOK); err != nil {
 		return result, err
@@ -93,11 +111,12 @@ func (c *Client) SubmitSequence(ctx context.Context, input SequenceInput, serial
 		return control.SequenceJob{}, fmt.Errorf("a valid device serial and explicit job ID are required")
 	}
 	request := struct {
-		ID       string          `json:"id"`
-		Serial   string          `json:"serial"`
-		Action   json.RawMessage `json:"action,omitempty"`
-		Sequence json.RawMessage `json:"sequence,omitempty"`
-	}{id, serial, input.Action, input.Sequence}
+		ID        string          `json:"id"`
+		Serial    string          `json:"serial"`
+		Action    json.RawMessage `json:"action,omitempty"`
+		Sequence  json.RawMessage `json:"sequence,omitempty"`
+		PatternID *string         `json:"pattern_id,omitempty"`
+	}{ID: id, Serial: serial, Action: input.Action, Sequence: input.Sequence, PatternID: input.PatternID}
 	var job control.SequenceJob
 	if err := c.sequenceV1Request(ctx, http.MethodPost, "/v1/jobs", request, &job, http.StatusOK, http.StatusAccepted); err != nil {
 		return job, err
@@ -149,6 +168,12 @@ func validateSequenceJob(job control.SequenceJob, id string) error {
 }
 
 func (c *Client) sequenceV1Request(ctx context.Context, method, path string, input, output interface{}, statuses ...int) error {
+	return c.sequenceV1Response(ctx, method, path, input, func(response *http.Response) error {
+		return decodeCompilerResponse(response, output)
+	}, statuses...)
+}
+
+func (c *Client) sequenceV1Response(ctx context.Context, method, path string, input interface{}, decode func(*http.Response) error, statuses ...int) error {
 	var body []byte
 	if input != nil {
 		var err error
@@ -183,7 +208,7 @@ func (c *Client) sequenceV1Request(ctx context.Context, method, path string, inp
 	if !allowed {
 		return &DecodeError{Status: response.StatusCode, Err: fmt.Errorf("unexpected response status")}
 	}
-	if err := decodeCompilerResponse(response, output); err != nil {
+	if err := decode(response); err != nil {
 		return &DecodeError{Status: response.StatusCode, Err: err}
 	}
 	return nil

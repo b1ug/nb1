@@ -31,7 +31,7 @@ func newSequenceControlCommand() *cobra.Command {
 		return nil
 	}
 	var previewSerial string
-	preview := &cobra.Command{Use: "preview FILE", Short: "Preview an action or sequence", Args: cobra.ExactArgs(1), RunE: func(cmd *cobra.Command, args []string) error {
+	preview := &cobra.Command{Use: "preview FILE", Short: "Preview an action, sequence or saved pattern", Args: cobra.ExactArgs(1), RunE: func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("serial") && !control.ValidDeviceSerial(previewSerial) {
 			return fmt.Errorf("--serial must be a valid device serial")
 		}
@@ -50,7 +50,7 @@ func newSequenceControlCommand() *cobra.Command {
 	preview.Flags().StringVar(&previewSerial, "serial", "", "check the selected device's capabilities")
 	var id string
 	var runWait bool
-	run := &cobra.Command{Use: "run SERIAL FILE", Short: "Run one action or sequence", Args: cobra.ExactArgs(2), RunE: func(cmd *cobra.Command, args []string) error {
+	run := &cobra.Command{Use: "run SERIAL FILE", Short: "Run one action, sequence or saved pattern", Args: cobra.ExactArgs(2), RunE: func(cmd *cobra.Command, args []string) error {
 		if !control.ValidDeviceSerial(args[0]) {
 			return fmt.Errorf("invalid device serial")
 		}
@@ -140,7 +140,7 @@ func newSequenceControlCommand() *cobra.Command {
 			return printControlJSON(cmd.OutOrStdout(), result)
 		})
 	}}
-	command.AddCommand(preview, run, job, cancel, devices, state)
+	command.AddCommand(preview, run, job, cancel, devices, state, newSequenceColorsCommand(options), newSequencePatternsCommand(options))
 	return command
 }
 

@@ -14,6 +14,7 @@ import (
 
 	"github.com/b1ug/nb1/internal/control"
 	"github.com/b1ug/nb1/internal/jsoninput"
+	"github.com/b1ug/nb1/internal/libraryv1"
 )
 
 const MaxBodyBytes = control.MaxRequestBytes
@@ -39,6 +40,7 @@ type ErrorResponse struct {
 type handler struct {
 	service      control.Service
 	sequenceAPI  bool
+	library      *libraryv1.Store
 	patterns     PatternStore
 	patternPath  string
 	patternErr   error

@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"syscall"
@@ -26,7 +27,7 @@ import (
 var serverCmd = newServerCommand()
 
 func newServerCommand() *cobra.Command {
-	var listen, lockDir string
+	var listen, lockDir, libraryDir string
 	var serials []string
 	var shutdownTimeout time.Duration
 	var transportTrace bool
@@ -53,6 +54,13 @@ func newServerCommand() *cobra.Command {
 			}
 			if shutdownTimeout <= 0 {
 				return fmt.Errorf("--shutdown-timeout must be positive")
+			}
+			if libraryDir == "" {
+				base, err := os.UserConfigDir()
+				if err != nil {
+					return err
+				}
+				libraryDir = filepath.Join(base, "nb1", "library")
 			}
 			if lockDir == "" {
 				lockDir, err = ownership.DefaultDir()
@@ -87,12 +95,13 @@ func newServerCommand() *cobra.Command {
 				transportTraceBuildStamp(recorder)
 			}
 			return serveRuntimeWithTrace(ctx, listener, engine, cmd.OutOrStdout(), shutdownTimeout, recorder,
-				httpapi.WithSequenceAPI())
+				httpapi.WithSequenceAPI(), httpapi.WithLibraryDirectory(libraryDir))
 		},
 	}
 	command.Flags().StringVar(&listen, "listen", "127.0.0.1:8931", "loopback host:port (port 0 chooses a free port)")
 	command.Flags().StringSliceVar(&serials, "devices", nil, "comma-separated device serial numbers")
 	command.Flags().StringVar(&lockDir, "lock-dir", os.Getenv("NB1_LOCK_DIR"), "shared ownership directory (NB1_LOCK_DIR or persistent per-user config)")
+	command.Flags().StringVar(&libraryDir, "library-dir", os.Getenv("NB1_LIBRARY_DIR"), "local color and Pattern directory (NB1_LIBRARY_DIR or per-user config/nb1/library)")
 	command.Flags().DurationVar(&shutdownTimeout, "shutdown-timeout", 10*time.Second, "maximum time to await graceful cleanup; does not cancel blocked native I/O")
 	command.Flags().BoolVar(&transportTrace, "transport-trace", false, "opt-in bounded private native-attempt diagnostics in this daemon's log; no extra USB calls")
 	command.Flags().Uint32("port", 8931, "compatibility flag for a loopback port; cannot be combined with --listen")

@@ -6,7 +6,7 @@ The [OpenAPI 3.1 contract](api-v1.openapi.json) describes the current HTTP opera
 
 ## User configuration
 
-The per-user profile is `os.UserConfigDir()/nb1/config.yaml`. This follows the platform's user configuration directory. Select a file with `--config`, then `NB1_CONFIG`, then the default profile path, in that order. When the optional default profile is absent, the existing `setting.yaml` lookup remains available. An explicitly selected missing or invalid file reports an error.
+On macOS and Linux, the profile is `$XDG_CONFIG_HOME/nb1/config.yaml`. An empty or unset `XDG_CONFIG_HOME` selects `~/.config/nb1/config.yaml`. A nonempty XDG root must be absolute; relative values report an error. Windows keeps its native user configuration location, normally `%APPDATA%\nb1\config.yaml`, and ignores XDG for this selection. Select a file with `--config`, then `NB1_CONFIG`, then the default profile path, in that order. When the optional default profile is absent, the existing `setting.yaml` lookup remains available. An explicitly selected missing or invalid file reports an error.
 
 ```sh
 nb1 config path
@@ -27,9 +27,9 @@ jobs:
 library_dir: ""
 ```
 
-`device` is an empty string or a quoted eight-hexadecimal-digit serial. `server.devices` is an explicit list of such strings. `jobs.terminal_limit` is a positive integer and `jobs.terminal_ttl` is a positive duration, such as `30m` or `1h`. These are defaults that users may change. An empty `library_dir` selects the stable per-user `nb1/library` directory. A custom library path must be absolute.
+`device` is an empty string or a quoted eight-hexadecimal-digit serial. `server.devices` is an explicit list of such strings. `jobs.terminal_limit` is a positive integer and `jobs.terminal_ttl` is a positive duration, such as `30m` or `1h`. These are defaults that users may change. An empty `library_dir` selects `library` under the same application root as the default profile, including the selected XDG root on macOS/Linux. A custom library path must be absolute.
 
-Selecting a different configuration file keeps the application's default storage base stable. The default device ownership directory remains `os.UserConfigDir()/nb1/device-locks`, so separate profiles still arbitrate the same hardware. An explicit lock-directory override remains a deliberate runtime setting.
+Selecting a different configuration file keeps the application's default storage base stable. Device ownership keeps its established native OS policy, `os.UserConfigDir()/nb1/device-locks`. On macOS this is `~/Library/Application Support/nb1/device-locks`, separate from the XDG profile and library. Retaining this coordination directory lets the candidate share the default device lease with the older 6ca controller. An explicit lock-directory override must be shared by every controller accessing that device. Profile and library files remain in their existing locations until the user explicitly chooses another location; this path policy performs no file migration.
 
 ## Actions and sequences
 
@@ -55,7 +55,7 @@ For `control run [SERIAL] FILE` and `control state [SERIAL]`, select the device 
 
 ## Daemon selection and connection failures
 
-`control` calls the selected loopback daemon. It does not start a daemon or
+By default, `control` calls the selected loopback daemon. It does not start a daemon or
 silently fall back to USB. A failed connection gives commands for explicitly
 starting `nb1 server --devices SERIAL --listen HOST:PORT`, starting a previously
 installed user service with `nb1 service start`, or inspecting USB directly with
@@ -64,8 +64,8 @@ the separate basic command `nb1 --device SERIAL read state`.
 The hint uses the requested device and endpoint when known. A lost submission
 response still preserves its original Job ID and query command; it is not
 treated as proof that the daemon never received the request. No automatic
-resubmission occurs. Direct Action/Sequence execution is separate pending work;
-the basic USB inspection command does not replay the failed request.
+resubmission occurs. Choose `control --direct run` explicitly for a new foreground
+Action/Sequence run; it does not replay an uncertain daemon submission.
 
 ## HTTP operations
 
@@ -94,7 +94,18 @@ Device state contains cached RGB values with an observation timestamp. During in
 
 The agreed default for `nb1 control` is to report that the daemon is unavailable and let the user explicitly choose to start a daemon or use direct access. It must not start a daemon or fall back to USB automatically. Starting `nb1 server` does not install a system service.
 
-The current `control` implementation uses HTTP; standalone basic commands provide explicit direct access. A unified Action/Sequence direct entry and guided connection-failure prompt remain follow-up work under this policy.
+For an explicit foreground run without HTTP, use the same Action, Sequence or saved Pattern input:
+
+```sh
+nb1 control --direct run DEVICE_SERIAL action.json
+nb1 control --direct run DEVICE_SERIAL action.json --timeout 2m
+```
+
+Direct mode is available only for `run`. It always waits for completion; no daemon or installed service is required. A serial must come from the argument, `--device`, `NB1_DEVICE` or profile `device`. Direct mode does not discover a default device. It validates the input and resolves local colors and Patterns before opening the device, then uses the same compiler and execution core as the daemon. The native ownership lock rejects a second controller while a daemon or another process owns that device.
+
+Each invocation is a new playback with a process-local Job ID. `--id` and `--endpoint` are rejected in direct mode. The Job cannot be queried or deduplicated by a later command. Without an explicit `--timeout`, a valid finite Sequence runs to completion. An explicit timeout or Ctrl-C requests cancellation, followed by a separate bounded cleanup wait, defaulting to ten seconds. Successful `hold` completion releases the handle without adding an off command.
+
+Output has `mode: "direct"`, the Job when created, and `engine_closed`. That boolean reports confirmed engine teardown, not playback success or an optical observation. Check the Job status and command result separately. If the cleanup wait expires, the command reports an unknown device state; a wait deadline does not cancel a native call. The engine does not proactively release its handle or device lease while native I/O is outstanding. Process termination and native crashes are separate limits, and bounded command exit does not prove device cleanup.
 
 On macOS and Linux, install the current user's login service using the running executable:
 
@@ -104,7 +115,7 @@ nb1 service install --devices DEVICE_SERIAL --start
 
 Omitting `--binary` selects the current process's executable through the operating system. It does not search PATH for another installation. An explicit `--binary /absolute/path/to/nb1` overrides that selection. The native manager validates the file and resolves symlinks before saving the configuration. Without `--start`, installation enables login loading without requesting immediate startup.
 
-Service installation resolves devices and listen address from its flags and selected profile. It records the actual configuration file's absolute path when a file is selected, and stores device/listen values as explicit startup arguments. Those arguments keep the installed device selection and address stable when the profile is edited. Library and Job-cache settings are read from the profile on restart. Update the managed service configuration explicitly when changing its device list or listen address.
+Service installation resolves devices and listen address from its flags and selected profile. It records the actual configuration file's absolute path when a file is selected, and stores device/listen values as explicit startup arguments. Those arguments keep the installed device selection and address stable when the profile is edited. macOS/Linux managed services also record the selected XDG root in their controlled startup environment, keeping the default library stable across login environments. Library and Job-cache settings are read from the profile on restart. Update the managed service configuration explicitly when changing its device list or listen address.
 
 Cross-platform `service render` still requires an explicit target `--binary` path. Windows service installation remains unsupported. Automatic path selection does not implement service upgrade migration: package version paths, including Homebrew Cellar targets, still need upgrade and rollback qualification.
 
@@ -140,6 +151,6 @@ This scope does not require every platform or MK3 hardware to be qualified befor
 
 ## Implementation sequence
 
-The source delivery includes the core execution path, local library, HTTP operations above, CLI commands, embedded Web controls and MCP adapter. Software checks cover the integrated routes and Agent workflows. Finite CLI/HTTP checks on the local macOS 27.2 / MK2 FW204 candidate cover serial and interval playback, Orbit, Job replay, busy rejection, cancellation, final RGB readback and ownership. Web and MCP physical acceptance, broader platform/device qualification, and replacement of the daily installation remain pending. DeviceSequence routes are planned. The [terminology table](api-v1-terminology.md) governs names across those surfaces.
+The source delivery includes the core execution path, local library, HTTP operations above, CLI commands, explicit direct run, embedded Web controls and MCP adapter. Software checks cover the integrated routes, direct lifecycle and Agent workflows. Finite daemon CLI/HTTP checks on the local macOS 27.2 / MK2 FW204 candidate cover serial and interval playback, Orbit, Job replay, busy rejection, cancellation, final RGB readback and ownership. Physical acceptance of the new direct entry, Web and MCP, broader platform/device qualification, and replacement of the daily installation remain pending. DeviceSequence routes are planned. The [terminology table](api-v1-terminology.md) governs names across those surfaces.
 
-Linux user-service installation pins `XDG_CONFIG_HOME` to the verified configuration root used for that installation. A manager environment inherited from another account cannot redirect the daemon's configuration, default library or device-lock directory. Rendering alone can set this target root with `service render --user-config-root`; it does not grant filesystem access.
+macOS/Linux user-service installation pins `XDG_CONFIG_HOME` to the verified configuration root used for that installation. A different login-manager environment cannot redirect the selected profile or default library. Device locks continue to follow the native OS coordination policy described above. Rendering alone can set the target configuration root with `service render --user-config-root`; it does not grant filesystem access.

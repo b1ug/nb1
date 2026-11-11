@@ -538,6 +538,24 @@ func TestObservedLinkReplacementAndPostStopEditArePreserved(t *testing.T) {
 	}
 }
 
+func TestUnavailableUserManagerInstallLeavesNoUnit(t *testing.T) {
+	m, f, c := fixture(t)
+	// A container without a user bus exits nonzero and prints no properties.
+	f.queryOverride = &Result{ExitCode: 1}
+	status, err := m.Install(context.Background(), c, true)
+	if err == nil || !strings.Contains(err.Error(), "systemd user manager") || !strings.Contains(err.Error(), "nb1 server --devices SERIAL") {
+		t.Fatalf("missing actionable user-manager diagnostic: %+v %v", status, err)
+	}
+	if status.Registration != "unknown" || status.RegistrationOwned || len(status.Actions) != 0 || !reflect.DeepEqual(f.calls, []string{"show"}) {
+		t.Fatalf("unavailable manager triggered a change or false status: %+v calls=%v", status, f.calls)
+	}
+	for _, path := range []string{m.unitPath(), m.linkPath()} {
+		if _, err := os.Lstat(path); !errors.Is(err, os.ErrNotExist) {
+			t.Fatalf("unavailable manager left service configuration at %s: %v", path, err)
+		}
+	}
+}
+
 func TestQueryFailureNeverMeansAbsentAndBudgetIsRespected(t *testing.T) {
 	for _, variant := range []string{"bus_error", "incomplete", "duplicate", "truncated", "unknown_key"} {
 		t.Run(variant, func(t *testing.T) {

@@ -33,6 +33,9 @@ class FormulaDraftTests(unittest.TestCase):
         self.assertIn('"--config", testpath/"setting.yaml"', text)
         self.assertIn('[["control", "--help"], "nb1 control [command]"]', text)
         self.assertIn('[["control", "run", "--help"], "nb1 control run SERIAL FILE"]', text)
+        self.assertIn('[["service", "render", "--platform", platform', text)
+        self.assertIn('on_macos do\n    depends_on macos:', text)
+        self.assertNotIn('depends_on :macos', text)
         self.assertNotIn('"--mode"', text)
         self.assertNotIn("service do", text)
         self.assertNotIn("post_install", text)
@@ -45,6 +48,9 @@ class FormulaDraftTests(unittest.TestCase):
         # build, install or run Homebrew; only Open3's help calls are executed.
         harness = r'''
 require "pathname"
+module OS
+  def self.mac?; true; end
+end
 class Formula
   class << self
     attr_reader :test_block
@@ -55,6 +61,7 @@ class Formula
     def sha256(*args); end
     def license(*args); end
     def depends_on(*args); end
+    def on_macos(&block); instance_eval(&block); end
     def deny_network_access!; end
     def test(&block); @test_block = block; end
   end

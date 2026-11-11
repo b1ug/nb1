@@ -1,5 +1,5 @@
-# Generated only from explicitly supplied release inputs. Review before use.
-# This source Formula draft has not been installed or audited by Homebrew.
+# Source URL, checksum, version and commit must be explicitly bound before use.
+# Release inputs and installation evidence are recorded separately.
 require "open3"
 
 class Nb1 < Formula
@@ -10,9 +10,9 @@ class Nb1 < Formula
   sha256 @@SOURCE_SHA256@@
   license "MIT"
 
-  # First draft scope: native macOS arm64 and Intel. Linux packaging is separate.
-  depends_on :macos
-  depends_on macos: @@MIN_MACOS@@.to_sym
+  on_macos do
+    depends_on macos: @@MIN_MACOS@@.to_sym
+  end
   depends_on "go" => :build
 
   deny_network_access!
@@ -37,12 +37,15 @@ class Nb1 < Formula
 
   test do
     (testpath/"setting.yaml").write "{}\n"
-    # Installation smoke only. Help does not compile an Action, contact a
-    # daemon or establish USB/runtime readiness.
+    # USB-free installation checks. Rendering a service exercises an installed
+    # command without registering a service or requiring a user manager.
+    platform = OS.mac? ? "darwin" : "linux"
     checks = [
       [["--help"], "nb1 [command]"],
       [["control", "--help"], "nb1 control [command]"],
       [["control", "run", "--help"], "nb1 control run SERIAL FILE"],
+      [["service", "render", "--platform", platform, "--binary", (bin/"nb1").to_s,
+        "--devices", "00000000"], OS.mac? ? "<key>ProgramArguments</key>" : "ExecStart="],
     ]
     checks.each do |arguments, usage|
       args = [bin/"nb1", "--config", testpath/"setting.yaml", *arguments]

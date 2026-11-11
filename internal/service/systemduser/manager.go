@@ -76,9 +76,9 @@ func newManager(configRoot string, uid int, runner Runner) (*Manager, error) {
 func (m *Manager) initialStatus() Status {
 	return Status{SchemaVersion: 1, CheckedAt: time.Now().UTC(), Platform: "linux", Label: UnitName, Target: "user/" + strconv.Itoa(m.uid) + "/" + UnitName,
 		UnitPath: m.unitPath(), EnableLinkPath: m.linkPath(), ConfigState: "not_checked", EnableLinkState: "not_checked", Registration: "not_checked", Actions: []string{}, Notes: []string{
-			"loaded、active与登录启用分别报告；systemd状态不能替代HTTP/USB就绪检查。",
-			"managed_enabled_for_login只描述本工具的default.target持久链接；其他来源看unit_file_state，未知来源不接管。",
-			"不配置linger、系统级服务或登录前常驻；Stop保留unit和登录启用，Uninstall才移除受控文件。",
+			"Loaded, active and login-enabled states are reported separately; systemd status does not establish HTTP or USB readiness.",
+			"managed_enabled_for_login describes only this tool's persistent default.target link; other enablement is shown by unit_file_state and is not taken over.",
+			"No linger, system-wide service or pre-login startup is configured. Stop retains the unit and login enablement; Uninstall removes managed files.",
 		}}
 }
 
@@ -112,7 +112,11 @@ func (m *Manager) inspectStatus(ctx context.Context, configOnly bool) (Status, *
 	result, err := m.runner.Run(queryCtx, showArgs()...)
 	if err != nil || result.Truncated {
 		status.Registration = "unknown"
-		return status, s, fmt.Errorf("无法完整查询用户systemd，未推断unit缺失")
+		return status, s, fmt.Errorf("could not complete the systemd user manager query; service registration is unknown")
+	}
+	if result.ExitCode != 0 && result.ExitCode != 4 {
+		status.Registration = "unknown"
+		return status, s, fmt.Errorf("could not query the systemd user manager (systemctl exit %d); service management requires a running user session; in a container without one, run 'nb1 server --devices SERIAL' directly", result.ExitCode)
 	}
 	properties, err := parseProperties(result.Output)
 	if err != nil {
@@ -122,7 +126,7 @@ func (m *Manager) inspectStatus(ctx context.Context, configOnly bool) (Status, *
 	status.Properties = &properties
 	if result.ExitCode != 0 && !(result.ExitCode == 4 && absentProperties(properties)) {
 		status.Registration = "unknown"
-		return status, s, fmt.Errorf("systemctl show失败，注册状态未知")
+		return status, s, fmt.Errorf("systemctl show did not confirm the unit state; service registration is unknown")
 	}
 	if absentProperties(properties) {
 		status.Registration = "absent"

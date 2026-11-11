@@ -1,0 +1,4936 @@
+{
+  "openapi": "3.1.0",
+  "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
+  "info": {
+    "title": "nb1 local API v1",
+    "version": "1.0.0-dev",
+    "description": "Implementation contract for the source checkout identified by x-source. The installed local runtime has its own version and validation state. The 14 API capabilities occupy 15 HTTP operations because the valid saved-color name resolve also has a concrete PUT path. All example devices are virtual. JSON request bodies are bounded to 1 MiB. The runtime rejects duplicate fields, unknown fields, explicit null, invalid Unicode, and unsupported number spellings. Cross-field execution budgets are validated by the core."
+  },
+  "servers": [
+    {
+      "url": "http://127.0.0.1:{port}",
+      "variables": {
+        "port": {
+          "default": "8931",
+          "description": "Configured loopback daemon port."
+        }
+      }
+    }
+  ],
+  "security": [],
+  "x-source": {
+    "commit": "8a348d3746be01311c957fe16a916c6be121db07",
+    "scope": "WithSequenceAPI route table",
+    "files": [
+      "internal/httpapi/sequence_api.go",
+      "internal/httpapi/sequence_library.go",
+      "internal/httpapi/httpapi.go",
+      "internal/actionv1/compile.go",
+      "internal/actionv1/recipe.go",
+      "internal/sequence/sequence.go",
+      "internal/sequence/decode.go",
+      "internal/colorinput/colorinput.go",
+      "internal/colorinput/hsv.go",
+      "internal/colorinput/palette.go",
+      "internal/control/sequence_jobs.go",
+      "internal/control/sequence_execution.go",
+      "internal/control/types.go",
+      "internal/control/metrics.go",
+      "internal/libraryv1/store.go"
+    ]
+  },
+  "x-access": {
+    "binding": "loopback only",
+    "browser_origin": "same origin or a non-browser client without Origin",
+    "cors": "cross-origin browser requests are rejected",
+    "authentication": "local unauthenticated endpoint"
+  },
+  "x-runtime-validation": {
+    "max_request_bytes": 1048576,
+    "max_color_input_bytes": 4096,
+    "max_executed_steps": 1024,
+    "max_nominal_duration_ms": 86400000,
+    "selected_devices_max": 64,
+    "terminal_job_cache_max": 16384,
+    "terminal_job_ttl_ms": 1800000,
+    "terminal_job_eviction": "LRU, only terminal records",
+    "ttl_refresh_on_access": false,
+    "active_jobs": "pinned until terminal cleanup",
+    "number_spelling": "Integer fields reject signs, decimal fractions and exponent notation. HSV accepts at most six ordinary fractional decimal digits. JSON Schema validates mathematical values and cannot distinguish all these token spellings.",
+    "cross_field_constraints": [
+      "len(sequence.steps) * repeat <= 1024",
+      "nominal duration <= 86400000 ms",
+      "interval fade_ms <= interval_ms",
+      "interval targets match initial target LED count and order"
+    ],
+    "required_capabilities": {
+      "serial": [
+        "set",
+        "sequence",
+        "raw-rgb"
+      ],
+      "interval": [
+        "set",
+        "raw-rgb",
+        "mk2-basic"
+      ],
+      "on_finish_hold_adds": [
+        "hold"
+      ]
+    }
+  },
+  "tags": [
+    {
+      "name": "Runtime"
+    },
+    {
+      "name": "Library"
+    }
+  ],
+  "paths": {
+    "/healthz": {
+      "get": {
+        "operationId": "getHealth",
+        "summary": "Read HTTP health",
+        "tags": [
+          "Runtime"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                },
+                "examples": {
+                  "getHealth_none": {
+                    "summary": "Actual software-fixture response",
+                    "value": {
+                      "api_version": "v1",
+                      "status": "ok"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "HTTP 403 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "HTTP 405 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Allow": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Supported HTTP method(s)."
+              }
+            }
+          },
+          "500": {
+            "description": "HTTP 500 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-query-policy": "ignored",
+        "x-body-policy": "ignored"
+      }
+    },
+    "/v1/transport-metrics": {
+      "get": {
+        "operationId": "getTransportMetrics",
+        "summary": "Read cumulative driver transport counters",
+        "tags": [
+          "Runtime"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TransportMetric"
+                  },
+                  "minItems": 0
+                },
+                "examples": {
+                  "getTransportMetrics_none": {
+                    "summary": "Actual software-fixture response",
+                    "value": []
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "HTTP 403 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "HTTP 405 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Allow": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Supported HTTP method(s)."
+              }
+            }
+          },
+          "500": {
+            "description": "HTTP 500 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-query-policy": "ignored",
+        "x-body-policy": "ignored"
+      }
+    },
+    "/v1/devices": {
+      "get": {
+        "operationId": "listDevices",
+        "summary": "List configured devices and cached state",
+        "tags": [
+          "Runtime"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Device"
+                  },
+                  "minItems": 0,
+                  "maxItems": 64
+                },
+                "examples": {
+                  "listDevices_none": {
+                    "summary": "Actual software-fixture response",
+                    "value": [
+                      {
+                        "serial": "fixture-0001",
+                        "product": "OpenAPI software fixture",
+                        "connection": "online",
+                        "capabilities": [
+                          "set",
+                          "sequence",
+                          "raw-rgb",
+                          "mk2-basic",
+                          "hold",
+                          "observe",
+                          "cancel"
+                        ],
+                        "queue_depth": 0,
+                        "observed": {
+                          "led1": "#000000",
+                          "led2": "#000000",
+                          "sampled_at": "2026-11-11T12:27:21.534143Z"
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "HTTP 400 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "HTTP 403 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "HTTP 405 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Allow": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Supported HTTP method(s)."
+              }
+            }
+          },
+          "500": {
+            "description": "HTTP 500 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-query-policy": "rejected",
+        "x-body-policy": "rejected"
+      }
+    },
+    "/v1/devices/{serial}": {
+      "get": {
+        "operationId": "getDevice",
+        "summary": "Read cached device state",
+        "tags": [
+          "Runtime"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Device"
+                },
+                "examples": {
+                  "getDevice_none": {
+                    "summary": "Actual software-fixture response",
+                    "value": {
+                      "serial": "fixture-0001",
+                      "product": "OpenAPI software fixture",
+                      "connection": "online",
+                      "capabilities": [
+                        "set",
+                        "sequence",
+                        "raw-rgb",
+                        "mk2-basic",
+                        "hold",
+                        "observe",
+                        "cancel"
+                      ],
+                      "queue_depth": 0,
+                      "observed": {
+                        "led1": "#000000",
+                        "led2": "#000000",
+                        "sampled_at": "2026-11-11T12:27:21.534143Z"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "HTTP 400 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "HTTP 403 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "HTTP 404 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "HTTP 405 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Allow": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Supported HTTP method(s)."
+              }
+            }
+          },
+          "500": {
+            "description": "HTTP 500 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-query-policy": "rejected",
+        "x-body-policy": "rejected",
+        "parameters": [
+          {
+            "name": "serial",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Serial"
+            },
+            "example": "fixture-0001"
+          }
+        ]
+      }
+    },
+    "/v1/preview": {
+      "post": {
+        "operationId": "preview",
+        "summary": "Compile one Action, Sequence or saved Pattern",
+        "tags": [
+          "Runtime"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Preview"
+                },
+                "examples": {
+                  "preview_set": {
+                    "summary": "Actual software-fixture response",
+                    "value": {
+                      "sequence": {
+                        "timing": "serial",
+                        "steps": [
+                          {
+                            "targets": [
+                              {
+                                "led": 0,
+                                "color": "#00ff00"
+                              }
+                            ],
+                            "fade_ms": 0,
+                            "hold_ms": 0
+                          }
+                        ],
+                        "repeat": 1,
+                        "on_finish": "hold"
+                      },
+                      "total_steps": 1,
+                      "nominal_duration_ms": 10,
+                      "required_capabilities": [
+                        "set",
+                        "sequence",
+                        "raw-rgb",
+                        "hold"
+                      ],
+                      "device_check": {
+                        "status": "not_requested"
+                      }
+                    }
+                  },
+                  "preview_off": {
+                    "summary": "Actual software-fixture response",
+                    "value": {
+                      "sequence": {
+                        "timing": "serial",
+                        "steps": [
+                          {
+                            "targets": [
+                              {
+                                "led": 0,
+                                "color": "#000000"
+                              }
+                            ],
+                            "fade_ms": 0,
+                            "hold_ms": 0
+                          }
+                        ],
+                        "repeat": 1,
+                        "on_finish": "hold"
+                      },
+                      "total_steps": 1,
+                      "nominal_duration_ms": 10,
+                      "required_capabilities": [
+                        "set",
+                        "sequence",
+                        "raw-rgb",
+                        "hold"
+                      ],
+                      "device_check": {
+                        "status": "not_requested"
+                      }
+                    }
+                  },
+                  "preview_fade": {
+                    "summary": "Actual software-fixture response",
+                    "value": {
+                      "sequence": {
+                        "timing": "serial",
+                        "steps": [
+                          {
+                            "targets": [
+                              {
+                                "led": 0,
+                                "color": "#336699"
+                              }
+                            ],
+                            "fade_ms": 200,
+                            "hold_ms": 0
+                          }
+                        ],
+                        "repeat": 1,
+                        "on_finish": "hold"
+                      },
+                      "total_steps": 1,
+                      "nominal_duration_ms": 210,
+                      "required_capabilities": [
+                        "set",
+                        "sequence",
+                        "raw-rgb",
+                        "hold"
+                      ],
+                      "device_check": {
+                        "status": "not_requested"
+                      }
+                    }
+                  },
+                  "preview_blink": {
+                    "summary": "Actual software-fixture response",
+                    "value": {
+                      "sequence": {
+                        "timing": "serial",
+                        "steps": [
+                          {
+                            "targets": [
+                              {
+                                "led": 0,
+                                "color": "#206080"
+                              }
+                            ],
+                            "fade_ms": 0,
+                            "hold_ms": 240
+                          },
+                          {
+                            "targets": [
+                              {
+                                "led": 0,
+                                "color": "#000000"
+                              }
+                            ],
+                            "fade_ms": 0,
+                            "hold_ms": 240
+                          }
+                        ],
+                        "repeat": 1,
+                        "on_finish": "off"
+                      },
+                      "total_steps": 2,
+                      "nominal_duration_ms": 500,
+                      "required_capabilities": [
+                        "set",
+                        "sequence",
+                        "raw-rgb"
+                      ],
+                      "device_check": {
+                        "status": "not_requested"
+                      }
+                    }
+                  },
+                  "preview_breathe": {
+                    "summary": "Actual software-fixture response",
+                    "value": {
+                      "sequence": {
+                        "timing": "serial",
+                        "steps": [
+                          {
+                            "targets": [
+                              {
+                                "led": 0,
+                                "color": "#000000"
+                              }
+                            ],
+                            "fade_ms": 0,
+                            "hold_ms": 0
+                          },
+                          {
+                            "targets": [
+                              {
+                                "led": 0,
+                                "color": "#000a0a"
+                              }
+                            ],
+                            "fade_ms": 110,
+                            "hold_ms": 4
+                          },
+                          {
+                            "targets": [
+                              {
+                                "led": 0,
+                                "color": "#002525"
+                              }
+                            ],
+                            "fade_ms": 110,
+                            "hold_ms": 4
+                          },
+                          {
+                            "targets": [
+                              {
+                                "led": 0,
+                                "color": "#004f4f"
+                              }
+                            ],
+                            "fade_ms": 110,
+                            "hold_ms": 5
+                          },
+                          {
+                            "targets": [
+                              {
+                                "led": 0,
+                                "color": "#008080"
+                              }
+                            ],
+                            "fade_ms": 110,
+                            "hold_ms": 4
+                          },
+                          {
+                            "targets": [
+                              {
+                                "led": 0,
+                                "color": "#00b0b0"
+                              }
+                            ],
+                            "fade_ms": 110,
+                            "hold_ms": 4
+                          },
+                          {
+                            "targets": [
+                              {
+                                "led": 0,
+                                "color": "#00dada"
+                              }
+                            ],
+                            "fade_ms": 110,
+                            "hold_ms": 5
+                          },
+                          {
+                            "targets": [
+                              {
+                                "led": 0,
+                                "color": "#00f5f5"
+                              }
+                            ],
+                            "fade_ms": 110,
+                            "hold_ms": 4
+                          },
+                          {
+                            "targets": [
+                              {
+                                "led": 0,
+                                "color": "#00ffff"
+                              }
+                            ],
+                            "fade_ms": 110,
+                            "hold_ms": 5
+                          },
+                          {
+                            "targets": [
+                              {
+                                "led": 0,
+                                "color": "#00f5f5"
+                              }
+                            ],
+                            "fade_ms": 110,
+                            "hold_ms": 4
+                          },
+                          {
+                            "targets": [
+                              {
+                                "led": 0,
+                                "color": "#00dada"
+                              }
+                            ],
+                            "fade_ms": 110,
+                            "hold_ms": 4
+                          },
+                          {
+                            "targets": [
+                              {
+                                "led": 0,
+                                "color": "#00b0b0"
+                              }
+                            ],
+                            "fade_ms": 110,
+                            "hold_ms": 5
+                          },
+                          {
+                            "targets": [
+                              {
+                                "led": 0,
+                                "color": "#008080"
+                              }
+                            ],
+                            "fade_ms": 110,
+                            "hold_ms": 4
+                          },
+                          {
+                            "targets": [
+                              {
+                                "led": 0,
+                                "color": "#004f4f"
+                              }
+                            ],
+                            "fade_ms": 110,
+                            "hold_ms": 4
+                          },
+                          {
+                            "targets": [
+                              {
+                                "led": 0,
+                                "color": "#002525"
+                              }
+                            ],
+                            "fade_ms": 110,
+                            "hold_ms": 5
+                          },
+                          {
+                            "targets": [
+                              {
+                                "led": 0,
+                                "color": "#000a0a"
+                              }
+                            ],
+                            "fade_ms": 110,
+                            "hold_ms": 4
+                          },
+                          {
+                            "targets": [
+                              {
+                                "led": 0,
+                                "color": "#000000"
+                              }
+                            ],
+                            "fade_ms": 110,
+                            "hold_ms": 5
+                          }
+                        ],
+                        "repeat": 1,
+                        "on_finish": "off"
+                      },
+                      "total_steps": 17,
+                      "nominal_duration_ms": 2000,
+                      "required_capabilities": [
+                        "set",
+                        "sequence",
+                        "raw-rgb"
+                      ],
+                      "device_check": {
+                        "status": "not_requested"
+                      }
+                    }
+                  },
+                  "preview_pulse": {
+                    "summary": "Actual software-fixture response",
+                    "value": {
+                      "sequence": {
+                        "timing": "serial",
+                        "steps": [
+                          {
+                            "targets": [
+                              {
+                                "led": 0,
+                                "color": "#000000"
+                              }
+                            ],
+                            "fade_ms": 0,
+                            "hold_ms": 0
+                          },
+                          {
+                            "targets": [
+                              {
+                                "led": 0,
+                                "color": "#00ff00"
+                              }
+                            ],
+                            "fade_ms": 60,
+                            "hold_ms": 0
+                          },
+                          {
+                            "targets": [
+                              {
+                                "led": 0,
+                                "color": "#000000"
+                              }
+                            ],
+                            "fade_ms": 240,
+                            "hold_ms": 700
+                          }
+                        ],
+                        "repeat": 1,
+                        "on_finish": "off"
+                      },
+                      "total_steps": 3,
+                      "nominal_duration_ms": 1030,
+                      "required_capabilities": [
+                        "set",
+                        "sequence",
+                        "raw-rgb"
+                      ],
+                      "device_check": {
+                        "status": "not_requested"
+                      }
+                    }
+                  },
+                  "preview_alternate": {
+                    "summary": "Actual software-fixture response",
+                    "value": {
+                      "sequence": {
+                        "timing": "serial",
+                        "steps": [
+                          {
+                            "targets": [
+                              {
+                                "led": 1,
+                                "color": "#ff0000"
+                              }
+                            ],
+                            "fade_ms": 0,
+                            "hold_ms": 0
+                          },
+                          {
+                            "targets": [
+                              {
+                                "led": 2,
+                                "color": "#0000ff"
+                              }
+                            ],
+                            "fade_ms": 0,
+                            "hold_ms": 980
+                          },
+                          {
+                            "targets": [
+                              {
+                                "led": 1,
+                                "color": "#0000ff"
+                              }
+                            ],
+                            "fade_ms": 0,
+                            "hold_ms": 0
+                          },
+                          {
+                            "targets": [
+                              {
+                                "led": 2,
+                                "color": "#ff0000"
+                              }
+                            ],
+                            "fade_ms": 0,
+                            "hold_ms": 980
+                          }
+                        ],
+                        "repeat": 1,
+                        "on_finish": "off"
+                      },
+                      "total_steps": 4,
+                      "nominal_duration_ms": 2000,
+                      "required_capabilities": [
+                        "set",
+                        "sequence",
+                        "raw-rgb"
+                      ],
+                      "device_check": {
+                        "status": "not_requested"
+                      }
+                    }
+                  },
+                  "preview_orbit": {
+                    "summary": "Actual software-fixture response",
+                    "value": {
+                      "sequence": {
+                        "timing": "interval",
+                        "initial": [
+                          {
+                            "led": 1,
+                            "color": "#990000"
+                          },
+                          {
+                            "led": 2,
+                            "color": "#000099"
+                          }
+                        ],
+                        "steps": [
+                          {
+                            "targets": [
+                              {
+                                "led": 1,
+                                "color": "#800080"
+                              },
+                              {
+                                "led": 2,
+                                "color": "#1a001a"
+                              }
+                            ],
+                            "fade_ms": 100,
+                            "interval_ms": 100
+                          },
+                          {
+                            "targets": [
+                              {
+                                "led": 1,
+                                "color": "#000099"
+                              },
+                              {
+                                "led": 2,
+                                "color": "#990000"
+                              }
+                            ],
+                            "fade_ms": 100,
+                            "interval_ms": 100
+                          },
+                          {
+                            "targets": [
+                              {
+                                "led": 1,
+                                "color": "#1a001a"
+                              },
+                              {
+                                "led": 2,
+                                "color": "#800080"
+                              }
+                            ],
+                            "fade_ms": 100,
+                            "interval_ms": 100
+                          },
+                          {
+                            "targets": [
+                              {
+                                "led": 1,
+                                "color": "#990000"
+                              },
+                              {
+                                "led": 2,
+                                "color": "#000099"
+                              }
+                            ],
+                            "fade_ms": 100,
+                            "interval_ms": 100
+                          }
+                        ],
+                        "repeat": 1,
+                        "on_finish": "off"
+                      },
+                      "total_steps": 4,
+                      "nominal_duration_ms": 440,
+                      "required_capabilities": [
+                        "set",
+                        "raw-rgb",
+                        "mk2-basic"
+                      ],
+                      "device_check": {
+                        "status": "not_requested"
+                      }
+                    }
+                  },
+                  "preview_rainbow": {
+                    "summary": "Actual software-fixture response",
+                    "value": {
+                      "sequence": {
+                        "timing": "serial",
+                        "steps": [
+                          {
+                            "targets": [
+                              {
+                                "led": 0,
+                                "color": "#ff0000"
+                              }
+                            ],
+                            "fade_ms": 0,
+                            "hold_ms": 0
+                          },
+                          {
+                            "targets": [
+                              {
+                                "led": 0,
+                                "color": "#ffa500"
+                              }
+                            ],
+                            "fade_ms": 410,
+                            "hold_ms": 7
+                          },
+                          {
+                            "targets": [
+                              {
+                                "led": 0,
+                                "color": "#ffff00"
+                              }
+                            ],
+                            "fade_ms": 410,
+                            "hold_ms": 7
+                          },
+                          {
+                            "targets": [
+                              {
+                                "led": 0,
+                                "color": "#00ff00"
+                              }
+                            ],
+                            "fade_ms": 410,
+                            "hold_ms": 7
+                          },
+                          {
+                            "targets": [
+                              {
+                                "led": 0,
+                                "color": "#0000ff"
+                              }
+                            ],
+                            "fade_ms": 410,
+                            "hold_ms": 7
+                          },
+                          {
+                            "targets": [
+                              {
+                                "led": 0,
+                                "color": "#4b0082"
+                              }
+                            ],
+                            "fade_ms": 410,
+                            "hold_ms": 7
+                          },
+                          {
+                            "targets": [
+                              {
+                                "led": 0,
+                                "color": "#8f00ff"
+                              }
+                            ],
+                            "fade_ms": 410,
+                            "hold_ms": 7
+                          },
+                          {
+                            "targets": [
+                              {
+                                "led": 0,
+                                "color": "#ff0000"
+                              }
+                            ],
+                            "fade_ms": 410,
+                            "hold_ms": 8
+                          }
+                        ],
+                        "repeat": 1,
+                        "on_finish": "off"
+                      },
+                      "total_steps": 8,
+                      "nominal_duration_ms": 3000,
+                      "required_capabilities": [
+                        "set",
+                        "sequence",
+                        "raw-rgb"
+                      ],
+                      "device_check": {
+                        "status": "not_requested"
+                      }
+                    }
+                  },
+                  "preview_serial_sequence": {
+                    "summary": "Actual software-fixture response",
+                    "value": {
+                      "sequence": {
+                        "timing": "serial",
+                        "steps": [
+                          {
+                            "targets": [
+                              {
+                                "led": 0,
+                                "color": "#123456"
+                              }
+                            ],
+                            "fade_ms": 10,
+                            "hold_ms": 20
+                          }
+                        ],
+                        "repeat": 1,
+                        "on_finish": "off"
+                      },
+                      "total_steps": 1,
+                      "nominal_duration_ms": 40,
+                      "required_capabilities": [
+                        "set",
+                        "sequence",
+                        "raw-rgb"
+                      ],
+                      "device_check": {
+                        "status": "not_requested"
+                      }
+                    }
+                  },
+                  "preview_interval_sequence": {
+                    "summary": "Actual software-fixture response",
+                    "value": {
+                      "sequence": {
+                        "timing": "interval",
+                        "initial": [
+                          {
+                            "led": 1,
+                            "color": "#112233"
+                          },
+                          {
+                            "led": 2,
+                            "color": "#445566"
+                          }
+                        ],
+                        "steps": [
+                          {
+                            "targets": [
+                              {
+                                "led": 1,
+                                "color": "#445566"
+                              },
+                              {
+                                "led": 2,
+                                "color": "#112233"
+                              }
+                            ],
+                            "fade_ms": 50,
+                            "interval_ms": 50
+                          }
+                        ],
+                        "repeat": 2,
+                        "on_finish": "off"
+                      },
+                      "total_steps": 2,
+                      "nominal_duration_ms": 140,
+                      "required_capabilities": [
+                        "set",
+                        "raw-rgb",
+                        "mk2-basic"
+                      ],
+                      "device_check": {
+                        "status": "not_requested"
+                      }
+                    }
+                  },
+                  "preview_saved_pattern": {
+                    "summary": "Actual software-fixture response",
+                    "value": {
+                      "sequence": {
+                        "timing": "serial",
+                        "steps": [
+                          {
+                            "targets": [
+                              {
+                                "led": 0,
+                                "color": "#123456"
+                              }
+                            ],
+                            "fade_ms": 10,
+                            "hold_ms": 20
+                          }
+                        ],
+                        "repeat": 1,
+                        "on_finish": "off"
+                      },
+                      "total_steps": 1,
+                      "nominal_duration_ms": 40,
+                      "required_capabilities": [
+                        "set",
+                        "sequence",
+                        "raw-rgb"
+                      ],
+                      "device_check": {
+                        "status": "supported"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "HTTP 400 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "integer-token-fraction": {
+                    "summary": "Actual software-fixture response",
+                    "value": {
+                      "error": {
+                        "code": "invalid_request",
+                        "field": "action.duration_ms",
+                        "message": "must be a nonnegative integer"
+                      }
+                    }
+                  },
+                  "duplicate-field": {
+                    "summary": "Actual software-fixture response",
+                    "value": {
+                      "error": {
+                        "code": "invalid_request",
+                        "message": "duplicate JSON field \"action\""
+                      }
+                    }
+                  },
+                  "cross-field-interval": {
+                    "summary": "Actual software-fixture response",
+                    "value": {
+                      "error": {
+                        "code": "invalid_request",
+                        "message": "invalid sequence: steps[0].fade_ms cannot exceed interval_ms"
+                      }
+                    }
+                  },
+                  "two-sources": {
+                    "summary": "Actual software-fixture response",
+                    "value": {
+                      "error": {
+                        "code": "invalid_request",
+                        "message": "exactly one action, sequence or pattern_id is required"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "HTTP 403 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "HTTP 404 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "HTTP 405 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Allow": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Supported HTTP method(s)."
+              }
+            }
+          },
+          "413": {
+            "description": "HTTP 413 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "HTTP 415 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "HTTP 500 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "HTTP 503 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-query-policy": "rejected",
+        "x-body-policy": "json-object",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PreviewRequest"
+              },
+              "examples": {
+                "set": {
+                  "value": {
+                    "action": {
+                      "kind": "set",
+                      "color": "lime"
+                    }
+                  }
+                },
+                "off": {
+                  "value": {
+                    "action": {
+                      "kind": "off"
+                    }
+                  }
+                },
+                "fade": {
+                  "value": {
+                    "action": {
+                      "kind": "fade",
+                      "color": "#369",
+                      "duration_ms": 200
+                    }
+                  }
+                },
+                "blink": {
+                  "value": {
+                    "action": {
+                      "kind": "blink",
+                      "color": {
+                        "space": "rgb8",
+                        "r": 32,
+                        "g": 96,
+                        "b": 128
+                      }
+                    }
+                  }
+                },
+                "breathe": {
+                  "value": {
+                    "action": {
+                      "kind": "breathe",
+                      "color": "cyan"
+                    }
+                  }
+                },
+                "pulse": {
+                  "value": {
+                    "action": {
+                      "kind": "pulse",
+                      "color": "@status-ok"
+                    }
+                  }
+                },
+                "alternate": {
+                  "value": {
+                    "action": {
+                      "kind": "alternate",
+                      "colors": [
+                        "red",
+                        "blue"
+                      ]
+                    }
+                  }
+                },
+                "orbit": {
+                  "value": {
+                    "action": {
+                      "kind": "orbit",
+                      "colors": [
+                        "red",
+                        "blue"
+                      ],
+                      "period_ms": 400
+                    }
+                  }
+                },
+                "rainbow": {
+                  "value": {
+                    "action": {
+                      "kind": "rainbow"
+                    }
+                  }
+                },
+                "serial_sequence": {
+                  "value": {
+                    "sequence": {
+                      "timing": "serial",
+                      "steps": [
+                        {
+                          "targets": [
+                            {
+                              "led": 0,
+                              "color": "#123456"
+                            }
+                          ],
+                          "fade_ms": 10,
+                          "hold_ms": 20
+                        }
+                      ],
+                      "repeat": 1,
+                      "on_finish": "off"
+                    }
+                  }
+                },
+                "interval_sequence": {
+                  "value": {
+                    "sequence": {
+                      "timing": "interval",
+                      "initial": [
+                        {
+                          "led": 1,
+                          "color": "#112233"
+                        },
+                        {
+                          "led": 2,
+                          "color": "#445566"
+                        }
+                      ],
+                      "steps": [
+                        {
+                          "targets": [
+                            {
+                              "led": 1,
+                              "color": "#445566"
+                            },
+                            {
+                              "led": 2,
+                              "color": "#112233"
+                            }
+                          ],
+                          "fade_ms": 50,
+                          "interval_ms": 50
+                        }
+                      ],
+                      "repeat": 2,
+                      "on_finish": "off"
+                    }
+                  }
+                },
+                "saved_pattern": {
+                  "value": {
+                    "pattern_id": "gentle-pulse",
+                    "serial": "fixture-0001"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/jobs": {
+      "post": {
+        "operationId": "submitJob",
+        "summary": "Submit one finite Job",
+        "tags": [
+          "Runtime"
+        ],
+        "responses": {
+          "200": {
+            "description": "Matching retained Job. Its current status is returned.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Job"
+                }
+              }
+            },
+            "headers": {
+              "Location": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^/v1/jobs/[A-Za-z0-9_-]{1,64}$"
+                },
+                "description": "Relative URL of the accepted or retained Job."
+              }
+            }
+          },
+          "400": {
+            "description": "HTTP 400 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "HTTP 403 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "HTTP 404 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "HTTP 405 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Allow": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Supported HTTP method(s)."
+              }
+            }
+          },
+          "409": {
+            "description": "HTTP 409 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "HTTP 413 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "HTTP 415 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "HTTP 422 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "HTTP 500 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "HTTP 503 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "New Job accepted. Admission is distinct from completion.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Job"
+                },
+                "examples": {
+                  "submitJob_explicit_id": {
+                    "summary": "Actual software-fixture response",
+                    "value": {
+                      "id": "doc-job-example",
+                      "serial": "fixture-0001",
+                      "status": "queued",
+                      "completed_steps": 0,
+                      "total_steps": 2,
+                      "created_at": "2026-11-11T12:27:21.534098Z"
+                    }
+                  },
+                  "submitJob_generated_id": {
+                    "summary": "Actual software-fixture response",
+                    "value": {
+                      "id": "j_GT9EQD3VSC",
+                      "serial": "fixture-0001",
+                      "status": "queued",
+                      "completed_steps": 0,
+                      "total_steps": 1,
+                      "created_at": "2026-11-11T12:27:21.535197Z"
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "Location": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^/v1/jobs/[A-Za-z0-9_-]{1,64}$"
+                },
+                "description": "Relative URL of the accepted or retained Job."
+              }
+            }
+          }
+        },
+        "x-query-policy": "rejected",
+        "x-body-policy": "json-object",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitJobRequest"
+              },
+              "examples": {
+                "explicit_id": {
+                  "value": {
+                    "id": "doc-job-example",
+                    "serial": "fixture-0001",
+                    "action": {
+                      "kind": "blink",
+                      "color": "lime",
+                      "on_ms": 30,
+                      "off_ms": 30
+                    }
+                  }
+                },
+                "generated_id": {
+                  "value": {
+                    "serial": "fixture-0001",
+                    "sequence": {
+                      "timing": "serial",
+                      "steps": [
+                        {
+                          "targets": [
+                            {
+                              "led": 0,
+                              "color": "#123456"
+                            }
+                          ],
+                          "fade_ms": 10,
+                          "hold_ms": 20
+                        }
+                      ],
+                      "repeat": 1,
+                      "on_finish": "off"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "description": "The device must be idle and support the compiled Sequence. The daemon owns timing after admission. A lost HTTP response or client timeout can leave an accepted Job running. Query the original ID. Retained matching IDs replay before resolving mutable color or Pattern references. A changed source or serial conflicts. Terminal records use a 16,384-entry LRU and expire at a fixed time up to 30 minutes after completion. Active Jobs stay pinned. Cache pressure evicts terminal records and does not reject new execution. After expiration or eviction the same ID can execute again."
+      }
+    },
+    "/v1/jobs/{id}": {
+      "get": {
+        "operationId": "getJob",
+        "summary": "Read an accepted Job",
+        "tags": [
+          "Runtime"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Job"
+                },
+                "examples": {
+                  "getJob_none": {
+                    "summary": "Actual software-fixture response",
+                    "value": {
+                      "id": "doc-job-example",
+                      "serial": "fixture-0001",
+                      "status": "cancelled",
+                      "completed_steps": 0,
+                      "total_steps": 2,
+                      "created_at": "2026-11-11T12:27:21.534098Z",
+                      "started_at": "2026-11-11T12:27:21.534113Z",
+                      "finished_at": "2026-11-11T12:27:21.534143Z"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "HTTP 400 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "HTTP 403 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "HTTP 404 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "HTTP 405 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Allow": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Supported HTTP method(s)."
+              }
+            }
+          },
+          "500": {
+            "description": "HTTP 500 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "HTTP 503 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-query-policy": "rejected",
+        "x-body-policy": "rejected",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ID"
+            },
+            "example": "doc-job-example"
+          }
+        ]
+      }
+    },
+    "/v1/jobs/{id}/cancel": {
+      "post": {
+        "operationId": "cancelJob",
+        "summary": "Request cancellation and read current status",
+        "tags": [
+          "Runtime"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Job"
+                },
+                "examples": {
+                  "cancelJob_none": {
+                    "summary": "Actual software-fixture response",
+                    "value": {
+                      "id": "doc-job-example",
+                      "serial": "fixture-0001",
+                      "status": "cancelled",
+                      "completed_steps": 0,
+                      "total_steps": 2,
+                      "created_at": "2026-11-11T12:27:21.534098Z",
+                      "started_at": "2026-11-11T12:27:21.534113Z",
+                      "finished_at": "2026-11-11T12:27:21.534143Z"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "HTTP 400 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "HTTP 403 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "HTTP 404 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "HTTP 405 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Allow": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Supported HTTP method(s)."
+              }
+            }
+          },
+          "500": {
+            "description": "HTTP 500 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "HTTP 503 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "Cancellation requested; hardware cleanup is still pending.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Job"
+                }
+              }
+            }
+          }
+        },
+        "x-query-policy": "rejected",
+        "x-body-policy": "rejected",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ID"
+            },
+            "example": "doc-job-example"
+          }
+        ],
+        "description": "Returns 200 for a terminal Job and 202 while cleanup remains pending. Cancelling a retained terminal Job updates its LRU position and leaves its expiry unchanged."
+      }
+    },
+    "/v1/colors/resolve": {
+      "post": {
+        "operationId": "resolveColor",
+        "summary": "Resolve author notation to exact RGB",
+        "tags": [
+          "Library"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ColorResolution"
+                },
+                "examples": {
+                  "resolveColor_name": {
+                    "summary": "Actual software-fixture response",
+                    "value": {
+                      "color": "#00ff00"
+                    }
+                  },
+                  "resolveColor_hex": {
+                    "summary": "Actual software-fixture response",
+                    "value": {
+                      "color": "#336699"
+                    }
+                  },
+                  "resolveColor_rgb8": {
+                    "summary": "Actual software-fixture response",
+                    "value": {
+                      "color": "#204060"
+                    }
+                  },
+                  "resolveColor_hsv": {
+                    "summary": "Actual software-fixture response",
+                    "value": {
+                      "color": "#205080"
+                    }
+                  },
+                  "resolveColor_local_reference": {
+                    "summary": "Actual software-fixture response",
+                    "value": {
+                      "color": "#00ff00"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "HTTP 400 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "HTTP 403 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "HTTP 405 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Allow": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Supported HTTP method(s)."
+              }
+            }
+          },
+          "413": {
+            "description": "HTTP 413 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "HTTP 415 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "HTTP 500 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "HTTP 503 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-query-policy": "rejected",
+        "x-body-policy": "json-object",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ColorRequest"
+              },
+              "examples": {
+                "name": {
+                  "value": {
+                    "color": "lime"
+                  }
+                },
+                "hex": {
+                  "value": {
+                    "color": "#369"
+                  }
+                },
+                "rgb8": {
+                  "value": {
+                    "color": {
+                      "space": "rgb8",
+                      "r": 32,
+                      "g": 64,
+                      "b": 96
+                    }
+                  }
+                },
+                "hsv": {
+                  "value": {
+                    "color": {
+                      "space": "hsv",
+                      "h_deg": 210,
+                      "s_pct": 75,
+                      "v_pct": 50
+                    }
+                  }
+                },
+                "local_reference": {
+                  "value": {
+                    "color": "@status-ok"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "saveColorNamedResolve",
+        "summary": "Save the valid local color name resolve",
+        "tags": [
+          "Library"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Color"
+                },
+                "examples": {
+                  "saveColorNamedResolve_exact": {
+                    "summary": "Actual software-fixture response",
+                    "value": {
+                      "name": "resolve",
+                      "color": "#00ff00"
+                    }
+                  },
+                  "saveColorNamedResolve_author_notation": {
+                    "summary": "Actual software-fixture response",
+                    "value": {
+                      "name": "resolve",
+                      "color": "#00ff00"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "HTTP 400 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "HTTP 403 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "HTTP 405 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Allow": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Supported HTTP method(s)."
+              }
+            }
+          },
+          "413": {
+            "description": "HTTP 413 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "HTTP 415 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "HTTP 429 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "HTTP 500 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "HTTP 503 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-query-policy": "rejected",
+        "x-body-policy": "json-object",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ColorRequest"
+              },
+              "examples": {
+                "exact": {
+                  "value": {
+                    "color": "#00ff00"
+                  }
+                },
+                "author_notation": {
+                  "value": {
+                    "color": "lime"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "description": "The name resolve is valid in the saved-color namespace. This concrete operation records its PUT behavior alongside the POST color-resolution operation."
+      }
+    },
+    "/v1/colors": {
+      "get": {
+        "operationId": "listColors",
+        "summary": "List local saved colors",
+        "tags": [
+          "Library"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Color"
+                  },
+                  "minItems": 0,
+                  "maxItems": 256
+                },
+                "examples": {
+                  "listColors_none": {
+                    "summary": "Actual software-fixture response",
+                    "value": [
+                      {
+                        "name": "resolve",
+                        "color": "#00ff00"
+                      },
+                      {
+                        "name": "status-ok",
+                        "color": "#00ff00"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "HTTP 400 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "HTTP 403 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "HTTP 405 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Allow": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Supported HTTP method(s)."
+              }
+            }
+          },
+          "429": {
+            "description": "HTTP 429 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "HTTP 500 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "HTTP 503 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-query-policy": "rejected",
+        "x-body-policy": "rejected"
+      }
+    },
+    "/v1/colors/{name}": {
+      "put": {
+        "operationId": "saveColor",
+        "summary": "Resolve and atomically save a local color",
+        "tags": [
+          "Library"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Color"
+                },
+                "examples": {
+                  "saveColor_exact": {
+                    "summary": "Actual software-fixture response",
+                    "value": {
+                      "name": "status-ok",
+                      "color": "#00ff00"
+                    }
+                  },
+                  "saveColor_author_notation": {
+                    "summary": "Actual software-fixture response",
+                    "value": {
+                      "name": "status-ok",
+                      "color": "#00ff00"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "HTTP 400 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "HTTP 403 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "HTTP 405 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Allow": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Supported HTTP method(s)."
+              }
+            }
+          },
+          "413": {
+            "description": "HTTP 413 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "HTTP 415 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "HTTP 429 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "HTTP 500 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "HTTP 503 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-query-policy": "rejected",
+        "x-body-policy": "json-object",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ColorName"
+            },
+            "example": "status-ok"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ColorRequest"
+              },
+              "examples": {
+                "exact": {
+                  "value": {
+                    "color": "#00ff00"
+                  }
+                },
+                "author_notation": {
+                  "value": {
+                    "color": "lime"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/patterns": {
+      "get": {
+        "operationId": "listPatterns",
+        "summary": "List local Pattern ID and title summaries",
+        "tags": [
+          "Library"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PatternSummary"
+                  },
+                  "minItems": 0,
+                  "maxItems": 128
+                },
+                "examples": {
+                  "listPatterns_none": {
+                    "summary": "Actual software-fixture response",
+                    "value": [
+                      {
+                        "id": "gentle-pulse",
+                        "title": "Exact sequence"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "HTTP 400 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "HTTP 403 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "HTTP 405 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Allow": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Supported HTTP method(s)."
+              }
+            }
+          },
+          "429": {
+            "description": "HTTP 429 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "HTTP 500 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "HTTP 503 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-query-policy": "rejected",
+        "x-body-policy": "rejected"
+      }
+    },
+    "/v1/patterns/{id}": {
+      "get": {
+        "operationId": "getPattern",
+        "summary": "Read one frozen local Pattern",
+        "tags": [
+          "Library"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Pattern"
+                },
+                "examples": {
+                  "getPattern_none": {
+                    "summary": "Actual software-fixture response",
+                    "value": {
+                      "id": "gentle-pulse",
+                      "title": "Exact sequence",
+                      "sequence": {
+                        "timing": "serial",
+                        "steps": [
+                          {
+                            "targets": [
+                              {
+                                "led": 0,
+                                "color": "#123456"
+                              }
+                            ],
+                            "fade_ms": 10,
+                            "hold_ms": 20
+                          }
+                        ],
+                        "repeat": 1,
+                        "on_finish": "off"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "HTTP 400 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "HTTP 403 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "HTTP 404 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "HTTP 405 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Allow": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Supported HTTP method(s)."
+              }
+            }
+          },
+          "500": {
+            "description": "HTTP 500 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "HTTP 503 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-query-policy": "rejected",
+        "x-body-policy": "rejected",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ID"
+            },
+            "example": "gentle-pulse"
+          }
+        ]
+      },
+      "put": {
+        "operationId": "savePattern",
+        "summary": "Compile and atomically save a frozen Pattern",
+        "tags": [
+          "Library"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Pattern"
+                },
+                "examples": {
+                  "savePattern_action": {
+                    "summary": "Actual software-fixture response",
+                    "value": {
+                      "id": "gentle-pulse",
+                      "title": "Gentle pulse",
+                      "sequence": {
+                        "timing": "serial",
+                        "steps": [
+                          {
+                            "targets": [
+                              {
+                                "led": 0,
+                                "color": "#000000"
+                              }
+                            ],
+                            "fade_ms": 0,
+                            "hold_ms": 0
+                          },
+                          {
+                            "targets": [
+                              {
+                                "led": 0,
+                                "color": "#00ff00"
+                              }
+                            ],
+                            "fade_ms": 60,
+                            "hold_ms": 0
+                          },
+                          {
+                            "targets": [
+                              {
+                                "led": 0,
+                                "color": "#000000"
+                              }
+                            ],
+                            "fade_ms": 240,
+                            "hold_ms": 700
+                          }
+                        ],
+                        "repeat": 1,
+                        "on_finish": "off"
+                      }
+                    }
+                  },
+                  "savePattern_sequence": {
+                    "summary": "Actual software-fixture response",
+                    "value": {
+                      "id": "gentle-pulse",
+                      "title": "Exact sequence",
+                      "sequence": {
+                        "timing": "serial",
+                        "steps": [
+                          {
+                            "targets": [
+                              {
+                                "led": 0,
+                                "color": "#123456"
+                              }
+                            ],
+                            "fade_ms": 10,
+                            "hold_ms": 20
+                          }
+                        ],
+                        "repeat": 1,
+                        "on_finish": "off"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "HTTP 400 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "HTTP 403 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "HTTP 405 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Allow": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Supported HTTP method(s)."
+              }
+            }
+          },
+          "413": {
+            "description": "HTTP 413 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "HTTP 415 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "HTTP 429 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "HTTP 500 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "HTTP 503 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-query-policy": "rejected",
+        "x-body-policy": "json-object",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ID"
+            },
+            "example": "gentle-pulse"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SavePatternRequest"
+              },
+              "examples": {
+                "action": {
+                  "value": {
+                    "title": "Gentle pulse",
+                    "action": {
+                      "kind": "pulse",
+                      "color": "@status-ok"
+                    }
+                  }
+                },
+                "sequence": {
+                  "value": {
+                    "title": "Exact sequence",
+                    "sequence": {
+                      "timing": "serial",
+                      "steps": [
+                        {
+                          "targets": [
+                            {
+                              "led": 0,
+                              "color": "#123456"
+                            }
+                          ],
+                          "fade_ms": 10,
+                          "hold_ms": 20
+                        }
+                      ],
+                      "repeat": 1,
+                      "on_finish": "off"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Serial": {
+        "type": "string",
+        "pattern": "^[A-Za-z0-9_-]{1,128}$",
+        "description": "Explicit configured device serial. Examples use a virtual device.",
+        "examples": [
+          "fixture-0001"
+        ],
+        "minLength": 1,
+        "maxLength": 128,
+        "not": {
+          "pattern": "[^A-Za-z0-9_-]"
+        }
+      },
+      "ID": {
+        "type": "string",
+        "pattern": "^[A-Za-z0-9_-]{1,64}$",
+        "examples": [
+          "doc-job-example"
+        ],
+        "minLength": 1,
+        "maxLength": 64,
+        "not": {
+          "pattern": "[^A-Za-z0-9_-]"
+        }
+      },
+      "JobIDInput": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/ID"
+          },
+          {
+            "const": ""
+          }
+        ],
+        "description": "Omit or send an empty string to generate j_ plus ten random Crockford Base32 characters. Preserve the chosen ID when an execution response is lost."
+      },
+      "ColorName": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9-]{0,31}$",
+        "examples": [
+          "status-ok"
+        ],
+        "minLength": 1,
+        "maxLength": 32,
+        "not": {
+          "pattern": "[^a-z0-9-]"
+        }
+      },
+      "ExactColor": {
+        "type": "string",
+        "pattern": "^#[0-9a-fA-F]{6}$",
+        "description": "Exact raw RGB execution target. Input permits either hex case.",
+        "minLength": 7,
+        "maxLength": 7
+      },
+      "CanonicalColor": {
+        "type": "string",
+        "pattern": "^#[0-9a-f]{6}$",
+        "description": "Normalized exact raw RGB.",
+        "minLength": 7,
+        "maxLength": 7
+      },
+      "ColorText": {
+        "type": "string",
+        "maxLength": 64,
+        "pattern": "^[ \\t\\r\\n\\u000b\\f]*(?:#[0-9a-fA-F]{3}|#[0-9a-fA-F]{6}|[aA][lL][iI][cC][eE][bB][lL][uU][eE]|[aA][nN][tT][iI][qQ][uU][eE][wW][hH][iI][tT][eE]|[aA][qQ][uU][aA]|[aA][qQ][uU][aA][mM][aA][rR][iI][nN][eE]|[aA][zZ][uU][rR][eE]|[bB][eE][iI][gG][eE]|[bB][iI][sS][qQ][uU][eE]|[bB][lL][aA][cC][kK]|[bB][lL][aA][nN][cC][hH][eE][dD][aA][lL][mM][oO][nN][dD]|[bB][lL][uU][eE]|[bB][lL][uU][eE][vV][iI][oO][lL][eE][tT]|[bB][rR][oO][wW][nN]|[bB][uU][rR][lL][yY][wW][oO][oO][dD]|[cC][aA][dD][eE][tT][bB][lL][uU][eE]|[cC][hH][aA][rR][tT][rR][eE][uU][sS][eE]|[cC][hH][oO][cC][oO][lL][aA][tT][eE]|[cC][oO][rR][aA][lL]|[cC][oO][rR][nN][fF][lL][oO][wW][eE][rR][bB][lL][uU][eE]|[cC][oO][rR][nN][sS][iI][lL][kK]|[cC][rR][iI][mM][sS][oO][nN]|[cC][yY][aA][nN]|[dD][aA][rR][kK][bB][lL][uU][eE]|[dD][aA][rR][kK][cC][yY][aA][nN]|[dD][aA][rR][kK][gG][oO][lL][dD][eE][nN][rR][oO][dD]|[dD][aA][rR][kK][gG][rR][aA][yY]|[dD][aA][rR][kK][gG][rR][eE][eE][nN]|[dD][aA][rR][kK][gG][rR][eE][yY]|[dD][aA][rR][kK][kK][hH][aA][kK][iI]|[dD][aA][rR][kK][mM][aA][gG][eE][nN][tT][aA]|[dD][aA][rR][kK][oO][lL][iI][vV][eE][gG][rR][eE][eE][nN]|[dD][aA][rR][kK][oO][rR][aA][nN][gG][eE]|[dD][aA][rR][kK][oO][rR][cC][hH][iI][dD]|[dD][aA][rR][kK][rR][eE][dD]|[dD][aA][rR][kK][sS][aA][lL][mM][oO][nN]|[dD][aA][rR][kK][sS][eE][aA][gG][rR][eE][eE][nN]|[dD][aA][rR][kK][sS][lL][aA][tT][eE][bB][lL][uU][eE]|[dD][aA][rR][kK][sS][lL][aA][tT][eE][gG][rR][aA][yY]|[dD][aA][rR][kK][sS][lL][aA][tT][eE][gG][rR][eE][yY]|[dD][aA][rR][kK][tT][uU][rR][qQ][uU][oO][iI][sS][eE]|[dD][aA][rR][kK][vV][iI][oO][lL][eE][tT]|[dD][eE][eE][pP][pP][iI][nN][kK]|[dD][eE][eE][pP][sS][kK][yY][bB][lL][uU][eE]|[dD][iI][mM][gG][rR][aA][yY]|[dD][iI][mM][gG][rR][eE][yY]|[dD][oO][dD][gG][eE][rR][bB][lL][uU][eE]|[fF][iI][rR][eE][bB][rR][iI][cC][kK]|[fF][lL][oO][rR][aA][lL][wW][hH][iI][tT][eE]|[fF][oO][rR][eE][sS][tT][gG][rR][eE][eE][nN]|[fF][uU][cC][hH][sS][iI][aA]|[gG][aA][iI][nN][sS][bB][oO][rR][oO]|[gG][hH][oO][sS][tT][wW][hH][iI][tT][eE]|[gG][oO][lL][dD]|[gG][oO][lL][dD][eE][nN][rR][oO][dD]|[gG][rR][aA][yY]|[gG][rR][eE][eE][nN]|[gG][rR][eE][eE][nN][yY][eE][lL][lL][oO][wW]|[gG][rR][eE][yY]|[hH][oO][nN][eE][yY][dD][eE][wW]|[hH][oO][tT][pP][iI][nN][kK]|[iI][nN][dD][iI][aA][nN][rR][eE][dD]|[iI][nN][dD][iI][gG][oO]|[iI][vV][oO][rR][yY]|[kK][hH][aA][kK][iI]|[lL][aA][vV][eE][nN][dD][eE][rR]|[lL][aA][vV][eE][nN][dD][eE][rR][bB][lL][uU][sS][hH]|[lL][aA][wW][nN][gG][rR][eE][eE][nN]|[lL][eE][mM][oO][nN][cC][hH][iI][fF][fF][oO][nN]|[lL][iI][gG][hH][tT][bB][lL][uU][eE]|[lL][iI][gG][hH][tT][cC][oO][rR][aA][lL]|[lL][iI][gG][hH][tT][cC][yY][aA][nN]|[lL][iI][gG][hH][tT][gG][oO][lL][dD][eE][nN][rR][oO][dD][yY][eE][lL][lL][oO][wW]|[lL][iI][gG][hH][tT][gG][rR][aA][yY]|[lL][iI][gG][hH][tT][gG][rR][eE][eE][nN]|[lL][iI][gG][hH][tT][gG][rR][eE][yY]|[lL][iI][gG][hH][tT][pP][iI][nN][kK]|[lL][iI][gG][hH][tT][sS][aA][lL][mM][oO][nN]|[lL][iI][gG][hH][tT][sS][eE][aA][gG][rR][eE][eE][nN]|[lL][iI][gG][hH][tT][sS][kK][yY][bB][lL][uU][eE]|[lL][iI][gG][hH][tT][sS][lL][aA][tT][eE][gG][rR][aA][yY]|[lL][iI][gG][hH][tT][sS][lL][aA][tT][eE][gG][rR][eE][yY]|[lL][iI][gG][hH][tT][sS][tT][eE][eE][lL][bB][lL][uU][eE]|[lL][iI][gG][hH][tT][yY][eE][lL][lL][oO][wW]|[lL][iI][mM][eE]|[lL][iI][mM][eE][gG][rR][eE][eE][nN]|[lL][iI][nN][eE][nN]|[mM][aA][gG][eE][nN][tT][aA]|[mM][aA][rR][oO][oO][nN]|[mM][eE][dD][iI][uU][mM][aA][qQ][uU][aA][mM][aA][rR][iI][nN][eE]|[mM][eE][dD][iI][uU][mM][bB][lL][uU][eE]|[mM][eE][dD][iI][uU][mM][oO][rR][cC][hH][iI][dD]|[mM][eE][dD][iI][uU][mM][pP][uU][rR][pP][lL][eE]|[mM][eE][dD][iI][uU][mM][sS][eE][aA][gG][rR][eE][eE][nN]|[mM][eE][dD][iI][uU][mM][sS][lL][aA][tT][eE][bB][lL][uU][eE]|[mM][eE][dD][iI][uU][mM][sS][pP][rR][iI][nN][gG][gG][rR][eE][eE][nN]|[mM][eE][dD][iI][uU][mM][tT][uU][rR][qQ][uU][oO][iI][sS][eE]|[mM][eE][dD][iI][uU][mM][vV][iI][oO][lL][eE][tT][rR][eE][dD]|[mM][iI][dD][nN][iI][gG][hH][tT][bB][lL][uU][eE]|[mM][iI][nN][tT][cC][rR][eE][aA][mM]|[mM][iI][sS][tT][yY][rR][oO][sS][eE]|[mM][oO][cC][cC][aA][sS][iI][nN]|[nN][aA][vV][aA][jJ][oO][wW][hH][iI][tT][eE]|[nN][aA][vV][yY]|[oO][lL][dD][lL][aA][cC][eE]|[oO][lL][iI][vV][eE]|[oO][lL][iI][vV][eE][dD][rR][aA][bB]|[oO][rR][aA][nN][gG][eE]|[oO][rR][aA][nN][gG][eE][rR][eE][dD]|[oO][rR][cC][hH][iI][dD]|[pP][aA][lL][eE][gG][oO][lL][dD][eE][nN][rR][oO][dD]|[pP][aA][lL][eE][gG][rR][eE][eE][nN]|[pP][aA][lL][eE][tT][uU][rR][qQ][uU][oO][iI][sS][eE]|[pP][aA][lL][eE][vV][iI][oO][lL][eE][tT][rR][eE][dD]|[pP][aA][pP][aA][yY][aA][wW][hH][iI][pP]|[pP][eE][aA][cC][hH][pP][uU][fF][fF]|[pP][eE][rR][uU]|[pP][iI][nN][kK]|[pP][lL][uU][mM]|[pP][oO][wW][dD][eE][rR][bB][lL][uU][eE]|[pP][uU][rR][pP][lL][eE]|[rR][eE][bB][eE][cC][cC][aA][pP][uU][rR][pP][lL][eE]|[rR][eE][dD]|[rR][oO][sS][yY][bB][rR][oO][wW][nN]|[rR][oO][yY][aA][lL][bB][lL][uU][eE]|[sS][aA][dD][dD][lL][eE][bB][rR][oO][wW][nN]|[sS][aA][lL][mM][oO][nN]|[sS][aA][nN][dD][yY][bB][rR][oO][wW][nN]|[sS][eE][aA][gG][rR][eE][eE][nN]|[sS][eE][aA][sS][hH][eE][lL][lL]|[sS][iI][eE][nN][nN][aA]|[sS][iI][lL][vV][eE][rR]|[sS][kK][yY][bB][lL][uU][eE]|[sS][lL][aA][tT][eE][bB][lL][uU][eE]|[sS][lL][aA][tT][eE][gG][rR][aA][yY]|[sS][lL][aA][tT][eE][gG][rR][eE][yY]|[sS][nN][oO][wW]|[sS][pP][rR][iI][nN][gG][gG][rR][eE][eE][nN]|[sS][tT][eE][eE][lL][bB][lL][uU][eE]|[tT][aA][nN]|[tT][eE][aA][lL]|[tT][hH][iI][sS][tT][lL][eE]|[tT][oO][mM][aA][tT][oO]|[tT][uU][rR][qQ][uU][oO][iI][sS][eE]|[vV][iI][oO][lL][eE][tT]|[wW][hH][eE][aA][tT]|[wW][hH][iI][tT][eE]|[wW][hH][iI][tT][eE][sS][mM][oO][kK][eE]|[yY][eE][lL][lL][oO][wW]|[yY][eE][lL][lL][oO][wW][gG][rR][eE][eE][nN])[ \\t\\r\\n\\u000b\\f]*$",
+        "description": "ASCII Hex3, Hex6 or one of the 148 fixed opaque CSS names, case-insensitive. Leading and trailing ASCII whitespace is accepted. The decoded string is at most 64 bytes.",
+        "x-css-names": [
+          "aliceblue",
+          "antiquewhite",
+          "aqua",
+          "aquamarine",
+          "azure",
+          "beige",
+          "bisque",
+          "black",
+          "blanchedalmond",
+          "blue",
+          "blueviolet",
+          "brown",
+          "burlywood",
+          "cadetblue",
+          "chartreuse",
+          "chocolate",
+          "coral",
+          "cornflowerblue",
+          "cornsilk",
+          "crimson",
+          "cyan",
+          "darkblue",
+          "darkcyan",
+          "darkgoldenrod",
+          "darkgray",
+          "darkgreen",
+          "darkgrey",
+          "darkkhaki",
+          "darkmagenta",
+          "darkolivegreen",
+          "darkorange",
+          "darkorchid",
+          "darkred",
+          "darksalmon",
+          "darkseagreen",
+          "darkslateblue",
+          "darkslategray",
+          "darkslategrey",
+          "darkturquoise",
+          "darkviolet",
+          "deeppink",
+          "deepskyblue",
+          "dimgray",
+          "dimgrey",
+          "dodgerblue",
+          "firebrick",
+          "floralwhite",
+          "forestgreen",
+          "fuchsia",
+          "gainsboro",
+          "ghostwhite",
+          "gold",
+          "goldenrod",
+          "gray",
+          "green",
+          "greenyellow",
+          "grey",
+          "honeydew",
+          "hotpink",
+          "indianred",
+          "indigo",
+          "ivory",
+          "khaki",
+          "lavender",
+          "lavenderblush",
+          "lawngreen",
+          "lemonchiffon",
+          "lightblue",
+          "lightcoral",
+          "lightcyan",
+          "lightgoldenrodyellow",
+          "lightgray",
+          "lightgreen",
+          "lightgrey",
+          "lightpink",
+          "lightsalmon",
+          "lightseagreen",
+          "lightskyblue",
+          "lightslategray",
+          "lightslategrey",
+          "lightsteelblue",
+          "lightyellow",
+          "lime",
+          "limegreen",
+          "linen",
+          "magenta",
+          "maroon",
+          "mediumaquamarine",
+          "mediumblue",
+          "mediumorchid",
+          "mediumpurple",
+          "mediumseagreen",
+          "mediumslateblue",
+          "mediumspringgreen",
+          "mediumturquoise",
+          "mediumvioletred",
+          "midnightblue",
+          "mintcream",
+          "mistyrose",
+          "moccasin",
+          "navajowhite",
+          "navy",
+          "oldlace",
+          "olive",
+          "olivedrab",
+          "orange",
+          "orangered",
+          "orchid",
+          "palegoldenrod",
+          "palegreen",
+          "paleturquoise",
+          "palevioletred",
+          "papayawhip",
+          "peachpuff",
+          "peru",
+          "pink",
+          "plum",
+          "powderblue",
+          "purple",
+          "rebeccapurple",
+          "red",
+          "rosybrown",
+          "royalblue",
+          "saddlebrown",
+          "salmon",
+          "sandybrown",
+          "seagreen",
+          "seashell",
+          "sienna",
+          "silver",
+          "skyblue",
+          "slateblue",
+          "slategray",
+          "slategrey",
+          "snow",
+          "springgreen",
+          "steelblue",
+          "tan",
+          "teal",
+          "thistle",
+          "tomato",
+          "turquoise",
+          "violet",
+          "wheat",
+          "white",
+          "whitesmoke",
+          "yellow",
+          "yellowgreen"
+        ],
+        "examples": [
+          "lime",
+          "#abc",
+          " #AAbbCC ",
+          "RebeccaPurple"
+        ]
+      },
+      "ColorAlias": {
+        "type": "string",
+        "pattern": "^@[a-z][a-z0-9-]{0,31}$",
+        "description": "A local saved color reference. The daemon resolves it for new Actions and saves the resulting exact RGB in Patterns.",
+        "examples": [
+          "@status-ok"
+        ],
+        "minLength": 2,
+        "maxLength": 33,
+        "not": {
+          "pattern": "[^@a-z0-9-]"
+        }
+      },
+      "RGB8Color": {
+        "type": "object",
+        "properties": {
+          "space": {
+            "const": "rgb8"
+          },
+          "r": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 255,
+            "x-json-number-syntax": "ordinary nonnegative integer without sign, fraction or exponent"
+          },
+          "g": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 255,
+            "x-json-number-syntax": "ordinary nonnegative integer without sign, fraction or exponent"
+          },
+          "b": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 255,
+            "x-json-number-syntax": "ordinary nonnegative integer without sign, fraction or exponent"
+          }
+        },
+        "required": [
+          "space",
+          "r",
+          "g",
+          "b"
+        ],
+        "additionalProperties": false,
+        "examples": [
+          {
+            "space": "rgb8",
+            "r": 51,
+            "g": 102,
+            "b": 153
+          }
+        ]
+      },
+      "HSVColor": {
+        "type": "object",
+        "properties": {
+          "space": {
+            "const": "hsv"
+          },
+          "h_deg": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 360,
+            "multipleOf": 1e-06,
+            "x-json-number-syntax": "nonnegative ordinary decimal with at most six fractional digits, no sign or exponent"
+          },
+          "s_pct": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100,
+            "multipleOf": 1e-06,
+            "x-json-number-syntax": "nonnegative ordinary decimal with at most six fractional digits, no sign or exponent"
+          },
+          "v_pct": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100,
+            "multipleOf": 1e-06,
+            "x-json-number-syntax": "nonnegative ordinary decimal with at most six fractional digits, no sign or exponent"
+          }
+        },
+        "required": [
+          "space",
+          "h_deg",
+          "s_pct",
+          "v_pct"
+        ],
+        "additionalProperties": false,
+        "description": "Hue 360 wraps to 0. Conversion uses the current exact RGB compiler with no implicit gamma correction.",
+        "examples": [
+          {
+            "space": "hsv",
+            "h_deg": 210,
+            "s_pct": 75,
+            "v_pct": 50
+          }
+        ]
+      },
+      "ColorInput": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/ColorText"
+          },
+          {
+            "$ref": "#/components/schemas/ColorAlias"
+          },
+          {
+            "$ref": "#/components/schemas/RGB8Color"
+          },
+          {
+            "$ref": "#/components/schemas/HSVColor"
+          }
+        ],
+        "x-max-json-bytes": 4096,
+        "description": "Flexible authoring notation. The encoded bare ColorInput is at most 4096 bytes. Runtime validation also checks JSON number spelling."
+      },
+      "OnFinish": {
+        "type": "string",
+        "enum": [
+          "off",
+          "hold"
+        ],
+        "default": "off"
+      },
+      "LED": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 2,
+        "x-json-number-syntax": "ordinary nonnegative integer without sign, fraction or exponent",
+        "default": 0,
+        "description": "0 addresses both outputs. 1 and 2 select physical output channels."
+      },
+      "FadeMS": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 600000,
+        "x-json-number-syntax": "ordinary nonnegative integer without sign, fraction or exponent",
+        "multipleOf": 10,
+        "default": 0
+      },
+      "PositiveFadeMS": {
+        "type": "integer",
+        "minimum": 10,
+        "maximum": 600000,
+        "x-json-number-syntax": "ordinary nonnegative integer without sign, fraction or exponent",
+        "multipleOf": 10
+      },
+      "HoldMS": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 3600000,
+        "x-json-number-syntax": "ordinary nonnegative integer without sign, fraction or exponent",
+        "default": 0
+      },
+      "IntervalMS": {
+        "type": "integer",
+        "minimum": 50,
+        "maximum": 600000,
+        "x-json-number-syntax": "ordinary nonnegative integer without sign, fraction or exponent"
+      },
+      "Target": {
+        "type": "object",
+        "properties": {
+          "led": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2,
+            "x-json-number-syntax": "ordinary nonnegative integer without sign, fraction or exponent"
+          },
+          "color": {
+            "$ref": "#/components/schemas/ExactColor"
+          }
+        },
+        "required": [
+          "led",
+          "color"
+        ],
+        "additionalProperties": false
+      },
+      "CanonicalTarget": {
+        "type": "object",
+        "properties": {
+          "led": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2,
+            "x-json-number-syntax": "ordinary nonnegative integer without sign, fraction or exponent"
+          },
+          "color": {
+            "$ref": "#/components/schemas/CanonicalColor"
+          }
+        },
+        "required": [
+          "led",
+          "color"
+        ],
+        "additionalProperties": false
+      },
+      "TargetLED1": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Target"
+          },
+          {
+            "properties": {
+              "led": {
+                "const": 1
+              }
+            }
+          }
+        ]
+      },
+      "TargetLED2": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Target"
+          },
+          {
+            "properties": {
+              "led": {
+                "const": 2
+              }
+            }
+          }
+        ]
+      },
+      "PhysicalTarget": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/TargetLED1"
+          },
+          {
+            "$ref": "#/components/schemas/TargetLED2"
+          }
+        ]
+      },
+      "PhysicalTargets": {
+        "oneOf": [
+          {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PhysicalTarget"
+            },
+            "minItems": 1,
+            "maxItems": 1
+          },
+          {
+            "type": "array",
+            "prefixItems": [
+              {
+                "$ref": "#/components/schemas/TargetLED1"
+              },
+              {
+                "$ref": "#/components/schemas/TargetLED2"
+              }
+            ],
+            "items": false,
+            "minItems": 2,
+            "maxItems": 2
+          },
+          {
+            "type": "array",
+            "prefixItems": [
+              {
+                "$ref": "#/components/schemas/TargetLED2"
+              },
+              {
+                "$ref": "#/components/schemas/TargetLED1"
+              }
+            ],
+            "items": false,
+            "minItems": 2,
+            "maxItems": 2
+          }
+        ]
+      },
+      "SerialStep": {
+        "type": "object",
+        "properties": {
+          "targets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Target"
+            },
+            "minItems": 1,
+            "maxItems": 1
+          },
+          "fade_ms": {
+            "$ref": "#/components/schemas/FadeMS"
+          },
+          "hold_ms": {
+            "$ref": "#/components/schemas/HoldMS"
+          }
+        },
+        "required": [
+          "targets"
+        ],
+        "additionalProperties": false
+      },
+      "SerialSequence": {
+        "type": "object",
+        "properties": {
+          "timing": {
+            "const": "serial"
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SerialStep"
+            },
+            "minItems": 1,
+            "maxItems": 1024
+          },
+          "repeat": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1024,
+            "x-json-number-syntax": "ordinary nonnegative integer without sign, fraction or exponent",
+            "default": 1
+          },
+          "on_finish": {
+            "$ref": "#/components/schemas/OnFinish"
+          }
+        },
+        "required": [
+          "timing",
+          "steps"
+        ],
+        "additionalProperties": false,
+        "description": "Serial timing waits fade_ms + hold_ms + 10 ms for each step.",
+        "x-runtime-constraints": [
+          "len(steps) * repeat <= 1024",
+          "nominal duration <= 86400000 ms"
+        ],
+        "examples": [
+          {
+            "timing": "serial",
+            "steps": [
+              {
+                "targets": [
+                  {
+                    "led": 0,
+                    "color": "#123456"
+                  }
+                ],
+                "fade_ms": 10,
+                "hold_ms": 20
+              }
+            ],
+            "repeat": 1,
+            "on_finish": "off"
+          }
+        ]
+      },
+      "IntervalStep": {
+        "type": "object",
+        "properties": {
+          "targets": {
+            "$ref": "#/components/schemas/PhysicalTargets"
+          },
+          "fade_ms": {
+            "$ref": "#/components/schemas/FadeMS"
+          },
+          "interval_ms": {
+            "$ref": "#/components/schemas/IntervalMS"
+          }
+        },
+        "required": [
+          "targets",
+          "interval_ms"
+        ],
+        "additionalProperties": false,
+        "description": "fade_ms must not exceed interval_ms. Ordered targets must match initial in count and LED order."
+      },
+      "IntervalSequence": {
+        "type": "object",
+        "properties": {
+          "timing": {
+            "const": "interval"
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IntervalStep"
+            },
+            "minItems": 1,
+            "maxItems": 1024
+          },
+          "repeat": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1024,
+            "x-json-number-syntax": "ordinary nonnegative integer without sign, fraction or exponent",
+            "default": 1
+          },
+          "on_finish": {
+            "$ref": "#/components/schemas/OnFinish"
+          },
+          "initial": {
+            "$ref": "#/components/schemas/PhysicalTargets"
+          }
+        },
+        "required": [
+          "timing",
+          "steps",
+          "initial"
+        ],
+        "additionalProperties": false,
+        "description": "Interval timing applies initial targets once, spaces writes by 10 ms, and waits the remainder of each interval. Final fades settle before cleanup.",
+        "x-runtime-constraints": [
+          "len(steps) * repeat <= 1024",
+          "nominal duration <= 86400000 ms",
+          "Every step matches initial target LED count and order.",
+          "fade_ms <= interval_ms."
+        ],
+        "examples": [
+          {
+            "timing": "interval",
+            "initial": [
+              {
+                "led": 1,
+                "color": "#112233"
+              },
+              {
+                "led": 2,
+                "color": "#445566"
+              }
+            ],
+            "steps": [
+              {
+                "targets": [
+                  {
+                    "led": 1,
+                    "color": "#445566"
+                  },
+                  {
+                    "led": 2,
+                    "color": "#112233"
+                  }
+                ],
+                "fade_ms": 50,
+                "interval_ms": 50
+              }
+            ],
+            "repeat": 2,
+            "on_finish": "off"
+          }
+        ]
+      },
+      "CanonicalTargetLED1": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/CanonicalTarget"
+          },
+          {
+            "properties": {
+              "led": {
+                "const": 1
+              }
+            }
+          }
+        ]
+      },
+      "CanonicalTargetLED2": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/CanonicalTarget"
+          },
+          {
+            "properties": {
+              "led": {
+                "const": 2
+              }
+            }
+          }
+        ]
+      },
+      "CanonicalPhysicalTarget": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/CanonicalTargetLED1"
+          },
+          {
+            "$ref": "#/components/schemas/CanonicalTargetLED2"
+          }
+        ]
+      },
+      "CanonicalPhysicalTargets": {
+        "oneOf": [
+          {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CanonicalPhysicalTarget"
+            },
+            "minItems": 1,
+            "maxItems": 1
+          },
+          {
+            "type": "array",
+            "prefixItems": [
+              {
+                "$ref": "#/components/schemas/CanonicalTargetLED1"
+              },
+              {
+                "$ref": "#/components/schemas/CanonicalTargetLED2"
+              }
+            ],
+            "items": false,
+            "minItems": 2,
+            "maxItems": 2
+          },
+          {
+            "type": "array",
+            "prefixItems": [
+              {
+                "$ref": "#/components/schemas/CanonicalTargetLED2"
+              },
+              {
+                "$ref": "#/components/schemas/CanonicalTargetLED1"
+              }
+            ],
+            "items": false,
+            "minItems": 2,
+            "maxItems": 2
+          }
+        ]
+      },
+      "CanonicalSerialStep": {
+        "type": "object",
+        "properties": {
+          "targets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CanonicalTarget"
+            },
+            "minItems": 1,
+            "maxItems": 1
+          },
+          "fade_ms": {
+            "$ref": "#/components/schemas/FadeMS"
+          },
+          "hold_ms": {
+            "$ref": "#/components/schemas/HoldMS"
+          }
+        },
+        "required": [
+          "targets",
+          "fade_ms",
+          "hold_ms"
+        ],
+        "additionalProperties": false
+      },
+      "CanonicalSerialSequence": {
+        "type": "object",
+        "properties": {
+          "timing": {
+            "const": "serial"
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CanonicalSerialStep"
+            },
+            "minItems": 1,
+            "maxItems": 1024
+          },
+          "repeat": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1024,
+            "x-json-number-syntax": "ordinary nonnegative integer without sign, fraction or exponent",
+            "default": 1
+          },
+          "on_finish": {
+            "$ref": "#/components/schemas/OnFinish"
+          }
+        },
+        "required": [
+          "timing",
+          "steps",
+          "repeat",
+          "on_finish"
+        ],
+        "additionalProperties": false,
+        "description": "Serial timing waits fade_ms + hold_ms + 10 ms for each step.",
+        "x-runtime-constraints": [
+          "len(steps) * repeat <= 1024",
+          "nominal duration <= 86400000 ms"
+        ]
+      },
+      "CanonicalIntervalStep": {
+        "type": "object",
+        "properties": {
+          "targets": {
+            "$ref": "#/components/schemas/CanonicalPhysicalTargets"
+          },
+          "fade_ms": {
+            "$ref": "#/components/schemas/FadeMS"
+          },
+          "interval_ms": {
+            "$ref": "#/components/schemas/IntervalMS"
+          }
+        },
+        "required": [
+          "targets",
+          "fade_ms",
+          "interval_ms"
+        ],
+        "additionalProperties": false,
+        "description": "fade_ms must not exceed interval_ms. Ordered targets must match initial in count and LED order."
+      },
+      "CanonicalIntervalSequence": {
+        "type": "object",
+        "properties": {
+          "timing": {
+            "const": "interval"
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CanonicalIntervalStep"
+            },
+            "minItems": 1,
+            "maxItems": 1024
+          },
+          "repeat": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1024,
+            "x-json-number-syntax": "ordinary nonnegative integer without sign, fraction or exponent",
+            "default": 1
+          },
+          "on_finish": {
+            "$ref": "#/components/schemas/OnFinish"
+          },
+          "initial": {
+            "$ref": "#/components/schemas/CanonicalPhysicalTargets"
+          }
+        },
+        "required": [
+          "timing",
+          "steps",
+          "repeat",
+          "on_finish",
+          "initial"
+        ],
+        "additionalProperties": false,
+        "description": "Interval timing applies initial targets once, spaces writes by 10 ms, and waits the remainder of each interval. Final fades settle before cleanup.",
+        "x-runtime-constraints": [
+          "len(steps) * repeat <= 1024",
+          "nominal duration <= 86400000 ms",
+          "Every step matches initial target LED count and order.",
+          "fade_ms <= interval_ms."
+        ]
+      },
+      "Sequence": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/SerialSequence"
+          },
+          {
+            "$ref": "#/components/schemas/IntervalSequence"
+          }
+        ],
+        "description": "Host playback input. Defaults are applied by the core. All times are integer milliseconds."
+      },
+      "NormalizedSequence": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/CanonicalSerialSequence"
+          },
+          {
+            "$ref": "#/components/schemas/CanonicalIntervalSequence"
+          }
+        ],
+        "description": "Frozen normalized playback plan with explicit defaults and lowercase exact RGB."
+      },
+      "PairedLEDs": {
+        "type": "array",
+        "enum": [
+          [
+            1,
+            2
+          ],
+          [
+            2,
+            1
+          ]
+        ],
+        "default": [
+          1,
+          2
+        ]
+      },
+      "PairedColors": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/ColorInput"
+        },
+        "minItems": 2,
+        "maxItems": 2
+      },
+      "SetAction": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "const": "set"
+          },
+          "led": {
+            "$ref": "#/components/schemas/LED"
+          },
+          "color": {
+            "$ref": "#/components/schemas/ColorInput"
+          }
+        },
+        "required": [
+          "kind",
+          "color"
+        ],
+        "additionalProperties": false,
+        "x-compiled-steps-per-cycle": 1,
+        "x-runtime-constraints": [
+          "Compiled nominal duration must be <= 86400000 ms."
+        ],
+        "description": "Ends in hold after one step.",
+        "examples": [
+          {
+            "kind": "set",
+            "color": "lime"
+          }
+        ]
+      },
+      "OffAction": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "const": "off"
+          },
+          "led": {
+            "$ref": "#/components/schemas/LED"
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "additionalProperties": false,
+        "x-compiled-steps-per-cycle": 1,
+        "x-runtime-constraints": [
+          "Compiled nominal duration must be <= 86400000 ms."
+        ],
+        "description": "Ends in hold after one step.",
+        "examples": [
+          {
+            "kind": "off"
+          }
+        ]
+      },
+      "FadeAction": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "const": "fade"
+          },
+          "led": {
+            "$ref": "#/components/schemas/LED"
+          },
+          "color": {
+            "$ref": "#/components/schemas/ColorInput"
+          },
+          "duration_ms": {
+            "$ref": "#/components/schemas/PositiveFadeMS"
+          }
+        },
+        "required": [
+          "kind",
+          "color",
+          "duration_ms"
+        ],
+        "additionalProperties": false,
+        "x-compiled-steps-per-cycle": 1,
+        "x-runtime-constraints": [
+          "Compiled nominal duration must be <= 86400000 ms."
+        ],
+        "description": "Ends in hold after one step.",
+        "examples": [
+          {
+            "kind": "fade",
+            "color": "#369",
+            "duration_ms": 200
+          }
+        ]
+      },
+      "BlinkAction": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "const": "blink"
+          },
+          "led": {
+            "$ref": "#/components/schemas/LED"
+          },
+          "color": {
+            "$ref": "#/components/schemas/ColorInput"
+          },
+          "on_ms": {
+            "type": "integer",
+            "minimum": 10,
+            "maximum": 3600010,
+            "x-json-number-syntax": "ordinary nonnegative integer without sign, fraction or exponent",
+            "default": 250
+          },
+          "off_ms": {
+            "type": "integer",
+            "minimum": 10,
+            "maximum": 3600010,
+            "x-json-number-syntax": "ordinary nonnegative integer without sign, fraction or exponent",
+            "default": 250
+          },
+          "cycles": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 512,
+            "x-json-number-syntax": "ordinary nonnegative integer without sign, fraction or exponent",
+            "default": 1
+          },
+          "on_finish": {
+            "$ref": "#/components/schemas/OnFinish"
+          }
+        },
+        "required": [
+          "kind",
+          "color"
+        ],
+        "additionalProperties": false,
+        "x-compiled-steps-per-cycle": 2,
+        "x-runtime-constraints": [
+          "Compiled nominal duration must be <= 86400000 ms."
+        ],
+        "description": "Finite host Action compiled and executed by the core.",
+        "examples": [
+          {
+            "kind": "blink",
+            "color": {
+              "space": "rgb8",
+              "r": 32,
+              "g": 96,
+              "b": 128
+            }
+          }
+        ]
+      },
+      "BreatheAction": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "const": "breathe"
+          },
+          "led": {
+            "$ref": "#/components/schemas/LED"
+          },
+          "color": {
+            "$ref": "#/components/schemas/ColorInput"
+          },
+          "period_ms": {
+            "type": "integer",
+            "minimum": 330,
+            "maximum": 9600314,
+            "x-json-number-syntax": "ordinary nonnegative integer without sign, fraction or exponent",
+            "default": 2000
+          },
+          "cycles": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 60,
+            "x-json-number-syntax": "ordinary nonnegative integer without sign, fraction or exponent",
+            "default": 1
+          },
+          "on_finish": {
+            "$ref": "#/components/schemas/OnFinish"
+          }
+        },
+        "required": [
+          "kind",
+          "color"
+        ],
+        "additionalProperties": false,
+        "x-compiled-steps-per-cycle": 17,
+        "x-runtime-constraints": [
+          "Compiled nominal duration must be <= 86400000 ms."
+        ],
+        "description": "Finite host Action compiled and executed by the core.",
+        "examples": [
+          {
+            "kind": "breathe",
+            "color": "cyan"
+          }
+        ]
+      },
+      "PulseAction": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "const": "pulse"
+          },
+          "led": {
+            "$ref": "#/components/schemas/LED"
+          },
+          "color": {
+            "$ref": "#/components/schemas/ColorInput"
+          },
+          "attack_ms": {
+            "$ref": "#/components/schemas/PositiveFadeMS",
+            "default": 60
+          },
+          "decay_ms": {
+            "$ref": "#/components/schemas/PositiveFadeMS",
+            "default": 240
+          },
+          "rest_ms": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 3600000,
+            "x-json-number-syntax": "ordinary nonnegative integer without sign, fraction or exponent",
+            "default": 700
+          },
+          "cycles": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 341,
+            "x-json-number-syntax": "ordinary nonnegative integer without sign, fraction or exponent",
+            "default": 1
+          },
+          "on_finish": {
+            "$ref": "#/components/schemas/OnFinish"
+          }
+        },
+        "required": [
+          "kind",
+          "color"
+        ],
+        "additionalProperties": false,
+        "x-compiled-steps-per-cycle": 3,
+        "x-runtime-constraints": [
+          "Compiled nominal duration must be <= 86400000 ms."
+        ],
+        "description": "Finite host Action compiled and executed by the core.",
+        "examples": [
+          {
+            "kind": "pulse",
+            "color": "@status-ok"
+          }
+        ]
+      },
+      "AlternateAction": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "const": "alternate"
+          },
+          "leds": {
+            "$ref": "#/components/schemas/PairedLEDs"
+          },
+          "colors": {
+            "$ref": "#/components/schemas/PairedColors"
+          },
+          "period_ms": {
+            "type": "integer",
+            "minimum": 40,
+            "maximum": 7200040,
+            "x-json-number-syntax": "ordinary nonnegative integer without sign, fraction or exponent",
+            "default": 2000
+          },
+          "cycles": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 256,
+            "x-json-number-syntax": "ordinary nonnegative integer without sign, fraction or exponent",
+            "default": 1
+          },
+          "on_finish": {
+            "$ref": "#/components/schemas/OnFinish"
+          }
+        },
+        "required": [
+          "kind",
+          "colors"
+        ],
+        "additionalProperties": false,
+        "x-compiled-steps-per-cycle": 4,
+        "x-runtime-constraints": [
+          "Compiled nominal duration must be <= 86400000 ms."
+        ],
+        "description": "Finite host Action compiled and executed by the core.",
+        "examples": [
+          {
+            "kind": "alternate",
+            "colors": [
+              "red",
+              "blue"
+            ]
+          }
+        ]
+      },
+      "OrbitAction": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "const": "orbit"
+          },
+          "leds": {
+            "$ref": "#/components/schemas/PairedLEDs"
+          },
+          "colors": {
+            "$ref": "#/components/schemas/PairedColors"
+          },
+          "period_ms": {
+            "type": "integer",
+            "minimum": 200,
+            "maximum": 2400000,
+            "x-json-number-syntax": "ordinary nonnegative integer without sign, fraction or exponent",
+            "default": 3000
+          },
+          "cycles": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 256,
+            "x-json-number-syntax": "ordinary nonnegative integer without sign, fraction or exponent",
+            "default": 1
+          },
+          "on_finish": {
+            "$ref": "#/components/schemas/OnFinish"
+          }
+        },
+        "required": [
+          "kind",
+          "colors"
+        ],
+        "additionalProperties": false,
+        "x-compiled-steps-per-cycle": 4,
+        "x-runtime-constraints": [
+          "Compiled nominal duration must be <= 86400000 ms."
+        ],
+        "description": "Finite host Action compiled and executed by the core.",
+        "examples": [
+          {
+            "kind": "orbit",
+            "colors": [
+              "red",
+              "blue"
+            ],
+            "period_ms": 400
+          }
+        ]
+      },
+      "RainbowAction": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "const": "rainbow"
+          },
+          "led": {
+            "$ref": "#/components/schemas/LED"
+          },
+          "period_ms": {
+            "type": "integer",
+            "minimum": 150,
+            "maximum": 4200143,
+            "x-json-number-syntax": "ordinary nonnegative integer without sign, fraction or exponent",
+            "default": 3000
+          },
+          "cycles": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 128,
+            "x-json-number-syntax": "ordinary nonnegative integer without sign, fraction or exponent",
+            "default": 1
+          },
+          "on_finish": {
+            "$ref": "#/components/schemas/OnFinish"
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "additionalProperties": false,
+        "x-compiled-steps-per-cycle": 8,
+        "x-runtime-constraints": [
+          "Compiled nominal duration must be <= 86400000 ms."
+        ],
+        "description": "Finite host Action compiled and executed by the core.",
+        "examples": [
+          {
+            "kind": "rainbow"
+          }
+        ]
+      },
+      "Action": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/SetAction"
+          },
+          {
+            "$ref": "#/components/schemas/OffAction"
+          },
+          {
+            "$ref": "#/components/schemas/FadeAction"
+          },
+          {
+            "$ref": "#/components/schemas/BlinkAction"
+          },
+          {
+            "$ref": "#/components/schemas/BreatheAction"
+          },
+          {
+            "$ref": "#/components/schemas/PulseAction"
+          },
+          {
+            "$ref": "#/components/schemas/AlternateAction"
+          },
+          {
+            "$ref": "#/components/schemas/OrbitAction"
+          },
+          {
+            "$ref": "#/components/schemas/RainbowAction"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind"
+        },
+        "description": "Nine supported lighting intents. The core compiles one Action into a normalized Sequence."
+      },
+      "PreviewRequest": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "$ref": "#/components/schemas/Action"
+          },
+          "sequence": {
+            "$ref": "#/components/schemas/Sequence"
+          },
+          "pattern_id": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "serial": {
+            "$ref": "#/components/schemas/Serial"
+          }
+        },
+        "required": [],
+        "additionalProperties": false,
+        "oneOf": [
+          {
+            "required": [
+              "action"
+            ]
+          },
+          {
+            "required": [
+              "sequence"
+            ]
+          },
+          {
+            "required": [
+              "pattern_id"
+            ]
+          }
+        ]
+      },
+      "SubmitJobRequest": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "$ref": "#/components/schemas/Action"
+          },
+          "sequence": {
+            "$ref": "#/components/schemas/Sequence"
+          },
+          "pattern_id": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "serial": {
+            "$ref": "#/components/schemas/Serial"
+          },
+          "id": {
+            "$ref": "#/components/schemas/JobIDInput"
+          }
+        },
+        "required": [
+          "serial"
+        ],
+        "additionalProperties": false,
+        "oneOf": [
+          {
+            "required": [
+              "action"
+            ]
+          },
+          {
+            "required": [
+              "sequence"
+            ]
+          },
+          {
+            "required": [
+              "pattern_id"
+            ]
+          }
+        ]
+      },
+      "SavePatternRequest": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "$ref": "#/components/schemas/Action"
+          },
+          "sequence": {
+            "$ref": "#/components/schemas/Sequence"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 256
+          }
+        },
+        "required": [],
+        "additionalProperties": false,
+        "oneOf": [
+          {
+            "required": [
+              "action"
+            ]
+          },
+          {
+            "required": [
+              "sequence"
+            ]
+          }
+        ]
+      },
+      "ColorRequest": {
+        "type": "object",
+        "properties": {
+          "color": {
+            "$ref": "#/components/schemas/ColorInput"
+          }
+        },
+        "required": [
+          "color"
+        ],
+        "additionalProperties": false
+      },
+      "ColorResolution": {
+        "type": "object",
+        "properties": {
+          "color": {
+            "$ref": "#/components/schemas/CanonicalColor"
+          }
+        },
+        "required": [
+          "color"
+        ],
+        "additionalProperties": false
+      },
+      "Color": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "$ref": "#/components/schemas/ColorName"
+          },
+          "color": {
+            "$ref": "#/components/schemas/CanonicalColor"
+          }
+        },
+        "required": [
+          "name",
+          "color"
+        ],
+        "additionalProperties": false,
+        "examples": [
+          {
+            "name": "status-ok",
+            "color": "#00ff00"
+          }
+        ]
+      },
+      "PatternSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 256
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "additionalProperties": false,
+        "examples": [
+          {
+            "id": "gentle-pulse",
+            "title": "Gentle pulse"
+          }
+        ]
+      },
+      "Pattern": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 256
+          },
+          "sequence": {
+            "$ref": "#/components/schemas/NormalizedSequence"
+          }
+        },
+        "required": [
+          "id",
+          "sequence"
+        ],
+        "additionalProperties": false
+      },
+      "DeviceCheck": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "not_requested",
+              "supported",
+              "unsupported",
+              "unknown"
+            ]
+          },
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "additionalProperties": false,
+        "description": "Reports cached capability checks. Execution admission and physical validation have separate results."
+      },
+      "Preview": {
+        "type": "object",
+        "properties": {
+          "sequence": {
+            "$ref": "#/components/schemas/NormalizedSequence"
+          },
+          "total_steps": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1024,
+            "x-json-number-syntax": "ordinary nonnegative integer without sign, fraction or exponent"
+          },
+          "nominal_duration_ms": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 86400000,
+            "x-json-number-syntax": "ordinary nonnegative integer without sign, fraction or exponent"
+          },
+          "required_capabilities": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "set",
+                "sequence",
+                "raw-rgb",
+                "mk2-basic",
+                "hold"
+              ]
+            },
+            "minItems": 1,
+            "maxItems": 5,
+            "uniqueItems": true
+          },
+          "device_check": {
+            "$ref": "#/components/schemas/DeviceCheck"
+          }
+        },
+        "required": [
+          "sequence",
+          "total_steps",
+          "nominal_duration_ms",
+          "required_capabilities",
+          "device_check"
+        ],
+        "additionalProperties": false
+      },
+      "Job": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "serial": {
+            "$ref": "#/components/schemas/Serial"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "running",
+              "cancelling",
+              "succeeded",
+              "failed",
+              "cancelled"
+            ]
+          },
+          "completed_steps": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1024,
+            "x-json-number-syntax": "ordinary nonnegative integer without sign, fraction or exponent"
+          },
+          "total_steps": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1024,
+            "x-json-number-syntax": "ordinary nonnegative integer without sign, fraction or exponent"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "started_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "finished_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "error": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "serial",
+          "status",
+          "completed_steps",
+          "total_steps",
+          "created_at"
+        ],
+        "additionalProperties": false,
+        "x-runtime-constraints": [
+          "completed_steps <= total_steps",
+          "Only terminal states have finished_at. Cancellation is terminal after cleanup completes."
+        ]
+      },
+      "Observation": {
+        "type": "object",
+        "properties": {
+          "led1": {
+            "$ref": "#/components/schemas/CanonicalColor"
+          },
+          "led2": {
+            "$ref": "#/components/schemas/CanonicalColor"
+          },
+          "sampled_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "led1",
+          "led2",
+          "sampled_at"
+        ],
+        "additionalProperties": false
+      },
+      "Device": {
+        "type": "object",
+        "properties": {
+          "serial": {
+            "$ref": "#/components/schemas/Serial"
+          },
+          "product": {
+            "type": "string"
+          },
+          "firmware": {
+            "type": "integer"
+          },
+          "connection": {
+            "type": "string",
+            "enum": [
+              "connecting",
+              "online",
+              "busy",
+              "offline",
+              "error",
+              "closing",
+              "closed"
+            ]
+          },
+          "capabilities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 0
+          },
+          "active_job": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "queue_depth": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1024,
+            "x-json-number-syntax": "ordinary nonnegative integer without sign, fraction or exponent"
+          },
+          "observed": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Observation"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "serial",
+          "product",
+          "connection",
+          "capabilities",
+          "queue_depth",
+          "observed"
+        ],
+        "additionalProperties": false
+      },
+      "TransportMetric": {
+        "type": "object",
+        "properties": {
+          "serial": {
+            "$ref": "#/components/schemas/Serial"
+          },
+          "operation": {
+            "type": "string"
+          },
+          "calls": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 18446744073709551615
+          },
+          "attempts": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 18446744073709551615
+          },
+          "retries": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 18446744073709551615
+          },
+          "failures": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 18446744073709551615
+          },
+          "last_error": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "serial",
+          "operation",
+          "calls",
+          "attempts",
+          "retries",
+          "failures"
+        ],
+        "additionalProperties": false
+      },
+      "Health": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "const": "ok"
+          },
+          "api_version": {
+            "const": "v1"
+          }
+        },
+        "required": [
+          "status",
+          "api_version"
+        ],
+        "additionalProperties": false,
+        "examples": [
+          {
+            "status": "ok",
+            "api_version": "v1"
+          }
+        ]
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "enum": [
+                  "invalid_request",
+                  "invalid_json",
+                  "not_found",
+                  "job_conflict",
+                  "device_busy",
+                  "local_only",
+                  "method_not_allowed",
+                  "body_too_large",
+                  "json_required",
+                  "unsupported_capability",
+                  "library_capacity",
+                  "unavailable",
+                  "internal_error"
+                ]
+              },
+              "message": {
+                "type": "string"
+              },
+              "field": {
+                "type": "string",
+                "description": "Optional Action field path, such as action.duration_ms."
+              }
+            },
+            "required": [
+              "code",
+              "message"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "additionalProperties": false,
+        "examples": [
+          {
+            "error": {
+              "code": "invalid_request",
+              "message": "must use 10 ms units",
+              "field": "action.duration_ms"
+            }
+          }
+        ]
+      }
+    }
+  }
+}

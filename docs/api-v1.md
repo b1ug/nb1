@@ -2,6 +2,8 @@
 
 This development candidate provides the Action → Sequence → Job execution path through HTTP and `nb1 control`. The running local installation has its own separately tested source version.
 
+The [OpenAPI 3.1 contract](api-v1.openapi.json) describes the current HTTP operations, request and response schemas, constraints and software-fixture examples. The valid saved-color name `resolve` has a concrete PUT operation alongside POST color resolution.
+
 ## Actions and sequences
 
 Actions are `set`, `off`, `fade`, `blink`, `breathe`, `pulse`, `alternate`, `orbit` and `rainbow`. The compiler produces one normalized Sequence with `timing` set to `serial` or `interval` and an ordered `steps` array. Orbit uses four paired transitions. Rainbow uses seven color anchors and returns to red.
@@ -66,4 +68,4 @@ Pattern saving fixes the resolved Sequence. Updating a color or Pattern affects 
 
 ## Implementation sequence
 
-The core execution path, local library, HTTP operations above and CLI commands form this delivery. DeviceSequence routes, Web controls and MCP are the following integration work. The [terminology table](api-v1-terminology.md) governs names across those surfaces.
+The source delivery includes the core execution path, local library, HTTP operations above, CLI commands, embedded Web controls and MCP adapter. Software checks cover the integrated routes and Agent workflows. Real-device v1 validation and replacement of the daily installation remain pending. DeviceSequence routes are planned. The [terminology table](api-v1-terminology.md) governs names across those surfaces.

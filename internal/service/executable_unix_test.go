@@ -7,6 +7,8 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"runtime"
+	"syscall"
 	"testing"
 )
 
@@ -134,4 +136,91 @@ func TestUserBoundInstallAndStartKeepStableConfiguration(t *testing.T) {
 		t.Fatalf("start upgraded binding = %+v %v", status, err)
 	}
 	assertContent(t, m.plistPath(), original)
+}
+
+func TestBoundExecutableGroupWriteRequiresAnIndependentPrivateBoundary(t *testing.T) {
+	private, root, one, _ := boundFixture(t, t.TempDir())
+	if err := os.Chmod(filepath.Dir(filepath.Join(one, "bin", "nb1")), 0775); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ResolveBoundExecutable(private, root, os.Geteuid()); err != nil {
+		t.Fatalf("group-writable directory below a private boundary rejected: %v", err)
+	}
+	public, err := os.MkdirTemp("/tmp", "nb1-binding-")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { os.RemoveAll(public) })
+	publicEntry, publicRoot, publicOne, _ := boundFixture(t, public)
+	for _, directory := range []string{public, filepath.Dir(publicRoot), publicRoot, publicOne, filepath.Join(public, "opt")} {
+		if err := os.Chmod(directory, 0755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	bin := filepath.Join(publicOne, "bin")
+	if err := os.Chmod(bin, 0775); err != nil {
+		t.Fatal(err)
+	}
+	info, err := os.Stat(bin)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if runtime.GOOS == "darwin" && info.Sys().(*syscall.Stat_t).Gid == 80 {
+		t.Skip("the public fixture inherits the separately trusted macOS administrator group")
+	}
+	if _, err := ResolveBoundExecutable(publicEntry, publicRoot, os.Geteuid()); err == nil {
+		t.Fatal("public group-writable directory accepted")
+	}
+	link := filepath.Dir(filepath.Dir(private))
+	if err := os.Remove(link); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(publicOne, link); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ResolveBoundExecutable(private, publicRoot, os.Geteuid()); err == nil {
+		t.Fatal("private source link transferred trust to its public target")
+	}
+	if err := os.Remove(filepath.Join(publicOne, "bin", "nb1")); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(filepath.Join(one, "bin", "nb1"), filepath.Join(publicOne, "bin", "nb1")); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ResolveBoundExecutable(private, root, os.Geteuid()); err == nil {
+		t.Fatal("private-to-public-to-private link chain hid a writable bridge")
+	}
+}
+
+func TestBoundExecutableRejectsParentTraversalAfterALinkComponent(t *testing.T) {
+	prefix := t.TempDir()
+	binary, root, one, _ := boundFixture(t, prefix)
+	safe, bridge := filepath.Join(prefix, "safe"), filepath.Join(prefix, "bridge")
+	for _, directory := range []string{safe, filepath.Join(bridge, "child")} {
+		if err := os.MkdirAll(directory, 0700); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for link, target := range map[string]string{
+		filepath.Join(safe, "jump"):      filepath.Join(bridge, "child"),
+		filepath.Join(safe, "version"):   one,
+		filepath.Join(bridge, "version"): one,
+	} {
+		if err := os.Symlink(target, link); err != nil {
+			t.Fatal(err)
+		}
+	}
+	link := filepath.Dir(filepath.Dir(binary))
+	if err := os.Remove(link); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink("../safe/jump/../version", link); err != nil {
+		t.Fatal(err)
+	}
+	if resolved, err := filepath.EvalSymlinks(binary); err != nil || resolved != filepath.Join(one, "bin", "nb1") {
+		t.Fatalf("fixture did not return to its safe rack: %s %v", resolved, err)
+	}
+	if _, err := ResolveBoundExecutable(binary, root, os.Geteuid()); err == nil {
+		t.Fatal("lexical cleaning hid a link traversal")
+	}
 }

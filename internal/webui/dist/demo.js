@@ -109,7 +109,14 @@
     return {key: "action", raw: JSON.stringify(action)};
   }
   function draftKey() { return envelope(authorInput(), {serial: $("device-select").value}); }
-  function invalidate() { version++; preview = null; $("preview-summary").textContent = "Draft changed"; updateButtons(); }
+  function invalidate() {
+    version++; preview = null; $("preview-summary").textContent = "Draft changed";
+    for (const suffix of ["a", "b"]) {
+      const selected = $("color-mode-" + suffix).value === "text" ? $("color-" + suffix).value.toLowerCase().trim() : "";
+      for (const button of $("palette-" + suffix).children) button.setAttribute("aria-pressed", String(button.title === selected));
+    }
+    updateButtons();
+  }
   function updateButtons() {
     const waiting = task && (task.unknown || !terminal(task.job?.status));
     $("play").disabled = submitting || waiting || !preview || preview.version !== version || preview.check !== "supported";
@@ -171,12 +178,14 @@
     $("compiled").textContent = JSON.stringify(value.sequence, null, 2);
     $("preview-summary").textContent = "Preview ready";
     $("preview-check").textContent = "Steps: " + value.total_steps + " · " + value.nominal_duration_ms + " ms · " + value.device_check.status;
+    $("request-details").open = true;
     notice("Preview ready. The light is unchanged."); updateButtons();
   }
   function saveTask() { try { sessionStorage.setItem(taskKey, JSON.stringify(task)); } catch (_) { /* The in-page ID remains available. */ } }
   function showTask() {
     $("job-id").textContent = task?.id || "—";
     $("job-status").textContent = task?.unknown ? "Outcome unknown" : task?.rejected ? "Submission rejected" : states[task?.job?.status] || "Not submitted";
+    $("job-status").dataset.state = task?.unknown ? "unknown" : task?.rejected ? "failed" : task?.job?.status || "idle";
     $("job-progress").textContent = task?.job ? task.job.completed_steps + " / " + task.job.total_steps : "—";
     $("job-progress-bar").max = task?.job?.total_steps || 1; $("job-progress-bar").value = task?.job?.completed_steps || 0;
     $("job-message").textContent = task?.unknown ? "Keep this Job ID and query it. Decide any new run explicitly." : "A Job is complete when device cleanup is confirmed.";
@@ -227,12 +236,20 @@
   }
   async function readDevice() {
     const id = $("device-select").value, generation = ++deviceGeneration;
-    if (!id) return;
+    if (!id) {
+      $("connection").textContent = "Disconnected"; $("connection").dataset.state = "disconnected";
+      for (const [suffix, key] of [["one", "led1"], ["two", "led2"]]) {
+        $("led-" + suffix).style.backgroundColor = "#e4e7d5"; $("led-" + suffix).dataset.available = "false"; $("rgb-" + suffix).textContent = "—";
+      }
+      $("sample-time").textContent = "—";
+      return;
+    }
     const {value} = await request("/v1/devices/" + id);
     if (generation !== deviceGeneration || id !== $("device-select").value) return;
     if (value.serial !== id || typeof value.connection !== "string" || value.observed !== null && (!value.observed || ![value.observed.led1, value.observed.led2].every(v => v === null || hex.test(v)))) throw Error("Invalid cached device state");
     $("connection").textContent = value.connection === "online" ? "Online" : "Offline";
-    for (const [suffix, key] of [["one", "led1"], ["two", "led2"]]) { const color = value.observed?.[key]; $("led-" + suffix).style.backgroundColor = color || "#e0dbc8"; $("rgb-" + suffix).textContent = color || "—"; }
+    $("connection").dataset.state = value.connection === "online" ? "online" : "offline";
+    for (const [suffix, key] of [["one", "led1"], ["two", "led2"]]) { const color = value.observed?.[key]; $("led-" + suffix).style.backgroundColor = color || "#e4e7d5"; $("led-" + suffix).dataset.available = String(Boolean(color)); $("rgb-" + suffix).textContent = color || "—"; }
     $("sample-time").textContent = value.observed?.sampled_at || "—";
   }
   async function refreshColors() {
@@ -286,7 +303,7 @@
     $("color-mode-" + suffix).addEventListener("change", () => { renderChannels(suffix); invalidate(); });
     $("picker-" + suffix).addEventListener("input", () => { $("color-mode-" + suffix).value = "text"; renderChannels(suffix); $("color-" + suffix).value = $("picker-" + suffix).value; invalidate(); });
     for (const color of ["#ff0000", "#ffa500", "#ffff00", "#00ff00", "#00a060", "#00ffff", "#0000ff", "#8f00ff", "#ffffff"]) {
-      const button = document.createElement("button"); button.type = "button"; button.style.backgroundColor = color; button.title = color; button.setAttribute("aria-label", color);
+      const button = document.createElement("button"); button.type = "button"; button.style.backgroundColor = color; button.title = color; button.setAttribute("aria-label", color); button.setAttribute("aria-pressed", "false");
       button.addEventListener("click", () => { $("color-mode-" + suffix).value = "text"; renderChannels(suffix); $("color-" + suffix).value = color; $("picker-" + suffix).value = color; invalidate(); }); $("palette-" + suffix).append(button);
     }
     bind("resolve-" + suffix, async () => { const input = colorInput(suffix), captured = JSON.stringify(input); const {value} = await request("/v1/colors/resolve", "POST", JSON.stringify({color: input})); if (!hex.test(value.color)) throw Error("Invalid resolved color"); if (captured === JSON.stringify(colorInput(suffix))) { $("resolved-" + suffix).textContent = value.color; $("picker-" + suffix).value = value.color; } });

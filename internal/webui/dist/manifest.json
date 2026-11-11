@@ -4,9 +4,9 @@
   "asset_base": "./",
   "source": {
     "repository": "local:nb1-web",
-    "commit": "18678b56f7db33a90a27d4aa0cd855ff2c5a12e8",
+    "commit": "c5dd7bbe96b5ee5fe3d9b92dd191640d3d4b5b5d",
     "dirty": false,
-    "tree_sha256": "b320aeb1be04b63f07b50067f1795b824943fe4a7874daaafed32a743da48629"
+    "tree_sha256": "d758770b552c89cdec62714e545d8a74d168118cb4ff34e1092ffc128b0cd58a"
   },
   "build": {
     "tool": "copy-static/v1",
@@ -24,13 +24,13 @@
     },
     {
       "path": "demo.css",
-      "bytes": 24147,
-      "sha256": "0981680f3e420618ba78854dbd3eeb888e64aa2b909e48b844fcd73b9168c3b0"
+      "bytes": 29179,
+      "sha256": "ee3cd78395edf4a811ce689166adf31c63027198bd53605311242ca345987690"
     },
     {
       "path": "demo.js",
-      "bytes": 27323,
-      "sha256": "1d05a2fe972b55c21ec4b9d6458fe2b8ea50b82ae6968cce6343bdb0b7fcf921"
+      "bytes": 28378,
+      "sha256": "8ce99f58c03414d0e8715b700513abf06f31587293c95c590d0dbf004d3044ea"
     },
     {
       "path": "i18n.js",
@@ -39,13 +39,13 @@
     },
     {
       "path": "index.html",
-      "bytes": 9312,
-      "sha256": "90563e4309a661b0076c2022cec9767c291a5704b5d8d8fe587c0e1931102ab3"
+      "bytes": 10799,
+      "sha256": "2cbb025de4726eba13d94838b31249cb0cbc1443d1b96cc8cc4cc99d4b7685eb"
     },
     {
       "path": "locales.js",
-      "bytes": 5846,
-      "sha256": "a253fea06237ff472813da285daf4275b06786be45b8823544cce718a7b5a886"
+      "bytes": 5917,
+      "sha256": "d061f039877a318f26fa7f12bacc4fe329bd25ee2811487b1948ed15a1540eea"
     },
     {
       "path": "orbit.css",
@@ -54,8 +54,8 @@
     },
     {
       "path": "orbit.html",
-      "bytes": 9394,
-      "sha256": "846db97d9afe02dfc405eb1e22400d4ca6588cd024bfa411454cc654f500ed22"
+      "bytes": 10881,
+      "sha256": "b7d4c2dcb0ba3a07d1b45b868b573d9ba7c6b2940cadc3222ca486c1e901cd4a"
     },
     {
       "path": "orbit.js",
@@ -69,8 +69,8 @@
     },
     {
       "path": "patterns.html",
-      "bytes": 9400,
-      "sha256": "c8817bddd3870cec8a55d73fd97bae723205d4f0375010d5e6c105c619eea564"
+      "bytes": 10887,
+      "sha256": "269f7e84cc0e33a390004b84454f34b090555fdad5fe04f41bbc463524df2ee7"
     },
     {
       "path": "patterns.js",

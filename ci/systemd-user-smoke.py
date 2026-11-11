@@ -325,7 +325,9 @@ class Smoke:
         git, ln = trusted_tool("git"), trusted_tool("ln")
         prefix = self.account.pw_dir + "/b"
         require(len(prefix.encode()) <= len(b"/home/linuxbrew/.linuxbrew"), "fresh-user Homebrew prefix exceeds the supported relocation length")
-        self.user_command("homebrew-directories", [self.tools["install"], "-d", "-m", "0700", prefix + "/Homebrew", prefix + "/bin"])
+        # install -d applies -m only to named directories, not implicit parents.
+        # Name the prefix itself so the fresh-user package boundary is private.
+        self.user_command("homebrew-directories", [self.tools["install"], "-d", "-m", "0700", prefix, prefix + "/Homebrew", prefix + "/bin"])
         self.user_command("homebrew-git-init", [git, "-C", prefix + "/Homebrew", "init", "-q"])
         self.user_command("homebrew-origin", [git, "-C", prefix + "/Homebrew", "remote", "add", "origin", "https://github.com/Homebrew/brew.git"])
         self.user_command("homebrew-fetch-pinned", [git, "-C", prefix + "/Homebrew", "fetch", "--depth=1", "origin",

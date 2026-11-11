@@ -28,6 +28,8 @@ nb1 control run DEVICE_SERIAL action.json --wait
 
 Starting `server` does not install a startup service. Run it in a terminal, manage it as an ordinary background process, or explicitly configure the platform's user-service mode. Inspect `nb1 service --help` for available operations. No keyboard or input-monitoring permission is needed to control the lamp.
 
+The macOS/Linux candidate provides `nb1 service install --devices DEVICE_SERIAL --start` for explicit login-service installation. It selects the running nb1 executable by default; use `--binary /absolute/path/to/nb1` to choose another executable. Package upgrade migration and Windows service management remain separate work.
+
 ## Interfaces
 
 - [OpenAPI 3.1](docs/api-v1.openapi.json): machine-readable current HTTP contract.

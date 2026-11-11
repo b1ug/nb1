@@ -33,7 +33,7 @@ Get-Content .\nb1-task.ps1
 
 不传 `--output` 时把配置写到标准输出。输出路径须指向新文件，父目录须已存在；不会替换已有文件，也不会创建系统服务目录。可以在任意系统上生成其他平台的配置，路径按目标平台校验，但生成器不验证目标机器上的文件存在、执行权限或硬件支持。
 
-`--binary` 必须是明确的绝对路径，序列号必须是8位十六进制且不能重复；不会选择任意首个HID。`--listen` 仅接受回环地址或localhost，端口1–65535；服务配置拒绝临时随机端口0。带控制字符的路径会被拒绝。`--lock-dir` 可固定一个目标平台绝对目录，否则由实际运行账号决定默认值。
+上述跨平台 `service render` 的 `--binary` 必须是明确的目标平台绝对路径；本机 `service install` 则可以省略，默认使用当前 nb1 可执行文件。序列号必须是8位十六进制且不能重复；不会选择任意首个HID。`--listen` 仅接受回环地址或localhost，端口1–65535；服务配置拒绝临时随机端口0。带控制字符的路径会被拒绝。`--lock-dir` 可固定一个目标平台绝对目录，否则由实际运行账号决定默认值。
 
 ## 所有权目录必须一致
 
@@ -56,19 +56,25 @@ plutil -lint org.b1ug.nb1.plist
 确认二进制位置和目标设备后，可以在当前普通用户的图形登录会话中显式安装。以下命令会修改真实用户配置。macOS候选已在当前Mac与选定mk2完成临时安装、独立start/stop、幂等不重启、退出读黑及恢复原daemon的19项原生检查；临时配置已移除。该结论不覆盖注销/登录/重启或其他平台。
 
 ```bash
-nb1 service install --binary /absolute/path/to/nb1 --devices 20005601
+nb1 service install --devices 20000001
 nb1 service status --config-only --json
 nb1 service status --json
 ```
 
 `install` 默认先只读查询launchd，再写入 `~/Library/LaunchAgents/org.b1ug.nb1.plist`，不会立即bootstrap。**plist进入LaunchAgents后，下次图形登录可能自动加载**，因此这已经是持久安装，不能把它称为仅生成文件。没有可查询的GUI域、查询失败或已有归属不明的同名注册项时，安装失败，不会把它们当作“未加载”。工具不使用sudo，不写系统LaunchDaemons，不接收任意UID或label。
 
+省略 `--binary` 时，通过 `os.Executable()` 取得当前进程的可执行文件绝对路径，不依据 `argv[0]` 或再次搜索PATH。显式 `--binary /absolute/path/to/nb1` 可选择另一份已存在的程序；显式传空值会报错。路径解析失败时在构造服务管理器前报错，不自动选择其他程序。实际安装仍由原生管理器检查普通文件、执行权限和路径，并解析符号链接。应从持久安装的程序运行；`go run` 的临时程序不适合作为登录服务路径。
+
+自动定位不等于升级路径迁移：当前仍会固定解析后的真实路径。Homebrew版本目录等场景的升级、清理旧版本与回退仍需独立完善和验收。
+
 `status --config-only` 完全不调用launchctl，也不创建目录或锁，只报告磁盘文件；其 `registration: not_checked` 不能表示服务已运行或已经注销。普通 `status` 只读查询固定的 `gui/<当前UID>/org.b1ug.nb1`，分别返回 `config_state` 与 `registration`。`registration: registered` 仅表示launchd注册，不承诺进程正在运行、HTTP可用或USB在线。`nb1 doctor` 可另查API版本和已有设备快照；doctor显示的是当前CLI构建，不核对daemon二进制或实例身份。
 
 需要安装后本次立即加载时显式加 `--start`；已有托管配置可单独 `start`：
 
 ```bash
-nb1 service install --binary /absolute/path/to/nb1 --devices 20005601 --start
+nb1 service install --devices 20000001 --start
+# 需要选择另一份程序时才覆盖默认路径
+nb1 service install --binary /absolute/path/to/nb1 --devices 20000001 --start
 # 已安装配置的单独启动，不需要重填配置参数
 nb1 service start --json
 nb1 service status --json
@@ -104,7 +110,7 @@ nb1 service uninstall --stop --json
 Linux上的同名CLI命令使用独立systemd用户管理器，固定管理当前普通用户的 `nb1.service`，不调用launchctl、不提供切换UID或管理平台的flag。只有 `render --platform` 可跨平台生成配置；管理操作始终选择实际运行平台。需要可用的用户systemd manager和受信任的系统systemctl；root、sudo、身份切换或不可查询的用户manager均返回实际错误，不会自动提权、配置Polkit或开启linger。
 
 ```bash
-nb1 service install --binary /absolute/path/to/nb1 --devices 20005601
+nb1 service install --devices 20000001
 nb1 service status --config-only --json
 nb1 service status --json
 nb1 service start --json

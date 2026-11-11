@@ -1,6 +1,6 @@
 # Linux用户服务管理候选
 
-此包只管理当前普通用户的固定 `nb1.service`，接口为 `Install(ctx, Config, start)`、`Status(ctx, configOnly)`、`Start(ctx)`、`Stop(ctx)`、`Uninstall(ctx, stop)`。它使用父包的 `service.Config` 和 `service.Render`，返回独立 `Status`，暂未接入CLI工厂。没有修改父包、Mac实现或现有已部署daemon。
+此包只管理当前普通用户的固定 `nb1.service`，接口为 `Install(ctx, Config, start)`、`Status(ctx, configOnly)`、`Start(ctx)`、`Stop(ctx)`、`Uninstall(ctx, stop)`。它使用父包的 `service.Config` 和 `service.Render`，返回独立 `Status`，已接入当前平台的 CLI 工厂。`nb1 service install --devices SERIAL` 默认由 CLI 取得当前可执行文件路径；需要指定另一份程序时使用 `--binary`。本包继续验证可执行文件与服务配置，不自动启动其他用户或系统级服务。
 
 本轮在Mac的临时目录和fake runner中验证软件协议；没有在Mac运行systemctl，也没有执行真实Linux安装、启动、停止、权限或USB操作。Linux user-manager的真实验证留给后续专门CI。
 

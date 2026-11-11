@@ -28,6 +28,8 @@ nb1 control run DEVICE_SERIAL action.json --wait
 
 `server` 只是启动进程，不自动安装开机服务。可以前台运行、作为普通后台进程管理，也可显式选择相应平台的用户服务模式，操作见 `nb1 service --help`。控制灯不需要键盘或输入监控权限。
 
+macOS/Linux 候选支持用 `nb1 service install --devices DEVICE_SERIAL --start` 显式安装登录服务，默认使用正在运行的 nb1；需要选择另一份程序时提供 `--binary /absolute/path/to/nb1`。软件包升级迁移及 Windows 服务管理仍待分别推进。
+
 ## 文档与入口
 
 - [API v1](docs/api-v1.md)：Action、Sequence、Job、颜色、本机 Pattern 和资源限制。

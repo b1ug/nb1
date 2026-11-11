@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
@@ -182,6 +183,134 @@ func TestServiceCLISelectsOnePlatformAndPassesEveryAction(t *testing.T) {
 				}
 			})
 		}
+	}
+}
+
+func TestServiceCLIInstallDefaultsToRunningExecutable(t *testing.T) {
+	for _, goos := range []string{"darwin", "linux"} {
+		t.Run(goos, func(t *testing.T) {
+			fixture := serviceCLITestFixture(t, goos)
+			binary, err := os.Executable()
+			if err != nil {
+				t.Fatal(err)
+			}
+			// A different nb1 on PATH must not select the persisted program.
+			binDir := t.TempDir()
+			for _, name := range []string{"nb1", "nb1.exe"} {
+				if err := os.WriteFile(filepath.Join(binDir, name), []byte("not the running executable"), 0700); err != nil {
+					t.Fatal(err)
+				}
+			}
+			t.Setenv("PATH", binDir)
+			var output bytes.Buffer
+			if err := executeServiceCLI(fixture.management, context.Background(), &output,
+				"install", "--devices", "20000001", "--json"); err != nil {
+				t.Fatal(err)
+			}
+			calls := fixture.mac.calls
+			if goos == "linux" {
+				calls = fixture.linux.calls
+			}
+			if len(calls) != 1 || calls[0].kind != serviceInstall || calls[0].config.Binary != binary ||
+				!filepath.IsAbs(calls[0].config.Binary) || calls[0].start ||
+				!reflect.DeepEqual(calls[0].config.Devices, []string{"20000001"}) ||
+				!reflect.DeepEqual(fixture.created, map[string]int{goos: 1}) {
+				t.Fatalf("default executable or install behavior changed: %+v", calls)
+			}
+		})
+	}
+}
+
+func TestServiceCLIInstallExecutableOverrideAndResolverFailure(t *testing.T) {
+	for _, goos := range []string{"darwin", "linux"} {
+		t.Run(goos+"/explicit-override", func(t *testing.T) {
+			fixture := serviceCLITestFixture(t, goos)
+			fixture.management.executable = func() (string, error) {
+				t.Fatal("explicit --binary unexpectedly resolved the running executable")
+				return "", nil
+			}
+			selected := filepath.Join(t.TempDir(), "chosen nb1")
+			var output bytes.Buffer
+			if err := executeServiceCLI(fixture.management, context.Background(), &output,
+				"install", "--binary", selected, "--devices", "20000001", "--start"); err != nil {
+				t.Fatal(err)
+			}
+			calls := fixture.mac.calls
+			if goos == "linux" {
+				calls = fixture.linux.calls
+			}
+			if len(calls) != 1 || calls[0].config.Binary != selected || !calls[0].start {
+				t.Fatalf("explicit path or immediate-start flag lost: %+v", calls)
+			}
+		})
+		for _, resolution := range []string{"error", "empty", "relative", "explicit-empty"} {
+			t.Run(goos+"/"+resolution, func(t *testing.T) {
+				fixture := serviceCLITestFixture(t, goos)
+				failure := errors.New("running executable unavailable")
+				resolved := 0
+				fixture.management.executable = func() (string, error) {
+					resolved++
+					if resolution == "error" {
+						return "", failure
+					}
+					if resolution == "relative" {
+						return "nb1", nil
+					}
+					return "", nil
+				}
+				args := []string{"install", "--devices", "20000001"}
+				if resolution == "explicit-empty" {
+					args = append(args, "--binary", "")
+				}
+				var output bytes.Buffer
+				err := executeServiceCLI(fixture.management, context.Background(), &output, args...)
+				if err == nil || !strings.Contains(err.Error(), "--binary") || len(fixture.created) != 0 || output.Len() != 0 {
+					t.Fatalf("bad path reached a service manager: %v %v", fixture.created, err)
+				}
+				wantResolutions := 1
+				if resolution == "explicit-empty" {
+					wantResolutions = 0
+				}
+				if resolved != wantResolutions || resolution == "error" && !errors.Is(err, failure) {
+					t.Fatalf("unexpected resolver use or lost cause: %d %v", resolved, err)
+				}
+			})
+		}
+	}
+}
+
+func TestServiceCLIExecutableResolutionOnlyForSupportedInstall(t *testing.T) {
+	for _, goos := range []string{"darwin", "linux", "windows", "freebsd"} {
+		for _, args := range [][]string{
+			{"status"}, {"start"}, {"stop"}, {"uninstall"},
+			{"install"}, // The required devices flag fails before resolving.
+			{"render", "--platform", "linux", "--devices", "20000001"}, // Target binary remains required.
+			{"install", "--help"},
+		} {
+			t.Run(goos+"/"+strings.Join(args, " "), func(t *testing.T) {
+				fixture := serviceCLITestFixture(t, goos)
+				fixture.management.executable = func() (string, error) {
+					t.Fatal("non-install or invalid request resolved an executable")
+					return "", nil
+				}
+				var output bytes.Buffer
+				_ = executeServiceCLI(fixture.management, context.Background(), &output, args...)
+			})
+		}
+	}
+	for _, goos := range []string{"windows", "freebsd"} {
+		t.Run(goos+"/unsupported-install", func(t *testing.T) {
+			fixture := serviceCLITestFixture(t, goos)
+			fixture.management.executable = func() (string, error) {
+				t.Fatal("unsupported install probed the current executable")
+				return "", nil
+			}
+			var output bytes.Buffer
+			err := executeServiceCLI(fixture.management, context.Background(), &output, "install", "--devices", "20000001")
+			if !errors.Is(err, errUserServiceUnsupported) || len(fixture.created) != 0 || output.Len() != 0 {
+				t.Fatalf("unsupported install reached a manager: %v %v", fixture.created, err)
+			}
+		})
 	}
 }
 

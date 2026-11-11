@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
+	"path/filepath"
 	"runtime"
 	"strings"
 
@@ -70,21 +72,36 @@ func newServiceInstallCommand(management userServiceRuntime) *cobra.Command {
 	var config service.Config
 	var start, asJSON bool
 	command := &cobra.Command{
-		Use: "install", Short: "macOS/Linux：安装并安排用户登录加载；默认不立即启动",
-		Long:    "macOS写当前用户LaunchAgents配置；Linux写当前用户nb1.service及本工具的default.target持久启用链接，并刷新用户manager。默认不立即启动；下次登录可能加载，--start才请求立即启动。未知同名项、覆盖配置、查询异常或已有配置不同均拒绝接管或升级。二进制必须是当前机器上已存在的绝对可执行路径，设备须明确指定。不停止手工daemon，不管理系统服务、不自动提权。",
+		Use: "install", Short: "Install the current user's service on macOS or Linux",
+		Long: "Install a macOS LaunchAgent or Linux systemd user service for login loading. " +
+			"Use the running nb1 executable unless --binary explicitly selects another absolute executable path. " +
+			"Device serials must be selected explicitly. Installation does not request immediate startup unless --start is provided. " +
+			"Existing unknown or different configurations are not replaced. No manual daemon is stopped and no system service or elevation is used.",
 		Args:    cobra.NoArgs,
-		Example: "  nb1 service install --binary /absolute/path/nb1 --devices 20005601\n  nb1 service install --binary /absolute/path/nb1 --devices 20005601 --start",
+		Example: "  nb1 service install --devices 20000001\n  nb1 service install --devices 20000001 --start\n  nb1 service install --binary /absolute/path/nb1 --devices 20000001 --start",
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			if management.goos == "darwin" || management.goos == "linux" {
+				if cmd.Flags().Changed("binary") {
+					if config.Binary == "" {
+						return fmt.Errorf("--binary must name an absolute executable path when provided")
+					}
+				} else {
+					var err error
+					config.Binary, err = management.currentExecutable()
+					if err != nil {
+						return err
+					}
+				}
+			}
 			return management.run(cmd, asJSON, userServiceAction{kind: serviceInstall, config: config, start: start})
 		},
 	}
-	command.Flags().StringVar(&config.Binary, "binary", "", "已存在的绝对可执行文件路径，不使用PATH搜索")
-	command.Flags().StringSliceVar(&config.Devices, "devices", nil, "明确的8位十六进制设备序列号列表")
-	command.Flags().StringVar(&config.Listen, "listen", "127.0.0.1:8931", "固定loopback host:port")
-	command.Flags().StringVar(&config.LockDir, "lock-dir", "", "可选明确的绝对设备锁目录；不收集环境变量")
-	command.Flags().BoolVar(&start, "start", false, "显式请求立即启动；否则仅安装配置和登录启用")
-	command.Flags().BoolVar(&asJSON, "json", false, "输出当前平台的原始schema_version=1状态")
-	_ = command.MarkFlagRequired("binary")
+	command.Flags().StringVar(&config.Binary, "binary", "", "absolute executable path (default: the running nb1 executable; no PATH search)")
+	command.Flags().StringSliceVar(&config.Devices, "devices", nil, "explicit eight-digit hexadecimal device serials")
+	command.Flags().StringVar(&config.Listen, "listen", "127.0.0.1:8931", "stable loopback host:port")
+	command.Flags().StringVar(&config.LockDir, "lock-dir", "", "optional absolute shared ownership directory")
+	command.Flags().BoolVar(&start, "start", false, "request immediate startup as well as login loading")
+	command.Flags().BoolVar(&asJSON, "json", false, "print the host platform's service status as JSON")
 	_ = command.MarkFlagRequired("devices")
 	return command
 }
@@ -170,8 +187,26 @@ type windowsServiceReader interface {
 }
 
 type userServiceRuntime struct {
-	goos      string
-	factories userServiceFactories
+	goos       string
+	factories  userServiceFactories
+	executable func() (string, error)
+}
+
+func (management userServiceRuntime) currentExecutable() (string, error) {
+	resolve := management.executable
+	if resolve == nil {
+		resolve = os.Executable
+	}
+	binary, err := resolve()
+	if err != nil {
+		return "", fmt.Errorf("locate the running nb1 executable; select an absolute path with --binary: %w", err)
+	}
+	if !filepath.IsAbs(binary) {
+		return "", fmt.Errorf("the running executable path is not absolute; select an absolute path with --binary")
+	}
+	// Native managers validate the file and resolve symlinks before persisting
+	// the configuration. Neither argv[0] nor a second PATH lookup selects it.
+	return binary, nil
 }
 
 type userServiceActionKind int

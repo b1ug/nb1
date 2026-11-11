@@ -50,6 +50,16 @@ The agreed default for `nb1 control` is to report that the daemon is unavailable
 
 The current `control` implementation uses HTTP; standalone basic commands provide explicit direct access. A unified Action/Sequence direct entry and guided connection-failure prompt remain follow-up work under this policy.
 
+On macOS and Linux, install the current user's login service using the running executable:
+
+```sh
+nb1 service install --devices DEVICE_SERIAL --start
+```
+
+Omitting `--binary` selects the current process's executable through the operating system. It does not search PATH for another installation. An explicit `--binary /absolute/path/to/nb1` overrides that selection. The native manager validates the file and resolves symlinks before saving the configuration. Without `--start`, installation enables login loading without requesting immediate startup.
+
+Cross-platform `service render` still requires an explicit target `--binary` path. Windows service installation remains unsupported. Automatic path selection does not implement service upgrade migration: package version paths, including Homebrew Cellar targets, still need upgrade and rollback qualification.
+
 ## Job IDs and deduplication
 
 An omitted or empty `id` generates `j_` followed by ten random Crockford Base32 characters. Custom IDs accept 1–64 ASCII letters, digits, hyphens and underscores. The CLI generates its ID before submission so it can report that ID when a response is lost.

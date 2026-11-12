@@ -108,10 +108,9 @@ main.workbench { width: min(1220px, calc(100% - 64px)); margin: 0 auto; padding-
 .editor-tabs button:hover { transform: none; }
 .action-grid { display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); gap: 8px; }
 .action { display: flex; flex-direction: column; gap: 7px; justify-content: center; min-width: 0; min-height: 66px; padding: 9px 2px; border: 1px solid #dfd8c1; border-radius: 15px; background: #f5f1df; box-shadow: inset 0 2px 0 #fffff7a3, 0 2px 0 #c6c9a52e; }
-.action>span { font-size: 22px; line-height: 1; color: #348f71; }
+.action>span { font-size: 22px; line-height: 1; color: var(--action-ink); }
 .action strong { font-size: 10px; line-height: 1.4; font-weight: 600; }
-.action.selected { padding: 8px 1px; border: 2px solid #388b6b; background: #f8e5a0; box-shadow: inset 0 1px 0 #fafde7, 0 3px 0 #a6bb8d4a; }
-.action.selected>span { color: #377c64; }
+.action.selected { padding: 8px 1px; border: 2px solid var(--action-ink); background: var(--action-wash); box-shadow: inset 0 1px 0 #fafde7, 0 3px 0 #a6bb8d4a; }
 .description { min-height: 38px; display: flex; align-items: center; font-size: 11px; line-height: 1.7; color: #74664c; margin: 14px 0 17px; padding: 0 0 13px; border-bottom: 1px dashed #d8ddc4; }
 .color-pair { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 13px; }
 .color-pair:not(:has(#color-card-b:not([hidden]))) { grid-template-columns: 1fr; }
@@ -145,14 +144,14 @@ input[type=color]::-moz-color-swatch { border: 0; border-radius: 6px; }
 .execution-area { margin-top: 21px; padding-top: 17px; border-top: 1px dashed #d8ddc4; }
 .execution-controls { display: grid; grid-template-columns: 1fr 1.2fr; gap: 11px; }
 .execution-controls button { min-height: 44px; }
-button.primary { color: #153f34; background: linear-gradient(#77cfae, #62bf9e); border-color: #409775; box-shadow: inset 0 2px 0 #b3c98d55, 0 3px 0 #458468; }
-button.primary:hover:enabled { background: linear-gradient(#88d8ba, #73cbaa); border-color: #3c8065; box-shadow: inset 0 2px 0 #c4d6a655, 0 4px 0 #458468; }
+button.primary { color: #123e31; background: linear-gradient(#5fc5a4, #43b58c); border-color: #328361; box-shadow: inset 0 2px 0 #b3c98d55, 0 3px 0 #458468; }
+button.primary:hover:enabled { background: linear-gradient(#72d0af, #53c49e); border-color: #3c8065; box-shadow: inset 0 2px 0 #c4d6a655, 0 4px 0 #458468; }
 button.primary:disabled { color: #83755a; background: #eae8d7; border-color: #d8d2b9; box-shadow: inset 0 1px 0 #fbfced; }
-button.secondary { background: #f4dfa3; color: #6a5639; border-color: #ddc98a; }
-button.secondary:hover:enabled { background: #f8e7b4; border-color: #c9b579; }
+button.secondary { background: #f3d47d; color: #644b24; border-color: #d6b558; }
+button.secondary:hover:enabled { background: #f7dd96; border-color: #c9b579; }
 button.secondary:disabled { color: #83755f; background: #f1eddf; border-color: #ddd7c4; box-shadow: none; }
-button.danger { background: #f7e0d5; color: #965344; border-color: #dfa998; box-shadow: inset 0 2px 0 #fffaf0c4, 0 3px 0 #cfb28b44; }
-button.danger:hover:enabled { background: #f6d8cb; color: #854233; border-color: #c99c76; }
+button.danger { background: #f5c9b8; color: #873d2f; border-color: #d99077; box-shadow: inset 0 2px 0 #fffaf0c4, 0 3px 0 #cfb28b44; }
+button.danger:hover:enabled { background: #f8d8c7; color: #783427; border-color: #c99c76; }
 button.danger:disabled { color: #8c7b63; background: #f1ebde; border-color: #dfd4be; box-shadow: none; }
 .footnote { font-size: 10px; line-height: 1.8; color: #858b71; margin: 11px 0 0; }
 .execution-note { font-size: 10px; line-height: 1.75; margin-top: 11px; }
@@ -409,17 +408,17 @@ footer { display: flex; align-items: center; gap: 7px; padding: 24px 3px 5px; fo
 .action-icon-wrap { display: grid; place-items: center; min-height: 36px; }
 .action-icon { display: block; width: 32px; height: 32px; flex: none; overflow: visible; }
 
-/* Quiet paper tiles with small, colored ink stamps keep the island palette playful. */
-.action { background: #fffdf3; border-color: #dfd8c1; }
-.action-icon-wrap { width: 48px; height: 44px; min-height: 44px; border-radius: 17px 19px 16px 18px; background: #e8f1dc; }
-.action[data-action="blink"] > span { color: #b77a32; background: #fff0cf; }
-.action[data-action="pulse"] > span { color: #be6652; background: #fbe5dc; }
-.action[data-action="breathe"] > span { color: #309577; background: #e0f1e3; }
-.action[data-action="alternate"] > span { color: #2d8c89; background: #e0f1eb; }
-.action[data-action="orbit"] > span { color: #8d7b3e; background: #f8edc8; }
-.action[data-action="rainbow"] > span { background: #f7eaf2; }
+/* Each stamp keeps its own hue when selected; paper and labels stay quiet. */
+.action { --action-ink: #2e8352; --action-wash: #e4f2d5; background: #fffdf3; border-color: #dfd8c1; }
+.action[data-action="off"] { --action-ink: #69758c; --action-wash: #edf0f6; }
+.action[data-action="fade"] { --action-ink: #b65387; --action-wash: #fae6f1; }
+.action[data-action="blink"] { --action-ink: #9b650f; --action-wash: #fff0bd; }
+.action[data-action="breathe"] { --action-ink: #347cac; --action-wash: #e2f2fb; }
+.action[data-action="pulse"] { --action-ink: #bd5747; --action-wash: #ffe3d8; }
+.action[data-action="alternate"] { --action-ink: #198781; --action-wash: #daf2e8; }
+.action[data-action="orbit"] { --action-ink: #8056ae; --action-wash: #efe4fb; }
+.action[data-action="rainbow"] { --action-ink: #4c63ad; --action-wash: #fff0e0; }
+.action-icon-wrap { width: 48px; height: 44px; min-height: 44px; border-radius: 17px 19px 16px 18px; background: var(--action-wash); }
 .action[data-action="rainbow"] .action-icon { width: 44px; height: 34px; }
-.action:hover:enabled { background: #f6f6e7; border-color: #abc2a4; }
-.action.selected { background: #f8e5a0; border-color: #388b6b; box-shadow: inset 0 1px 0 #fff9d6, 0 3px 0 #bad1b94a; }
-.action.selected > span { color: #377c64; }
-.action.selected:hover:enabled { background: #f7e198; border-color: #3b8069; }
+.action:hover:enabled { background: var(--action-wash); border-color: var(--action-ink); }
+.action.selected { box-shadow: inset 0 1px 0 #ffffffb0, 0 3px 0 #bad1b94a; }

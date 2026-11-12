@@ -26,12 +26,16 @@ func TestVerifiedWebBundleKeepsExistingRoutesAndPolicy(t *testing.T) {
 	} {
 		response := previewRequest(h, http.MethodGet, path, "")
 		want, err := webui.ReadFile(file)
-		if err != nil || response.Code != http.StatusOK || !bytes.Equal(response.Body.Bytes(), want) {
+		if err != nil || response.Code != http.StatusOK {
 			t.Fatalf("%s does not serve the exact verified asset: %d %v", path, response.Code, err)
 		}
-		if response.Header().Get("Content-Security-Policy") != sequenceWebCSP || response.Header().Get("Cache-Control") != "no-store" || response.Header().Get("X-Content-Type-Options") != "nosniff" || response.Header().Get("Referrer-Policy") != "no-referrer" {
-			t.Fatalf("%s changed the static resource policy: %v", path, response.Header())
+		contentType := "text/javascript; charset=utf-8"
+		if strings.HasSuffix(file, ".html") {
+			contentType = "text/html; charset=utf-8"
+		} else if strings.HasSuffix(file, ".css") {
+			contentType = "text/css; charset=utf-8"
 		}
+		assertSequenceWebAssetBytes(t, response.Header(), contentType, response.Body.Bytes(), want)
 	}
 	for _, path := range []string{"/demo/manifest.json", "/demo/manifest.lock.json", "/demo/LICENSE.txt", "/demo/../manifest.lock.json", "/demox/index.html"} {
 		if response := previewRequest(h, http.MethodGet, path, ""); response.Code != http.StatusNotFound {
@@ -46,9 +50,16 @@ func TestPatternWebResourcesUseTheSelectedBundleProfileAndSameGuards(t *testing.
 		w := previewRequest(h, http.MethodGet, path, "")
 		data, err := webui.ReadFile(file)
 		if err == nil {
-			if w.Code != 200 || !bytes.Equal(w.Body.Bytes(), data) || w.Header().Get("Content-Security-Policy") != sequenceWebCSP {
+			if w.Code != 200 {
 				t.Fatal(path, w.Code, w.Header())
 			}
+			contentType := "text/javascript; charset=utf-8"
+			if strings.HasSuffix(file, ".html") {
+				contentType = "text/html; charset=utf-8"
+			} else if strings.HasSuffix(file, ".css") {
+				contentType = "text/css; charset=utf-8"
+			}
+			assertSequenceWebAssetBytes(t, w.Header(), contentType, w.Body.Bytes(), data)
 		} else if errors.Is(err, fs.ErrNotExist) && webui.Validate() == nil {
 			if w.Code != 404 {
 				t.Fatal("valid legacy bundle must not report corruption for its absent Pattern page", path, w.Code)

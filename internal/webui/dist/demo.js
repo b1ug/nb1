@@ -91,7 +91,7 @@
   }
   function authorInput() {
     if (mode === "sequence") {
-      const raw = $("sequence-json").value.trim(); JSON.parse(raw);
+      const raw = sequenceEditor.getValue().trim(); JSON.parse(raw);
       return {key: "sequence", raw}; // Preserve duplicate keys and number spelling for core validation.
     }
     if (mode === "pattern") {
@@ -110,7 +110,11 @@
   }
   function draftKey() { return envelope(authorInput(), {serial: $("device-select").value}); }
   function invalidate() {
-    version++; preview = null; $("preview-summary").textContent = "Draft changed";
+    version++; preview = null;
+    const summary = $("preview-summary");
+    if (summary.dataset.draftChanged !== "true") {
+      summary.textContent = "Draft changed"; summary.dataset.draftChanged = "true";
+    }
     for (const suffix of ["a", "b"]) {
       const selected = $("color-mode-" + suffix).value === "text" ? $("color-" + suffix).value.toLowerCase().trim() : "";
       for (const button of $("palette-" + suffix).children) button.setAttribute("aria-pressed", String(button.title === selected));
@@ -178,7 +182,7 @@
     if (draftVersion !== version) { notice("Draft changed. Preview again."); return; }
     preview = {version, key: draftKey(), check: value.device_check.status, sequence: value.sequence};
     $("compiled").textContent = JSON.stringify(value.sequence, null, 2);
-    $("preview-summary").textContent = "Preview ready";
+    $("preview-summary").textContent = "Preview ready"; $("preview-summary").dataset.draftChanged = "false";
     $("preview-check").textContent = "Steps: " + value.total_steps + " · " + value.nominal_duration_ms + " ms · " + value.device_check.status;
     $("request-details").open = true;
     notice("Preview ready. The light is unchanged."); updateButtons();
@@ -447,6 +451,10 @@
   function bind(id, fn, failure = report) { $(id).addEventListener("click", () => Promise.resolve().then(fn).catch(failure)); }
 
   $("sequence-json").value = JSON.stringify({timing: "serial", steps: [{targets: [{led: 0, color: "#ff0000"}], fade_ms: 100, hold_ms: 400}, {targets: [{led: 0, color: "#0000ff"}], fade_ms: 100, hold_ms: 400}], repeat: 1, on_finish: "off"}, null, 2);
+  // The textarea remains the unchanged request source and plain-text fallback.
+  let sequenceEditor = {getValue: () => $("sequence-json").value, setValue: value => { $("sequence-json").value = value; }};
+  try { if (window.NB1JSONEditor) sequenceEditor = window.NB1JSONEditor.mount($("sequence-json")); }
+  catch (_) { /* Keep the original textarea when enhancement is unavailable. */ }
   for (const [name, [label]] of Object.entries(actions)) {
     const button = document.createElement("button"); button.type = "button"; button.className = "action"; button.dataset.action = name;
     const icon = document.createElement("span"); icon.className = "action-icon-wrap"; icon.setAttribute("aria-hidden", "true"); icon.append(window.NB1ActionIcons.create(name));
@@ -470,10 +478,10 @@
   $("author").addEventListener("change", event => { if (event.target.matches("input,select,textarea")) invalidate(); });
   $("device-select").addEventListener("change", () => { invalidate(); readDevice().catch(report); });
   $("pattern-select").addEventListener("change", () => { loaded = null; $("edit-sequence").disabled = true; });
-  bind("use-sequence", () => { if (preview) { $("sequence-json").value = JSON.stringify(preview.sequence, null, 2); changeMode("sequence"); } });
+  bind("use-sequence", () => { if (preview) { sequenceEditor.setValue(JSON.stringify(preview.sequence, null, 2)); changeMode("sequence"); } });
   bind("preview", previewDraft); bind("play", play); bind("query", queryJob, uncertainJob); bind("stop", stopJob);
   bind("refresh", refreshDevices); bind("colors-refresh", refreshColors); bind("patterns-refresh", refreshPatterns); bind("load-pattern", () => readPattern());
-  bind("edit-sequence", () => { if (loaded) { $("sequence-json").value = JSON.stringify(loaded.sequence, null, 2); changeMode("sequence"); } });
+  bind("edit-sequence", () => { if (loaded) { sequenceEditor.setValue(JSON.stringify(loaded.sequence, null, 2)); changeMode("sequence"); } });
   bind("use-color", () => { const name = $("color-list").value; if (!name) return; $("color-mode-a").value = "text"; renderChannels("a"); $("color-a").value = "@" + name; changeMode("action"); });
   bind("save-color", async () => { const name = $("color-name").value; if (!/^[a-z][a-z0-9-]{0,31}$/.test(name)) throw Error("Use a lowercase color name, up to 32 characters"); const {value} = await request("/v1/colors/" + encodeURIComponent(name), "PUT", JSON.stringify({color: colorInput("a")})); if (value.name !== name || !hex.test(value.color)) throw Error("Invalid saved color"); await refreshColors(); notice("Color saved. The light is unchanged."); });
   bind("save-pattern", savePattern); bind("verify-save", () => readPattern(saveID));

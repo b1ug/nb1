@@ -1,5 +1,7 @@
 # Embedded bilingual Web in installed6ca
 
+> Historical snapshot. The version-specific profiles, byte counts and reproduction commands below describe the named development build and require its matching host/tooling. For the current `static-editor/v1` candidate (27 files, 640 KiB aggregate budget, response style nonces), use [Embedded Web presentation](web-typography.md). Historical measurements are preserved unchanged.
+
 The later [hardware artwork candidate](web-hardware-artwork.md) uses a separately pinned producer. The installation facts below refer to the existing 6ca runtime.
 
 Installed runtime6ca imports the separate `nb1-web` producer commit `1e1b1ddf2a985dea00e494761eed592183755c1d`, with manifest SHA-256 `a35beb8fb17aa3a9e6751e006e0c7b6524d197b83cd679a25528a99134ce6460`. The generated payload is 260,151 bytes across 13 files, including the manifest and license. The 256 KiB bundle limit is unchanged; 1,993 bytes remain.

@@ -2,9 +2,11 @@ package httpapi_test
 
 import (
 	"bytes"
+	"encoding/base64"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -30,6 +32,9 @@ var sequenceWebAssets = []struct{ path, file, contentType string }{
 	{"/demo/action-icons.js", "action-icons.js", "text/javascript; charset=utf-8"},
 	{"/demo/locale-menu.css", "locale-menu.css", "text/css; charset=utf-8"},
 	{"/demo/typography.css", "typography.css", "text/css; charset=utf-8"},
+	{"/demo/json-editor.js", "json-editor.js", "text/javascript; charset=utf-8"},
+	{"/demo/json-editor.css", "json-editor.css", "text/css; charset=utf-8"},
+	{"/demo/editor-LICENSES.txt", "editor-LICENSES.txt", "text/plain; charset=utf-8"},
 	{"/demo/assets/nb1-icon.png", "assets/nb1-icon.png", "image/png"},
 	{"/demo/assets/nb1-mascot.webp", "assets/nb1-mascot.webp", "image/webp"},
 	{"/demo/fonts/fredoka-700-latin.woff2", "fonts/fredoka-700-latin.woff2", "font/woff2"},
@@ -40,10 +45,42 @@ var sequenceWebAssets = []struct{ path, file, contentType string }{
 	{"/demo/fonts/MPLUSRounded1c-OFL.txt", "fonts/MPLUSRounded1c-OFL.txt", "text/plain; charset=utf-8"},
 }
 
-func assertSequenceWebHeaders(t *testing.T, header http.Header, contentType string) {
+func assertSequenceWebHeaders(t *testing.T, header http.Header, contentType string) string {
 	t.Helper()
-	if header.Get("Content-Type") != contentType || header.Get("Content-Security-Policy") != sequenceWebCSP || header.Get("Cache-Control") != "no-store" || header.Get("Referrer-Policy") != "no-referrer" || header.Get("X-Content-Type-Options") != "nosniff" {
+	policy := header.Get("Content-Security-Policy")
+	wantPolicy, nonce := sequenceWebCSP, ""
+	if contentType == "text/html; charset=utf-8" {
+		match := regexp.MustCompile(`style-src 'self' 'nonce-([A-Za-z0-9+/]{32})'`).FindStringSubmatch(policy)
+		if len(match) != 2 {
+			t.Fatalf("HTML response lacks a protected style nonce: %s", policy)
+		}
+		nonce = match[1]
+		decoded, err := base64.StdEncoding.DecodeString(nonce)
+		if err != nil || len(decoded) != 24 {
+			t.Fatalf("invalid style nonce: %q", nonce)
+		}
+		wantPolicy = strings.Replace(sequenceWebCSP, "style-src 'self'", "style-src 'self' 'nonce-"+nonce+"'", 1)
+	}
+	if header.Get("Content-Type") != contentType || policy != wantPolicy || header.Get("Cache-Control") != "no-store" || header.Get("Referrer-Policy") != "no-referrer" || header.Get("X-Content-Type-Options") != "nosniff" {
 		t.Fatalf("static response headers: %v", header)
+	}
+	return nonce
+}
+
+func assertSequenceWebAssetBytes(t *testing.T, header http.Header, contentType string, got, source []byte) {
+	t.Helper()
+	nonce := assertSequenceWebHeaders(t, header, contentType)
+	want := source
+	if nonce != "" {
+		placeholder := []byte(`<meta name="nb1-style-nonce" content="__NB1_STYLE_NONCE__">`)
+		if bytes.Count(source, placeholder) != 1 || bytes.Count(source, []byte("__NB1_STYLE_NONCE__")) != 1 {
+			t.Fatal("verified HTML does not have exactly one canonical nonce placeholder")
+		}
+		replacement := []byte(`<meta name="nb1-style-nonce" content="` + nonce + `">`)
+		want = bytes.Replace(source, placeholder, replacement, 1)
+	}
+	if !bytes.Equal(got, want) {
+		t.Fatal("asset bytes differ beyond the HTML nonce meta")
 	}
 }
 
@@ -54,17 +91,17 @@ func TestSequenceWebRoutesServeVerifiedAssets(t *testing.T) {
 		t.Run(asset.file, func(t *testing.T) {
 			response := previewRequest(handler, http.MethodGet, asset.path, "")
 			want, err := webui.ReadFile(asset.file)
-			if err != nil || response.Code != http.StatusOK || !bytes.Equal(response.Body.Bytes(), want) {
+			if err != nil || response.Code != http.StatusOK {
 				t.Fatalf("asset %s: HTTP %d, read error %v", asset.path, response.Code, err)
 			}
-			assertSequenceWebHeaders(t, response.Header(), asset.contentType)
+			assertSequenceWebAssetBytes(t, response.Header(), asset.contentType, response.Body.Bytes(), want)
 		})
 	}
 }
 
 func TestSequenceWebSecurityBoundaries(t *testing.T) {
 	handler := httpapi.New(noPreviewIO{}, httpapi.WithSequenceAPI())
-	for _, path := range []string{"/demo", "/demo/", "/demo/orbit.html", "/demo/patterns.html", "/demo/locales.js", "/demo/action-icons.js", "/demo/locale-menu.css", "/demo/typography.css", "/demo/assets/nb1-icon.png", "/demo/assets/nb1-mascot.webp", "/demo/fonts/fredoka-700-latin.woff2", "/demo/fonts/Fredoka-OFL.txt"} {
+	for _, path := range []string{"/demo", "/demo/", "/demo/orbit.html", "/demo/patterns.html", "/demo/locales.js", "/demo/action-icons.js", "/demo/locale-menu.css", "/demo/typography.css", "/demo/json-editor.js", "/demo/json-editor.css", "/demo/editor-LICENSES.txt", "/demo/assets/nb1-icon.png", "/demo/assets/nb1-mascot.webp", "/demo/fonts/fredoka-700-latin.woff2", "/demo/fonts/Fredoka-OFL.txt"} {
 		for _, method := range []string{"HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"} {
 			response := previewRequest(handler, method, path, "")
 			if response.Code != http.StatusMethodNotAllowed || response.Header().Get("Allow") != "GET" {
@@ -143,10 +180,10 @@ func TestSequenceWebStaticOverRealHTTP(t *testing.T) {
 		data, err := io.ReadAll(response.Body)
 		response.Body.Close()
 		want, readErr := webui.ReadFile(asset.file)
-		if err != nil || readErr != nil || response.StatusCode != http.StatusOK || !bytes.Equal(data, want) {
+		if err != nil || readErr != nil || response.StatusCode != http.StatusOK {
 			t.Fatalf("real HTTP asset %s: %d %v %v", asset.path, response.StatusCode, err, readErr)
 		}
-		assertSequenceWebHeaders(t, response.Header, asset.contentType)
+		assertSequenceWebAssetBytes(t, response.Header, asset.contentType, data, want)
 	}
 	request, err := http.NewRequest("GET", server.URL+"/demo/demo.js", strings.NewReader("unexpected"))
 	if err != nil {
@@ -159,5 +196,24 @@ func TestSequenceWebStaticOverRealHTTP(t *testing.T) {
 	response.Body.Close()
 	if response.StatusCode != http.StatusBadRequest {
 		t.Fatalf("real HTTP body accepted: %d", response.StatusCode)
+	}
+}
+
+func TestSequenceWebHTMLResponsesHaveFreshNonces(t *testing.T) {
+	handler := httpapi.New(noPreviewIO{}, httpapi.WithSequenceAPI())
+	seen := map[string]bool{}
+	for _, path := range []string{"/demo/", "/demo/orbit.html", "/demo/patterns.html", "/demo/"} {
+		response := previewRequest(handler, http.MethodGet, path, "")
+		if response.Code != http.StatusOK {
+			t.Fatalf("HTML request failed: %d", response.Code)
+		}
+		nonce := assertSequenceWebHeaders(t, response.Header(), "text/html; charset=utf-8")
+		if seen[nonce] {
+			t.Fatal("style nonce was reused between HTML responses")
+		}
+		seen[nonce] = true
+		if !bytes.Contains(response.Body.Bytes(), []byte(`<meta name="nb1-style-nonce" content="`+nonce+`">`)) {
+			t.Fatal("nonce header and meta differ")
+		}
 	}
 }

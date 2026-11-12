@@ -17,7 +17,7 @@ import (
 	"github.com/b1ug/nb1/internal/jsoninput"
 )
 
-const maxBundleBytes = 256 * 1024
+const maxBundleBytes = 640 * 1024
 const maxManifestBytes = 16 * 1024
 
 var assetNames = []string{
@@ -26,6 +26,7 @@ var assetNames = []string{
 	"action-icons.js",
 	"locale-menu.css",
 	"typography.css",
+	"json-editor.js", "json-editor.css", "editor-LICENSES.txt",
 	"assets/nb1-icon.png",
 	"assets/nb1-mascot.webp",
 	"fonts/fredoka-700-latin.woff2",
@@ -220,7 +221,7 @@ func validateBundle(files fs.FS) error {
 	if err = decodeRecord(data, &record, maxManifestBytes); err != nil {
 		return err
 	}
-	if record.SchemaVersion != 1 || record.Product != "nb1-web" || record.AssetBase != "./" || record.Source.Repository != "local:nb1-web" || record.Source.Commit != lock.SourceCommit || record.Source.Dirty == nil || *record.Source.Dirty || !validHex(record.Source.TreeSHA256, 64) || record.Build.Tool != "copy-static/v1" || !validHex(record.Build.LockfileSHA256, 64) || len(record.Build.Node) == 0 || len(record.Build.Node) > 128 || strings.TrimSpace(record.Build.Node) != record.Build.Node {
+	if record.SchemaVersion != 1 || record.Product != "nb1-web" || record.AssetBase != "./" || record.Source.Repository != "local:nb1-web" || record.Source.Commit != lock.SourceCommit || record.Source.Dirty == nil || *record.Source.Dirty || !validHex(record.Source.TreeSHA256, 64) || record.Build.Tool != "static-editor/v1" || !validHex(record.Build.LockfileSHA256, 64) || len(record.Build.Node) == 0 || len(record.Build.Node) > 128 || strings.TrimSpace(record.Build.Node) != record.Build.Node {
 		return fmt.Errorf("invalid web manifest provenance")
 	}
 	for _, char := range record.Build.Node {

@@ -2,6 +2,8 @@ package httpapi_test
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -147,7 +149,7 @@ func TestSequenceWebBrowserFixture(t *testing.T) {
 				}
 				path := filepath.Join(dist, asset.file)
 				info, err := os.Lstat(path)
-				if err != nil || !info.Mode().IsRegular() || info.Size() > 256*1024 {
+				if err != nil || !info.Mode().IsRegular() || info.Size() > 640*1024 {
 					http.Error(w, "fixture asset unavailable", http.StatusInternalServerError)
 					return
 				}
@@ -157,10 +159,31 @@ func TestSequenceWebBrowserFixture(t *testing.T) {
 					return
 				}
 				defer file.Close()
+				data, err := io.ReadAll(io.LimitReader(file, 640*1024+1))
+				if err != nil || len(data) > 640*1024 {
+					http.Error(w, "fixture asset unavailable", http.StatusInternalServerError)
+					return
+				}
+				policy := sequenceWebCSP
+				if asset.contentType == "text/html; charset=utf-8" {
+					meta := `<meta name="nb1-style-nonce" content="__NB1_STYLE_NONCE__">`
+					if strings.Count(string(data), meta) != 1 || strings.Count(string(data), "__NB1_STYLE_NONCE__") != 1 || strings.Count(string(data), "nb1-style-nonce") != 1 {
+						http.Error(w, "fixture HTML nonce template unavailable", http.StatusInternalServerError)
+						return
+					}
+					var randomBytes [24]byte
+					if _, err := io.ReadFull(rand.Reader, randomBytes[:]); err != nil {
+						http.Error(w, "fixture nonce unavailable", http.StatusInternalServerError)
+						return
+					}
+					nonce := base64.StdEncoding.EncodeToString(randomBytes[:])
+					data = []byte(strings.Replace(string(data), "__NB1_STYLE_NONCE__", nonce, 1))
+					policy = strings.Replace(policy, "style-src 'self'", "style-src 'self' 'nonce-"+nonce+"'", 1)
+				}
 				w.Header().Set("Content-Type", asset.contentType)
-				w.Header().Set("Content-Security-Policy", sequenceWebCSP)
+				w.Header().Set("Content-Security-Policy", policy)
 				w.Header().Set("Referrer-Policy", "no-referrer")
-				_, _ = io.Copy(w, io.LimitReader(file, 256*1024))
+				_, _ = w.Write(data)
 				return
 			}
 			http.NotFound(w, r)

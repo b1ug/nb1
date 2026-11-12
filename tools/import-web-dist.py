@@ -11,7 +11,7 @@ import stat
 import sys
 import tempfile
 
-MAX_BYTES = 256 * 1024
+MAX_BYTES = 640 * 1024
 MAX_MANIFEST_BYTES = 16 * 1024
 ASSETS = frozenset((
     "index.html", "demo.css", "demo.js", "orbit.html", "orbit.css", "orbit.js", "LICENSE.txt",
@@ -19,6 +19,7 @@ ASSETS = frozenset((
     "action-icons.js",
     "locale-menu.css",
     "typography.css",
+    "json-editor.js", "json-editor.css", "editor-LICENSES.txt",
     "assets/nb1-icon.png",
     "assets/nb1-mascot.webp",
     "fonts/fredoka-700-latin.woff2",
@@ -172,7 +173,7 @@ def validate_directory(directory, expected_commit, expected_manifest_sha):
     build = value["build"]
     object_keys(build, ("tool", "node", "lockfile_sha256"), "build")
     node = build["node"]
-    require(build["tool"] == "copy-static/v1" and type(node) is str and 0 < len(node) <= 128 and node.strip() == node and all(32 <= ord(ch) < 127 for ch in node) and hex_value(build["lockfile_sha256"], 64), "invalid build metadata")
+    require(build["tool"] == "static-editor/v1" and type(node) is str and 0 < len(node) <= 128 and node.strip() == node and all(32 <= ord(ch) < 127 for ch in node) and hex_value(build["lockfile_sha256"], 64), "invalid build metadata")
     contracts = value["api_contracts"]
     require(type(contracts) is list and len(contracts) == len(required_contracts) and all(type(c) is str for c in contracts) and set(contracts) == required_contracts, "unsupported, incomplete or duplicate API contracts")
     require(type(value["files"]) is list and len(value["files"]) == len(assets), "invalid asset declaration count")
@@ -184,7 +185,7 @@ def validate_directory(directory, expected_commit, expected_manifest_sha):
         require(type(name) is str and name in assets and name not in result, "unknown, duplicate or unsafe asset path")
         require(type(size) is int and 0 < size <= MAX_BYTES and hex_value(item["sha256"], 64), "invalid asset byte count or digest")
         total += size
-        require(total <= MAX_BYTES, "dist exceeds 256 KiB including manifest")
+        require(total <= MAX_BYTES, "dist exceeds 640 KiB including manifest")
         content = read_plain(directory / name, size)
         require(len(content) == size and sha(content) == item["sha256"], "asset differs from its manifest: " + name)
         result[name] = content

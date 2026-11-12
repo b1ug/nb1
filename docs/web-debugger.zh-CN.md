@@ -1,4 +1,12 @@
-# 本地实灯工作台
+# 本地 Web 调试器与历史记录
+
+当前候选的使用与嵌入边界见 [Web presentation](web-typography.md)。当前只接受 `static-editor/v1` 的完整闭合产物：26 个声明资源加 `manifest.json`，共 27 文件，含 JSON 编辑器脚本、样式与完整许可；总预算为 640 KiB。合同为 `nb1-api/v1`。来源提交、逐文件摘要、manifest 与 lock 仍需全部匹配；不是按历史 profile 自动降级。
+
+当前导入仍使用 `tools/import-web-dist.py`，显式指定干净构建的完整 source commit 与 manifest SHA-256；`--check` 和 `--dry-run` 不改文件。导入后在当前模块运行 `GOWORK=off CGO_ENABLED=0 go test ./internal/webui ./internal/httpapi`。三个 HTML 响应会为编辑器动态样式注入每次新生成的 nonce；只有 meta 占位改变，嵌入源与 manifest 保持静态。随机源或占位校验失败时返回 JSON 500，不提供缺少保护的 HTML。
+
+## 历史快照
+
+以下内容记录所列历史构建的 API、profile、容量与安装证据。旧 profile、256 KiB 预算、Program 与票据流程不代表当前候选；重现旧提交需使用与其匹配的旧宿主和工具。历史指标原样保留，不作为当前使用说明。
 
 此页面由 nb1 的 HTTP 服务直接提供：`/demo/`。HTML、CSS 和 JavaScript 嵌入二进制，所有 API 请求使用同一个 origin；不依赖 Node、CDN、外部脚本或云端存储。
 

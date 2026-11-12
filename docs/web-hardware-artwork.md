@@ -1,5 +1,7 @@
 # Hardware illustrations
 
+> Historical snapshot. The version-specific profiles, byte counts and reproduction commands below describe the named development build and require its matching host/tooling. For the current `static-editor/v1` candidate (27 files, 640 KiB aggregate budget, response style nonces), use [Embedded Web presentation](web-typography.md). Historical measurements are preserved unchanged.
+
 This candidate imports `nb1-web` commit `db3f0de9df6dc6552b8121542c0b00b007f3e783`, manifest SHA-256 `6a9c29bb9cf8f9c199aba30f1faf5fb76494e69f6a0407aaf130c1e7d19f7102`. The complete bilingual bundle contains 13 files and 259,987 bytes, leaving 2,157 bytes within the existing 256 KiB limit.
 
 The debugger's original SVG artwork follows the MK2's continuous translucent housing, metal side and USB connector. The housing illustrations are labeled as simplified MK2 drawings. Shape references are the [official product photograph](https://blink1.thingm.com/wp-content/uploads/2019/03/blink1mk2-amazon-1024x829.png) and the [official repository photograph](https://github.com/todbot/blink1/blob/101abe3599c661c4dd4d1204b4d50fb592293143/docs/imgs/blink1mk2-twocolor-long.jpg).

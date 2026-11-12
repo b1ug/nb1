@@ -29,7 +29,7 @@ def fixture(path):
     manifest = {
         "schema_version": 1, "product": "nb1-web", "asset_base": "./",
         "source": {"repository": "local:nb1-web", "commit": COMMIT, "dirty": False, "tree_sha256": "2" * 64},
-        "build": {"tool": "copy-static/v1", "node": "v24.0.0", "lockfile_sha256": "3" * 64},
+        "build": {"tool": "static-editor/v1", "node": "v24.0.0", "lockfile_sha256": "3" * 64},
         "api_contracts": sorted(contracts),
         "files": [{"path": name, "bytes": (path / name).stat().st_size, "sha256": importer.sha((path / name).read_bytes())} for name in sorted(assets)],
     }
@@ -177,9 +177,10 @@ class ImportBoundaryTests(unittest.TestCase):
                     alias = root / "alias"; alias.symlink_to(path, target_is_directory=True); path = alias
                 elif mode == "total":
                     for name in ["demo.js", "orbit.js", "demo.css"]:
-                        content = b"x" * 100000; (path / name).write_bytes(content)
+                        content = b"x" * (importer.MAX_BYTES // 2); (path / name).write_bytes(content)
                         item = next(v for v in manifest["files"] if v["path"] == name)
                         item.update(bytes=len(content), sha256=importer.sha(content))
+                    manifest["source"]["tree_sha256"] = importer.tree_digest({name: (path / name).read_bytes() for name in importer.ASSETS})
                     write_manifest(path, manifest)
                 with self.assertRaises((importer.InvalidBundle, OSError)):
                     validate(path)
@@ -223,7 +224,7 @@ class ImportBoundaryTests(unittest.TestCase):
             self.assertEqual(validate(path).total_bytes, importer.MAX_BYTES)
             data = (path / "demo.js").read_bytes() + b"x"
             (path / "demo.js").write_bytes(data); item.update(bytes=len(data), sha256=importer.sha(data)); write_manifest(path, manifest)
-            with self.assertRaises(importer.InvalidBundle): validate(path)
+            with self.assertRaisesRegex(importer.InvalidBundle, "exceeds 640 KiB"): validate(path)
 
     def test_destination_refuses_unknown_or_concurrent_state(self):
         for mode in ["unknown", "held", "linked-lock", "linked-parent"]:

@@ -106,6 +106,7 @@
     locale = supported(code) ? code : fallback;
     try { localStorage.setItem(preferenceKey, locale); } catch (_) { /* This page still switches. */ }
     refresh();
+    document.dispatchEvent(new CustomEvent("nb1-locale-change", {detail: {locale}}));
     closeMenu(true);
   }
   for (const [index, code] of codes.entries()) {
@@ -152,7 +153,15 @@
     if (menuOpen && event.relatedTarget && !control.contains(event.relatedTarget)) closeMenu();
   });
   document.addEventListener("nb1-menu-open", event => { if (menuOpen && event.detail !== control) closeMenu(false); });
-  const observer = new MutationObserver(() => refresh());
+  const observer = new MutationObserver(records => {
+    // Editor transactions can update many tokens per keystroke. Their source
+    // subtree is opaque; avoid translating it or rescanning the whole page.
+    const outsideEditor = records.some(record => {
+      const element = record.target.nodeType === Node.ELEMENT_NODE ? record.target : record.target.parentElement;
+      return !element?.closest(".nb1-json-code, .nb1-json-status");
+    });
+    if (outsideEditor) refresh();
+  });
   function refresh() {
     observer.disconnect();
     const walker = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_TEXT);
@@ -165,6 +174,6 @@
     for (const [index, code] of codes.entries()) options[index].setAttribute("aria-selected", String(code === locale));
     observer.observe(document.documentElement, {subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ["aria-label", "title", "placeholder", "data-user-title"]});
   }
-  Object.defineProperty(window, "nb1Locale", {value: Object.freeze({getLocale: () => locale, preferenceKey}), writable: false});
+  Object.defineProperty(window, "nb1Locale", {value: Object.freeze({getLocale: () => locale, preferenceKey, translate: localized}), writable: false});
   refresh();
 })();

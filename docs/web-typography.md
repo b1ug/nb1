@@ -30,13 +30,21 @@ All nine confirmed Action buttons use original static SVG drawings with visible 
 
 ## Build and serving boundary
 
-The refreshed asset contract declares **23 asset files plus `manifest.json`: 24 files in total**. The complete payload, including image assets, font licenses and provenance, remains bounded at **256 KiB**. The independent `nb1-web` source builds the static files; nb1 imports the reviewed output into `internal/webui/dist` and embeds it in the Go executable. Users need no Node process or frontend development server.
+The refreshed asset contract declares **26 asset files plus `manifest.json`: 27 files in total**. The complete payload, including image assets, font licenses and provenance, remains bounded at **640 KiB**. The independent `nb1-web` source builds the static files; nb1 imports the reviewed output into `internal/webui/dist` and embeds it in the Go executable. Users need no Node process or frontend development server.
 
-The manifest records the producer source commit, file sizes and SHA-256 values. `internal/webui/manifest.lock.json` binds the imported source and manifest digest. Those records identify the actual bundle; a source or documentation edit alone does not update an installed daemon.
+The `static-editor/v1` manifest records the producer source commit, file sizes and SHA-256 values. The reviewed `json-editor.js` bundle, `json-editor.css` and complete `editor-LICENSES.txt` are included in the same closed asset inventory; the JavaScript uses packaged CodeMirror 6 modules with no runtime package fetch, dynamic import or evaluation. Their exact routes return JavaScript, CSS and plain text respectively. `internal/webui/manifest.lock.json` binds the imported source and manifest digest. Those records identify the actual bundle; a source or documentation edit alone does not update an installed daemon.
 
 Read the selected producer commit and manifest digest from `internal/webui/manifest.lock.json`; per-file sizes and hashes are in the accompanying `dist/manifest.json`. These generated records identify the imported bundle, including its exact total size. A source or documentation edit alone does not update those records or an installed daemon.
 
-All runtime assets are local and use the same origin as the API. The Content Security Policy explicitly permits packaged fonts with `font-src 'self'` and images with `img-src 'self'`, while scripts, styles and API connections remain same-origin. Images do not gain permission for external hosts or `data:` sources. The interface adds no CDN, analytics, Service Worker, inline script or additional framework runtime.
+All runtime assets are local and use the same origin as the API. The Content Security Policy explicitly permits packaged fonts with `font-src 'self'` and images with `img-src 'self'`, while scripts and API connections remain same-origin. Images do not gain permission for external hosts or `data:` sources. The interface adds no CDN, analytics, Service Worker or inline script.
+
+### Response style nonces
+
+CodeMirror installs its generated style modules as style elements. Each of the three HTML templates contains exactly one canonical `<meta name="nb1-style-nonce" content="__NB1_STYLE_NONCE__">`. The verified, embedded source keeps that placeholder, so its manifest and source-tree digests stay reproducible. Serving an HTML request makes a response copy and replaces only that meta's placeholder with 24 bytes from `crypto/rand`, encoded as Base64. The response's CSP changes only `style-src`, adding the matching `'nonce-…'` value alongside `'self'`; the editor passes this value to CodeMirror's style-module support. No `unsafe-inline` or `unsafe-eval` permission is added.
+
+The nonce is fresh for every HTML response, including repeated requests for the same page. It is not a device identifier, Job ID, API credential or persisted setting. Static JavaScript, CSS, font, image and license responses retain their exact manifest bytes and the original same-origin CSP without a nonce. HTML response bytes differ from the pinned template only at the canonical meta placeholder. `Cache-Control: no-store` applies throughout.
+
+A missing or repeated meta, another occurrence of the placeholder or nonce name, a noncanonical meta, or unavailable random bytes causes HTTP 500 with a JSON error before any HTML is written. The server does not send an unprotected fallback page. It never rewrites the bundled files or their lock during a request. A plain static developer preview does not establish this daemon-specific nonce and CSP behavior; use the matching nb1 host to validate the protected embedded editor.
 
 ## Verification boundary
 

@@ -121,7 +121,10 @@ func patternV2Seed(t *testing.T, s *patternstore.StoreV2, data []byte) {
 	t.Helper()
 	// Explicit test fixture only: unsupported records must not be publishable
 	// through Import, but may already exist on disk for read-only inspection.
-	if err := os.Mkdir(s.Path(), 0700); err != nil {
+	// Create the managed directory and snapshot through the real store first.
+	// Overwriting that existing file preserves its protected Windows DACL;
+	// Mkdir/WriteFile mode bits alone do not establish that security boundary.
+	if _, err := s.Import(patternV2File(t, "requests/import-known.snapshot.json")); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(filepath.Join(s.Path(), "patterns.json"), data, 0600); err != nil {

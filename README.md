@@ -36,7 +36,7 @@ Direct mode validates and resolves the local input before opening USB, always wa
 
 Starting `server` does not install a startup service. Run it in a terminal, manage it as an ordinary background process, or explicitly configure the platform's user-service mode. Inspect `nb1 service --help` for available operations. No keyboard or input-monitoring permission is needed to control the lamp.
 
-The macOS/Linux candidate provides `nb1 service install --devices DEVICE_SERIAL --start` for explicit login-service installation. It selects the running nb1 executable by default; use `--binary /absolute/path/to/nb1` to choose another executable. Package upgrade migration and Windows service management remain separate work.
+The macOS/Linux candidate provides `nb1 service install --devices DEVICE_SERIAL --start` for explicit login-service installation. It selects the running nb1 executable by default; use `--binary /absolute/path/to/nb1` to choose another executable. See [daemon platform validation](docs/daemon-validation.md) for actual installation, upgrade and reboot evidence. Windows automatic service management remains unimplemented.
 
 ## Configuration and storage
 

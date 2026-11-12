@@ -1,6 +1,6 @@
 # 命令完成后，用 blink(1) 通知
 
-[English](README.md)
+[English](README.md) · [Codex notify 与 Stop](CODEX.zh-CN.md)
 
 这个 Python 3 标准库示例调用正式 `nb1 control run`：命令成功显示绿色，失败显示红色，默认停留 1.5 秒后熄灯。灯光由 daemon 编译 Action、执行 Sequence 并发布 Job 终态。示例不直连 USB、不安装服务。
 
@@ -58,13 +58,13 @@ CLI 只向 `POST /v1/jobs` 提交一次，之后用 `GET /v1/jobs/<id>` 等待�
 
 `daemon_job_confirmed` 是 daemon 的完成／清理证据，不是摄像头验收。Job 保存在内存中，重启或保留期结束可能使其不可查询；查询不到不能证明从未执行，也不能据此自动生成新 ID 重播。
 
-## 软件验证与 Stop 示例
+## 软件验证与 Codex 示例
 
 ```sh
 NB1_NOTIFY_TEST_BINARY=/absolute/path/to/current/nb1 \
   python3 -m unittest discover -s examples/command-notify -p 'test_*.py' -v
 ```
 
-14 项测试包含控制流、当前真实 CLI＋临时端口 synthetic HTTP、合成 Stop JSON。覆盖退出码、单次 POST、有限 Action、Job 终态、响应丢失后原 ID 查询、超时／忙／离线／无效响应、报告保存失败与重复事件。未设置二进制时，真实 CLI 的测试明确跳过。
+测试覆盖控制流、当前真实 CLI＋临时端口 synthetic HTTP，以及合成 Codex 事件。覆盖退出码、单次 POST、有限 Action、Job 终态、响应丢失后原 ID 查询、超时／忙／离线／无效响应、报告保存失败与重复事件。未设置二进制时，真实 CLI 的测试明确跳过。历史 14 项验证结果与新增验证范围分别记录在 [VERIFICATION.md](VERIFICATION.md)。
 
-[Codex Stop 示例](CODEX.md) 复用相同通知实现，默认仅预览。synthetic 测试不等于 live hook：没有启动真实 Codex 回合、修改用户 hook 配置或验证灯具联动。当前软件验证也不替代其他 OS、旧系统、USB 型号或 MK3 的实物验收。
+[Codex 接入指南](CODEX.zh-CN.md)区分两个入口：`codex_notify.py` 接收外部 `notify` 的 JSON 参数，`codex_stop.py` 从 stdin 读取 lifecycle Stop 事件。两者默认只预览，用蓝色表示回合结束。上面的 `notify.py` 仍是普通命令包装器，按该命令退出码选择颜色。合成事件、真实 Codex 回合与实体灯光需要分别验收，不替代其他 OS、旧系统、USB 型号或 MK3 的实物结果。

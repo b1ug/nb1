@@ -54,6 +54,7 @@ macOS/Linux 的配置与本机颜色／Pattern 作品库使用 `$XDG_CONFIG_HOME
 - [统一术语](docs/api-v1-terminology.md)：各入口共用的概念。
 - [MCP](adapters/mcp/README.md)：真实 stdio 到 HTTP，包含 12 个工具，不包装 CLI，不另占 USB。
 - [Agent Skill](skills/blink1-control/SKILL.md)、[安装与使用](docs/agent-guide.zh-CN.md)和 [llms.txt](llms.txt)：Agent 的选择、跟踪和恢复指南。
+- [Codex 回合通知](examples/command-notify/CODEX.zh-CN.md)：可选的 notify／Stop 接入，默认预览，通过本机 daemon 播放，包含单次调用配置与软件验收记录。
 
 Web 位于 `/demo/`，默认英文，可切中文。其源码在独立的 nb1-web 私有仓库维护，固定构建结果内嵌到 nb1。官网文档种子在 nb1-site 私有仓库。仅打开网页或预览不会播放。
 

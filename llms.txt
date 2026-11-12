@@ -33,5 +33,6 @@ Use nb1 config path and nb1 config show to inspect settings without USB. Profile
 - [Agent setup and use](docs/agent-guide.md): project-local discovery, explicit invocation and documentation routing.
 - [Local library](skills/blink1-control/references/patterns.md): named colors and saved Patterns.
 - [MCP adapter](adapters/mcp/README.md): build, transport and tool schemas.
+- [Codex turn notifications](examples/command-notify/CODEX.md): external notify argv JSON and stdin Stop are separate entries; preview by default, explicitly execute one finite blue turn-ended Job, and preserve the original Job ID without replay after uncertainty. One-invocation setup does not install global hooks.
 
 Report preview, terminal status, timestamped RGB readback and camera observation separately. Mac/MK2 evidence does not establish MK3, other-OS USB or optical quality. Public interfaces default to English and offer Chinese where available. Do not change global MCP registration, startup services or system permissions just to use this project.

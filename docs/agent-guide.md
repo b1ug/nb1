@@ -57,6 +57,11 @@ requested task. HTTP202 is acceptance; terminal Job status is completion.
 Keep the original endpoint, input and Job ID when a response is lost. A missing
 record cannot prove that playback never ran.
 
+For optional turn-ended lighting, use the [Codex notify guide](../examples/command-notify/CODEX.md).
+It separates external notify JSON arguments from stdin Stop hooks, previews by
+default, and shows a one-invocation configuration without global installation.
+Its blue notification means a turn ended; inspect the Job report for playback.
+
 ## Read only the details needed
 
 The main body covers expression choice, preview/run/track and recovery. Bundled

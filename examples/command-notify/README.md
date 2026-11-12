@@ -1,6 +1,6 @@
 # Command notifications
 
-[简体中文](README.zh-CN.md) · [Codex Stop example](CODEX.md)
+[简体中文](README.zh-CN.md) · [Codex notify and Stop](CODEX.md)
 
 Run an argv command, preserve its exit code, then submit one finite blink(1) notification through the running nb1 daemon. Success uses green, failure red. The default duration is 1.5 seconds; the same Job finishes off.
 
@@ -26,4 +26,6 @@ NB1_NOTIFY_TEST_BINARY=/absolute/path/to/nb1 \
   python3 -m unittest discover -s examples/command-notify -p 'test_*.py' -v
 ```
 
-The fixture tests use a real CLI and ephemeral synthetic HTTP. They do not access USB, the daily daemon, user libraries or global configuration. See [verification scope](VERIFICATION.md). The Stop example is a separate synthetic event workflow; a real agent hook and physical notification still need their own acceptance.
+The fixture tests use a real CLI and ephemeral synthetic HTTP. They do not access USB, the daily daemon, user libraries or global configuration. See [verification scope](VERIFICATION.md).
+
+For Codex turn events, use [the separate Codex guide](CODEX.md): `codex_notify.py` receives the external `notify` JSON argument, while `codex_stop.py` reads a lifecycle Stop event from stdin. Both preview by default and use blue to mean that a turn ended. The command wrapper above remains `notify.py`; it runs an ordinary command and uses its exit code. Synthetic events, a real Codex turn and physical lighting have separate acceptance evidence.

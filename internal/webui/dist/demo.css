@@ -420,5 +420,6 @@ footer { display: flex; align-items: center; gap: 7px; padding: 24px 3px 5px; fo
 .action[data-action="rainbow"] { --action-ink: #4c63ad; --action-wash: #fff0e0; }
 .action-icon-wrap { width: 48px; height: 44px; min-height: 44px; border-radius: 17px 19px 16px 18px; background: var(--action-wash); }
 .action[data-action="rainbow"] .action-icon { width: 44px; height: 34px; }
-.action:hover:enabled { background: var(--action-wash); border-color: var(--action-ink); }
+.action:hover:enabled { background: #fffdf3; border-color: var(--action-ink); }
 .action.selected { box-shadow: inset 0 1px 0 #ffffffb0, 0 3px 0 #bad1b94a; }
+.action.selected:hover:enabled { background: var(--action-wash); }

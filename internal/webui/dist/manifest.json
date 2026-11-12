@@ -4,9 +4,9 @@
   "asset_base": "./",
   "source": {
     "repository": "local:nb1-web",
-    "commit": "82e89c9e970922c950cbd44dc3aa58b1cd7118a4",
+    "commit": "884f77ef00b77d8126a6e777213a202dccc1da6a",
     "dirty": false,
-    "tree_sha256": "edbe7e8cd8f4da91597f66af8068515aba9bef77fec137366755411dd631ea46"
+    "tree_sha256": "e09f315023d61f78f90f697c9e9d29b0a46a7fec6e4d912ec2efdc33951a65e5"
   },
   "build": {
     "tool": "static-editor/v1",
@@ -39,8 +39,8 @@
     },
     {
       "path": "demo.css",
-      "bytes": 34453,
-      "sha256": "39bea606fb1271762f8d304e73c6bde4b87166554109319a6965c7e8c87eadca"
+      "bytes": 34509,
+      "sha256": "bda650854b9e0641b3eb84ab5f400b5f1349b548081217fe593c7a9c8521e53a"
     },
     {
       "path": "demo.js",

@@ -2,6 +2,7 @@
 import subprocess
 import sys
 import tempfile
+from types import SimpleNamespace
 import unittest
 from unittest import mock
 from pathlib import Path
@@ -10,6 +11,28 @@ from check_upgrade_service import Acceptance, CheckError
 
 
 class UpgradeGuardTests(unittest.TestCase):
+    def test_candidate_environment_and_ownership_match_full_profile(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            baseline = root/'baseline'
+            baseline.write_bytes(b'guard-test-only')
+            args = SimpleNamespace(output=root/'evidence', brew=root/'brew', baseline_cli=baseline,
+                                   source_commit='a'*40, service_mode='available')
+            with mock.patch.dict('os.environ', {'NB1_DEVICE': 'foreign', 'NB1_PORT': '8931'}):
+                candidate = Acceptance(args)
+            self.assertFalse(any(key.upper().startswith('NB1_') for key in candidate.env))
+            self.assertEqual(candidate.env['XDG_CONFIG_HOME'], str(candidate.xdg))
+            candidate.entry, candidate.rack, candidate.address = root/'opt/nb1', root/'Cellar/nb1', '127.0.0.1:12345'
+            config = {'binary': str(candidate.entry), 'binary_root': str(candidate.rack),
+                      'devices': ['00000000'], 'listen': candidate.address,
+                      'config_file': str(candidate.config), 'user_config_root': str(candidate.xdg),
+                      'lock_dir': str(candidate.locks)}
+            self.assertTrue(candidate.own_service({'config_state': 'managed', 'config': config}))
+            for field in ('config_file', 'user_config_root', 'lock_dir'):
+                with self.subTest(field=field):
+                    foreign = dict(config, **{field: '/foreign'})
+                    self.assertFalse(candidate.own_service({'config_state': 'managed', 'config': foreign}))
+
     def test_missing_execute_never_creates_output_or_inspects_inputs(self):
         with tempfile.TemporaryDirectory() as temporary:
             destination = Path(temporary)/'evidence'

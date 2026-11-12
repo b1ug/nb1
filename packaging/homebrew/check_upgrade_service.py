@@ -33,7 +33,12 @@ class Acceptance:
         self.out = args.output.resolve()
         self.brew = args.brew.absolute()  # Keep the brew launcher, not its repository target.
         self.seed = args.baseline_cli.resolve(strict=True) if args.baseline_cli else None
-        self.env = dict(os.environ, HOMEBREW_NO_AUTO_UPDATE='1', HOMEBREW_NO_ANALYTICS='1',
+        environment = {key: value for key, value in os.environ.items() if not key.upper().startswith('NB1_')}
+        self.xdg = self.out/'isolated-xdg'
+        self.config = self.xdg/'nb1/config.yaml'
+        self.library = self.xdg/'nb1/library'
+        self.locks = self.out/'absent-device-locks'
+        self.env = dict(environment, XDG_CONFIG_HOME=str(self.xdg), HOMEBREW_NO_AUTO_UPDATE='1', HOMEBREW_NO_ANALYTICS='1',
                         HOMEBREW_NO_INSTALL_CLEANUP='1', HOMEBREW_NO_ENV_HINTS='1', HOMEBREW_MAKE_JOBS='2',
                         HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK='1')
         self.serial = '00000000'
@@ -51,7 +56,10 @@ class Acceptance:
         self.report = {'status': 'RUNNING', 'checks': [], 'commands': [], 'cleanup': [],
                        'platform': sys.platform, 'uid': os.getuid(), 'source_commit': args.source_commit,
                        'versions': [self.version1, self.version2], 'service_mode': args.service_mode,
-                       'real_device_commands': False, 'native_discovery_may_run': True}
+                       'real_device_commands': False, 'native_discovery_may_run': True,
+                       'isolated_profile': str(self.config), 'isolated_xdg_root': str(self.xdg),
+                       'isolated_library': str(self.library), 'isolated_locks': str(self.locks),
+                       'baseline_cli_sha256': hashlib.sha256(self.seed.read_bytes()).hexdigest() if self.seed else None}
 
     def run(self, label, argv, expected=0, timeout=30, retain=True):
         began = time.monotonic()
@@ -93,7 +101,8 @@ class Acceptance:
         config = state.get('config') or {}
         return (state.get('config_state') == 'managed' and config.get('binary') == str(self.entry)
                 and config.get('binary_root') == str(self.rack) and config.get('devices') == [self.serial]
-                and config.get('listen') == self.address)
+                and config.get('listen') == self.address and config.get('config_file') == str(self.config)
+                and config.get('user_config_root') == str(self.xdg) and config.get('lock_dir') == str(self.locks))
 
     def archive(self):
         source = self.args.source_archive.resolve(strict=True)
@@ -124,9 +133,9 @@ class Acceptance:
             checkout = self.brew_run('tap-path', '--repository', self.tap).stdout.strip()
             self.run('refresh-local-tap', ['git', '-C', checkout, 'pull', '--ff-only'])
 
-    def request(self, path, data=None):
+    def request(self, path, data=None, method=None):
         body = None if data is None else json.dumps(data).encode()
-        req = Request(self.endpoint+path, data=body, headers={'Content-Type': 'application/json'})
+        req = Request(self.endpoint+path, data=body, headers={'Content-Type': 'application/json'}, method=method)
         try:
             response = self.opener.open(req, timeout=2)
         except HTTPError as error:
@@ -135,6 +144,32 @@ class Acceptance:
             data = response.read(65537)
             require(len(data) <= 65536, 'HTTP evidence exceeds the response budget')
             return response.code, json.loads(data)
+
+    def library_snapshot(self):
+        colors_status, colors = self.request('/v1/colors')
+        pattern_status, pattern = self.request('/v1/patterns/brew-retained')
+        require(colors_status == pattern_status == 200, 'isolated library could not be read')
+        files = {}
+        for path in self.library.rglob('*.json'):
+            require(path.is_file() and not path.is_symlink() and path.stat().st_size <= 1 << 20,
+                    'unexpected isolated library file')
+            files[str(path.relative_to(self.library))] = hashlib.sha256(path.read_bytes()).hexdigest()
+        require(len(files) == 2, 'isolated library did not contain exactly the saved color and Pattern')
+        return {'colors': colors, 'pattern': pattern, 'files': files}
+
+    def save_library(self):
+        status, color = self.request('/v1/colors/brew-retained', {'color': '#13579b'}, method='PUT')
+        require(status == 200 and color == {'name': 'brew-retained', 'color': '#13579b'}, 'isolated color save failed')
+        status, pattern = self.request('/v1/patterns/brew-retained', {
+            'title': 'Package restart retention', 'action': {'kind': 'set', 'color': '@brew-retained'}}, method='PUT')
+        require(status == 200 and pattern.get('id') == 'brew-retained', 'isolated Pattern save failed')
+        self.library_expected = self.library_snapshot()
+        self.report['library_file_sha256'] = self.library_expected['files']
+        self.check('V1 stores color and frozen Pattern outside the keg', self.library.is_dir())
+
+    def verify_library(self, label):
+        self.check(label, self.library_snapshot() == self.library_expected
+                   and hashlib.sha256(self.config.read_bytes()).hexdigest() == self.config_sha256)
 
     def ready(self):
         end = time.monotonic()+10
@@ -190,7 +225,8 @@ class Acceptance:
         else:
             log = (self.out/('foreground-'+str(len(self.report['commands']))+'-'+version[-1:]+'.log')).open('w')
             self.child = subprocess.Popen([str(self.entry), '--config', str(self.config), 'server', '--devices', self.serial,
-                                           '--listen', self.address], stdout=log, stderr=log, env=self.env, stdin=subprocess.DEVNULL)
+                                           '--listen', self.address, '--lock-dir', str(self.locks)],
+                                          stdout=log, stderr=log, env=self.env, stdin=subprocess.DEVNULL)
             log.close()
         self.ready()
         identity = self.identity()
@@ -205,10 +241,14 @@ class Acceptance:
         code, _ = self.request('/v1/preview', {'action': {'kind': 'set', 'color': 'red'}})
         self.check('installed preview and offline rejection', code == 200 and self.request('/v1/jobs', {
             'serial': self.serial, 'action': {'kind': 'set', 'color': 'red'}})[0] == 503)
+        if hasattr(self, 'library_expected'):
+            self.verify_library('profile and local library retained on '+version)
         return identity
 
     def stop(self, identity):
         if self.args.service_mode == 'available':
+            require(self.own_service(self.service('verify-before-stop', 'status', seed=True)),
+                    'service changed before stop; refusing a foreign configuration')
             self.service('stop-service', 'stop')
         else:
             self.child.terminate()
@@ -242,7 +282,11 @@ class Acceptance:
     def exercise(self):
         self.out.mkdir(mode=0o700, exist_ok=False)
         self.output_owned = True
-        self.config = self.out/'setting.yaml'; self.config.write_text('{}\n')
+        self.config.parent.mkdir(mode=0o700, parents=True)
+        self.config.write_text('{}\n')
+        self.config.chmod(0o600)
+        self.config_sha256 = hashlib.sha256(self.config.read_bytes()).hexdigest()
+        self.report['config_sha256'] = self.config_sha256
         self.archive()  # Reject a mismatched archive before any brew/service changes.
         prefix = self.brew_run('brew-prefix', '--prefix').stdout.strip()
         cellar = self.brew_run('brew-cellar', '--cellar').stdout.strip()
@@ -272,8 +316,10 @@ class Acceptance:
         self.check('target serial is absent from native discovery', self.serial not in discovered.stdout)
         if self.args.service_mode == 'available':
             self.may_have_service = True
-            state = self.service('install-service-default-path', 'install', '--devices', self.serial, '--listen', self.address)
+            state = self.service('install-service-default-path', 'install', '--devices', self.serial, '--listen', self.address,
+                                 '--lock-dir', self.locks)
             self.check('Homebrew service stores the stable package entry', self.own_service(state))
+            self.check('service captures the isolated config and XDG root', self.own_service(state))
             self.unit = Path(state.get('plist_path') or state['unit_path'])
             snapshot = self.service_snapshot()
             self.report['initial_service_file'] = snapshot
@@ -284,10 +330,12 @@ class Acceptance:
                 self.check('container service reports missing user manager', 'systemd user manager' in result.stderr)
             snapshot = None
         first = self.start(self.version1)
+        self.save_library()
         old_cli = self.rack/self.version1/'bin/nb1'
         self.stage_formula(self.version2)
         self.brew_run('upgrade-v2', 'upgrade', *options, self.formula)
         self.check('upgrade retains the running process', self.identity(False)['pid'] == first['pid'] and self.request('/healthz')[0] == 200)
+        self.verify_library('package upgrade preserves the running library and profile')
         stale = self.cli('stale-binary-install', 'service', 'install', '--devices', self.serial, expected=1, binary=old_cli)
         self.check('stale binary cannot silently bind the new package', 'active package executable differs' in stale.stderr)
         self.brew_run('cleanup-old-keg', 'cleanup', self.formula)
@@ -307,6 +355,8 @@ class Acceptance:
         self.check('explicit rollback enters V1 without rewriting the service', not snapshot or self.service_snapshot() == snapshot)
         self.stop(third)
         if self.args.service_mode == 'available':
+            require(self.own_service(self.service('verify-before-uninstall', 'status', seed=True)),
+                    'service changed before uninstall; refusing a foreign configuration')
             self.service('uninstall-service', 'uninstall')
             final = self.service('service-final', 'status', seed=True)
             self.check('service removed after test', final['config_state'] == final['registration'] == 'absent')

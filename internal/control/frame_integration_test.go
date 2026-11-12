@@ -279,7 +279,28 @@ func TestFrameIntegrationSharedCapacityAndRetention(t *testing.T) {
 	for _, firstKind := range []string{"frame", "legacy"} {
 		for _, bound := range []string{"entries", "targets"} {
 			t.Run(firstKind+"-"+bound, func(t *testing.T) {
-				e, _, clock := startFrameIntegration(t, Options{})
+				e, backend, clock := startFrameIntegration(t, Options{})
+				// Capacity and retention do not depend on meeting a 50ms wall
+				// frame deadline. Cancel behind the first native initial-write
+				// gate, then let the real worker confirm cleanup and terminal
+				// publication. Exact scheduling deadlines have fake-clock tests.
+				finishFrame := func(program FrameProgram, request ReceiptRequest) FrameReceiptResult {
+					gate := newEngineGate()
+					defer gate.open()
+					backend.hooks(func(Step) error { return gate.block() }, nil, nil)
+					defer backend.hooks(nil, nil, nil)
+					accepted := submitFrameIntegration(t, e, program, request)
+					awaitEngineSignal(t, gate.entered)
+					if _, err := e.CancelFrame(context.Background(), accepted.Job.ID); err != nil {
+						t.Fatal(err)
+					}
+					gate.open()
+					finished := awaitFrameIntegration(t, e, accepted.Job.ID, "cancelled")
+					if finished.CompletedFrames != 0 || finished.CompletedTargetWrites != 1 {
+						t.Fatalf("capacity fixture entered the timed frame schedule: %#v", finished)
+					}
+					return accepted
+				}
 				e.mu.Lock()
 				if bound == "entries" {
 					e.receipts.maxEntries = 1
@@ -289,14 +310,13 @@ func TestFrameIntegrationSharedCapacityAndRetention(t *testing.T) {
 				e.mu.Unlock()
 				ticket := receiptTicket(e, 10)
 				p := frameIntegrationProgram()
-				p.Repeat = 2 // Charge four stored targets, not six executed writes.
+				p.Repeat = 2 // Charge four stored targets, not six planned writes, even after cancellation.
 				if firstKind == "frame" {
-					first := submitFrameIntegration(t, e, p, ticket)
-					awaitFrameIntegration(t, e, first.Job.ID, "succeeded")
+					first := finishFrame(p, ticket)
 					if _, err := e.SubmitWithReceipt(context.Background(), "a", engineProgram("#112233", "off"), "reject", receiptTicket(e, 11)); !errors.Is(err, ErrReceiptCapacity) {
 						t.Fatalf("legacy ignored frame capacity: %v", err)
 					}
-					if replay := submitFrameIntegration(t, e, p, ticket); !replay.Replayed || replay.Job.ID != first.Job.ID {
+					if replay := submitFrameIntegration(t, e, p, ticket); !replay.Replayed || replay.Job.ID != first.Job.ID || replay.Job.Status != "cancelled" {
 						t.Fatal("full capacity rejected frame replay")
 					}
 					assertReceiptUsage(t, e, 1, 4)
@@ -320,8 +340,7 @@ func TestFrameIntegrationSharedCapacityAndRetention(t *testing.T) {
 					t.Fatalf("legacy receipt did not expire: %v", err)
 				}
 				assertReceiptUsage(t, e, 0, 0)
-				fresh := submitFrameIntegration(t, e, frameIntegrationProgram(), receiptTicket(e, 12))
-				awaitFrameIntegration(t, e, fresh.Job.ID, "succeeded")
+				finishFrame(frameIntegrationProgram(), receiptTicket(e, 12))
 				assertReceiptUsage(t, e, 1, 4)
 			})
 		}

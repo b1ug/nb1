@@ -30,6 +30,7 @@ Use nb1 config path and nb1 config show to inspect settings without USB. Profile
 - [API v1](docs/api-v1.md): HTTP/CLI contract, colors, Patterns and limits.
 - [Terminology](docs/api-v1-terminology.md): Action, Sequence, Step, Job, Pattern and DeviceSequence.
 - [Agent skill](skills/blink1-control/SKILL.md): expression selection, tracking and recovery.
+- [Agent setup and use](docs/agent-guide.md): project-local discovery, explicit invocation and documentation routing.
 - [Local library](skills/blink1-control/references/patterns.md): named colors and saved Patterns.
 - [MCP adapter](adapters/mcp/README.md): build, transport and tool schemas.
 

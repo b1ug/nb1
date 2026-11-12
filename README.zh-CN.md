@@ -35,7 +35,7 @@ macOS/Linux 候选支持用 `nb1 service install --devices DEVICE_SERIAL --start
 - [API v1](docs/api-v1.md)：Action、Sequence、Job、颜色、本机 Pattern 和资源限制。
 - [统一术语](docs/api-v1-terminology.md)：各入口共用的概念。
 - [MCP](adapters/mcp/README.md)：真实 stdio 到 HTTP，包含 12 个工具，不包装 CLI，不另占 USB。
-- [Agent Skill](skills/blink1-control/SKILL.md) 与 [llms.txt](llms.txt)：Agent 的选择、跟踪和恢复指南。
+- [Agent Skill](skills/blink1-control/SKILL.md)、[安装与使用](docs/agent-guide.zh-CN.md)和 [llms.txt](llms.txt)：Agent 的选择、跟踪和恢复指南。
 
 Web 位于 `/demo/`，默认英文，可切中文。其源码在独立的 nb1-web 私有仓库维护，固定构建结果内嵌到 nb1。官网文档种子在 nb1-site 私有仓库。仅打开网页或预览不会播放。
 

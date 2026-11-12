@@ -51,7 +51,7 @@ Device locks follow the established native OS coordination policy. On macOS they
 - [Terminology](docs/api-v1-terminology.md): names shared by all interfaces.
 - [MCP adapter](adapters/mcp/README.md): real stdio MCP to local HTTP.
 - [Web presentation](docs/web-typography.md): custom language menu, local fonts, SVG icons and embedded asset boundaries.
-- [Agent skill](skills/blink1-control/SKILL.md) and [llms.txt](llms.txt): guidance for AI clients.
+- [Agent skill](skills/blink1-control/SKILL.md), [setup and use](docs/agent-guide.md), and [llms.txt](llms.txt): guidance for AI clients.
 
 Actions are `set`, `off`, `fade`, `blink`, `breathe`, `pulse`, `alternate`, `orbit` and `rainbow`. Colors accept names, Hex, RGB8, HSV/HSB and local `@name` references. Patterns are saved on the computer. Native DeviceSequence rows use required numeric `led` values `0` (all outputs), `1` or `2`, matching Action and Step. Device storage has separate limits and deployment requirements. [Device-native draft](docs/device-native-sequence.md)
 

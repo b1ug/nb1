@@ -34,4 +34,6 @@ To preview or run a saved Pattern, use `{"pattern_id":"red-blue-orbit"}` with th
 
 Saving an existing Pattern ID replaces its host record atomically. Use a new ID when the user wants both works. After an uncertain save response, read that ID and compare the full Sequence before deciding to save again. A successful preview does not prove storage; playback is not a storage test.
 
-Limits: 256 colors, 128 Patterns, 1 MiB per record and 256 Unicode characters per title. Concurrent writers wait at most two seconds. The daemon selects its library with `--library-dir` or `NB1_LIBRARY_DIR`, otherwise the user's `nb1/library` configuration directory. Returned paths are display data, not file-access instructions.
+Limits: 256 colors, 128 Patterns, 1 MiB per record and 256 Unicode characters per title. Concurrent writers wait at most two seconds. The daemon selects its library from `--library-dir`, `NB1_LIBRARY_DIR`, profile `library_dir`, then the stable per-user `nb1/library` default, in that order. A custom profile path alone does not relocate it. Returned paths are display data, not file-access instructions.
+
+Use the actual daemon endpoint for every CLI call; add `control --endpoint URL` when it differs from the selected profile. For exact input fields and CLI/MCP envelope examples, read [expressions](expressions.md); for profile and direct-mode behavior, read [direct mode and configuration](direct-and-config.md).

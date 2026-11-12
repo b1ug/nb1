@@ -4,6 +4,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
 
 SPEC = importlib.util.spec_from_file_location("build_artifact", Path(__file__).with_name("check-build-artifact.py"))
@@ -85,6 +86,51 @@ class CandidateTests(unittest.TestCase):
             ARTIFACT.smoke(Path("/not-executed/nb1"))
         self.assertEqual(len(calls), 3)
         self.assertFalse(scratch_paths[0].exists())
+
+    def test_stage_checksum_bytes_stay_lf_when_text_writes_use_windows_crlf(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            binary = root / "input-binary"
+            binary.write_bytes(b"fixture; never executed")
+            (root / "LICENSE").write_bytes(b"license\n")
+            web = root / "internal/webui/dist"
+            web.mkdir(parents=True)
+            (web / "manifest.json").write_bytes(b"{}\n")
+            (web.parent / "manifest.lock.json").write_bytes(json.dumps({
+                "manifest_sha256": ARTIFACT.digest(web / "manifest.json")}).encode())
+            output = root / "candidate"
+            environment = {"GOVERSION": "go1.27.3", "GOOS": "darwin", "GOARCH": "arm64",
+                           "CGO_ENABLED": "1", "CC": "clang", "GOWORK": "off", "GOTOOLCHAIN": "local"}
+
+            def fake_command(args):
+                if args == ["git", "rev-parse", "HEAD"]:
+                    return SOURCE
+                if args == ["git", "status", "--porcelain"]:
+                    return ""
+                if args[:2] == ["go", "env"]:
+                    return json.dumps(environment)
+                if args[:2] == ["go", "list"]:
+                    return "\n".join(map(json.dumps, MODULES))
+                if args[:3] == ["go", "version", "-m"]:
+                    return build_text()
+                self.fail("unexpected external command: " + str(args))
+
+            def windows_text_write(path, text, encoding=None, **kwargs):
+                path.write_bytes(text.replace("\n", "\r\n").encode(encoding or "utf-8"))
+                return len(text)
+
+            arguments = SimpleNamespace(binary=str(binary), out=str(output), expected_source=SOURCE,
+                                        expected_os="darwin", expected_arch="arm64")
+            with patch.object(ARTIFACT, "ROOT", root), patch.object(ARTIFACT, "command", fake_command), \
+                    patch.object(ARTIFACT, "smoke", return_value=help_evidence()), \
+                    patch.object(Path, "write_text", windows_text_write):
+                ARTIFACT.stage(arguments)
+            self.assertIn(b"\r\n", (output / "build.json").read_bytes(), "fixture must exercise Windows text writes")
+            expected = "".join(ARTIFACT.digest(output / name) + "  " + name + "\n" for name in
+                               sorted(["nb1", "LICENSE", "build.json", "cli-help.json"])).encode("ascii")
+            self.assertEqual((output / "SHA256SUMS").read_bytes(), expected)
+            self.assertNotIn(b"\r", expected)
+            ARTIFACT.verify(output)
 
     def test_verify_fails_on_tampering_missing_extra_or_symlink(self):
         with tempfile.TemporaryDirectory() as temporary:

@@ -1,4 +1,6 @@
 /internal/colorinput/testdata/css-named-2026.tsv text eol=lf
+# Standalone Skill bytes must match across native candidate checkouts.
+/skills/blink1-control/** text eol=lf
 # The embedded web bundle is content-addressed. Preserve every imported byte,
 # including its manifest, licenses, and fonts on Windows checkouts.
 /internal/webui/dist/** -text

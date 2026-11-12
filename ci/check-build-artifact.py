@@ -151,7 +151,7 @@ def stage(args):
                "scope": "Native build and CLI help only; no preview compilation, daemon, physical USB or minimum-OS acceptance."})
     write_json(output / "cli-help.json", help_evidence)
     names = sorted(p.name for p in output.iterdir())
-    (output / "SHA256SUMS").write_text("".join(digest(output / name) + "  " + name + "\n" for name in names), encoding="utf-8")
+    (output / "SHA256SUMS").write_bytes("".join(digest(output / name) + "  " + name + "\n" for name in names).encode("ascii"))
     verify(output)
 
 

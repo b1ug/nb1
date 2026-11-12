@@ -4,9 +4,9 @@
   "asset_base": "./",
   "source": {
     "repository": "local:nb1-web",
-    "commit": "abb2f18162fb653b89c6a91202d4d88a5954dc57",
+    "commit": "73644389259a5c4c1a4c02203aed0f9e8d6bfb9d",
     "dirty": false,
-    "tree_sha256": "5d757f8dc02617e0997f0d82f4344adcb40250da5ee028e86ee6c98eab7c328f"
+    "tree_sha256": "fdf8666a063a9b779996aad3e10f8bfafa34e0151cbf94f97835eead8c5c0acf"
   },
   "build": {
     "tool": "copy-static/v1",
@@ -24,8 +24,8 @@
     },
     {
       "path": "action-icons.js",
-      "bytes": 3058,
-      "sha256": "0b13fd8c8d8030371ec06980abb53fbd51dc4372a29b7943a75e1a62318d721f"
+      "bytes": 3247,
+      "sha256": "99f29a6be7d7c10d3bcad7d2caf3ef801395e6290b9c2ddd85f260bb0f7029b9"
     },
     {
       "path": "demo.css",

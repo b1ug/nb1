@@ -43,9 +43,14 @@
       path(svg, "M5 9H23 M19 5L23 9L19 13 M23 19H5 M9 15L5 19L9 23");
     },
     orbit(svg) {
-      add(svg, "ellipse", {cx: 14, cy: 14, rx: 11, ry: 6, transform: "rotate(-30 14 14)"});
-      add(svg, "circle", {cx: 14, cy: 14, r: 3, fill: "currentColor", stroke: "none"});
-      add(svg, "circle", {cx: 23.5, cy: 8.5, r: 2.5, fill: "currentColor", stroke: "none"});
+      const planet = element("g", {transform: "rotate(-24 14 14)"});
+      add(planet, "ellipse", {cx: 14, cy: 14, rx: 11.5, ry: 4.2});
+      add(planet, "circle", {cx: 14, cy: 14, r: 7.2, fill: "#e8cf85"});
+      // The opaque globe hides the rear ring; a light edge separates the front.
+      const front = "M2.5 14a11.5 4.2 0 0 0 23 0";
+      path(planet, front, {stroke: "#fffbed", "stroke-width": 4.4});
+      path(planet, front);
+      svg.append(planet);
     },
     rainbow(svg) {
       const colors = ["#ff0000", "#ffa500", "#ffff00", "#00ff00", "#0000ff", "#4b0082", "#8f00ff"];

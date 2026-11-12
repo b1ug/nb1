@@ -16,7 +16,7 @@ Fredoka 700 supplies Latin brand and heading shapes. M PLUS Rounded 1c 500/700 s
 
 These compact files contain no CJK ideographs. Chinese uses installed native fallback fonts with bold styling; the exact face and available weight depend on the platform. The interface does not claim to ship a Chinese webfont. Code, JSON values and timestamps retain their monospace treatment. No remote font request or system font installation is required.
 
-All nine confirmed Action buttons use original static SVG drawings with visible text labels. Rainbow has seven colored arcs. Breathe uses an expansion motif, while Pulse depicts a quick rise and a longer decay. These decorative cues use no Unicode icon font and do not simulate a running effect or establish device completion.
+All nine confirmed Action buttons use original static SVG drawings with visible text labels. Rainbow has seven colored arcs. Orbit uses a warm gold planet with tilted Saturn-like rings. Breathe uses an expansion motif, while Pulse depicts a quick rise and a longer decay. These decorative cues use no Unicode icon font and do not simulate a running effect or establish device completion.
 
 ## Build and serving boundary
 
@@ -26,9 +26,9 @@ The manifest records the producer source commit, file sizes and SHA-256 values. 
 
 The reviewed import is pinned to:
 
-- Producer source: `abb2f18162fb653b89c6a91202d4d88a5954dc57`.
-- Manifest SHA-256: `bee7fbf0b8533b0a02f692e09083033aad5571eaeff21656eb8bdb2f8bfe7aef`.
-- Embedded payload: **197,554 bytes across 22 files**, leaving **64,590 bytes** within the 256 KiB limit.
+- Producer source: `73644389259a5c4c1a4c02203aed0f9e8d6bfb9d`.
+- Manifest SHA-256: `051d17354733e60fb554531c6a61656439440478b587206744d41517bf3ec5f3`.
+- Embedded payload: **197,743 bytes across 22 files**, leaving **64,401 bytes** within the 256 KiB limit.
 
 All runtime assets are local and use the same origin as the API. The Content Security Policy explicitly permits packaged fonts with `font-src 'self'`, while scripts, styles and API connections remain same-origin. The interface adds no CDN, analytics, Service Worker, inline script or additional framework runtime.
 

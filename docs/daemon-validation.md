@@ -38,13 +38,16 @@ includes its binary digest. All 80 functional checks and five cleanup checks
 passed without forced process termination. These runs explicitly require no
 blink(1) attached.
 
-The [Linux Homebrew service run](https://github.com/b1ug/nb1/actions/runs/43182659126)
-uses source `b3b5ac27e7ae7f66652540bf5a9d1b49fec1aec9`. It records 79 lifecycle
-and refusal-test entries, all six expected refusal cases, 19 package-upgrade
+The [Linux Homebrew service run](https://github.com/b1ug/nb1/actions/runs/43190346262)
+uses source `b82705404e9ba0a750bec1c3ed5229144ec0cd00`. It records 79 lifecycle
+and refusal-test entries, all six expected refusal cases, 24 package-upgrade
 checks, and cleanup of its temporary service, package, tap and account. It uses
 an isolated development tap; no public package or release was published. The
-later candidate changes test fixtures and validation tooling; the daemon's
-runtime code is unchanged from this service-test source.
+checker keeps the running Linux user manager's configuration root, while its
+explicit profile, color/Pattern library and locks stay in private fixture paths.
+The upgrade and rollback checks confirm identical profile and library bytes.
+The [earlier run](https://github.com/b1ug/nb1/actions/runs/43182659126) remains a
+separate 19-check upgrade snapshot at source `b3b5ac2`.
 
 The current macOS Homebrew check builds two development packages from source
 `ec82faa273754c289ec0006d0d044379f1ba3b2a` in a fresh private prefix, using

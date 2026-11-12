@@ -22,7 +22,7 @@
 
 [五平台实际候选验收](https://github.com/b1ug/nb1/actions/runs/43186037056)对应 `45d92e75bd68e92f815aab3157d3d5b6c34d7f92`：每个平台编译干净来源的原生 CGO 程序，校验提交与依赖，再运行同一个二进制。80 个功能检查及五份清理结果全部通过，无强制终止。云端明确要求没有接入 blink(1)。
 
-[Linux Homebrew 联合验收](https://github.com/b1ug/nb1/actions/runs/43182659126)对应 `b3b5ac27e7ae7f66652540bf5a9d1b49fec1aec9`：79 条生命周期及拒绝测试记录、六类预期拒绝、19 个升级检查，以及临时服务、包、tap、账号清理通过。使用隔离的开发 tap，没有公开发版。后续候选只调整测试样本和验证工具，daemon 执行代码与该来源相同。
+[Linux Homebrew 联合验收](https://github.com/b1ug/nb1/actions/runs/43190346262)对应 `b82705404e9ba0a750bec1c3ed5229144ec0cd00`：79 条生命周期及拒绝测试记录、六类预期拒绝、24 个升级检查，以及临时服务、包、tap、账号清理通过。验收工具沿用已运行的 Linux 用户 manager 配置根，将显式 profile、颜色/Pattern 库和锁放在私有测试目录，核对升级回退后文件逐字不变。使用隔离开发 tap，没有公开发版。[较早运行](https://github.com/b1ug/nb1/actions/runs/43182659126)仍保留为 `b3b5ac2` 的19项升级历史快照。
 
 当前 Mac Homebrew 补验以 `ec82faa273754c289ec0006d0d044379f1ba3b2a` 同源码构建两个开发包，使用新的私有前缀、官方 Homebrew 固定提交 `bf464f57275cae0be106b43d190c98564ac59b0e` 与 Go1.27.4。24 项全部通过，包括稳定服务入口、固定 XDG/profile/锁目录、升级不自动重启、删除旧 keg、显式重启、回退，以及颜色/Pattern 文件和服务定义不变。服务、tap、包与私有前缀均已删除。未操作宿主默认 `/opt/homebrew`，不将隔离前缀的结果写成默认前缀验收。[升级工具](../packaging/homebrew/check_upgrade_service.py)分别记录进程、包与清理结果。
 

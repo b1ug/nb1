@@ -4,7 +4,7 @@ The current API v1 workbench is served at `/demo/`, with Orbit and Pattern Book 
 
 ## Navigation and menus
 
-Page navigation and the Action / Sequence / Pattern editor tabs have separate roles. Workbench, Orbit and Pattern Book are page links with a single `aria-current="page"`; editor tabs select the authoring format within a page. Language selection is a compact secondary control rather than a fourth page tab.
+The header keeps the brand and a compact language utility. Repeated Workbench / Orbit / Pattern Book shortcuts have been removed: Action / Sequence / Pattern tabs and the Action tiles already provide the authoring choices in the workspace. The existing page URLs still select their initial view; no extra shortcut row is needed.
 
 The language control opens a paper-styled listbox. English is the first-visit default. The choices retain their full labels **English** and **中文** even when the closed trigger uses a shorter language label. Additional languages are populated from the shared locale catalog. Explicit selection persists under `nb1.web.locale.v1` in same-origin localStorage. Missing, unsupported or inaccessible preferences fall back to English, while blocked storage still permits a language change on the current page.
 
@@ -12,7 +12,7 @@ Enter/Space opens the menu and selects a focused option. Arrow keys move focus, 
 
 Language changes update presentation only. They preserve user titles, JSON, colors and Job IDs and do not preview, submit or cancel device work.
 
-The device control keeps the selected serial and connection state separate from navigation. Its menu uses the workbench's paper surface and visible focus styling. Choosing a device may read its cached state; opening a menu, changing language or navigating between pages does not submit playback.
+Single-select dropdowns share one paper-styled presentation, including the selected device, saved Pattern, color format and dynamically created Action parameters. Their original select elements remain the source of values and change events; opening a menu or moving focus does not change the author input. Only a committed different value sends the existing change event. A device change may read cached state, while a Pattern choice still needs the explicit Read Pattern action. Refresh and language changes update menu labels without altering serials, Pattern titles, canonical values or execution behavior. The color shelf's visible list and the native color picker retain their own interaction.
 
 ## Local character and favicon
 

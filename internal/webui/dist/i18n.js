@@ -95,6 +95,7 @@
     if (returnFocus) trigger.focus({preventScroll: true});
   }
   function openMenu(index = codes.indexOf(locale)) {
+    document.dispatchEvent(new CustomEvent("nb1-menu-open", {detail: control}));
     menuOpen = true;
     listbox.hidden = false;
     trigger.setAttribute("aria-expanded", "true");
@@ -150,6 +151,7 @@
   control.addEventListener("focusout", event => {
     if (menuOpen && event.relatedTarget && !control.contains(event.relatedTarget)) closeMenu();
   });
+  document.addEventListener("nb1-menu-open", event => { if (menuOpen && event.detail !== control) closeMenu(false); });
   const observer = new MutationObserver(() => refresh());
   function refresh() {
     observer.disconnect();

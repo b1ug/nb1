@@ -4,9 +4,9 @@
   "asset_base": "./",
   "source": {
     "repository": "local:nb1-web",
-    "commit": "41c48e5f91a36bfb2c25cd20a321df22881c5240",
+    "commit": "e44ec558d317a811632470434f1552ba4aa5ee73",
     "dirty": false,
-    "tree_sha256": "64dc804ad6843e4f3898386a339c4c4151ea52182397522086dd496b79d9008d"
+    "tree_sha256": "b765116c7715317edbeb91baa09b05b6094940dea2b95945108dcafbad344496"
   },
   "build": {
     "tool": "copy-static/v1",
@@ -39,13 +39,13 @@
     },
     {
       "path": "demo.css",
-      "bytes": 32493,
-      "sha256": "00247e5c0d13d0382305ebff4e83eba653e59d369191c0a60a797428fdc5099a"
+      "bytes": 31722,
+      "sha256": "8805e98ed1f6088a97a1970812ee093f089f97de14d0f88becd20836c1740601"
     },
     {
       "path": "demo.js",
-      "bytes": 33689,
-      "sha256": "67a927a2b44bd57cc809fe73eee575423d424d92874ea7c0c764014d282cc0cb"
+      "bytes": 39408,
+      "sha256": "d7869bd2360cac170ba5a209eb6fbbca35deccfa02121612ef68c6a8a69add52"
     },
     {
       "path": "fonts/Fredoka-OFL.txt",
@@ -79,13 +79,13 @@
     },
     {
       "path": "i18n.js",
-      "bytes": 9901,
-      "sha256": "7272ee13f64fe2e09dc2f4f9d5ef3cbae34ec6ce35a095b5fec8e128b1c2630d"
+      "bytes": 10102,
+      "sha256": "2e19919e1a3b0b314c6278e8b2583d7e32f577c2f8880e5fc936dce6125a7b9f"
     },
     {
       "path": "index.html",
-      "bytes": 11683,
-      "sha256": "2ff791b7c7058236808123fdf353c399f18c9ff04be8b347acb6f241a79b02bd"
+      "bytes": 11499,
+      "sha256": "d6081f652cc2055c97339ed48d7509f4f46bf44c420465b0ad3b7efe92aaa44d"
     },
     {
       "path": "locale-menu.css",
@@ -104,8 +104,8 @@
     },
     {
       "path": "orbit.html",
-      "bytes": 11765,
-      "sha256": "fc38cadc08afef36794d7613a2beed1af4a3f008ada187db26d1a49d60e5068e"
+      "bytes": 11581,
+      "sha256": "36cefe036b5f4e139d81776174c5221c921ac3939baf94f5da4dc0e5f1ae3d32"
     },
     {
       "path": "orbit.js",
@@ -119,8 +119,8 @@
     },
     {
       "path": "patterns.html",
-      "bytes": 11771,
-      "sha256": "ededda27347662bb9037f21bc25368100c8512a2dbae7544c39baf516e3e6b07"
+      "bytes": 11587,
+      "sha256": "16ab0714ec8d873755b73244f99891603682a752be915671b00e246da2e5f570"
     },
     {
       "path": "patterns.js",
@@ -129,8 +129,8 @@
     },
     {
       "path": "typography.css",
-      "bytes": 6573,
-      "sha256": "748eb004163d0fb235958a957a35060150617e8191af01d2d56f58e7801c743e"
+      "bytes": 6504,
+      "sha256": "69a07b8eb13f87c4c1f87cf31f78ff6cf7bc940e698b6c642aa9cf0c4ae29b91"
     }
   ]
 }

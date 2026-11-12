@@ -77,7 +77,7 @@
 :root :is(h3, .drawer-title) { font-size: 16px; }
 
 /* Explicit selectors override the compact base sheet's 9–12px labels. */
-:root :is(button, .top-nav a, .editor-tabs button, .job-buttons .text-button,
+:root :is(button, .editor-tabs button, .job-buttons .text-button,
   .library-toolbar .text-button, .preview-toolbar .text-button,
   .locale-option, [role="menuitem"], [role="option"]) {
   min-width: 44px;
@@ -133,7 +133,7 @@
 
 /* Latin web fonts contain no CJK. Native Chinese UI text uses a real bold face. */
 :root:lang(zh-CN) :is(body, button, input, select, label, legend,
-  .brand small, .top-nav a, .editor-tabs button, .action-grid strong,
+  .brand small, .editor-tabs button, .action-grid strong,
   .description, .notice, .device-bar p, .footnote, .drawer-subtitle,
   .readback-label, .observation-time, .channel-label, .tag, footer,
   .locale-trigger, .locale-option, [role="menuitem"], [role="option"]) {
@@ -166,5 +166,4 @@
     .device-controls select, .library-save-row input, textarea) {
     font-size: 16px;
   }
-  :root .top-nav a { padding-inline: 10px; }
 }

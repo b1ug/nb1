@@ -155,10 +155,12 @@
     else field("led", "Output", [["0", "Both LEDs"], ["1", "LED 1"], ["2", "LED 2"]], "0");
     for (const [name, label, value] of ({fade: [["duration_ms", "Fade duration · ms", 600]], blink: [["on_ms", "On duration · ms", 250], ["off_ms", "Off duration · ms", 250]], breathe: [["period_ms", "Cycle duration · ms", 2000]], pulse: [["attack_ms", "Rise · ms", 60], ["decay_ms", "Fall · ms", 240], ["rest_ms", "Rest · ms", 700]], alternate: [["period_ms", "Cycle duration · ms", 2000]], orbit: [["period_ms", "Cycle duration · ms", 3000]], rainbow: [["period_ms", "Cycle duration · ms", 3000]]}[kind] || [])) field(name, label, null, value);
     if (loops(kind)) { field("cycles", "Cycles", null, 1); field("finish", "On finish", [["off", "Off"], ["hold", "Hold final state"]], "off"); }
+    syncSelectPickers();
     invalidate();
   }
   function renderChannels(suffix) {
     const format = $("color-mode-" + suffix).value, parent = $("channels-" + suffix);
+    syncSelectPickers($("color-mode-" + suffix));
     $("text-" + suffix).hidden = format !== "text"; parent.hidden = format === "text"; parent.replaceChildren();
     const channels = format === "rgb8" ? [["r", "R", 0, 255], ["g", "G", 160, 255], ["b", "B", 96, 255]] : [["h_deg", "H · °", 156, 360], ["s_pct", "S · %", 100, 100], ["v_pct", "B · %", 63, 100]];
     for (const [name, label, value, max] of channels) {
@@ -223,82 +225,160 @@
     catch (error) { uncertainJob(error); }
     finally { submitting = false; updateButtons(); }
   }
-  // Keep the native select as the state source and no-JavaScript fallback.
-  // This presentation layer forwards only the existing change event.
-  function enhanceDevicePicker() {
-    const select = $("device-select"), control = select.closest(".device-picker");
-    const trigger = document.createElement("button"), current = document.createElement("span");
-    const chevron = document.createElement("span"), listbox = document.createElement("ul");
-    trigger.type = "button"; trigger.id = "device-trigger"; trigger.className = "device-trigger";
-    trigger.setAttribute("aria-haspopup", "listbox"); trigger.setAttribute("aria-expanded", "false");
-    trigger.setAttribute("aria-controls", "device-options"); trigger.setAttribute("aria-labelledby", "device-select-label device-current");
-    current.id = "device-current"; current.setAttribute("data-i18n-skip", "");
-    chevron.className = "picker-chevron"; chevron.setAttribute("aria-hidden", "true");
-    trigger.append(current, chevron);
-    listbox.id = "device-options"; listbox.className = "device-options"; listbox.hidden = true;
-    listbox.setAttribute("role", "listbox"); listbox.setAttribute("aria-labelledby", "device-select-label"); listbox.tabIndex = -1;
-    listbox.setAttribute("data-i18n-skip", "");
-    let opened = false, activeIndex = 0, options = [], typeBuffer = "", typeAt = 0;
-    function close(returnFocus = false) {
-      opened = false; listbox.hidden = true; trigger.setAttribute("aria-expanded", "false"); control.classList.remove("is-open");
-      if (returnFocus) trigger.focus({preventScroll: true});
-    }
-    function focusOption(index) {
-      if (!options.length) return;
-      activeIndex = (index + options.length) % options.length;
-      options[activeIndex].focus({preventScroll: true}); options[activeIndex].scrollIntoView({block: "nearest"});
-    }
-    function open(index = select.selectedIndex) {
-      if (trigger.disabled) return;
-      opened = true; listbox.hidden = false; trigger.setAttribute("aria-expanded", "true"); control.classList.add("is-open"); focusOption(Math.max(0, index));
-    }
-    function choose(index) {
-      const before = select.value; select.selectedIndex = index;
-      sync(); close(true);
-      if (select.value !== before) select.dispatchEvent(new Event("change", {bubbles: true}));
-    }
-    function sync() {
-      // A refresh can replace all options while the popup is focused.
-      if (opened) close(true);
-      listbox.replaceChildren(); options = [];
-      for (const [index, item] of [...select.options].entries()) {
-        const option = document.createElement("li"), label = document.createElement("span"), mark = document.createElement("span");
-        option.id = "device-option-" + index; option.className = "device-option"; option.setAttribute("role", "option"); option.tabIndex = -1;
-        option.setAttribute("aria-selected", String(item.selected)); label.textContent = item.textContent;
-        mark.className = "picker-check"; mark.setAttribute("aria-hidden", "true"); option.append(label, mark);
-        option.addEventListener("click", () => choose(index)); option.addEventListener("focus", () => { activeIndex = index; });
-        options.push(option); listbox.append(option);
+  // One presentation layer for every single-select dropdown. The native select
+  // remains authoritative; committing a choice forwards its existing change event.
+  function installSelectPickers() {
+    const entries = new Map();
+    let opened = null;
+    const eligible = select => !select.multiple && select.size <= 1;
+    const labelFor = select => {
+      if (select.hasAttribute("aria-label")) return {name: select.getAttribute("aria-label")};
+      if (select.hasAttribute("aria-labelledby")) return {ids: select.getAttribute("aria-labelledby")};
+      const labels = [...select.labels].map((label, index) => {
+        // An implicit field label also contains the control. Reference only its
+        // authored caption, never the generated popup and its complete option list.
+        const caption = label.contains(select) ? label.querySelector(":scope > span:not(.select-picker)") : label;
+        if (!caption) return "";
+        if (!caption.id) caption.id = select.id + "-label-" + index;
+        return caption.id;
+      }).filter(Boolean);
+      return labels.length ? {ids: labels.join(" ")} : {name: select.id};
+    };
+    function mount(select) {
+      if (!select.id || !eligible(select) || entries.has(select)) return;
+      let control = select.closest(".device-picker");
+      const ownsControl = !control, wasHidden = select.hidden;
+      if (!control) { control = document.createElement("span"); select.before(control); control.append(select); }
+      control.classList.add("select-picker");
+      const trigger = document.createElement("button"), current = document.createElement("span"), chevron = document.createElement("span");
+      const listbox = document.createElement("span");
+      trigger.type = "button"; trigger.id = select.id + "-trigger"; trigger.className = "select-trigger";
+      trigger.setAttribute("aria-haspopup", "listbox"); trigger.setAttribute("aria-expanded", "false");
+      trigger.setAttribute("aria-controls", select.id + "-options"); trigger.setAttribute("data-i18n-skip", "");
+      current.id = select.id + "-current"; current.className = "select-current";
+      chevron.className = "picker-chevron"; chevron.setAttribute("aria-hidden", "true"); trigger.append(current, chevron);
+      listbox.id = select.id + "-options"; listbox.className = "select-options"; listbox.hidden = true;
+      listbox.setAttribute("role", "listbox"); listbox.setAttribute("data-i18n-skip", ""); listbox.tabIndex = -1;
+      let options = [], signature = "", activeIndex = 0, typeBuffer = "", typeAt = 0;
+      const isDisabled = item => item.disabled || item.parentElement?.disabled === true;
+      const available = () => [...select.options].map((item, index) => isDisabled(item) ? -1 : index).filter(index => index >= 0);
+      const entry = {control, select, trigger, listbox, close, sync, destroy};
+      entries.set(select, entry);
+      function close(returnFocus = false) {
+        listbox.hidden = true; trigger.setAttribute("aria-expanded", "false"); control.classList.remove("is-open");
+        if (opened === entry) opened = null;
+        if (returnFocus && trigger.isConnected && !trigger.disabled) trigger.focus({preventScroll: true});
       }
-      current.textContent = select.selectedOptions[0]?.textContent || "—";
-      trigger.disabled = select.disabled || !select.value;
-    }
-    trigger.addEventListener("click", () => opened ? close(true) : open());
-    trigger.addEventListener("keydown", event => {
-      if (["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) {
-        event.preventDefault(); open(event.key === "Home" ? 0 : event.key === "End" ? options.length - 1 : select.selectedIndex);
-      } else if (event.key === "Escape" && opened) { event.preventDefault(); close(true); }
-    });
-    listbox.addEventListener("keydown", event => {
-      if (["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) {
-        event.preventDefault(); focusOption(event.key === "Home" ? 0 : event.key === "End" ? options.length - 1 : activeIndex + (event.key === "ArrowDown" ? 1 : -1));
-      } else if (event.key === "Enter" || event.key === " ") { event.preventDefault(); choose(activeIndex); }
-      else if (event.key === "Escape") { event.preventDefault(); close(true); }
-      else if (event.key === "Tab") close(true);
-      else if (event.key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey) {
-        const now = Date.now(); typeBuffer = (now - typeAt < 700 ? typeBuffer : "") + event.key.toLowerCase(); typeAt = now;
-        const index = options.findIndex(option => option.textContent.toLowerCase().startsWith(typeBuffer));
-        if (index >= 0) { event.preventDefault(); focusOption(index); }
+      function focusOption(index) {
+        const enabled = available(); if (!enabled.length) return;
+        activeIndex = enabled.includes(index) ? index : enabled[0];
+        options[activeIndex].focus({preventScroll: true}); options[activeIndex].scrollIntoView({block: "nearest"});
       }
+      function open(index = select.selectedIndex) {
+        sync(); if (trigger.disabled) return;
+        document.dispatchEvent(new CustomEvent("nb1-menu-open", {detail: control}));
+        opened = entry; listbox.hidden = false; trigger.setAttribute("aria-expanded", "true"); control.classList.add("is-open");
+        focusOption(index);
+      }
+      function choose(index) {
+        if (!select.options[index] || isDisabled(select.options[index])) return;
+        const before = select.value; select.selectedIndex = index;
+        close(true); sync();
+        if (select.value !== before) select.dispatchEvent(new Event("change", {bubbles: true}));
+      }
+      function sync() {
+        const source = [...select.options], label = labelFor(select);
+        const next = JSON.stringify([select.value, select.selectedIndex, select.disabled, label, source.map(item => [item.value, item.textContent, item.selected, isDisabled(item)])]);
+        if (next === signature) return;
+        signature = next;
+        const heldFocus = listbox.contains(document.activeElement);
+        if (opened === entry) close(heldFocus);
+        listbox.replaceChildren(); options = [];
+        for (const [index, item] of source.entries()) {
+          const option = document.createElement("span"), title = document.createElement("span"), mark = document.createElement("span");
+          option.id = select.id + "-option-" + index; option.className = "select-option"; option.setAttribute("role", "option"); option.tabIndex = -1;
+          option.setAttribute("aria-selected", String(item.selected)); option.setAttribute("aria-disabled", String(isDisabled(item)));
+          title.textContent = item.textContent; mark.className = "picker-check"; mark.setAttribute("aria-hidden", "true"); option.append(title, mark);
+          option.addEventListener("click", () => choose(index)); option.addEventListener("focus", () => { activeIndex = index; });
+          options.push(option); listbox.append(option);
+        }
+        const selected = select.selectedOptions[0]?.textContent || "—";
+        current.textContent = selected; trigger.title = selected;
+        trigger.disabled = select.disabled || !source.some(item => !isDisabled(item) && item.value !== "");
+        for (const element of [trigger, listbox]) {
+          element.removeAttribute("aria-label"); element.removeAttribute("aria-labelledby");
+          if (label.ids) element.setAttribute("aria-labelledby", label.ids + (element === trigger ? " " + current.id : ""));
+          else element.setAttribute("aria-label", label.name + (element === trigger ? ": " + selected : ""));
+        }
+      }
+      trigger.addEventListener("click", () => opened === entry ? close(true) : open());
+      trigger.addEventListener("keydown", event => {
+        if (["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) {
+          event.preventDefault(); const enabled = available(); open(event.key === "Home" ? enabled[0] : event.key === "End" ? enabled.at(-1) : select.selectedIndex);
+        } else if (event.key === "Escape" && opened === entry) { event.preventDefault(); close(true); }
+      });
+      listbox.addEventListener("keydown", event => {
+        const enabled = available();
+        if (["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) {
+          event.preventDefault(); const position = enabled.indexOf(activeIndex);
+          focusOption(event.key === "Home" ? enabled[0] : event.key === "End" ? enabled.at(-1) : enabled[(position + (event.key === "ArrowDown" ? 1 : -1) + enabled.length) % enabled.length]);
+        } else if (event.key === "Enter" || event.key === " ") { event.preventDefault(); choose(activeIndex); }
+        else if (event.key === "Escape") { event.preventDefault(); close(true); }
+        else if (event.key === "Tab") close(true);
+        else if (event.key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey) {
+          const now = Date.now(); typeBuffer = (now - typeAt < 700 ? typeBuffer : "") + event.key.toLowerCase(); typeAt = now;
+          const index = enabled.find(index => sourceText(index).startsWith(typeBuffer));
+          if (index !== undefined) { event.preventDefault(); focusOption(index); }
+        }
+      });
+      function sourceText(index) { return select.options[index].textContent.trim().toLocaleLowerCase(); }
+      function focusOut(event) { if (opened === entry && event.relatedTarget && !control.contains(event.relatedTarget)) close(); }
+      function destroy() {
+        close(false); select.removeEventListener("change", sync); control.removeEventListener("focusout", focusOut);
+        trigger.remove(); listbox.remove();
+        if (ownsControl && control.isConnected && select.parentElement === control) { control.before(select); control.remove(); }
+        else control.classList.remove("select-picker");
+        select.hidden = wasHidden;
+      }
+      control.addEventListener("focusout", focusOut);
+      select.addEventListener("change", sync);
+      control.append(trigger, listbox); select.hidden = true; sync();
+    }
+    function reconcile() {
+      for (const [select, entry] of entries) {
+        if (!select.isConnected || !eligible(select)) {
+          entry.destroy(); entries.delete(select);
+        }
+      }
+      for (const select of document.querySelectorAll("select")) mount(select);
+    }
+    function sync(select) { reconcile(); if (select) entries.get(select)?.sync(); else for (const entry of entries.values()) entry.sync(); }
+    // Only authored select/option or label mutations matter. Ignore copied UI
+    // and locale-menu writes, which must not feed back into the i18n observer.
+    const observer = new MutationObserver(records => {
+      let structural = false, labels = false; const dirty = new Set();
+      for (const record of records) {
+        const element = record.target.nodeType === Node.ELEMENT_NODE ? record.target : record.target.parentElement;
+        if (!element || element.closest(".select-trigger, .select-options, .locale-control")) continue;
+        const select = element.closest("select"); if (select) dirty.add(select);
+        if (select && record.type === "attributes" && ["multiple", "size"].includes(record.attributeName)) structural = true;
+        if (element.closest("label")) labels = true;
+        if (record.type === "childList" && [...record.addedNodes, ...record.removedNodes].some(node => node.nodeType === Node.ELEMENT_NODE && (node.matches("select") || node.querySelector("select")))) structural = true;
+      }
+      if (structural) reconcile();
+      if (labels) for (const select of entries.keys()) dirty.add(select);
+      for (const select of dirty) entries.get(select)?.sync();
     });
+    observer.observe(document.body, {subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ["disabled", "label", "value", "selected", "aria-label", "aria-labelledby", "multiple", "size"]});
+    document.addEventListener("nb1-menu-open", event => { if (opened && opened.control !== event.detail) opened.close(false); });
     document.addEventListener("click", event => {
-      if (opened && !control.contains(event.target)) { const active = document.activeElement; close(active === document.body || listbox.contains(active)); }
+      if (opened && !opened.control.contains(event.target)) {
+        const active = document.activeElement; opened.close(active === document.body || opened.listbox.contains(active));
+      }
     });
-    control.addEventListener("focusout", event => { if (opened && event.relatedTarget && !control.contains(event.relatedTarget)) close(); });
-    select.addEventListener("change", sync);
-    control.append(trigger, listbox); sync(); select.hidden = true;
-    return sync;
+    reconcile(); return sync;
   }
-  const syncDevicePicker = enhanceDevicePicker();
+  const syncSelectPickers = installSelectPickers();
   async function refreshDevices() {
     const {value} = await request("/v1/devices");
     if (!Array.isArray(value) || value.length > 64 || value.some(d => !serial.test(d.serial) || typeof d.connection !== "string")) throw Error("Invalid device list");
@@ -306,7 +386,7 @@
     for (const device of value) $("device-select").append(new Option(device.serial, device.serial));
     if (!value.length) $("device-select").append(new Option("—", ""));
     if (value.some(d => d.serial === before)) $("device-select").value = before;
-    syncDevicePicker();
+    syncSelectPickers($("device-select"));
     if (before !== $("device-select").value) invalidate();
     $("device-message").textContent = value.length ? "Selected from the local service." : "No devices configured.";
     await readDevice();
@@ -341,6 +421,7 @@
     for (const pattern of value) $("pattern-select").append(new Option(pattern.title ? pattern.id + " · " + pattern.title : pattern.id, pattern.id));
     if (!value.length) $("pattern-select").append(new Option("—", ""));
     if (value.some(p => p.id === selected)) $("pattern-select").value = selected;
+    syncSelectPickers($("pattern-select"));
   }
   async function readPattern(id = $("pattern-select").value) {
     if (!identifier.test(id)) throw Error("Choose a saved Pattern first");

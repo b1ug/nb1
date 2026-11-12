@@ -58,11 +58,6 @@ main.workbench { width: min(1220px, calc(100% - 64px)); margin: 0 auto; padding-
 .brand>span:last-child { display: flex; flex-direction: column; gap: 4px; }
 .brand small { font-size: 10px; font-weight: 550; letter-spacing: .025em; color: #74664c; }
 .brand-mascot { width: 52px; height: 52px; flex: none; object-fit: contain; }
-/* Page navigation is deliberately lighter than the editor's segmented tabs. */
-.top-nav { display: flex; gap: 8px; align-items: center; padding: 0; border: 0; background: transparent; }
-.top-nav a { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 8px 10px; border-bottom: 2px solid transparent; border-radius: 7px 7px 0 0; font-size: 14px; font-weight: 700; text-decoration: none; white-space: nowrap; color: var(--muted); }
-.top-nav a:hover { color: var(--leaf-deep); background: #ffffff59; }
-.top-nav a[aria-current=page] { color: var(--leaf-deep); border-bottom-color: #5b9b81; background: transparent; box-shadow: none; }
 .locale-control { flex: none; }
 .device-bar { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 18px 22px; margin-bottom: 13px; background: linear-gradient(110deg, #e4ecd6, #dcece1); border: 1px solid #bccfb3; border-radius: 19px; box-shadow: inset 0 2px 0 #ffffff9c; }
 .device-heading { display: flex; align-items: center; gap: 15px; min-width: 0; }
@@ -72,22 +67,26 @@ main.workbench { width: min(1220px, calc(100% - 64px)); margin: 0 auto; padding-
 .device-controls { display: flex; align-items: center; justify-content: flex-end; gap: 10px; min-width: 0; }
 .device-controls select { min-width: 165px; max-width: 260px; background: #fffcf0; font-size: 12px; }
 .device-controls button { font-size: 11px; }
-.device-picker { position: relative; min-width: 0; width: 190px; max-width: 260px; }
-.device-picker.is-open { z-index: 40; }
-.device-picker select { width: 100%; }
-.device-picker .device-trigger { width: 100%; min-width: 0; min-height: 44px; display: flex; justify-content: space-between; gap: 12px; padding: 9px 12px; border: 1px solid #b8c5a9; border-radius: 12px; background: #fffdf1; box-shadow: inset 0 2px 0 #ffffffb0, 0 2px 0 #9eac7e20; font-size: 14px; font-weight: 700; }
-.device-picker .device-trigger:hover:enabled, .device-picker .device-trigger[aria-expanded=true] { transform: none; border-color: #91ad93; background: #f7f8e9; }
-#device-current { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.select-picker { position: relative; display: block; min-width: 0; width: 100%; }
+.select-picker.is-open { z-index: 40; }
+.select-picker select { width: 100%; }
+.select-picker .select-trigger { width: 100%; min-width: 0; min-height: 44px; display: flex; justify-content: space-between; gap: 12px; padding: 9px 12px; border: 1px solid #b8c5a9; border-radius: 12px; background: #fffdf1; box-shadow: inset 0 2px 0 #ffffffb0, 0 2px 0 #9eac7e20; font-size: 14px; font-weight: 700; text-align: left; }
+.select-picker .select-trigger:hover:enabled, .select-picker .select-trigger[aria-expanded=true] { transform: none; border-color: #91ad93; background: #f7f8e9; }
+.select-current { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .picker-chevron { flex: none; width: 7px; height: 7px; margin: -4px 2px 0 0; border-right: 2px solid #6b9475; border-bottom: 2px solid #6b9475; transform: rotate(45deg); }
-.device-trigger[aria-expanded=true] .picker-chevron { margin-top: 3px; transform: rotate(225deg); }
-.device-picker .device-options { position: absolute; top: calc(100% + 7px); right: 0; z-index: 41; width: max-content; min-width: 100%; max-width: min(300px, calc(100vw - 52px)); max-height: 250px; overflow-y: auto; overscroll-behavior: contain; margin: 0; padding: 6px; list-style: none; border: 1px solid #cec9ac; border-radius: 15px; background: #fffdf1; box-shadow: inset 0 2px 0 #ffffffd9, 0 4px 0 #b5b18b20, 0 12px 24px #5a523724; }
-.device-picker .device-option { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 18px; min-height: 44px; padding: 9px 11px; border: 1px solid transparent; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; user-select: none; overflow-wrap: anywhere; }
-.device-option > span:first-child { min-width: 0; }
-.device-picker .device-option[aria-selected=true] { color: #38694f; background: #e3eedb; border-color: #c1d2b3; }
-.device-picker .device-option:hover, .device-picker .device-option:focus-visible { color: #38694f; background: #edf3df; }
-.device-picker .device-option:focus-visible { outline: 2px solid #699a7e; outline-offset: -2px; box-shadow: none; }
+.select-trigger[aria-expanded=true] .picker-chevron { margin-top: 3px; transform: rotate(225deg); }
+.select-picker .select-options { position: absolute; top: calc(100% + 7px); left: 0; z-index: 41; width: 100%; min-width: 0; max-width: calc(100vw - 36px); max-height: 250px; overflow-y: auto; overscroll-behavior: contain; margin: 0; padding: 6px; border: 1px solid #cec9ac; border-radius: 15px; background: #fffdf1; box-shadow: inset 0 2px 0 #ffffffd9, 0 4px 0 #b5b18b20, 0 12px 24px #5a523724; }
+.select-picker .select-option { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 18px; min-height: 44px; padding: 9px 11px; border: 1px solid transparent; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; user-select: none; white-space: normal; overflow-wrap: anywhere; }
+.select-option > span:first-child { min-width: 0; }
+.select-picker .select-option[aria-selected=true] { color: #38694f; background: #e3eedb; border-color: #c1d2b3; }
+.select-picker .select-option:hover, .select-picker .select-option:focus-visible { color: #38694f; background: #edf3df; }
+.select-picker .select-option:focus-visible { outline: 2px solid #699a7e; outline-offset: -2px; box-shadow: none; }
+.select-picker .select-option[aria-disabled=true] { color: #91826b; cursor: not-allowed; }
 .picker-check { flex: none; width: 7px; height: 11px; margin: -3px 3px 0 0; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(45deg); opacity: 0; }
-.device-option[aria-selected=true] .picker-check { opacity: 1; }
+.select-option[aria-selected=true] .picker-check { opacity: 1; }
+.device-picker { width: 190px; max-width: 260px; }
+.color-entry > .select-picker { flex: 1; }
+#pattern-pane > .select-picker { margin-bottom: 12px; }
 .tag { display: inline-flex; align-items: center; justify-content: center; padding: 4px 9px; border: 1px solid #d6d7bd; border-radius: 999px; background: #f3f0df; font-size: 10px; font-weight: 550; line-height: 1.5; color: #73664d; white-space: nowrap; }
 .subtle-tag { font-size: 9px; color: #827048; background: #fbf3da; border-color: #e8dbb6; }
 .connection-tag { gap: 6px; border-color: #c1c9ac; background: #f0f3e4; color: #808970; }
@@ -239,7 +238,6 @@ footer { display: flex; align-items: center; gap: 7px; padding: 24px 3px 5px; fo
   .device-controls select { min-width: 140px; max-width: 190px; }
   .connection-tag { font-size: 9px; }
   .device-heading { gap: 11px; }
-  .top-nav a { padding: 7px 12px; }
   .brand small { font-size: 9px; }
   .action strong { font-size: 9px; }
   .readback-swatches { gap: 30px; }
@@ -252,7 +250,6 @@ footer { display: flex; align-items: center; gap: 7px; padding: 24px 3px 5px; fo
   .brand>span:last-child { display: block; }
   .brand { font-size: 22px; }
   .brand-mascot { width: 46px; height: 46px; }
-  .top-nav a { font-size: 11px; padding: 7px 10px; }
   .device-bar { flex-wrap: wrap; gap: 15px; }
   .device-controls { flex: 1; justify-content: flex-end; }
   .device-picker { flex: 1; max-width: 260px; min-width: 120px; }
@@ -285,8 +282,6 @@ footer { display: flex; align-items: center; gap: 7px; padding: 24px 3px 5px; fo
   .brand small { display: block; font-size: 9px; margin-top: 2px; }
   .brand>span:last-child { display: flex; }
   .locale-control { margin-left: auto; }
-  .top-nav { order: 3; width: 100%; display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 5px; padding: 0; margin-top: 2px; }
-  .top-nav a { min-height: 44px; padding: 7px 5px; font-size: 13px; }
   .workbench-topbar:after { height: 7px; }
   .device-bar { padding: 15px; border-radius: 16px; display: block; margin-bottom: 12px; }
   .device-heading { margin-bottom: 13px; }
@@ -295,7 +290,7 @@ footer { display: flex; align-items: center; gap: 7px; padding: 24px 3px 5px; fo
   .device-symbol { display: grid; width: 35px; height: 35px; border-radius: 12px; font-size: 18px; }
   .device-controls { display: grid; grid-template-columns: auto minmax(0,1fr) auto; gap: 8px; }
   .device-picker { min-width: 0; width: 100%; max-width: none; }
-  .device-picker .device-trigger { padding: 8px 9px; gap: 8px; font-size: 14px; }
+  .device-picker .select-trigger { padding: 8px 9px; gap: 8px; font-size: 14px; }
   .device-controls button { font-size: 10px; padding: 7px 11px; min-height: 38px; }
   .connection-tag { font-size: 8px; padding: 4px 7px; gap: 5px; }
   .notice { margin-bottom: 14px; padding: 9px 11px; min-height: 37px; font-size: 10px; }
@@ -367,7 +362,6 @@ footer { display: flex; align-items: center; gap: 7px; padding: 24px 3px 5px; fo
 }
 @media(max-width:370px) {
   .brand small { font-size: 8px; }
-  .top-nav a { font-size: 10px; }
   .device-controls { grid-template-columns: minmax(0,1fr) auto; }
   .connection-tag { grid-column: 1/-1; justify-self: start; margin-bottom: 2px; }
   .device-picker { grid-column: 1; }

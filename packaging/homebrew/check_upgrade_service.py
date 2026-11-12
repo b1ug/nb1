@@ -37,6 +37,15 @@ class Acceptance:
         self.xdg = self.out/'isolated-xdg'
         self.config = self.xdg/'nb1/config.yaml'
         self.library = self.xdg/'nb1/library'
+        self.manager_root = sys.platform == 'linux' and args.service_mode == 'available'
+        if self.manager_root:
+            # The existing systemd user manager searches its own root. A new
+            # XDG root cannot relocate that manager's unit lookup. Keep it,
+            # while explicitly placing our profile and library under owned out.
+            self.xdg = Path(os.path.normpath(environment.get('XDG_CONFIG_HOME') or str(Path.home()/'.config')))
+            require(self.xdg.is_absolute(), 'the existing user manager requires an absolute XDG root')
+            self.config = self.out/'isolated-config/config.yaml'
+            self.library = self.out/'isolated-library'
         self.locks = self.out/'absent-device-locks'
         self.env = dict(environment, XDG_CONFIG_HOME=str(self.xdg), HOMEBREW_NO_AUTO_UPDATE='1', HOMEBREW_NO_ANALYTICS='1',
                         HOMEBREW_NO_INSTALL_CLEANUP='1', HOMEBREW_NO_ENV_HINTS='1', HOMEBREW_MAKE_JOBS='2',
@@ -57,7 +66,7 @@ class Acceptance:
                        'platform': sys.platform, 'uid': os.getuid(), 'source_commit': args.source_commit,
                        'versions': [self.version1, self.version2], 'service_mode': args.service_mode,
                        'real_device_commands': False, 'native_discovery_may_run': True,
-                       'isolated_profile': str(self.config), 'isolated_xdg_root': str(self.xdg),
+                       'isolated_profile': str(self.config), 'service_user_config_root': str(self.xdg),
                        'isolated_library': str(self.library), 'isolated_locks': str(self.locks),
                        'baseline_cli_sha256': hashlib.sha256(self.seed.read_bytes()).hexdigest() if self.seed else None}
 
@@ -282,8 +291,8 @@ class Acceptance:
     def exercise(self):
         self.out.mkdir(mode=0o700, exist_ok=False)
         self.output_owned = True
-        self.config.parent.mkdir(mode=0o700, parents=True)
-        self.config.write_text('{}\n')
+        self.config.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+        self.config.write_text(json.dumps({'library_dir': str(self.library)})+'\n' if self.manager_root else '{}\n')
         self.config.chmod(0o600)
         self.config_sha256 = hashlib.sha256(self.config.read_bytes()).hexdigest()
         self.report['config_sha256'] = self.config_sha256

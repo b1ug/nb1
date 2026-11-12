@@ -11,6 +11,25 @@ from check_upgrade_service import Acceptance, CheckError
 
 
 class UpgradeGuardTests(unittest.TestCase):
+    def test_linux_available_retains_manager_root_with_private_profile_and_library(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            baseline = root/'baseline'
+            baseline.write_bytes(b'guard-test-only')
+            args = SimpleNamespace(output=root/'evidence', brew=root/'brew', baseline_cli=baseline,
+                                   source_commit='a'*40, service_mode='available')
+            for manager_root in ('', '/manager/explicit-xdg'):
+                with self.subTest(manager_root=manager_root), mock.patch('check_upgrade_service.sys.platform', 'linux'), \
+                        mock.patch.dict('os.environ', {'XDG_CONFIG_HOME': manager_root}):
+                    candidate = Acceptance(args)
+                    expected = Path(manager_root) if manager_root else Path.home()/'.config'
+                    self.assertEqual(candidate.xdg, expected)
+                    self.assertEqual(candidate.env['XDG_CONFIG_HOME'], str(expected))
+                    self.assertEqual(candidate.config, candidate.out/'isolated-config/config.yaml')
+                    self.assertEqual(candidate.library, candidate.out/'isolated-library')
+                    self.assertEqual(candidate.locks, candidate.out/'absent-device-locks')
+                    self.assertFalse(candidate.out.exists())
+
     def test_candidate_environment_and_ownership_match_full_profile(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

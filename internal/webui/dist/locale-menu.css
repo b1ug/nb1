@@ -1,4 +1,4 @@
-/* Local language popup. No native select, font glyph icons, or remote assets. */
+/* A quiet language utility; all artwork and options remain local. */
 .locale-control {
   position: relative;
   flex: none;
@@ -9,36 +9,44 @@
 .locale-control .locale-trigger {
   display: inline-flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 14px;
+  justify-content: center;
+  gap: 6px;
   min-height: 44px;
-  min-width: 108px;
-  padding: 10px 15px;
-  border: 1px solid #cccfb2;
-  border-radius: 17px;
-  background: linear-gradient(#fffdf2, #f5efdb);
+  min-width: 66px;
+  padding: 7px 8px;
+  border: 1px solid transparent;
+  border-radius: 11px;
+  background: transparent;
   color: #6a583e;
   font-family: inherit;
-  font-size: 14px;
-  font-weight: 750;
+  font-size: 13px;
+  font-weight: 700;
   line-height: 1.45;
   letter-spacing: .01em;
-  box-shadow: inset 0 2px 0 #ffffffd9, 0 3px 0 #a8b3833d;
+  box-shadow: none;
 }
-.locale-control .locale-trigger:hover {
-  background: #f4f2dd;
-  border-color: #a0b99e;
-}
+.locale-control .locale-trigger:hover:enabled,
 .locale-control .locale-trigger[aria-expanded=true] {
-  background: #e1eedb;
-  border-color: #a9c5ac;
-  box-shadow: inset 0 2px 4px #71894f13, 0 2px 0 #a8b3833d;
+  transform: none;
+  background: #fffdf080;
+  border-color: #c9d2b8;
+  box-shadow: none;
+}
+.locale-symbol {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  fill: none;
+  stroke: #66816b;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 .locale-control .locale-chevron {
-  width: 7px;
-  height: 7px;
+  width: 5px;
+  height: 5px;
   flex: none;
-  margin: -4px 1px 0 3px;
+  margin: -3px 1px 0 2px;
   border-right: 2px solid #6b9475;
   border-bottom: 2px solid #6b9475;
   transform: rotate(45deg);
@@ -133,8 +141,8 @@
 @media (max-width:640px) {
   .locale-control .locale-trigger {
     min-height: 44px;
-    min-width: 104px;
-    font-size: 15px;
+    min-width: 66px;
+    font-size: 13px;
   }
   .locale-control .locale-option {
     min-height: 44px;

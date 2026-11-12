@@ -79,7 +79,7 @@
 /* Explicit selectors override the compact base sheet's 9–12px labels. */
 :root :is(button, .top-nav a, .editor-tabs button, .job-buttons .text-button,
   .library-toolbar .text-button, .preview-toolbar .text-button,
-  .locale-trigger, .locale-option, [role="menuitem"], [role="option"]) {
+  .locale-option, [role="menuitem"], [role="option"]) {
   min-width: 44px;
   min-height: 44px;
   font-family: var(--nb1-ui-font);
@@ -88,6 +88,7 @@
   line-height: 1.45;
   letter-spacing: 0;
 }
+:root .locale-trigger { min-height: 44px; font-size: 13px; }
 :root .action-grid strong {
   font-family: var(--nb1-ui-font);
   font-size: 14px;

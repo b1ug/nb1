@@ -76,6 +76,7 @@
   const trigger = document.getElementById("locale-select");
   const currentLabel = document.getElementById("locale-current");
   const languageLabel = document.getElementById("locale-label");
+  const shortLabel = document.getElementById("locale-short");
   const listbox = document.getElementById("locale-options");
   // Current locale names stay familiar; future catalog entries use their native label.
   const localeName = code => ({en: "English", "zh-CN": "中文"})[code] || catalog.locales[code].label;
@@ -158,6 +159,7 @@
     document.documentElement.lang = locale;
     languageLabel.textContent = localized("Language");
     currentLabel.textContent = localeName(locale);
+    shortLabel.textContent = ({en: "EN", "zh-CN": "中文"})[locale] || locale.toUpperCase();
     for (const [index, code] of codes.entries()) options[index].setAttribute("aria-selected", String(code === locale));
     observer.observe(document.documentElement, {subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ["aria-label", "title", "placeholder", "data-user-title"]});
   }

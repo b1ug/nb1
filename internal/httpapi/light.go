@@ -271,6 +271,10 @@ func (h *handler) serveLightDemo(w http.ResponseWriter, r *http.Request) {
 		file, contentType = "locale-menu.css", "text/css; charset=utf-8"
 	case "/demo/typography.css":
 		file, contentType = "typography.css", "text/css; charset=utf-8"
+	case "/demo/assets/nb1-icon.svg":
+		file, contentType = "assets/nb1-icon.svg", "image/svg+xml"
+	case "/demo/assets/nb1-mascot.webp":
+		file, contentType = "assets/nb1-mascot.webp", "image/webp"
 	case "/demo/fonts/fredoka-700-latin.woff2":
 		file, contentType = "fonts/fredoka-700-latin.woff2", "font/woff2"
 	case "/demo/fonts/fredoka-700-latin-ext.woff2":
@@ -293,7 +297,7 @@ func (h *handler) serveLightDemo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", contentType)
-	w.Header().Set("Content-Security-Policy", "default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'")
+	w.Header().Set("Content-Security-Policy", "default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self'; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'")
 	w.Header().Set("Referrer-Policy", "no-referrer")
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write(data)

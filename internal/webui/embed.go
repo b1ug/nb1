@@ -26,6 +26,8 @@ var assetNames = []string{
 	"action-icons.js",
 	"locale-menu.css",
 	"typography.css",
+	"assets/nb1-icon.svg",
+	"assets/nb1-mascot.webp",
 	"fonts/fredoka-700-latin.woff2",
 	"fonts/fredoka-700-latin-ext.woff2",
 	"fonts/mplusround-500-latin.woff2",

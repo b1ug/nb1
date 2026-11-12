@@ -2,23 +2,24 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><meta name="theme-color" content="#f6f2dd"><title>nb1 · Little light workbench</title>
+<link rel="icon" type="image/svg+xml" href="./assets/nb1-icon.svg">
 <link rel="stylesheet" href="./demo.css"><link rel="stylesheet" href="./locale-menu.css"><link rel="stylesheet" href="./typography.css"><link rel="stylesheet" href="./patterns.css"><script defer src="./locales.js"></script><script defer src="./i18n.js"></script><script defer src="./patterns.js"></script><script defer src="./action-icons.js"></script><script defer src="./demo.js"></script>
 </head>
 <body>
 <a class="skip-link" href="#main-content">Skip to workbench</a>
 <main class="workbench">
-<nav class="workbench-topbar" aria-label="Workbench navigation">
-  <a class="brand" href="./"><span class="brand-mark" aria-hidden="true"><i></i><i></i></span><span>nb1<small>Little light workbench</small></span></a>
-  <div class="top-nav"><a href="./">Workbench</a><a href="./orbit.html">Orbit</a><a href="./patterns.html" aria-current="page">Pattern Book</a></div>
+<header class="workbench-topbar">
+  <a class="brand" href="./"><img class="brand-mascot" src="./assets/nb1-mascot.webp" alt="" width="52" height="52"><span>nb1<small>Little light workbench</small></span></a>
+  <nav class="top-nav" aria-label="Workbench navigation"><a href="./">Workbench</a><a href="./orbit.html">Orbit</a><a href="./patterns.html" aria-current="page">Pattern Book</a></nav>
   <div class="locale-control" data-i18n-skip>
     <span id="locale-label" class="sr-only">Language</span>
-    <button id="locale-select" class="locale-trigger" type="button" aria-haspopup="listbox" aria-expanded="false" aria-controls="locale-options" aria-labelledby="locale-label locale-current"><span id="locale-current">English</span><span class="locale-chevron" aria-hidden="true"></span></button>
+    <button id="locale-select" class="locale-trigger" type="button" aria-haspopup="listbox" aria-expanded="false" aria-controls="locale-options" aria-labelledby="locale-label locale-current"><svg class="locale-symbol" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="7.2"/><path d="M2.8 10h14.4M10 2.8c4 4 4 10.4 0 14.4-4-4-4-10.4 0-14.4Z"/></svg><span id="locale-current" class="sr-only">English</span><span id="locale-short" aria-hidden="true">EN</span><span class="locale-chevron" aria-hidden="true"></span></button>
     <ul id="locale-options" class="locale-options" role="listbox" aria-labelledby="locale-label" tabindex="-1" hidden></ul>
   </div>
-</nav>
+</header>
 <section class="device-bar" id="main-content" tabindex="-1" aria-labelledby="device-title">
   <div class="device-heading"><span class="device-symbol" aria-hidden="true">✦</span><div><h1 id="device-title">Your local light</h1><p id="device-message">Reading the local service…</p></div></div>
-  <div class="device-controls"><span id="connection" class="tag connection-tag" data-state="disconnected" role="status">Disconnected</span><label for="device-select" class="sr-only">Device</label><select id="device-select" data-i18n-skip><option value="">—</option></select><button id="refresh" class="secondary">Refresh</button></div>
+  <div class="device-controls"><span id="connection" class="tag connection-tag" data-state="disconnected" role="status">Disconnected</span><div class="device-picker"><label id="device-select-label" for="device-select" class="sr-only">Device</label><select id="device-select" data-i18n-skip><option value="">—</option></select></div><button id="refresh" class="secondary">Refresh</button></div>
 </section>
 <div id="notice" class="notice" role="status" aria-live="polite">Ready to make a little light.</div>
 <div class="workspace">

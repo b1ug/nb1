@@ -223,6 +223,82 @@
     catch (error) { uncertainJob(error); }
     finally { submitting = false; updateButtons(); }
   }
+  // Keep the native select as the state source and no-JavaScript fallback.
+  // This presentation layer forwards only the existing change event.
+  function enhanceDevicePicker() {
+    const select = $("device-select"), control = select.closest(".device-picker");
+    const trigger = document.createElement("button"), current = document.createElement("span");
+    const chevron = document.createElement("span"), listbox = document.createElement("ul");
+    trigger.type = "button"; trigger.id = "device-trigger"; trigger.className = "device-trigger";
+    trigger.setAttribute("aria-haspopup", "listbox"); trigger.setAttribute("aria-expanded", "false");
+    trigger.setAttribute("aria-controls", "device-options"); trigger.setAttribute("aria-labelledby", "device-select-label device-current");
+    current.id = "device-current"; current.setAttribute("data-i18n-skip", "");
+    chevron.className = "picker-chevron"; chevron.setAttribute("aria-hidden", "true");
+    trigger.append(current, chevron);
+    listbox.id = "device-options"; listbox.className = "device-options"; listbox.hidden = true;
+    listbox.setAttribute("role", "listbox"); listbox.setAttribute("aria-labelledby", "device-select-label"); listbox.tabIndex = -1;
+    listbox.setAttribute("data-i18n-skip", "");
+    let opened = false, activeIndex = 0, options = [], typeBuffer = "", typeAt = 0;
+    function close(returnFocus = false) {
+      opened = false; listbox.hidden = true; trigger.setAttribute("aria-expanded", "false"); control.classList.remove("is-open");
+      if (returnFocus) trigger.focus({preventScroll: true});
+    }
+    function focusOption(index) {
+      if (!options.length) return;
+      activeIndex = (index + options.length) % options.length;
+      options[activeIndex].focus({preventScroll: true}); options[activeIndex].scrollIntoView({block: "nearest"});
+    }
+    function open(index = select.selectedIndex) {
+      if (trigger.disabled) return;
+      opened = true; listbox.hidden = false; trigger.setAttribute("aria-expanded", "true"); control.classList.add("is-open"); focusOption(Math.max(0, index));
+    }
+    function choose(index) {
+      const before = select.value; select.selectedIndex = index;
+      sync(); close(true);
+      if (select.value !== before) select.dispatchEvent(new Event("change", {bubbles: true}));
+    }
+    function sync() {
+      // A refresh can replace all options while the popup is focused.
+      if (opened) close(true);
+      listbox.replaceChildren(); options = [];
+      for (const [index, item] of [...select.options].entries()) {
+        const option = document.createElement("li"), label = document.createElement("span"), mark = document.createElement("span");
+        option.id = "device-option-" + index; option.className = "device-option"; option.setAttribute("role", "option"); option.tabIndex = -1;
+        option.setAttribute("aria-selected", String(item.selected)); label.textContent = item.textContent;
+        mark.className = "picker-check"; mark.setAttribute("aria-hidden", "true"); option.append(label, mark);
+        option.addEventListener("click", () => choose(index)); option.addEventListener("focus", () => { activeIndex = index; });
+        options.push(option); listbox.append(option);
+      }
+      current.textContent = select.selectedOptions[0]?.textContent || "—";
+      trigger.disabled = select.disabled || !select.value;
+    }
+    trigger.addEventListener("click", () => opened ? close(true) : open());
+    trigger.addEventListener("keydown", event => {
+      if (["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) {
+        event.preventDefault(); open(event.key === "Home" ? 0 : event.key === "End" ? options.length - 1 : select.selectedIndex);
+      } else if (event.key === "Escape" && opened) { event.preventDefault(); close(true); }
+    });
+    listbox.addEventListener("keydown", event => {
+      if (["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) {
+        event.preventDefault(); focusOption(event.key === "Home" ? 0 : event.key === "End" ? options.length - 1 : activeIndex + (event.key === "ArrowDown" ? 1 : -1));
+      } else if (event.key === "Enter" || event.key === " ") { event.preventDefault(); choose(activeIndex); }
+      else if (event.key === "Escape") { event.preventDefault(); close(true); }
+      else if (event.key === "Tab") close(true);
+      else if (event.key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey) {
+        const now = Date.now(); typeBuffer = (now - typeAt < 700 ? typeBuffer : "") + event.key.toLowerCase(); typeAt = now;
+        const index = options.findIndex(option => option.textContent.toLowerCase().startsWith(typeBuffer));
+        if (index >= 0) { event.preventDefault(); focusOption(index); }
+      }
+    });
+    document.addEventListener("click", event => {
+      if (opened && !control.contains(event.target)) { const active = document.activeElement; close(active === document.body || listbox.contains(active)); }
+    });
+    control.addEventListener("focusout", event => { if (opened && event.relatedTarget && !control.contains(event.relatedTarget)) close(); });
+    select.addEventListener("change", sync);
+    control.append(trigger, listbox); sync(); select.hidden = true;
+    return sync;
+  }
+  const syncDevicePicker = enhanceDevicePicker();
   async function refreshDevices() {
     const {value} = await request("/v1/devices");
     if (!Array.isArray(value) || value.length > 64 || value.some(d => !serial.test(d.serial) || typeof d.connection !== "string")) throw Error("Invalid device list");
@@ -230,6 +306,7 @@
     for (const device of value) $("device-select").append(new Option(device.serial, device.serial));
     if (!value.length) $("device-select").append(new Option("—", ""));
     if (value.some(d => d.serial === before)) $("device-select").value = before;
+    syncDevicePicker();
     if (before !== $("device-select").value) invalidate();
     $("device-message").textContent = value.length ? "Selected from the local service." : "No devices configured.";
     await readDevice();

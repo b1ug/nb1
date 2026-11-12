@@ -13,7 +13,7 @@ import (
 	"github.com/b1ug/nb1/internal/webui"
 )
 
-const sequenceWebCSP = "default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'"
+const sequenceWebCSP = "default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self'; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'"
 
 var sequenceWebAssets = []struct{ path, file, contentType string }{
 	{"/demo/", "index.html", "text/html; charset=utf-8"},
@@ -30,6 +30,8 @@ var sequenceWebAssets = []struct{ path, file, contentType string }{
 	{"/demo/action-icons.js", "action-icons.js", "text/javascript; charset=utf-8"},
 	{"/demo/locale-menu.css", "locale-menu.css", "text/css; charset=utf-8"},
 	{"/demo/typography.css", "typography.css", "text/css; charset=utf-8"},
+	{"/demo/assets/nb1-icon.svg", "assets/nb1-icon.svg", "image/svg+xml"},
+	{"/demo/assets/nb1-mascot.webp", "assets/nb1-mascot.webp", "image/webp"},
 	{"/demo/fonts/fredoka-700-latin.woff2", "fonts/fredoka-700-latin.woff2", "font/woff2"},
 	{"/demo/fonts/fredoka-700-latin-ext.woff2", "fonts/fredoka-700-latin-ext.woff2", "font/woff2"},
 	{"/demo/fonts/mplusround-500-latin.woff2", "fonts/mplusround-500-latin.woff2", "font/woff2"},
@@ -62,7 +64,7 @@ func TestSequenceWebRoutesServeVerifiedAssets(t *testing.T) {
 
 func TestSequenceWebSecurityBoundaries(t *testing.T) {
 	handler := httpapi.New(noPreviewIO{}, httpapi.WithSequenceAPI())
-	for _, path := range []string{"/demo", "/demo/", "/demo/orbit.html", "/demo/patterns.html", "/demo/locales.js", "/demo/action-icons.js", "/demo/locale-menu.css", "/demo/typography.css", "/demo/fonts/fredoka-700-latin.woff2", "/demo/fonts/Fredoka-OFL.txt"} {
+	for _, path := range []string{"/demo", "/demo/", "/demo/orbit.html", "/demo/patterns.html", "/demo/locales.js", "/demo/action-icons.js", "/demo/locale-menu.css", "/demo/typography.css", "/demo/assets/nb1-icon.svg", "/demo/assets/nb1-mascot.webp", "/demo/fonts/fredoka-700-latin.woff2", "/demo/fonts/Fredoka-OFL.txt"} {
 		for _, method := range []string{"HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"} {
 			response := previewRequest(handler, method, path, "")
 			if response.Code != http.StatusMethodNotAllowed || response.Header().Get("Allow") != "GET" {
@@ -105,6 +107,7 @@ func TestSequenceWebSecurityBoundaries(t *testing.T) {
 		"/demo/manifest.json", "/demo/manifest.lock.json", "/demo/LICENSE.txt", "/demo/index.html",
 		"/demo/../manifest.lock.json", "/demo/%2e%2e/manifest.lock.json", "/demo//demo.js", "/demo/src/index.html", "/demox/index.html",
 		"/demo/fonts/", "/demo/fonts/unreviewed.woff2", "/demo/fonts/../manifest.json",
+		"/demo/assets/", "/demo/assets/unreviewed.svg", "/demo/assets/unreviewed.webp", "/demo/assets/../manifest.json",
 		"/v1/programs/preview", "/v1/frame-programs/preview", "/v1/light/preview", "/v1/instance", "/v2/light/preview",
 	} {
 		if response := previewRequest(handler, "GET", path, ""); response.Code != http.StatusNotFound {

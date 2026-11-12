@@ -53,7 +53,7 @@
     "selected_devices_max": 64,
     "terminal_job_eviction": "LRU, only terminal records",
     "ttl_refresh_on_access": false,
-    "active_jobs": "pinned until terminal cleanup",
+    "active_jobs": "pinned until terminal state",
     "number_spelling": "Integer tokens reject fractions and exponent notation. Action and RGB8 integer fields require unsigned digit tokens. Sequence integer fields accept JSON -0 where zero is within the numeric bounds. HSV accepts unsigned ordinary decimals with at most six fractional digits. JSON Schema validates mathematical values and cannot distinguish all these token spellings.",
     "cross_field_constraints": [
       "len(sequence.steps) * repeat <= 1024",
@@ -1993,7 +1993,7 @@
             "example": "doc-job-example"
           }
         ],
-        "description": "Returns 200 for a terminal Job and 202 while cleanup remains pending. Cancelling a retained terminal Job updates its LRU position and leaves its expiry unchanged."
+        "description": "Returns 200 for a terminal Job and 202 while cancellation remains pending. A queued Job can be cancelled immediately without device writes or readback; a started Job requires cleanup and readback before succeeded/cancelled publication. Cleanup failure may produce failed. Cancelling a retained terminal Job updates its LRU position and leaves its expiry unchanged."
       }
     },
     "/v1/colors/resolve": {
@@ -4753,7 +4753,7 @@
         "additionalProperties": false,
         "x-runtime-constraints": [
           "completed_steps <= total_steps",
-          "Only terminal states have finished_at. Cancellation is terminal after cleanup completes."
+          "Only terminal states have finished_at. Started Jobs require confirmed cleanup and readback before succeeded/cancelled publication; queued cancellation executes no device work. Failed Jobs can leave device state uncertain."
         ]
       },
       "Observation": {

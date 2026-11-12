@@ -16,7 +16,7 @@ Fredoka 700 supplies Latin brand and heading shapes. M PLUS Rounded 1c 500/700 s
 
 These compact files contain no CJK ideographs. Chinese uses installed native fallback fonts with bold styling; the exact face and available weight depend on the platform. The interface does not claim to ship a Chinese webfont. Code, JSON values and timestamps retain their monospace treatment. No remote font request or system font installation is required.
 
-All nine confirmed Action buttons use original static SVG drawings with visible text labels. Rainbow has seven colored arcs. Orbit uses a warm gold planet with tilted Saturn-like rings. Breathe uses an expansion motif, while Pulse depicts a quick rise and a longer decay. These decorative cues use no Unicode icon font and do not simulate a running effect or establish device completion.
+All nine confirmed Action buttons use original static SVG drawings with visible text labels. The refreshed palette uses warm cream, fresh leaf green, turquoise, coral and yellow accents with deep text. Rainbow has seven separated colored arcs in a 44 × 34 pixel illustration; its display shades do not change the compiler anchors or device RGB values. Orbit uses a warm gold planet with tilted Saturn-like rings. Breathe uses an expansion motif, while Pulse depicts a quick rise and a longer decay. These decorative cues use no Unicode icon font and do not simulate a running effect or establish device completion.
 
 ## Build and serving boundary
 
@@ -26,9 +26,9 @@ The manifest records the producer source commit, file sizes and SHA-256 values. 
 
 The reviewed import is pinned to:
 
-- Producer source: `73644389259a5c4c1a4c02203aed0f9e8d6bfb9d`.
-- Manifest SHA-256: `051d17354733e60fb554531c6a61656439440478b587206744d41517bf3ec5f3`.
-- Embedded payload: **197,743 bytes across 22 files**, leaving **64,401 bytes** within the 256 KiB limit.
+- Producer source: `04963bff037dc77bab0c526ed7e24a21a2a48d18`.
+- Manifest SHA-256: `53a67edd565af2162f3cfbef4404a2858c3eb5a9e962ee517860fcb7fe22ce90`.
+- Embedded payload: **199,114 bytes across 22 files**, leaving **63,030 bytes** within the 256 KiB limit.
 
 All runtime assets are local and use the same origin as the API. The Content Security Policy explicitly permits packaged fonts with `font-src 'self'`, while scripts, styles and API connections remain same-origin. The interface adds no CDN, analytics, Service Worker, inline script or additional framework runtime.
 

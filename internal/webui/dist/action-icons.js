@@ -53,10 +53,11 @@
       svg.append(planet);
     },
     rainbow(svg) {
-      const colors = ["#ff0000", "#ffa500", "#ffff00", "#00ff00", "#0000ff", "#4b0082", "#8f00ff"];
+      svg.setAttribute("viewBox", "0 0 44 34");
+      const colors = ["#ed4e63", "#f5922d", "#e9be21", "#20aa64", "#159fe2", "#5558cf", "#ae4fce"];
       colors.forEach((color, index) => {
-        const radius = 13 - 2 * index;
-        path(svg, "M" + (14 - radius) + " 21A" + radius + " " + radius + " 0 0 1 " + (14 + radius) + " 21", {stroke: color});
+        const radius = 20 - 3 * index;
+        path(svg, "M" + (22 - radius) + " 29A" + radius + " " + radius + " 0 0 1 " + (22 + radius) + " 29", {stroke: color, "stroke-width": 1.7});
       });
     }
   };

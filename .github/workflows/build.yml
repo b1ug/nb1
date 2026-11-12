@@ -93,7 +93,9 @@ jobs:
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: nb1-daemon-${{ github.sha }}-${{ matrix.goos }}-${{ matrix.goarch }}
-          path: ${{ runner.temp }}/nb1-daemon-acceptance
+          path: |
+            ${{ runner.temp }}/nb1-daemon-acceptance/result.json
+            ${{ runner.temp }}/nb1-daemon-acceptance/*.log
           if-no-files-found: warn
           retention-days: 14
       - name: Preserve verified candidate (not a Release)

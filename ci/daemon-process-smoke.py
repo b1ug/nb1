@@ -334,12 +334,30 @@ class Smoke:
         status, health = request(origin, "GET", "/healthz")
         require(status == 200 and health == {"status": "ok", "api_version": "v1"}, "health contract mismatch")
         self.check("health", http_status=status)
+        # Exercise the byte-verified embedded bundle in the built executable,
+        # so checkout transformations cannot hide behind a successful build.
+        for path, content_type in [("/demo/", "text/html"),
+                                   ("/demo/action-icons.js", "text/javascript"),
+                                   ("/demo/fonts/fredoka-700-latin.woff2", "font/woff2")]:
+            with HTTP.open(origin + path, timeout=3) as response:
+                data = response.read(MAX_OUTPUT + 1)
+                require(response.code == 200 and 0 < len(data) <= MAX_OUTPUT
+                        and response.headers.get_content_type() == content_type,
+                        "embedded Web asset failed: " + path)
+                require("connect-src 'self'" in response.headers.get("Content-Security-Policy", ""),
+                        "embedded Web asset lost its same-origin policy")
+        self.check("embedded_web_assets", assets=3, same_origin=True,
+                   browser_interaction_tested=False)
         state = self.offline(daemon, origin)
         status, devices = request(origin, "GET", "/v1/devices")
         require(status == 200 and devices == [state], "unexpected configured device set")
         self.check("absent_device_offline", observed_is_null=True, configured_devices=1)
         cli_devices = self.control(first, origin, ["devices"], "cli-devices")
         cli_state = self.control(first, origin, ["state", ABSENT_SERIAL], "cli-state")
+        # CLI JSON omits a nil observation, while the HTTP contract emits null.
+        # Compare the same state without requiring identical encoders.
+        for value in [*cli_devices, cli_state]:
+            value.setdefault("observed", None)
         require(cli_devices == devices and cli_state == state, "CLI cached device state mismatch")
         self.check("cli_connectivity", commands=["control devices", "control state"])
         action = {"action": {"kind": "pulse", "color": "lime", "cycles": 1}}

@@ -1,5 +1,36 @@
 # Daemon user-service acceptance
 
+## Native foreground acceptance
+
+`build.yml` builds source-bound CGO candidates on native Linux amd64/arm64,
+macOS Intel/Apple Silicon, and Windows amd64 runners. After validating the
+candidate package it runs `ci/daemon-process-smoke.py` against that exact
+executable, not a mock HTTP server. Its separate evidence artifact records:
+
+- Metadata-only discovery with no blink(1) attached on hosted runners.
+- An explicitly absent configured device, HTTP health, CLI access, pure preview,
+  rejected offline execution, and the embedded Web assets and policy.
+- A refused conflicting listener and foreign Origin, with the original daemon
+  still healthy.
+- Color and frozen Pattern persistence after process restart from another
+  explicit executable path, including paths containing spaces.
+- Targeted SIGTERM (POSIX) or CTRL_BREAK (Windows), normal process exit and
+  closed HTTP listener; a failed CLI call leaves the daemon stopped.
+
+Run locally with `python3 -B ci/daemon-process-smoke.py --binary /absolute/nb1
+--output /new/private/evidence-directory`. Add `--require-no-devices` in an
+environment expected to have no blink(1). The script never selects discovered
+devices or installs a system service. Each child and HTTP wait is bounded;
+forced cleanup counts as failure. Missing best-effort shutdown log records are
+reported as unobserved and do not prove engine cleanup.
+
+This qualifies foreground operation only. Windows automatic service installation
+is not implemented; managed upgrade, login/reboot and physical USB behavior
+require their own evidence. Candidate artifacts are validation outputs, not
+releases or published Homebrew packages.
+
+## Linux managed service acceptance
+
 `daemon-service.yml` runs a focused Ubuntu 24.04 job on the
 `validation/daemon-service-20261111` branch or by workflow dispatch. It uses the
 guarded `systemd-user-smoke.py` tool, a freshly created ordinary user and that

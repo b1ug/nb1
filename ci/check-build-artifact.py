@@ -17,7 +17,7 @@ NATIVE_TARGETS = {("linux", "amd64"), ("linux", "arm64"),
 HELP_CHECKS = [
     (["--help"], ["Usage:", "nb1 [command]"]),
     (["control", "--help"], ["nb1 control [command]", "preview", "run", "job", "cancel"]),
-    (["control", "run", "--help"], ["nb1 control run SERIAL FILE", "--id", "--wait"]),
+    (["control", "run", "--help"], ["nb1 control run [SERIAL] FILE", "--id", "--wait"]),
 ]
 
 

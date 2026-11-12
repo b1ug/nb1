@@ -6,6 +6,8 @@
 
 Control blink(1) from a CLI, local HTTP, MCP or an embedded Web workbench. High-level Actions compile into low-level Sequences and use the same per-device worker.
 
+[Try a matching candidate](docs/candidate-install.md): verify and unpack the CLI, MCP and Skill, select a device, and explicitly choose foreground or service operation.
+
 This branch is the API v1 development candidate. Source validation and the version installed on a machine are tracked separately. Start an ordinary foreground daemon using the same executable as the CLI:
 
 ```sh

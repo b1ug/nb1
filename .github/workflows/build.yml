@@ -48,6 +48,8 @@ jobs:
           cache: true
       - name: Check artifact validation helpers
         run: python3 -B -m unittest discover -s ci -p test_build_artifact.py -v
+      - name: Check matching CLI, MCP and Skill archive boundaries
+        run: python3 -B -m unittest discover -s ci -p test_candidate_suite.py -v
       - name: Check daemon acceptance safety boundaries
         run: python3 -B -m unittest discover -s ci -p test_daemon_process_smoke.py -v
       - name: Check standalone Agent Skill documentation
@@ -60,6 +62,17 @@ jobs:
         run: |
           mkdir -p "$(dirname "$NB1_CANDIDATE_BINARY")"
           go build -mod=readonly -trimpath -o "$NB1_CANDIDATE_BINARY" .
+      - name: Build the matching standalone MCP server
+        working-directory: adapters/mcp
+        env:
+          CGO_ENABLED: "0"
+          NB1_MCP_BINARY: ${{ runner.temp }}/nb1-candidate-build/nb1-mcp${{ matrix.extension }}
+        run: go build -mod=readonly -trimpath -buildvcs=true -o "$NB1_MCP_BINARY" .
+      - name: Exercise standalone MCP discovery with no daemon or USB
+        env:
+          NB1_MCP_BINARY: ${{ runner.temp }}/nb1-candidate-build/nb1-mcp${{ matrix.extension }}
+          NB1_MCP_EVIDENCE: ${{ runner.temp }}/nb1-mcp-acceptance.json
+        run: python3 -B ci/mcp-candidate-smoke.py --binary "$NB1_MCP_BINARY" --output "$NB1_MCP_EVIDENCE"
       - name: Check Formula help calls against the native Mac candidate without Homebrew
         if: runner.os == 'macOS'
         working-directory: packaging/homebrew
@@ -81,6 +94,16 @@ jobs:
             --expected-source "$NB1_CANDIDATE_SOURCE" \
             --expected-os "$NB1_CANDIDATE_OS" --expected-arch "$NB1_CANDIDATE_ARCH"
           python3 ci/check-build-artifact.py verify --out "$NB1_CANDIDATE_OUTPUT"
+      - name: Package and verify matching candidate archives
+        env:
+          NB1_CANDIDATE_CLI: ${{ runner.temp }}/nb1-candidate
+          NB1_MCP_BINARY: ${{ runner.temp }}/nb1-candidate-build/nb1-mcp${{ matrix.extension }}
+          NB1_SUITE_OUTPUT: ${{ runner.temp }}/nb1-candidate-suite
+        run: |
+          python3 -B ci/candidate-suite.py stage --root "$GITHUB_WORKSPACE" \
+            --cli-dir "$NB1_CANDIDATE_CLI" --mcp-binary "$NB1_MCP_BINARY" \
+            --output "$NB1_SUITE_OUTPUT"
+          python3 -B ci/candidate-suite.py verify --directory "$NB1_SUITE_OUTPUT"
       - name: Exercise the actual native daemon and CLI without a device
         timeout-minutes: 5
         env:
@@ -98,13 +121,14 @@ jobs:
           path: |
             ${{ runner.temp }}/nb1-daemon-acceptance/result.json
             ${{ runner.temp }}/nb1-daemon-acceptance/*.log
+            ${{ runner.temp }}/nb1-mcp-acceptance.json
           if-no-files-found: warn
           retention-days: 14
       - name: Preserve verified candidate (not a Release)
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: nb1-candidate-${{ github.sha }}-${{ matrix.goos }}-${{ matrix.goarch }}
-          path: ${{ runner.temp }}/nb1-candidate
+          path: ${{ runner.temp }}/nb1-candidate-suite
           if-no-files-found: error
           retention-days: 14
       - name: Preserve the standalone Skill candidate (not installed or published)
@@ -112,6 +136,6 @@ jobs:
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: nb1-skill-candidate-${{ github.sha }}
-          path: skills/blink1-control
+          path: ${{ runner.temp }}/nb1-candidate-suite/blink1-control-*.zip
           if-no-files-found: error
           retention-days: 14

@@ -134,58 +134,58 @@ func newServiceInstallCommand(management userServiceRuntime) *cobra.Command {
 func newServiceStartCommand(management userServiceRuntime) *cobra.Command {
 	var asJSON bool
 	command := &cobra.Command{
-		Use: "start", Short: "macOS/Linux：启动已有且归属已核对的托管用户配置",
-		Long: "只启动当前平台已安装的完整托管配置。未知来源、覆盖、查询失败或配置变化时拒绝动作。macOS相同配置已注册、Linux已active时均幂等返回，不重启。Linux还须有可查询的用户systemd manager。注册、loaded或active均不表示HTTP或USB已就绪。",
+		Use: "start", Short: "Start the verified managed user service on macOS or Linux",
+		Long: "Start only the current platform's complete, previously installed managed configuration. Refuse unknown origins, overrides, failed queries or changed configuration. An already registered matching macOS service or active Linux unit returns without a restart. Linux requires a queryable systemd user manager. Registered, loaded or active states do not establish HTTP or USB readiness.",
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			return management.run(cmd, asJSON, userServiceAction{kind: serviceStart})
 		},
 	}
-	command.Flags().BoolVar(&asJSON, "json", false, "输出当前平台的原始schema_version=1状态")
+	command.Flags().BoolVar(&asJSON, "json", false, "print the host platform's schema_version=1 service status as JSON")
 	return command
 }
 
 func newServiceStopCommand(management userServiceRuntime) *cobra.Command {
 	var asJSON bool
 	command := &cobra.Command{
-		Use: "stop", Short: "macOS/Linux：停止已核对归属的用户服务，保留配置与登录启用",
-		Long: "macOS仅对已核对归属的单个service-target请求bootout；Linux仅停止已核对来源、覆盖及启用状态的nb1.service。保留配置和登录启用，stop不等于禁用下次登录加载。未知归属、查询失败或配置变化时拒绝动作；注册消失或inactive不证明USB清理完成。不强杀、不删除持久锁、不自动提权。",
+		Use: "stop", Short: "Stop the verified user service, retaining its configuration and login enablement",
+		Long: "On macOS, request bootout only for the single service target with verified ownership. On Linux, stop only nb1.service after checking its source, overrides and enablement. Keep the configuration and login enablement; stopping does not disable loading at the next login. Refuse unknown ownership, failed queries or changed configuration. An absent registration or inactive state does not prove USB cleanup is complete. Do not force-kill, delete persistent locks or elevate privileges.",
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			return management.run(cmd, asJSON, userServiceAction{kind: serviceStop})
 		},
 	}
-	command.Flags().BoolVar(&asJSON, "json", false, "输出当前平台的原始schema_version=1状态")
+	command.Flags().BoolVar(&asJSON, "json", false, "print the host platform's schema_version=1 service status as JSON")
 	return command
 }
 
 func newServiceStatusCommand(management userServiceRuntime) *cobra.Command {
 	var configOnly, asJSON bool
 	command := &cobra.Command{
-		Use: "status", Short: "macOS/Linux用户服务状态；Windows候选仅只读查询固定当前用户任务",
-		Long: "macOS/Linux区分磁盘配置与manager状态。Windows候选只允许经token核验的当前普通用户查询固定任务的有限字段；同名存在不等于托管，Scheduler状态不等于daemon PID、HTTP或USB就绪。未知/拒绝/缺失HRESULT未有原生合同均保持unknown，不提权或切换身份。Windows不支持--config-only，普通用户原生查询仍待独立验收。",
+		Use: "status", Short: "Inspect user service status (Windows: read-only candidate)",
+		Long: "On macOS/Linux, distinguish configuration on disk from service manager state. The Windows candidate allows only the current ordinary user, verified by token, to read limited fields from the fixed task. A matching task name does not establish managed ownership; Scheduler state does not establish daemon PID, HTTP or USB readiness. Unknown, denied or missing HRESULT results remain unknown without a validated native contract. Do not elevate privileges or switch identities. Windows does not support --config-only; native ordinary-user query validation remains pending.",
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			return management.run(cmd, asJSON, userServiceAction{kind: serviceStatus, configOnly: configOnly})
 		},
 	}
-	command.Flags().BoolVar(&configOnly, "config-only", false, "仅macOS/Linux：只读磁盘配置，完全不调用launchctl或systemctl；Windows不支持")
-	command.Flags().BoolVar(&asJSON, "json", false, "输出当前平台的原始schema_version=1状态")
+	command.Flags().BoolVar(&configOnly, "config-only", false, "macOS/Linux only: read configuration on disk without calling launchctl or systemctl; unsupported on Windows")
+	command.Flags().BoolVar(&asJSON, "json", false, "print the host platform's schema_version=1 service status as JSON")
 	return command
 }
 
 func newServiceUninstallCommand(management userServiceRuntime) *cobra.Command {
 	var stop, asJSON bool
 	command := &cobra.Command{
-		Use: "uninstall", Short: "macOS/Linux：核对归属后卸载；需停止时须显式--stop",
-		Long: "始终先查询当前平台用户manager。macOS已注册项、Linux仍活动的unit须显式--stop；Linux已加载但inactive的托管unit可直接卸载。只删除完整托管配置与本工具持久启用链接；未知来源、覆盖、查询失败或停止结果不明时保留文件。不强杀、不删除持久锁、不接管未知配置。卸载结果不代表USB清理已完成。",
+		Use: "uninstall", Short: "Uninstall the verified macOS/Linux user service; stopping requires --stop",
+		Long: "Always query the current platform's user service manager first. Use --stop explicitly for registered macOS services or active Linux units. A loaded but inactive managed Linux unit can be uninstalled directly. Remove only complete managed configuration and this tool's persistent enablement links. Preserve files when the source or overrides are unknown, queries fail or the stop outcome is uncertain. Do not force-kill, delete persistent locks or take over unknown configuration. Uninstallation does not establish that USB cleanup is complete.",
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			return management.run(cmd, asJSON, userServiceAction{kind: serviceUninstall, stop: stop})
 		},
 	}
-	command.Flags().BoolVar(&stop, "stop", false, "明确允许先停止归属已核对的服务；macOS已注册或Linux仍活动时需要")
-	command.Flags().BoolVar(&asJSON, "json", false, "输出当前平台的原始schema_version=1状态")
+	command.Flags().BoolVar(&stop, "stop", false, "explicitly allow stopping the verified service first; required when registered on macOS or active on Linux")
+	command.Flags().BoolVar(&asJSON, "json", false, "print the host platform's schema_version=1 service status as JSON")
 	return command
 }
 

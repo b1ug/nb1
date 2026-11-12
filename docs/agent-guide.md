@@ -7,6 +7,9 @@ existing nb1 CLI, HTTP API or MCP connection. It supplies no driver, daemon,
 MCP registration or extra permissions. Use matching Skill and nb1 interfaces;
 the installed help and MCP schemas describe what is available.
 
+The [matching candidate guide](candidate-install.md#add-mcp-or-the-skill-independently)
+covers verification and unpacking of the independent MCP and Skill artifacts.
+
 ## Add it to one project
 
 Copy the entire `skills/blink1-control` directory from a matching nb1 checkout

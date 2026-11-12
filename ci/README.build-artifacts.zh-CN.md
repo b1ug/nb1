@@ -1,18 +1,32 @@
-# 编译候选：只生成 Actions 验证产物
+# 同版候选：CLI、MCP、内嵌 Web 与 Skill
 
-`build.yml` 保留 master push/PR，并提供手动入口；没有 tag、Release、tap、镜像推送或写权限。它原生构建现有 runtime 矩阵的五个目标：Linux amd64/arm64、macOS arm64/amd64、Windows amd64。只构建 nb1，MCP 的独立模块测试继续在 runtime.yml；正式套件是否捆绑 MCP 尚未决定。
+`build.yml` 保留 master push/PR 与手动入口，只有只读仓库权限；不打 tag、不创建 Release、不发布 tap 或镜像。五个原生目标为 Linux amd64/arm64、macOS arm64/amd64、Windows amd64。首次实体交付范围仍为已验证的 Mac arm64 / MK2 / FW204；有归档不代表该平台已完成 USB 或服务验收。
 
-构建明确使用 CGO=1、GOWORK=off、只读公开模块版本和固定 Go1.27.3。软件检查核对二进制自身的 GOOS/GOARCH/CGO/VCS 身份、干净源码、SDK/GID 的精确版本及 sum，再运行 `--help`、`control --help` 和 `control run --help`，核对当前 API v1 命令存在。命令显式使用临时配置，不连接 daemon、不枚举/打开 USB、不建任务；help 通过不表示 Action 编译、Sequence 预览或任何运行时行为通过。
+## 从源码到归档
 
-每个 `nb1-candidate-SOURCE-OS-ARCH` Actions artifact 包含二进制、LICENSE、build.json、cli-help.json、SHA256SUMS。build.json 使用 `schema_version:2`，保留工具链、公开模块和嵌入 Web manifest 绑定，标明 `release:false`；cli-help.json 记录 `validation:cli_help_only` 与实际帮助文本。Mac构建还用Ruby执行Formula模板原有的三个help调用，不运行Homebrew。脚本拒绝已有输出目录，失败时 workflow 不上传成功产物。`verify` 对缺失、额外文件、符号链接和 checksum 不符返回非零。
+1. 固定 Go1.27.3、GOWORK=off、只读模块；CLI 以 CGO=1 构建，核对干净源码 VCS、GOOS/GOARCH、SDK/GID 精确公开版本及 sum、内嵌 Web 锁。
+2. 同一 checkout 的 `adapters/mcp` 以 CGO=0、`-buildvcs=true` 编译独立 `nb1-mcp`。仅允许 core 的本地 `../..` 替换，必须解析到同一源码根；不借此放宽 CLI 的 replacement 检查。
+3. CLI 运行隔离配置的帮助检查。MCP 使用真实 stdio 完成初始化、12 工具发现，并验证无 daemon 的只读设备查询明确失败。它不打开 USB、不调用 CLI、不提交 Job。
+4. `candidate-suite.py` 将原 CLI 五文件、独立 MCP 五文件、独立 Skill 五文件分别打包；Unix 二进制使用 tar.gz，Windows 使用 zip，Skill 一律 zip。`suite.json` 与外层 `SHA256SUMS` 绑定完整提交、目标、Web、模块、二进制及文件散列，全部标明 `release:false`。
+5. 离线 `verify` 在临时目录检查准确文件集合、路径、重复项、链接/特殊文件、大小、可执行权限与散列；不执行包内程序。构建工作流另外运行实际 CLI/daemon 的无设备验收，保留原有分层证据。
 
-这不是正式安装包或 Release：Actions 归档并不承担可执行模式、长期下载 URL、签名或升级回退契约。SHA256SUMS 只检查包内文件是否一致；同时改文件和校验和不能由它识别，它不是独立来源认证或签名。以后生成 tar.gz/zip 与 tap 时另做干净解压/安装验证。软件构建/帮助检查也不证明最低OS、旧系统、实体USB、MK3或所有Linux/Windows设备行为。
+原 CLI `check-build-artifact.py stage/verify/smoke` 保持独立；套件在其验证基础上增加独立 MCP 与 Skill。所有 stage 输出必须是新目录，失败时不上传成功候选。Actions artifact 中包含三份可解压归档与两个清单，不再依赖 Actions zip 保存原始二进制的执行权限。
 
-本地只读 CLI 帮助检查（需已构建二进制和Python3）：
+## 本地使用
+
+先在干净源码内构建并 stage CLI，然后构建同源 MCP；输出放仓外，避免污染 VCS 身份。打包命令：
 
 ```sh
-python3 ci/check-build-artifact.py smoke --binary /absolute/path/nb1
-python3 -B -m unittest discover -s ci -p test_build_artifact.py -v
+python3 -B ci/candidate-suite.py stage \
+  --root /absolute/path/to/clean-checkout \
+  --cli-dir /absolute/path/to/staged-cli \
+  --mcp-binary /absolute/path/to/nb1-mcp \
+  --output /absolute/path/to/new-suite
+python3 -B ci/candidate-suite.py verify --directory /absolute/path/to/new-suite
+python3 -B ci/mcp-candidate-smoke.py \
+  --binary /absolute/path/to/nb1-mcp --output /absolute/path/to/new-mcp-report.json
 ```
 
-`make smoke` 只调用上述隔离配置的帮助检查。新版 `control preview` 通过 HTTP 访问 daemon，不属于安装产物的离线检查范围。产物构建身份由 stage 读取二进制自身的 Go build info 核对。现有完整 tests/race/vet、Go1.18 CLI源码下限、SDK/GID Go1.13下限、MCP Go1.25下限、服务和容器验证均未被这个产物工作流替代。
+面向使用者的完整校验、解压、配置、前台 server、显式 direct、可选服务、升级回退与 MCP/Skill 安装见[英文指南](../docs/candidate-install.md)或[中文指南](../docs/candidate-install.zh-CN.md)。检查器是 matching checkout 的工具，不放进二进制归档。
+
+SHA256SUMS 检查文件自洽，不是签名或独立来源证明。候选没有稳定公开下载地址、正式版本、远程 tap 或完整 OS 最低版本资格。源码编译通过、CLI help、MCP 协议、daemon 软件验收和实体灯光分别判断；既有 tests/race/vet、Go 下限、Homebrew 生命周期、服务与容器验收不被本流程替代。

@@ -4,6 +4,8 @@
 
 [Skill](../skills/blink1-control/SKILL.md)告诉 Agent 如何使用已有的 nb1 CLI、HTTP API 或 MCP 连接。它不自带驱动，不自动启动 daemon、注册 MCP 或增加权限。Skill 应与 nb1 版本匹配；实际帮助和 MCP schema 才能说明当前可用的接口。
 
+[同版候选指南](candidate-install.zh-CN.md#独立接入-mcp-或-skill)说明独立 MCP 与 Skill 产物的核验和解压方式。
+
 ## 安装到一个项目
 
 从对应版本的源码复制完整的 `skills/blink1-control` 文件夹，放到项目的 `.agents/skills/` 下，保留 `references/` 和 `agents/`。目标已有同名 Skill 时，先核对内容再决定是否替换。

@@ -2,6 +2,8 @@
 
 The adapter exposes the nb1 API v1 through the official [Go MCP SDK](https://github.com/modelcontextprotocol/go-sdk), using JSON-RPC over stdio. It connects to a running local nb1 daemon over HTTP. The daemon selects devices, compiles Actions, executes Sequences, and stores local colors and Patterns.
 
+For a prebuilt development candidate, follow the [matching suite guide](../../docs/candidate-install.md#add-mcp-or-the-skill-independently). The MCP executable is a separate artifact; it does not launch the CLI or daemon.
+
 ## Build and run
 
 Use a complete nb1 source checkout and Go 1.25 or newer.

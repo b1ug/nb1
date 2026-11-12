@@ -13,8 +13,8 @@ func newDoctorCommand() *cobra.Command {
 	var endpoint, serial string
 	var asJSON bool
 	command := &cobra.Command{
-		Use: "doctor", Short: "只读检查构建版本、daemon与已配置设备快照",
-		Long:    "在3秒总预算内读取本机二进制构建信息及本地daemon的health/v1设备列表。不会扫描或打开USB，不设色、不提交任务、不安装服务、不自动回退直控。未指定--serial时显示daemon配置的全部目标。HTTP响应不代表设备在线；observed是带时间戳的已有快照。",
+		Use: "doctor", Short: "Inspect build information, daemon health and configured device snapshots",
+		Long:    "Read the local binary's build information and the local daemon's health and v1 device list within a three-second total budget. This read-only check does not scan or open USB, set colors, submit Jobs, install services or fall back to direct control. Without --serial, show all daemon-configured devices. An HTTP response does not establish that a device is online; observed contains an existing snapshot with a timestamp.",
 		Args:    cobra.NoArgs,
 		Example: "  nb1 doctor\n  nb1 doctor --serial 20005601 --json\n  nb1 doctor --endpoint http://127.0.0.1:8932",
 		RunE: func(cmd *cobra.Command, _ []string) error {
@@ -33,14 +33,14 @@ func newDoctorCommand() *cobra.Command {
 				return err
 			}
 			if report.Status != "ok" {
-				return fmt.Errorf("诊断发现待检查项目；请查看issues及建议")
+				return fmt.Errorf("diagnostics need attention; review the issues and suggested actions")
 			}
 			return nil
 		},
 	}
-	command.Flags().StringVar(&endpoint, "endpoint", daemonclient.DefaultEndpoint, "本地loopback HTTP服务地址")
-	command.Flags().StringVar(&serial, "serial", "", "只检查这个明确序列号；省略时使用daemon配置目标")
-	command.Flags().BoolVar(&asJSON, "json", false, "输出schema_version=1的JSON；attention时退出码为1")
+	command.Flags().StringVar(&endpoint, "endpoint", daemonclient.DefaultEndpoint, "local loopback HTTP service address")
+	command.Flags().StringVar(&serial, "serial", "", "inspect only this exact serial; default: all daemon-configured devices")
+	command.Flags().BoolVar(&asJSON, "json", false, "print schema_version=1 JSON; exit with status 1 when attention is required")
 	return command
 }
 

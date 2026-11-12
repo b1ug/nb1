@@ -452,7 +452,7 @@ func TestWindowsQueryOutputFailureAndHelpDoNotAddActions(t *testing.T) {
 	if err := executeServiceCLI(fixture.management, context.Background(), &output, "status", "--help"); err != nil {
 		t.Fatal(err)
 	}
-	if len(fixture.created) != 0 || !strings.Contains(output.String(), "Windows不支持--config-only") || !strings.Contains(output.String(), "原生查询仍待独立验收") {
+	if len(fixture.created) != 0 || !strings.Contains(output.String(), "Windows does not support --config-only") || !strings.Contains(output.String(), "native ordinary-user query validation remains pending") {
 		t.Fatal("help lost Windows limits or constructed reader", output.String())
 	}
 }

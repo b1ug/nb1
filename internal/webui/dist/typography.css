@@ -98,8 +98,8 @@
 :root :is(input:not([type="checkbox"]):not([type="radio"]), select,
   .fields input, .fields select, .color-entry select,
   .color-card > div[id^="text"] input, .channel-grid input,
-  .device-controls select, .library-grid .drawer-body > select[size],
-  .library-save-row input) {
+  .device-controls select,
+  .color-save-row input) {
   min-height: 44px;
   font-family: var(--nb1-ui-font);
   font-size: 14px;
@@ -108,7 +108,7 @@
 }
 :root :is(label, legend, .fields label, .channel-grid label,
   #sequence-pane > label, #pattern-pane > label,
-  .library-grid .drawer-body > label, .library-save-row label) {
+  .pattern-metadata label, .save-color-disclosure > label) {
   font-size: 14px;
   font-weight: 700;
   line-height: 1.5;
@@ -163,7 +163,7 @@
   :root :is(input:not([type="checkbox"]):not([type="radio"]), select,
     .fields input, .fields select, .color-entry select,
     .color-card > div[id^="text"] input, .channel-grid input,
-    .device-controls select, .library-save-row input, textarea) {
+    .device-controls select, .color-save-row input, textarea) {
     font-size: 16px;
   }
 }

@@ -19,7 +19,10 @@
   const pairs = kind => ["alternate", "orbit"].includes(kind);
   const loops = kind => !["set", "off", "fade"].includes(kind);
   let mode = page.mode, kind = page.action, version = 0, preview = null, task = null, loaded = null, polling = null, submitting = false;
-  let deviceGeneration = 0, saveID = "";
+  let deviceGeneration = 0, colorLibraryGeneration = 0;
+  let localColors = [];
+  const colorSaves = Object.fromEntries(["a", "b"].map(suffix => [suffix, {key: null, color: null, pending: false, saving: false, unknown: null, generation: 0, timer: null, controller: null}]));
+  const patternSave = {pending: false, unknown: false, capture: null};
 
   function notice(text, error = false, detail = "") {
     $("notice").textContent = text;
@@ -75,6 +78,7 @@
       if (!response.ok) {
         if (!value?.error || typeof value.error.code !== "string" || typeof value.error.message !== "string") throw Error("Invalid error response");
         const error = Error(response.status + " " + value.error.code + ": " + value.error.message);
+        error.httpStatus = response.status;
         error.rejected = ({400: ["invalid_request"], 404: ["not_found"], 409: ["device_busy", "job_conflict"], 422: ["unsupported_capability"], 429: ["job_capacity"]})[response.status]?.includes(value.error.code) || false;
         throw error;
       }
@@ -112,6 +116,110 @@
     return {key: "action", raw: JSON.stringify(action)};
   }
   function draftKey() { return envelope(authorInput(), {serial: $("device-select").value}); }
+  const textSources = new WeakMap();
+  const text = (id, value) => { const element = $(id); if (textSources.get(element) !== value) { element.textContent = value; textSources.set(element, value); } };
+  const sourceLabel = () => mode === "action" ? "Action · " + actions[kind][0] : mode === "sequence" ? "Sequence JSON" : "Saved Pattern";
+  function updatePatternSource() {
+    text("pattern-source", sourceLabel());
+    text("pattern-source-detail", mode === "pattern" ? "Read this Pattern, or edit it as a Sequence to save a new draft." : mode === "sequence" ? "Save the JSON currently in the editor." : "Save all settings in this Action.");
+  }
+  function swatch(element, color) {
+    element.style.backgroundColor = color || "transparent"; element.dataset.available = String(Boolean(color));
+  }
+  function updateColorSaveButton(suffix) {
+    const state = colorSaves[suffix];
+    $("save-color-" + suffix).disabled = state.saving || Boolean(state.unknown) || state.pending || !state.color;
+    $("check-color-save-" + suffix).hidden = !state.unknown;
+  }
+  function scheduleColorSource(suffix, force = false) {
+    const state = colorSaves[suffix];
+    if (mode !== "action" || $("color-card-" + suffix).hidden) {
+      clearTimeout(state.timer); state.controller?.abort(); state.generation++; state.key = null; state.pending = false;
+      return;
+    }
+    let input, key;
+    try { input = colorInput(suffix); key = JSON.stringify(input); }
+    catch (_) {
+      clearTimeout(state.timer); state.controller?.abort(); state.generation++; state.key = null; state.color = null; state.pending = false;
+      text("color-source-input-" + suffix, "—"); text("resolved-" + suffix, "—"); text("color-source-state-" + suffix, "Complete this color first.");
+      swatch($("color-source-swatch-" + suffix), null); updateColorSaveButton(suffix); return;
+    }
+    const selected = typeof input === "string" && input.startsWith("@") ? input.slice(1) : "";
+    $("local-color-" + suffix).value = localColors.some(color => color.name === selected) ? selected : "";
+    syncSelectPickers($("local-color-" + suffix));
+    if (!force && key === state.key) return;
+    clearTimeout(state.timer); state.controller?.abort(); const generation = ++state.generation;
+    state.key = key; state.color = null; state.pending = true;
+    text("color-source-input-" + suffix, typeof input === "string" ? input : key);
+    text("resolved-" + suffix, "—"); text("color-source-state-" + suffix, "Checking color…");
+    swatch($("color-source-swatch-" + suffix), null); updateColorSaveButton(suffix);
+    state.timer = setTimeout(async () => {
+      const controller = new AbortController(); state.controller = controller;
+      try {
+        const {value} = await request("/v1/colors/resolve", "POST", JSON.stringify({color: input}), {signal: controller.signal});
+        if (!hex.test(value.color)) throw Error("Invalid resolved color");
+        if (generation !== state.generation) return;
+        state.color = value.color;
+        text("resolved-" + suffix, value.color); text("color-source-state-" + suffix, "Current color");
+        swatch($("color-source-swatch-" + suffix), value.color); $("picker-" + suffix).value = value.color;
+      } catch (_) {
+        if (generation !== state.generation || controller.signal.aborted) return;
+        text("color-source-state-" + suffix, "Could not resolve this color. Check it again.");
+      } finally {
+        if (generation === state.generation) { state.pending = false; state.controller = null; updateColorSaveButton(suffix); }
+      }
+    }, 180);
+  }
+  async function saveColor(suffix) {
+    const state = colorSaves[suffix];
+    if (state.saving || state.unknown) return;
+    const name = $("color-name-" + suffix).value;
+    if (!/^[a-z][a-z0-9-]{0,31}$/.test(name)) throw Error("Use a lowercase color name, up to 32 characters");
+    const input = colorInput(suffix), key = JSON.stringify(input);
+    if (state.pending || !state.color || key !== state.key) throw Error("Check this color before saving it");
+    const capture = {name, input, key, label: suffix === "a" ? "First color" : "Second color"};
+    state.saving = true; updateColorSaveButton(suffix);
+    $("color-save-capture-" + suffix).hidden = false;
+    text("color-save-capture-" + suffix, "@" + name + " ← " + (typeof input === "string" ? input : key));
+    text("color-save-message-" + suffix, "Saving the captured color…");
+    try {
+      const {value} = await request("/v1/colors/" + encodeURIComponent(name), "PUT", JSON.stringify({color: input}));
+      if (value.name !== name || !hex.test(value.color)) throw Error("Invalid saved color");
+      text("color-save-capture-" + suffix, "@" + name + " · " + value.color);
+      let changed = $("color-name-" + suffix).value !== name;
+      try { changed ||= JSON.stringify(colorInput(suffix)) !== key; } catch (_) { changed = true; }
+      text("color-save-message-" + suffix, changed ? "Saved the captured color. Your current inputs have changed." : "Color saved on this computer.");
+      try { await refreshColors(); } catch (_) { text("color-save-message-" + suffix, "Color saved. Refresh the local list to see it."); }
+    } catch (error) {
+      const rejected = error.rejected || [400, 401, 403, 404, 405, 409, 413, 415, 422, 429].includes(error.httpStatus);
+      if (!rejected) state.unknown = capture;
+      text("color-save-message-" + suffix, rejected ? "Color was not saved. Check Details." : "Save outcome unknown. Check the saved color before saving again.");
+      throw error;
+    } finally { state.saving = false; updateColorSaveButton(suffix); }
+  }
+  async function checkSavedColor(suffix) {
+    const state = colorSaves[suffix], capture = state.unknown; if (!capture || state.saving) return;
+    const values = await refreshColors();
+    if (state.unknown !== capture) return;
+    const found = values.find(color => color.name === capture.name);
+    text("color-save-capture-" + suffix, "@" + capture.name + (found ? " · " + found.color : ""));
+    text("color-save-message-" + suffix, found ? "Saved color found. Review its value before saving again." : "No saved color with this name was found. You can choose to save again.");
+    state.unknown = null; updateColorSaveButton(suffix);
+  }
+  function updateSequenceReference() {
+    const color = localColors.find(item => item.name === $("sequence-local-color").value);
+    swatch($("sequence-local-swatch"), color?.color); text("sequence-local-hex", color?.color || "—");
+    $("copy-color-reference").disabled = !color;
+  }
+  async function copyColorReference() {
+    const name = $("sequence-local-color").value; if (!localColors.some(color => color.name === name)) return;
+    const reference = "@" + name;
+    try { await navigator.clipboard.writeText(reference); text("color-reference-message", "Color reference copied. Paste it into a target color."); }
+    catch (_) {
+      const fallback = $("color-reference-copy"); fallback.value = reference; fallback.hidden = false; fallback.focus(); fallback.select();
+      text("color-reference-message", "Reference selected. Copy it, then paste it into a target color.");
+    }
+  }
   function invalidate() {
     version++; preview = null;
     const summary = $("preview-summary");
@@ -122,6 +230,8 @@
       const selected = $("color-mode-" + suffix).value === "text" ? $("color-" + suffix).value.toLowerCase().trim() : "";
       for (const button of $("palette-" + suffix).children) button.setAttribute("aria-pressed", String(button.title === selected));
     }
+    updatePatternSource();
+    for (const suffix of ["a", "b"]) scheduleColorSource(suffix);
     updateButtons();
   }
   function updateButtons() {
@@ -130,7 +240,7 @@
     $("query").disabled = !task || submitting;
     $("stop").disabled = !task || !task.job || task.unknown || terminal(task.job.status) || task.job.status === "cancelling" || submitting;
     $("new-run").hidden = !task || !(task.unknown || terminal(task.job?.status) || task.rejected);
-    $("save-pattern").disabled = mode === "pattern";
+    $("save-pattern").disabled = mode === "pattern" || patternSave.pending || patternSave.unknown;
     $("use-sequence").disabled = !preview || preview.version !== version;
   }
   function changeMode(next) {
@@ -297,7 +407,7 @@
       }
       function sync() {
         const source = [...select.options], label = labelFor(select);
-        const next = JSON.stringify([select.value, select.selectedIndex, select.disabled, label, source.map(item => [item.value, item.textContent, item.selected, isDisabled(item)])]);
+        const next = JSON.stringify([select.value, select.selectedIndex, select.disabled, label, source.map(item => [item.value, item.textContent, item.selected, isDisabled(item), item.dataset.color || ""])]);
         if (next === signature) return;
         signature = next;
         const heldFocus = listbox.contains(document.activeElement);
@@ -307,6 +417,7 @@
           const option = document.createElement("span"), title = document.createElement("span"), mark = document.createElement("span");
           option.id = select.id + "-option-" + index; option.className = "select-option"; option.setAttribute("role", "option"); option.tabIndex = -1;
           option.setAttribute("aria-selected", String(item.selected)); option.setAttribute("aria-disabled", String(isDisabled(item)));
+          if (hex.test(item.dataset.color || "")) { const dot = document.createElement("span"); dot.className = "picker-color-dot"; dot.style.backgroundColor = item.dataset.color; dot.setAttribute("aria-hidden", "true"); option.append(dot); }
           title.textContent = item.textContent; mark.className = "picker-check"; mark.setAttribute("aria-hidden", "true"); option.append(title, mark);
           option.addEventListener("click", () => choose(index)); option.addEventListener("focus", () => { activeIndex = index; });
           options.push(option); listbox.append(option);
@@ -419,10 +530,20 @@
     $("sample-time").textContent = value.observed?.sampled_at || "—";
   }
   async function refreshColors() {
+    const generation = ++colorLibraryGeneration;
     const {value} = await request("/v1/colors");
     if (!Array.isArray(value) || value.length > 256 || value.some(c => !/^[a-z][a-z0-9-]{0,31}$/.test(c.name) || !hex.test(c.color))) throw Error("Invalid local color list");
-    $("color-list").replaceChildren(); for (const color of value) $("color-list").append(new Option("@" + color.name + " · " + color.color, color.name));
-    sequenceEditor.refreshColors?.();
+    if (generation !== colorLibraryGeneration) return value;
+    localColors = value;
+    for (const id of ["local-color-a", "local-color-b", "sequence-local-color"]) {
+      const select = $(id), selected = select.value; select.replaceChildren(new Option("—", ""));
+      for (const color of value) { const option = new Option("@" + color.name + " · " + color.color, color.name); option.dataset.color = color.color; select.append(option); }
+      if (value.some(color => color.name === selected)) select.value = selected;
+      syncSelectPickers(select);
+    }
+    updateSequenceReference(); sequenceEditor.refreshColors?.();
+    for (const suffix of ["a", "b"]) scheduleColorSource(suffix, true);
+    return value;
   }
   async function refreshPatterns() {
     const {value} = await request("/v1/patterns");
@@ -443,16 +564,39 @@
     notice("Pattern read. The light is unchanged.");
   }
   async function savePattern() {
+    if (patternSave.pending || patternSave.unknown) return;
     const input = authorInput(); if (input.key === "pattern_id") throw Error("Choose an Action or Sequence to save");
     const id = $("pattern-id").value, title = $("pattern-title").value;
     if (!identifier.test(id) || [...title].length > 256) throw Error("Use a valid Pattern ID and a title of at most 256 characters");
-    saveID = id; $("verify-save").hidden = false; $("save-pattern").disabled = true;
+    const capture = {id, title, input, label: sourceLabel(), version}; patternSave.capture = capture; patternSave.pending = true;
+    $("verify-save").hidden = true; $("save-capture").hidden = false;
+    text("save-capture", id + " ← " + capture.label); text("save-message", "Saving the captured draft…"); updateButtons();
     try {
       const {value} = await request("/v1/patterns/" + encodeURIComponent(id), "PUT", envelope(input, {title}));
       if (value.id !== id) throw Error("Pattern save response identity did not match"); assertSequence(value.sequence);
-      $("save-message").textContent = "Pattern saved. No Job was created."; await refreshPatterns();
-    } catch (error) { $("save-message").textContent = "Save outcome unknown. Read the saved ID before deciding what to do next."; throw error; }
-    finally { updateButtons(); }
+      const changed = version !== capture.version || $("pattern-id").value !== id || $("pattern-title").value !== title;
+      text("save-message", changed ? "Saved the captured draft. Your current inputs have changed." : "Pattern saved on this computer. No Job was created.");
+      $("verify-save").hidden = false;
+      try { await refreshPatterns(); } catch (_) { text("save-message", "Pattern saved. Refresh the Pattern list to see it."); }
+    } catch (error) {
+      const rejected = error.rejected || [400, 401, 403, 404, 405, 409, 413, 415, 422, 429].includes(error.httpStatus);
+      patternSave.unknown = !rejected; $("verify-save").hidden = !patternSave.unknown;
+      text("save-message", rejected ? "Pattern was not saved. Check Details." : "Save outcome unknown. Check the saved Pattern before saving again."); throw error;
+    } finally { patternSave.pending = false; updateButtons(); }
+  }
+  async function checkSavedPattern() {
+    const capture = patternSave.capture; if (!capture || patternSave.pending) return;
+    try {
+      const {value} = await request("/v1/patterns/" + encodeURIComponent(capture.id));
+      if (value.id !== capture.id) throw Error("Invalid Pattern identity"); assertSequence(value.sequence);
+      if (patternSave.capture !== capture) return;
+      text("save-capture", capture.id + " ← " + capture.label);
+      text("save-message", "Saved Pattern found. Your current draft is unchanged."); patternSave.unknown = false;
+    } catch (error) {
+      if (patternSave.capture !== capture) return;
+      if (error.message.startsWith("404 ")) { text("save-message", "No saved Pattern with this ID was found. You can choose to save again."); patternSave.unknown = false; }
+      else throw error;
+    } finally { updateButtons(); }
   }
   function bind(id, fn, failure = report) { $(id).addEventListener("click", () => Promise.resolve().then(fn).catch(failure)); }
 
@@ -484,22 +628,28 @@
       const button = document.createElement("button"); button.type = "button"; button.style.backgroundColor = color; button.title = color; button.setAttribute("aria-label", color); button.setAttribute("aria-pressed", "false");
       button.addEventListener("click", () => { $("color-mode-" + suffix).value = "text"; renderChannels(suffix); $("color-" + suffix).value = color; $("picker-" + suffix).value = color; invalidate(); }); $("palette-" + suffix).append(button);
     }
-    bind("resolve-" + suffix, async () => { const input = colorInput(suffix), captured = JSON.stringify(input); const {value} = await request("/v1/colors/resolve", "POST", JSON.stringify({color: input})); if (!hex.test(value.color)) throw Error("Invalid resolved color"); if (captured === JSON.stringify(colorInput(suffix))) { $("resolved-" + suffix).textContent = value.color; $("picker-" + suffix).value = value.color; } });
+    bind("resolve-" + suffix, () => scheduleColorSource(suffix, true));
+    bind("colors-refresh-" + suffix, refreshColors);
+    bind("save-color-" + suffix, () => saveColor(suffix));
+    bind("check-color-save-" + suffix, () => checkSavedColor(suffix));
+    $("local-color-" + suffix).addEventListener("change", () => {
+      const name = $("local-color-" + suffix).value; if (!localColors.some(color => color.name === name)) return;
+      $("color-mode-" + suffix).value = "text"; renderChannels(suffix); $("color-" + suffix).value = "@" + name; invalidate();
+    });
   }
-  $("author").addEventListener("input", invalidate);
-  $("author").addEventListener("change", event => { if (event.target.matches("input,select,textarea")) invalidate(); });
+  $("author").addEventListener("input", event => { if (!event.target.closest("[data-local-library]")) invalidate(); });
+  $("author").addEventListener("change", event => { if (event.target.matches("input,select,textarea") && !event.target.closest("[data-local-library]")) invalidate(); });
   $("device-select").addEventListener("change", () => { invalidate(); readDevice().catch(report); });
   $("pattern-select").addEventListener("change", () => { loaded = null; $("edit-sequence").disabled = true; });
   bind("use-sequence", () => { if (preview) { sequenceEditor.setValue(JSON.stringify(preview.sequence, null, 2)); changeMode("sequence"); } });
   bind("preview", previewDraft); bind("play", play); bind("query", queryJob, uncertainJob); bind("stop", stopJob);
-  bind("refresh", refreshDevices); bind("colors-refresh", refreshColors); bind("patterns-refresh", refreshPatterns); bind("load-pattern", () => readPattern());
+  bind("refresh", refreshDevices); bind("sequence-colors-refresh", refreshColors); bind("patterns-refresh", refreshPatterns); bind("load-pattern", () => readPattern());
+  bind("copy-color-reference", copyColorReference); $("sequence-local-color").addEventListener("change", updateSequenceReference);
   bind("edit-sequence", () => { if (loaded) { sequenceEditor.setValue(JSON.stringify(loaded.sequence, null, 2)); changeMode("sequence"); } });
-  bind("use-color", () => { const name = $("color-list").value; if (!name) return; $("color-mode-a").value = "text"; renderChannels("a"); $("color-a").value = "@" + name; changeMode("action"); });
-  bind("save-color", async () => { const name = $("color-name").value; if (!/^[a-z][a-z0-9-]{0,31}$/.test(name)) throw Error("Use a lowercase color name, up to 32 characters"); const {value} = await request("/v1/colors/" + encodeURIComponent(name), "PUT", JSON.stringify({color: colorInput("a")})); if (value.name !== name || !hex.test(value.color)) throw Error("Invalid saved color"); await refreshColors(); notice("Color saved. The light is unchanged."); });
-  bind("save-pattern", savePattern); bind("verify-save", () => readPattern(saveID));
+  bind("save-pattern", savePattern); bind("verify-save", checkSavedPattern);
   bind("new-run", () => { clearTimeout(polling); try { const history = JSON.parse(sessionStorage.getItem(taskKey + ".history") || "[]"); sessionStorage.setItem(taskKey + ".history", JSON.stringify([...history.slice(-7), task])); } catch (_) { /* Keep the ID visible until explicit new-run selection. */ } task = null; saveTask(); showTask(); notice("Ready for a separate run. Previous IDs stay in this tab's history."); });
   selectKind(kind); changeMode(mode);
   try { const saved = JSON.parse(sessionStorage.getItem(taskKey) || "null"); if (saved && identifier.test(saved.id) && serial.test(saved.serial)) { task = {id: saved.id, serial: saved.serial, unknown: true, job: null}; showTask(); } } catch (_) { /* Ignore invalid browser data. */ }
   Promise.allSettled([refreshDevices(), refreshColors(), refreshPatterns()]).then(results => { const failed = results.find(result => result.status === "rejected"); if (failed) report(failed.reason); });
-  window.addEventListener("pagehide", () => clearTimeout(polling));
+  window.addEventListener("pagehide", () => { clearTimeout(polling); for (const state of Object.values(colorSaves)) { clearTimeout(state.timer); state.controller?.abort(); } });
 })();

@@ -4,9 +4,9 @@
   "asset_base": "./",
   "source": {
     "repository": "local:nb1-web",
-    "commit": "314c27c6fa3f54a8d2be3eb4fc8e1668a84665ef",
+    "commit": "55dfb0fc5e4b5bb10f868b338be27a371240db42",
     "dirty": false,
-    "tree_sha256": "a06c014fe6c289a630792f2d96951b392c74f1bf79ce64c195bb35bab4c4235c"
+    "tree_sha256": "a7ccb94f453fe9381c38744f83708b27b8a7fef3020c8c4e97bad7d1d7194674"
   },
   "build": {
     "tool": "static-editor/v1",
@@ -39,13 +39,13 @@
     },
     {
       "path": "demo.css",
-      "bytes": 31722,
-      "sha256": "8805e98ed1f6088a97a1970812ee093f089f97de14d0f88becd20836c1740601"
+      "bytes": 34288,
+      "sha256": "5bf9c30244aa241ed2c59a13874f93069f71f44da169cae152e6b94ab12de432"
     },
     {
       "path": "demo.js",
-      "bytes": 40635,
-      "sha256": "8360939c143133d6e5c5e7971d71c92950bb4e4cc96c133a13db842ba6d48ded"
+      "bytes": 50783,
+      "sha256": "7f6f162dd4c319905824dac710ff6c1059710365027155079f455d45b7bac70c"
     },
     {
       "path": "editor-LICENSES.txt",
@@ -89,8 +89,8 @@
     },
     {
       "path": "index.html",
-      "bytes": 11663,
-      "sha256": "305018c21654442d673bdb9c9614cc391afbc2874565dc600c0095b7469d58ef"
+      "bytes": 14198,
+      "sha256": "0b912698b82ec39b0688074917bfe6e9e508ca2b32067e78d207eedc39ae6941"
     },
     {
       "path": "json-editor.css",
@@ -109,8 +109,8 @@
     },
     {
       "path": "locales.js",
-      "bytes": 7724,
-      "sha256": "3a9fffe4cb1ccc684dc939da4237c683ec335c27d78ad040a16b891ddff66460"
+      "bytes": 9656,
+      "sha256": "1a6906f0095b06071785de6bd32abaacda9fce53b2c21bd107d440665f96adb7"
     },
     {
       "path": "orbit.css",
@@ -119,8 +119,8 @@
     },
     {
       "path": "orbit.html",
-      "bytes": 11745,
-      "sha256": "86a2bfc9d075d172e3ad36ad495405fc55d779dc679eb338a3cb2e5111a3441c"
+      "bytes": 14280,
+      "sha256": "6612fe242d09cc674c5c26fb3b1901c923ce3d764754145a9288ab2f7826ef0e"
     },
     {
       "path": "orbit.js",
@@ -134,8 +134,8 @@
     },
     {
       "path": "patterns.html",
-      "bytes": 11751,
-      "sha256": "f298242548e92a966b2dd810f8e6b5218faa1d7815f1905baf0e6b5868c53ef8"
+      "bytes": 14286,
+      "sha256": "c83dacd3f8c063d85365b99564c9acde3b95445f8e3d35b19ec2fe6d8cef1027"
     },
     {
       "path": "patterns.js",
@@ -144,8 +144,8 @@
     },
     {
       "path": "typography.css",
-      "bytes": 6504,
-      "sha256": "69a07b8eb13f87c4c1f87cf31f78ff6cf7bc940e698b6c642aa9cf0c4ae29b91"
+      "bytes": 6453,
+      "sha256": "886df10eec3852e4a8ee64f84b10506c38755245733706c190b4f4adf3f7f336"
     }
   ]
 }

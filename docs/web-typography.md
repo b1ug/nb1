@@ -16,9 +16,9 @@ Single-select dropdowns share one paper-styled presentation, including the selec
 
 ## Local character and favicon
 
-Two explicitly reviewed image assets travel with the bundle: `assets/nb1-icon.svg` for the favicon and `assets/nb1-mascot.webp` for the small brand illustration. The character is decorative; it is not a physical diagram, readback swatch, animation preview or connection indicator. Connected-device state remains in the labeled device controls and observations.
+The approved nb1 character is used consistently for the workbench, documentation and favicon. Two production derivatives of that same character travel with the bundle: `assets/nb1-icon.png` for the favicon and `assets/nb1-mascot.webp` for the small brand illustration. They preserve the approved character rather than using separate mascot designs. Source artwork and usage guidance are maintained in the independent nb1-web repository; only the production derivatives are embedded here. The character is decorative; it is not a physical diagram, readback swatch, animation preview or connection indicator. Connected-device state remains in the labeled device controls and observations.
 
-The image routes are exact: `/demo/assets/nb1-icon.svg` returns `image/svg+xml`, and `/demo/assets/nb1-mascot.webp` returns `image/webp`. No image directory listing, arbitrary filename or remote-image proxy is exposed. Both files retain the same manifest hashes, size budget, no-store and nosniff checks as the other static resources.
+The image routes are exact: `/demo/assets/nb1-icon.png` returns `image/png`, and `/demo/assets/nb1-mascot.webp` returns `image/webp`. No image directory listing, arbitrary filename or remote-image proxy is exposed. Both files retain the same manifest hashes, size budget, no-store and nosniff checks as the other static resources.
 
 ## Local fonts and Action icons
 

@@ -4,9 +4,9 @@
   "asset_base": "./",
   "source": {
     "repository": "local:nb1-web",
-    "commit": "e44ec558d317a811632470434f1552ba4aa5ee73",
+    "commit": "e31b4ce476cf65ef7f2fece8a0ed297f58b5c05a",
     "dirty": false,
-    "tree_sha256": "b765116c7715317edbeb91baa09b05b6094940dea2b95945108dcafbad344496"
+    "tree_sha256": "65bef340a185f0dfd2e9fbb2ff8f266490759cb4e276c5d6d413431714e56ca8"
   },
   "build": {
     "tool": "copy-static/v1",
@@ -28,14 +28,14 @@
       "sha256": "8454733676453db337f95554b850ea36ea00afabd2a9171bda1d6f29b12b1c04"
     },
     {
-      "path": "assets/nb1-icon.svg",
-      "bytes": 1000,
-      "sha256": "077b3d76c7c3069bf0b21fea51c62969cbb3ef562e8e2329c63f707c4001f1cf"
+      "path": "assets/nb1-icon.png",
+      "bytes": 4703,
+      "sha256": "cd6f0c2c635e52d8ccf6ffdcf080214e90aa80f4c48cad71c1c350e77f2d45d7"
     },
     {
       "path": "assets/nb1-mascot.webp",
-      "bytes": 5408,
-      "sha256": "5732fc29bf5d6f736cbc507a8ba7f5a5f50bf0b36398705d439be46c739e011e"
+      "bytes": 7174,
+      "sha256": "0d2ffe4927cb4519744fa691e74ae5aba7a84135cdfc08bf3e083acf05e96dce"
     },
     {
       "path": "demo.css",
@@ -84,8 +84,8 @@
     },
     {
       "path": "index.html",
-      "bytes": 11499,
-      "sha256": "d6081f652cc2055c97339ed48d7509f4f46bf44c420465b0ad3b7efe92aaa44d"
+      "bytes": 11509,
+      "sha256": "953fbd0197f80352ec3c876be36646760e6683344182b0d13fedba270cc3e787"
     },
     {
       "path": "locale-menu.css",
@@ -104,8 +104,8 @@
     },
     {
       "path": "orbit.html",
-      "bytes": 11581,
-      "sha256": "36cefe036b5f4e139d81776174c5221c921ac3939baf94f5da4dc0e5f1ae3d32"
+      "bytes": 11591,
+      "sha256": "ee5862e733f6234d915676fd994303331652673370a4b3e704f713bf10c2a7fd"
     },
     {
       "path": "orbit.js",
@@ -119,8 +119,8 @@
     },
     {
       "path": "patterns.html",
-      "bytes": 11587,
-      "sha256": "16ab0714ec8d873755b73244f99891603682a752be915671b00e246da2e5f570"
+      "bytes": 11597,
+      "sha256": "680594c1bdb1fb8b8a0b63a1071f7a027fe8873303248b0bd8a0a00106584d29"
     },
     {
       "path": "patterns.js",

@@ -1,5 +1,7 @@
 # nb1
 
+<img src="internal/webui/dist/assets/nb1-mascot.webp" width="96" height="96" alt="nb1 mascot">
+
 [简体中文](README.zh-CN.md)
 
 Control blink(1) from a CLI, local HTTP, MCP or an embedded Web workbench. High-level Actions compile into low-level Sequences and use the same per-device worker.

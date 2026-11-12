@@ -1,5 +1,7 @@
 # nb1
 
+<img src="internal/webui/dist/assets/nb1-mascot.webp" width="96" height="96" alt="nb1 吉祥物">
+
 [English](README.md)
 
 通过 CLI、本机 HTTP、MCP 或内嵌 Web 控制 blink(1)。高级 Action 在 nb1 内编译为低级 Sequence，并交给同一设备 worker 执行。

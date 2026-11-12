@@ -24,7 +24,7 @@ access shares the native per-device ownership lock with the daemon.
 
 | Target | Actual foreground daemon, CLI and embedded Web | Managed service |
 | --- | --- | --- |
-| macOS / Apple Silicon | Native Actions: 16 functional checks and cleanup passed | Local macOS 27.2: 18 LaunchAgent lifecycle checks passed |
+| macOS / Apple Silicon | Native Actions: 16 functional checks and cleanup passed | Local macOS 27.2: 18 LaunchAgent checks and 24 isolated Homebrew upgrade checks passed |
 | macOS / Intel | Native Actions: 16 functional checks and cleanup passed | Not qualified on an Intel machine |
 | Linux / amd64 | Native Actions: 16 functional checks and cleanup passed | Ubuntu 24.04: actual Homebrew install, upgrade, rollback and cleanup passed under a real user manager |
 | Linux / arm64 | Native Actions: 16 functional checks and cleanup passed | Ubuntu 24.04.5 VM: 33 checks, including reboot followed by user-login startup and retained local library |
@@ -45,6 +45,17 @@ checks, and cleanup of its temporary service, package, tap and account. It uses
 an isolated development tap; no public package or release was published. The
 later candidate changes test fixtures and validation tooling; the daemon's
 runtime code is unchanged from this service-test source.
+
+The current macOS Homebrew check builds two development packages from source
+`ec82faa273754c289ec0006d0d044379f1ba3b2a` in a fresh private prefix, using
+Homebrew source `bf464f57275cae0be106b43d190c98564ac59b0e` and Go 1.27.4.
+All 24 checks passed: the stable service entry, captured XDG/profile/lock paths,
+upgrade without implicit restart, old-keg removal, explicit restart, rollback,
+and unchanged color/Pattern records and service definition. Its service, tap,
+packages and private prefix were removed. This does not qualify installation
+into the host's default `/opt/homebrew` prefix, which was left untouched.
+The [upgrade checker](../packaging/homebrew/check_upgrade_service.py) records
+process, package and cleanup results separately.
 
 The foreground checks exercise an explicitly absent configured serial, health,
 CLI state, pure preview, rejected offline execution, embedded HTML/JavaScript/

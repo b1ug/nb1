@@ -14,7 +14,7 @@
 
 | 目标 | 实际前台 daemon / CLI / 内嵌 Web | 用户服务 |
 | --- | --- | --- |
-| Mac / Apple Silicon | 原生 Actions：16 个功能检查及清理通过 | 本机 macOS 27.2：18 个 LaunchAgent 生命周期检查通过 |
+| Mac / Apple Silicon | 原生 Actions：16 个功能检查及清理通过 | 本机 macOS 27.2：18 个 LaunchAgent 检查、24 个隔离 Homebrew 升级检查通过 |
 | Mac / Intel | 原生 Actions：16 个功能检查及清理通过 | 未在 Intel 实机验收 LaunchAgent |
 | Linux / amd64 | 原生 Actions：16 个功能检查及清理通过 | Ubuntu 24.04 的真实用户 manager：Homebrew 安装、升级、回退及清理通过 |
 | Linux / arm64 | 原生 Actions：16 个功能检查及清理通过 | Ubuntu 24.04.5 VM：33 项，含重启后用户登录自动启动与本地库保留 |
@@ -23,6 +23,8 @@
 [五平台实际候选验收](https://github.com/b1ug/nb1/actions/runs/43186037056)对应 `45d92e75bd68e92f815aab3157d3d5b6c34d7f92`：每个平台编译干净来源的原生 CGO 程序，校验提交与依赖，再运行同一个二进制。80 个功能检查及五份清理结果全部通过，无强制终止。云端明确要求没有接入 blink(1)。
 
 [Linux Homebrew 联合验收](https://github.com/b1ug/nb1/actions/runs/43182659126)对应 `b3b5ac27e7ae7f66652540bf5a9d1b49fec1aec9`：79 条生命周期及拒绝测试记录、六类预期拒绝、19 个升级检查，以及临时服务、包、tap、账号清理通过。使用隔离的开发 tap，没有公开发版。后续候选只调整测试样本和验证工具，daemon 执行代码与该来源相同。
+
+当前 Mac Homebrew 补验以 `ec82faa273754c289ec0006d0d044379f1ba3b2a` 同源码构建两个开发包，使用新的私有前缀、官方 Homebrew 固定提交 `bf464f57275cae0be106b43d190c98564ac59b0e` 与 Go1.27.4。24 项全部通过，包括稳定服务入口、固定 XDG/profile/锁目录、升级不自动重启、删除旧 keg、显式重启、回退，以及颜色/Pattern 文件和服务定义不变。服务、tap、包与私有前缀均已删除。未操作宿主默认 `/opt/homebrew`，不将隔离前缀的结果写成默认前缀验收。[升级工具](../packaging/homebrew/check_upgrade_service.py)分别记录进程、包与清理结果。
 
 前台检查覆盖明确不存在的设备、HTTP 健康、CLI 状态、纯预览、离线拒绝执行、内嵌 HTML/JS/字体、冲突端口、外来 Origin 拒绝、换路径重启后的颜色和 Pattern 保留、正常信号退出，以及连接失败不自启。详见[验收工具](../ci/README.daemon-service.md)。
 

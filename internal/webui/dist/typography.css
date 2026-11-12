@@ -126,7 +126,7 @@
 }
 :root :is(.description, .footnote, .drawer-subtitle, .readback-label,
   .observation-note, .observation-time, .channel-label, .device-facts dt,
-  .brand small, .footer-note) { color: #3f6a50; }
+  .brand small, .footer-note) { color: var(--muted); }
 :root .panel-index { font-size: 12px; font-weight: 700; }
 :root .diagnostics summary { min-height: 44px; font-size: 14px; font-weight: 700; }
 

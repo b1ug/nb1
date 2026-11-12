@@ -16,7 +16,7 @@ Fredoka 700 supplies Latin brand and heading shapes. M PLUS Rounded 1c 500/700 s
 
 These compact files contain no CJK ideographs. Chinese uses installed native fallback fonts with bold styling; the exact face and available weight depend on the platform. The interface does not claim to ship a Chinese webfont. Code, JSON values and timestamps retain their monospace treatment. No remote font request or system font installation is required.
 
-All nine confirmed Action buttons use original static SVG drawings with visible text labels. The refreshed palette uses warm cream, fresh leaf green, turquoise, coral and yellow accents with deep text. Rainbow has seven separated colored arcs in a 44 × 34 pixel illustration; its display shades do not change the compiler anchors or device RGB values. Orbit uses a warm gold planet with tilted Saturn-like rings. Breathe uses an expansion motif, while Pulse depicts a quick rise and a longer decay. These decorative cues use no Unicode icon font and do not simulate a running effect or establish device completion.
+All nine confirmed Action buttons use original static SVG drawings with visible text labels. The palette now follows a quieter New Horizons-inspired hierarchy: cream paper, wood-brown text and pale sage, with small sea-green, warm-yellow and coral accents. All Action tiles share a paper surface; color is concentrated in their small original icon stamps and selection state. This is our interpretation of Nintendo’s game UI and official site, without bundled Nintendo artwork. Rainbow has seven separated colored arcs in a 44 × 34 pixel illustration; its display shades do not change the compiler anchors or device RGB values. Orbit uses a warm gold planet with tilted Saturn-like rings. Breathe uses an expansion motif, while Pulse depicts a quick rise and a longer decay. These decorative cues use no Unicode icon font and do not simulate a running effect or establish device completion.
 
 ## Build and serving boundary
 
@@ -26,9 +26,9 @@ The manifest records the producer source commit, file sizes and SHA-256 values. 
 
 The reviewed import is pinned to:
 
-- Producer source: `04963bff037dc77bab0c526ed7e24a21a2a48d18`.
-- Manifest SHA-256: `53a67edd565af2162f3cfbef4404a2858c3eb5a9e962ee517860fcb7fe22ce90`.
-- Embedded payload: **199,114 bytes across 22 files**, leaving **63,030 bytes** within the 256 KiB limit.
+- Producer source: `26465534782cb2a1067056584a8c911ea6dfa4f4`.
+- Manifest SHA-256: `9680ecfb1adc775d96c9203a5f9b975393d4022603af2331b694341d2bdaa661`.
+- Embedded payload: **199,164 bytes across 22 files**, leaving **62,980 bytes** within the 256 KiB limit.
 
 All runtime assets are local and use the same origin as the API. The Content Security Policy explicitly permits packaged fonts with `font-src 'self'`, while scripts, styles and API connections remain same-origin. The interface adds no CDN, analytics, Service Worker, inline script or additional framework runtime.
 

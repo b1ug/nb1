@@ -37,11 +37,16 @@ func TestWindowsStoreTempParentDiagnostics(t *testing.T) {
 		elevationStatus = "unexpected_size"
 	}
 	actualTestParent := t.TempDir()
+	tempRoot := windowsDiagnosticParent(os.TempDir(), userSID)
+	testParent := windowsDiagnosticParent(actualTestParent, userSID)
 	privateExpected := os.Getenv("NB1_PATTERN_PRIVATE_TEMP")
 	privateStatus := "not_requested"
 	var privateErr error
 	if privateExpected != "" {
 		privateErr = windowsDiagnosticPrivateAssertion(privateExpected, os.TempDir(), actualTestParent)
+		if privateErr == nil {
+			privateErr = windowsDiagnosticPrivateSecurity(tempRoot, testParent)
+		}
 		privateStatus = "PASS"
 		if privateErr != nil {
 			privateStatus = "FAIL"
@@ -59,6 +64,7 @@ func TestWindowsStoreTempParentDiagnostics(t *testing.T) {
 		"kind":                   "nb1-patternstore-windows-temp-diagnostic/v1",
 		"goarch":                 runtime.GOARCH,
 		"go_version":             runtime.Version(),
+		"pointer_bytes":          unsafe.Sizeof(uintptr(0)),
 		"elevated":               elevation,
 		"elevation_query":        elevationStatus,
 		"os_temp_dir":            windowsDiagnosticPath(os.TempDir()),
@@ -68,7 +74,8 @@ func TestWindowsStoreTempParentDiagnostics(t *testing.T) {
 		"private_temp_assertion": privateStatus,
 		"requested_goarch":       windowsDiagnosticPath(requestedArch),
 		"goarch_assertion":       archStatus,
-		"test_temp_parent":       windowsDiagnosticParent(actualTestParent, userSID),
+		"os_temp_parent":         tempRoot,
+		"test_temp_parent":       testParent,
 		"runner_temp":            windowsDiagnosticParent(os.Getenv("RUNNER_TEMP"), userSID),
 		"scope":                  "Read-only parent ACL diagnostics; not a storage or ordinary-user qualification result.",
 	}
@@ -82,6 +89,32 @@ func TestWindowsStoreTempParentDiagnostics(t *testing.T) {
 	}
 	if archStatus == "FAIL" {
 		t.Error("diagnostic binary architecture does not match the requested GOARCH")
+	}
+}
+
+// An explicitly requested CI root must pass the same security and filesystem
+// guards used by the store. Merely changing TEMP to a matching path is not a
+// qualification result; the original, unrequested diagnostic remains read-only.
+func windowsDiagnosticPrivateSecurity(parents ...map[string]interface{}) error {
+	for _, parent := range parents {
+		if parent["query"] != "ok" || parent["parent_guard"] != "ok" || parent["ntfs_guard"] != "ok" {
+			return errors.New("requested private temporary root or test child failed its Windows security/filesystem guard")
+		}
+	}
+	return nil
+}
+
+func TestWindowsDiagnosticPrivateSecurityRequiresActualGuards(t *testing.T) {
+	valid := map[string]interface{}{"query": "ok", "parent_guard": "ok", "ntfs_guard": "ok"}
+	if err := windowsDiagnosticPrivateSecurity(valid, valid); err != nil {
+		t.Fatal(err)
+	}
+	for _, field := range []string{"query", "parent_guard", "ntfs_guard"} {
+		invalid := map[string]interface{}{"query": "ok", "parent_guard": "ok", "ntfs_guard": "ok"}
+		invalid[field] = "unsafe"
+		if err := windowsDiagnosticPrivateSecurity(valid, invalid); err == nil {
+			t.Errorf("accepted failed %s assertion", field)
+		}
 	}
 }
 

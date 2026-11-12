@@ -23,7 +23,7 @@ HELP_CHECKS = [
 
 def command(args, cwd=ROOT):
     return subprocess.run([str(a) for a in args], cwd=cwd, check=True,
-                          capture_output=True, text=True, timeout=90).stdout
+                          capture_output=True, text=True, encoding="utf-8", timeout=90).stdout
 
 
 def digest(path):

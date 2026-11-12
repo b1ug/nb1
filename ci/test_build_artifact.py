@@ -1,5 +1,6 @@
 import importlib.util
 import json
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -27,6 +28,11 @@ def help_evidence():
 
 
 class CandidateTests(unittest.TestCase):
+    def test_native_utf8_output_is_independent_of_windows_code_page(self):
+        output = ARTIFACT.command([sys.executable, "-c",
+                                   "import sys; sys.stdout.buffer.write(bytes.fromhex('e5bda9e899b9'))"])
+        self.assertEqual(output, "彩虹")
+
     def test_build_identity_accepts_public_native_source(self):
         result = ARTIFACT.check_build_info(build_text(), SOURCE, "darwin", "arm64", MODULES)
         self.assertEqual(result["CGO_ENABLED"], "1")

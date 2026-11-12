@@ -45,7 +45,7 @@
     orbit(svg) {
       const planet = element("g", {transform: "rotate(-24 14 14)"});
       add(planet, "ellipse", {cx: 14, cy: 14, rx: 11.5, ry: 4.2});
-      add(planet, "circle", {cx: 14, cy: 14, r: 7.2, fill: "#e8cf85"});
+      add(planet, "circle", {cx: 14, cy: 14, r: 7.2, fill: "#edc66a"});
       // The opaque globe hides the rear ring; a light edge separates the front.
       const front = "M2.5 14a11.5 4.2 0 0 0 23 0";
       path(planet, front, {stroke: "#fffbed", "stroke-width": 4.4});

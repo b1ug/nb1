@@ -4,9 +4,9 @@
   "asset_base": "./",
   "source": {
     "repository": "local:nb1-web",
-    "commit": "55dfb0fc5e4b5bb10f868b338be27a371240db42",
+    "commit": "1359cdff9e03c71f21a81c016a706e7a9f61f12d",
     "dirty": false,
-    "tree_sha256": "a7ccb94f453fe9381c38744f83708b27b8a7fef3020c8c4e97bad7d1d7194674"
+    "tree_sha256": "5de034c00f7965e5bb219cc8a043110ca288bec699268b1895b29739c86ec20a"
   },
   "build": {
     "tool": "static-editor/v1",
@@ -25,7 +25,7 @@
     {
       "path": "action-icons.js",
       "bytes": 3316,
-      "sha256": "8454733676453db337f95554b850ea36ea00afabd2a9171bda1d6f29b12b1c04"
+      "sha256": "ee536d6735f46326e07eae7da9b317d8d199c363d020bc27d89cbcd0d45a9382"
     },
     {
       "path": "assets/nb1-icon.png",
@@ -39,8 +39,8 @@
     },
     {
       "path": "demo.css",
-      "bytes": 34288,
-      "sha256": "5bf9c30244aa241ed2c59a13874f93069f71f44da169cae152e6b94ab12de432"
+      "bytes": 34368,
+      "sha256": "c1dbeb41b95cfd9a524e2d963e6afa590eeabed2da35ab5b6247afb42134e112"
     },
     {
       "path": "demo.js",

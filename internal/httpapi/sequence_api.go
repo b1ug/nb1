@@ -200,7 +200,14 @@ func (h *handler) compileSequenceInput(in sequenceInput) (sequence.Sequence, err
 		}
 		return sequence.Normalize(pattern.Sequence)
 	}
-	return sequence.Decode(in.Sequence)
+	resolver := sequenceColorResolver{store: h.library}
+	compiled, err := sequence.DecodeAuthoring(in.Sequence, func(raw json.RawMessage) (string, error) {
+		return actionv1.ResolveColor(raw, resolver.resolve)
+	})
+	if resolver.unavailable {
+		return sequence.Sequence{}, errSequenceLibraryUnavailable
+	}
+	return compiled, err
 }
 
 func (in sequenceInput) fingerprint() ([32]byte, error) {

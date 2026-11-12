@@ -1,8 +1,10 @@
 package sequence
 
 import (
+	"encoding/json"
 	"fmt"
 
+	"github.com/b1ug/nb1/internal/colorinput"
 	"github.com/b1ug/nb1/internal/jsoninput"
 )
 
@@ -22,13 +24,31 @@ type stepInput struct {
 }
 
 type targetInput struct {
-	LED   *int   `json:"led"`
-	Color string `json:"color"`
+	LED   *int            `json:"led"`
+	Color json.RawMessage `json:"color"`
 }
 
 // Decode accepts one strict Sequence JSON object and returns its normalized
 // playback plan. A target's LED selector is required, including for LED 0.
 func Decode(data []byte) (Sequence, error) {
+	return decode(data, nil)
+}
+
+// DecodeAuthoring accepts ColorInput notation for target colors, then returns
+// the same canonical playback plan as Decode. A caller can supply the shared
+// application resolver to handle local color aliases. A nil resolver accepts
+// the pure color grammar without accessing a library or device.
+func DecodeAuthoring(data []byte, resolveColor func(json.RawMessage) (string, error)) (Sequence, error) {
+	if resolveColor == nil {
+		resolveColor = func(raw json.RawMessage) (string, error) {
+			result, err := colorinput.ResolveJSON(raw)
+			return result.CanonicalColor, err
+		}
+	}
+	return decode(data, resolveColor)
+}
+
+func decode(data []byte, resolveColor func(json.RawMessage) (string, error)) (Sequence, error) {
 	if len(data) > MaxInputBytes {
 		return Sequence{}, invalid("input exceeds 1 MiB")
 	}
@@ -56,7 +76,7 @@ func Decode(data []byte) (Sequence, error) {
 		return Sequence{}, invalid("steps must contain 1 to %d steps", MaxExecutedSteps)
 	}
 	if input.Initial != nil {
-		initial, err := decodeTargets(input.Initial, "initial")
+		initial, err := decodeTargets(input.Initial, "initial", resolveColor)
 		if err != nil {
 			return Sequence{}, err
 		}
@@ -64,7 +84,7 @@ func Decode(data []byte) (Sequence, error) {
 	}
 	result.Steps = make([]Step, len(input.Steps))
 	for i, step := range input.Steps {
-		targets, err := decodeTargets(step.Targets, fmt.Sprintf("steps[%d].targets", i))
+		targets, err := decodeTargets(step.Targets, fmt.Sprintf("steps[%d].targets", i), resolveColor)
 		if err != nil {
 			return Sequence{}, err
 		}
@@ -73,7 +93,7 @@ func Decode(data []byte) (Sequence, error) {
 	return Normalize(result)
 }
 
-func decodeTargets(input []targetInput, path string) ([]Target, error) {
+func decodeTargets(input []targetInput, path string, resolveColor func(json.RawMessage) (string, error)) ([]Target, error) {
 	if len(input) > 2 {
 		return nil, invalid("%s cannot contain more than 2 targets", path)
 	}
@@ -82,7 +102,17 @@ func decodeTargets(input []targetInput, path string) ([]Target, error) {
 		if target.LED == nil {
 			return nil, invalid("%s[%d].led is required", path, i)
 		}
-		result[i] = Target{LED: *target.LED, Color: target.Color}
+		var color string
+		var err error
+		if resolveColor == nil {
+			err = json.Unmarshal(target.Color, &color)
+		} else {
+			color, err = resolveColor(target.Color)
+		}
+		if err != nil {
+			return nil, invalid("%s[%d].color: %v", path, i, err)
+		}
+		result[i] = Target{LED: *target.LED, Color: color}
 	}
 	return result, nil
 }

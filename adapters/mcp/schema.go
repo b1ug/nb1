@@ -147,7 +147,7 @@ func sequenceSchema() map[string]any {
 		if timing == sequence.TimingInterval {
 			minLED, maxTargets = 1, 2
 		}
-		target := object(map[string]any{"led": integer(minLED, 2), "color": map[string]any{"type": "string", "pattern": "^#[0-9a-fA-F]{6}$"}}, "led", "color")
+		target := object(map[string]any{"led": integer(minLED, 2), "color": colorSchema()}, "led", "color")
 		targets := map[string]any{"type": "array", "items": target, "minItems": 1, "maxItems": maxTargets}
 		fade := integer(0, sequence.MaxFadeMS)
 		fade["multipleOf"] = sequence.FadeQuantumMS

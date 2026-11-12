@@ -40,7 +40,9 @@ func compileSequenceDirect(input daemonclient.SequenceInput, libraryDir string) 
 		}
 		return sequence.Normalize(pattern.Sequence)
 	}
-	return sequence.Decode(input.Sequence)
+	return sequence.DecodeAuthoring(input.Sequence, func(raw json.RawMessage) (string, error) {
+		return actionv1.ResolveColor(raw, store.ResolveColor)
+	})
 }
 
 func (options *sequenceControlFlags) runSequenceDirect(cmd *cobra.Command, explicit string, input daemonclient.SequenceInput) error {

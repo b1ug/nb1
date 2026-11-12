@@ -56,7 +56,7 @@ Durations use integer milliseconds. `duration_ms`, `attack_ms` and `decay_ms` us
 - HSV/HSB: `{"space":"hsv","h_deg":210,"s_pct":75,"v_pct":50}`. All fields are required; hue 0–360, percentages 0–100. HSB uses this exact HSV wire form, not `space:"hsb"` or `h/s/b` keys.
 - Local alias: `"@status-ok"`; requires an existing saved color. Resolution returns exact lowercase Hex6 without gamma or optical calibration.
 
-Use `resolve_color` to verify an unfamiliar form without selecting a device. Raw Sequence target colors accept only exact Hex6, not the authoring forms above.
+Use `resolve_color` to verify an unfamiliar form without selecting a device. Action colors and authored Sequence target colors accept all forms above. Normalized output and saved Patterns contain only resolved lowercase Hex6 colors.
 
 ## Exact Sequence example
 
@@ -64,7 +64,7 @@ Use `resolve_color` to verify an unfamiliar form without selecting a device. Raw
 {"sequence":{"timing":"serial","steps":[{"targets":[{"led":0,"color":"#336699"}],"fade_ms":100,"hold_ms":500}],"on_finish":"off"}}
 ```
 
-`timing` and nonempty `steps` are required. Serial Steps have one target; `fade_ms` and `hold_ms` default to 0. A target requires numeric `led` and exact Hex6 `color`. `repeat` defaults to 1 and must be positive; `on_finish` defaults to `off`.
+`timing` and nonempty `steps` are required. Serial Steps have one target; `fade_ms` and `hold_ms` default to 0. A target requires numeric `led` and one ColorInput as its `color`. `repeat` defaults to 1 and must be positive; `on_finish` defaults to `off`.
 
 Serial nominal time includes `fade_ms + hold_ms + 10` milliseconds per Step for the update allowance. `hold_ms` is not the whole phase duration. Prefer a matching Action for a named effect: `blink` with `on_ms:100`, `off_ms:100`, `cycles:2` compiles to a nominal 400ms; four hand-written Steps with `hold_ms:100` instead total 440ms. Check preview timing before playback. Native I/O and cleanup can add real elapsed time.
 

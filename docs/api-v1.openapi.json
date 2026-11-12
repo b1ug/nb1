@@ -1514,6 +1514,58 @@
                     "pattern_id": "gentle-pulse",
                     "serial": "fixture-0001"
                   }
+                },
+                "sequence_color_inputs": {
+                  "summary": "Sequence colors use the same authoring notation as Actions",
+                  "value": {
+                    "sequence": {
+                      "timing": "serial",
+                      "steps": [
+                        {
+                          "targets": [
+                            {
+                              "led": 0,
+                              "color": "#abc"
+                            }
+                          ]
+                        },
+                        {
+                          "targets": [
+                            {
+                              "led": 0,
+                              "color": "red"
+                            }
+                          ]
+                        },
+                        {
+                          "targets": [
+                            {
+                              "led": 0,
+                              "color": {
+                                "space": "rgb8",
+                                "r": 0,
+                                "g": 255,
+                                "b": 136
+                              }
+                            }
+                          ]
+                        },
+                        {
+                          "targets": [
+                            {
+                              "led": 0,
+                              "color": {
+                                "space": "hsv",
+                                "h_deg": 120,
+                                "s_pct": 100,
+                                "v_pct": 50
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  }
                 }
               }
             }
@@ -3461,14 +3513,15 @@
             "x-json-number-syntax": "ordinary JSON integer with no fraction or exponent; numeric bounds apply"
           },
           "color": {
-            "$ref": "#/components/schemas/ExactColor"
+            "$ref": "#/components/schemas/ColorInput"
           }
         },
         "required": [
           "led",
           "color"
         ],
-        "additionalProperties": false
+        "additionalProperties": false,
+        "description": "Authored LED target. The core resolves ColorInput to an exact lowercase Hex6 color in the normalized plan."
       },
       "CanonicalTarget": {
         "type": "object",
@@ -3955,7 +4008,7 @@
             "$ref": "#/components/schemas/IntervalSequence"
           }
         ],
-        "description": "Host playback input. Defaults are applied by the core. All times are integer milliseconds."
+        "description": "Host playback authoring input. Target colors accept ColorInput and are resolved by the core. Defaults are applied by the core. Timing, LED and repetition fields use integer notation."
       },
       "NormalizedSequence": {
         "oneOf": [

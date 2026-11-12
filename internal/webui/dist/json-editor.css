@@ -36,3 +36,5 @@
   .nb1-json-color-chip { forced-color-adjust: none; }
   .nb1-json-error { text-decoration-color: Mark; }
 }
+
+.nb1-json-color-status { margin: 0; border-top: 0; padding-top: 0; font-size: 11px; }

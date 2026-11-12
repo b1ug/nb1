@@ -67,7 +67,7 @@ The per-row cycle maximum is an additional ceiling, not a promise that every dur
 
 ### ColorInput
 
-ColorInput is an authoring value used in Action `color` / `colors` and color resolution or saving. It has no omitted-color default.
+ColorInput is an authoring value used in Action `color` / `colors`, Sequence Target `color` (in `initial` and `steps`), and color resolution or saving. It has no omitted-color default.
 
 | Form | Example | Rules |
 | --- | --- | --- |
@@ -83,7 +83,7 @@ A ColorInput is limited to 4,096 encoded JSON bytes. An ordinary color string is
 
 ### Sequence and Step fields
 
-Sequence JSON is the exact low-level host plan. Targets use exact Hex6 colors, not ColorInput names, aliases or objects.
+Sequence describes the low-level host plan. Authored Target colors accept the same ColorInput forms as Actions: Hex3/Hex6, names, RGB8/HSV objects and local aliases. The core resolves them before preview, playback or Pattern saving. Normalized responses and saved Patterns contain only exact lowercase Hex6 colors; they freeze the resolved values.
 
 | Sequence field | Required / omitted behavior | Accepted values |
 | --- | --- | --- |
@@ -100,9 +100,9 @@ Sequence JSON is the exact low-level host plan. Targets use exact Hex6 colors, n
 | Step `hold_ms` | Serial only; optional, defaults to `0`. Forbidden in interval Steps, including `0`. | Integer 0–3,600,000. |
 | Step `interval_ms` | Required for interval Steps; forbidden for serial Steps. | Integer 50–600,000, at least `fade_ms`. |
 | Target `led` | Required, including when selecting all outputs. | Serial: `0`, `1` or `2`. Interval / initial: `1` or `2`, without duplicates. No string selector. |
-| Target `color` | Required. | Exact `#RRGGBB` string, with no whitespace; uppercase is accepted and normalized to lowercase. |
+| Target `color` | Required. | One ColorInput as defined above. For example, `"#abc"` becomes `"#aabbcc"` and `"red"` becomes `"#ff0000"`. Normalized output always uses lowercase Hex6. |
 
-All numeric fields above use integer JSON numbers, not quoted numbers, decimal or exponent notation. The entire plan must fit the 1,024 executed-Step and 24-hour nominal budgets. There is no unbounded or implicit infinite Sequence.
+All timing, repetition and LED fields above use integer JSON numbers, not quoted numbers, decimal or exponent notation. ColorInput channel numbers follow their own rules above. The entire plan must fit the 1,024 executed-Step and 24-hour nominal budgets. There is no unbounded or implicit infinite Sequence.
 
 Serial nominal duration is `repeat * sum(fade_ms + hold_ms + 10)`. Interval nominal duration includes `10ms * len(initial)`, the repeated intervals and any final settling allowance. The default Pulse expands to 1,030ms; one default Orbit cycle has 3,000ms of intervals plus 40ms of initial/final allowances, totaling 3,040ms.
 

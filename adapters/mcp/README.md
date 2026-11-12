@@ -33,7 +33,7 @@ The SDK is pinned to `github.com/modelcontextprotocol/go-sdk v1.8.0`. This neste
 | `get_pattern` | `id` | `GET /v1/patterns/{id}` |
 | `save_pattern` | `id`, one of `action`, `sequence`; optional `title` | `PUT /v1/patterns/{id}` |
 
-Tool schemas describe the same Action kinds, Sequence timing rules, and color forms as the [API reference](../../docs/api-v1.md). Input validation rejects unknown fields, duplicate keys and explicit null values. Raw color numbers and source objects retain their original JSON meaning through HTTP. The daemon owns palette resolution and authoritative compilation.
+Tool schemas describe the same Action kinds, Sequence timing rules, and color forms as the [API reference](../../docs/api-v1.md). Both Action colors and authored Sequence target colors accept Hex3/Hex6, names, RGB8/HSV objects and `@local-name`; normalized Sequences and saved Patterns contain resolved lowercase Hex6 values. Input validation rejects unknown fields, duplicate keys and explicit null values. Raw color numbers and source objects retain their original JSON meaning through HTTP. The daemon owns palette resolution and authoritative compilation.
 
 Examples below show the arguments supplied to `tools/call`.
 

@@ -67,7 +67,9 @@ func (input SequenceInput) validate() error {
 		return nil
 	}
 	if input.Sequence != nil {
-		_, err := sequence.Decode(input.Sequence)
+		_, err := sequence.DecodeAuthoring(input.Sequence, func(raw json.RawMessage) (string, error) {
+			return actionv1.ResolveColor(raw, func(string) (string, error) { return "#000000", nil })
+		})
 		return err
 	}
 	// Validate alias syntax and the complete Action locally. Its original color

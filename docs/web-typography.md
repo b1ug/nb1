@@ -51,3 +51,7 @@ A missing or repeated meta, another occurrence of the placeholder or nonce name,
 Software checks cover font delivery, menu keyboard and focus behavior, language persistence, SVG rendering, mobile layout and explicit execution controls. They establish interface behavior. USB operation and physical light quality require separately identified device and optical evidence.
 
 The LED swatches display cached RGB observations with a sample time. Their screen appearance, font rendering and SVG icons do not measure diffuser brightness, fade continuity or flicker. A successful Job confirms its execution and cleanup outcome; optical conclusions remain tied to the recorded hardware, camera conditions and matching core build.
+
+## JSON color samples
+
+Authored Sequence targets use the same ColorInput grammar as Action colors: Hex3/Hex6, fixed names, RGB8/HSV objects and local aliases. The editor resolves color samples through the local Go color endpoint, so it does not rely on the browser's broader CSS color grammar. A sample only decorates the source; it preserves authored JSON, numeric spelling and Undo history. Color resolution reads no hardware and creates no Job. Preview, playback and Pattern saving resolve the same authored colors into exact lowercase Hex6 values.

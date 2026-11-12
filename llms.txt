@@ -5,7 +5,7 @@ Discover actual CLI help or MCP tools/list before use; source support does not p
 ## Contract
 
 - High-level Action: set, off, fade, blink, breathe, pulse, alternate, orbit, rainbow.
-- Low-level Sequence: timing serial or interval, ordered steps[], exact Hex6 targets, integer millisecond durations, repeat and on_finish. The nb1 core compiles and schedules playback.
+- Low-level Sequence: timing serial or interval, ordered steps[], ColorInput target colors resolved to lowercase Hex6 by the core, integer millisecond durations, repeat and on_finish. The nb1 core compiles and schedules playback.
 - ColorInput: names, Hex3/6, RGB8, HSV (HSB in the UI) and explicit local @name references. No implicit gamma.
 - Pattern: a computer-side saved normalized Sequence, independent of device storage generation.
 - DeviceSequence: native RAM/Flash semantics with separate capabilities and deployment. Saving a host Pattern does not deploy it to hardware.

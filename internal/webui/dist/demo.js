@@ -54,8 +54,11 @@
     }
     return value;
   }
-  async function request(path, method = "GET", body) {
+  async function request(path, method = "GET", body, options = {}) {
     const controller = new AbortController(), timeout = setTimeout(() => controller.abort(), 8000);
+    const abort = () => controller.abort();
+    if (options.signal?.aborted) controller.abort();
+    else options.signal?.addEventListener("abort", abort, {once: true});
     try {
       const response = await fetch(path, {method, body, headers: body === undefined ? {} : {"Content-Type": "application/json"}, cache: "no-store", credentials: "same-origin", redirect: "error", signal: controller.signal});
       if (!/^application\/json\b/i.test(response.headers.get("content-type") || "")) throw Error("Expected a JSON response");
@@ -76,7 +79,7 @@
         throw error;
       }
       return {value, status: response.status, location: response.headers.get("location")};
-    } finally { clearTimeout(timeout); }
+    } finally { clearTimeout(timeout); options.signal?.removeEventListener("abort", abort); }
   }
   function envelope(input, extra = {}) {
     const members = Object.entries(extra).map(([name, value]) => JSON.stringify(name) + ":" + JSON.stringify(value));
@@ -132,6 +135,7 @@
   }
   function changeMode(next) {
     mode = next;
+    if (mode === "sequence") sequenceEditor.refreshColors?.();
     for (const name of ["action", "sequence", "pattern"]) {
       $(name + "-pane").hidden = name !== mode;
       $("mode-" + name).setAttribute("aria-selected", String(name === mode));
@@ -173,6 +177,7 @@
     }
   }
   async function previewDraft() {
+    if (mode === "sequence") sequenceEditor.refreshColors?.();
     const input = authorInput(), draftVersion = version, device = $("device-select").value;
     const body = envelope(input, device ? {serial: device} : {});
     $("input-detail").textContent = body;
@@ -417,6 +422,7 @@
     const {value} = await request("/v1/colors");
     if (!Array.isArray(value) || value.length > 256 || value.some(c => !/^[a-z][a-z0-9-]{0,31}$/.test(c.name) || !hex.test(c.color))) throw Error("Invalid local color list");
     $("color-list").replaceChildren(); for (const color of value) $("color-list").append(new Option("@" + color.name + " · " + color.color, color.name));
+    sequenceEditor.refreshColors?.();
   }
   async function refreshPatterns() {
     const {value} = await request("/v1/patterns");
@@ -453,7 +459,13 @@
   $("sequence-json").value = JSON.stringify({timing: "serial", steps: [{targets: [{led: 0, color: "#ff0000"}], fade_ms: 100, hold_ms: 400}, {targets: [{led: 0, color: "#0000ff"}], fade_ms: 100, hold_ms: 400}], repeat: 1, on_finish: "off"}, null, 2);
   // The textarea remains the unchanged request source and plain-text fallback.
   let sequenceEditor = {getValue: () => $("sequence-json").value, setValue: value => { $("sequence-json").value = value; }};
-  try { if (window.NB1JSONEditor) sequenceEditor = window.NB1JSONEditor.mount($("sequence-json")); }
+  try { if (window.NB1JSONEditor) sequenceEditor = window.NB1JSONEditor.mount($("sequence-json"), {
+    resolveColor: async (raw, signal) => {
+      const {value} = await request("/v1/colors/resolve", "POST", '{"color":' + raw + '}', {signal});
+      if (!hex.test(value.color)) throw Error("Invalid resolved color");
+      return value.color;
+    }
+  }); }
   catch (_) { /* Keep the original textarea when enhancement is unavailable. */ }
   for (const [name, [label]] of Object.entries(actions)) {
     const button = document.createElement("button"); button.type = "button"; button.className = "action"; button.dataset.action = name;

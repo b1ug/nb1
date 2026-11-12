@@ -4,9 +4,9 @@
   "asset_base": "./",
   "source": {
     "repository": "local:nb1-web",
-    "commit": "22e6cf18b629b2851fe7dbcd0e6b2d29b1c41854",
+    "commit": "314c27c6fa3f54a8d2be3eb4fc8e1668a84665ef",
     "dirty": false,
-    "tree_sha256": "5d7fa5d6f6507b771373ec1c609a81b99919f757804da835d6b05a199d7b67a8"
+    "tree_sha256": "a06c014fe6c289a630792f2d96951b392c74f1bf79ce64c195bb35bab4c4235c"
   },
   "build": {
     "tool": "static-editor/v1",
@@ -44,8 +44,8 @@
     },
     {
       "path": "demo.js",
-      "bytes": 39977,
-      "sha256": "6f1351cc150f3ec28459a098c6b543a7cd8bfc9a0fd216c7fbd0e43120a7612b"
+      "bytes": 40635,
+      "sha256": "8360939c143133d6e5c5e7971d71c92950bb4e4cc96c133a13db842ba6d48ded"
     },
     {
       "path": "editor-LICENSES.txt",
@@ -94,13 +94,13 @@
     },
     {
       "path": "json-editor.css",
-      "bytes": 3197,
-      "sha256": "8c3e0f61a3deb2930be0db2b12da49a9ed2871acb34357a7ec27430e75ec0466"
+      "bytes": 3284,
+      "sha256": "2b908f3978c0a315b686b5821e0271c899326e1735ff3fefcd7068ed18072c15"
     },
     {
       "path": "json-editor.js",
-      "bytes": 317385,
-      "sha256": "a6c3eb1d912f0fc318f641945e06c404f01af47e2dd847bafb2150b284fb3f4c"
+      "bytes": 320805,
+      "sha256": "7fe33cfda9fc23b26fb23711bcaae567c9056e327730f402e1062be6deab8190"
     },
     {
       "path": "locale-menu.css",
@@ -109,8 +109,8 @@
     },
     {
       "path": "locales.js",
-      "bytes": 7326,
-      "sha256": "0d6e434610937ae147ceb7b2c7b12fa38807b0f7766cea6dd05f03b94ffdfdf9"
+      "bytes": 7724,
+      "sha256": "3a9fffe4cb1ccc684dc939da4237c683ec335c27d78ad040a16b891ddff66460"
     },
     {
       "path": "orbit.css",

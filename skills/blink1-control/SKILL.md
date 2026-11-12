@@ -13,7 +13,7 @@ Inspect actual MCP schemas (`tools/list`) or `nb1 control --help`: installed sup
 
 - Actions express intent: `set`, `off`, `fade`, `blink`, `breathe`, `pulse`, `alternate`, `orbit`, `rainbow`. `alternate` exchanges two colors abruptly; `orbit` hands them over with paired fades; `rainbow` uses seven anchors. The core compiles these effects; do not stream animation steps from the agent.
   Prefer a matching Action unless the user requests a Sequence or the arrangement needs one.
-- A Sequence specifies exact `steps[]` with `timing: serial` or `interval`. Colors in targets must be Hex6. Actions accept names, Hex3/6, RGB8, HSV/HSB and local `@name` colors. `resolve_color` needs no device. No implicit gamma correction is applied.
+- A Sequence specifies exact `steps[]` with `timing: serial` or `interval`. Action colors and authored Sequence target colors accept names, Hex3/6, RGB8, HSV/HSB and local `@name` colors. The core freezes resolved colors as lowercase Hex6 in normalized plans and saved Patterns. `resolve_color` needs no device. No implicit gamma correction is applied.
 - Pattern means a reusable Sequence saved on the computer. Saving does not deploy DeviceSequence RAM, Flash or startup settings. Read [local library workflows](references/patterns.md) for alias/Pattern requests.
 
 1. For device work, use `list_devices`, select the requested configured serial, and inspect `get_device_state`. Host-only library/conversion work needs no discovery. Observations are cached: inspect `observed.sampled_at`; interval playback defers RGB polling until cleanup.

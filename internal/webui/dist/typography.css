@@ -1,0 +1,169 @@
+/* Local OFL fonts. Load after demo.css; font licenses ship in ./fonts/. */
+@font-face {
+  font-family: "Fredoka";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("./fonts/fredoka-700-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Fredoka";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("./fonts/fredoka-700-latin-ext.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "M PLUS Rounded 1c";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("./fonts/mplusround-500-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "M PLUS Rounded 1c";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("./fonts/mplusround-700-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+:root {
+  --nb1-native-font: ui-rounded, "SF Pro Rounded", "Hiragino Maru Gothic ProN", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  --nb1-ui-font: "M PLUS Rounded 1c", var(--nb1-native-font);
+  --nb1-heading-font: "Fredoka", var(--nb1-ui-font);
+  --nb1-code-font: ui-monospace, "SFMono-Regular", "Cascadia Code", Menlo, Consolas, monospace;
+  font-family: var(--nb1-ui-font);
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.6;
+  font-synthesis: none;
+}
+:root:lang(zh-CN) {
+  --nb1-native-font: "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", system-ui, sans-serif;
+  font-weight: 700;
+}
+
+:root .brand {
+  min-width: 0;
+  font-family: var(--nb1-heading-font);
+  font-size: clamp(28px, 2.5vw, 33px);
+  font-weight: 700;
+  letter-spacing: -.025em;
+  line-height: 1.1;
+}
+:root .brand > span:last-child { min-width: 0; }
+:root .brand small {
+  max-width: 20ch;
+  font-family: var(--nb1-ui-font);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.45;
+  letter-spacing: 0;
+  white-space: normal;
+}
+:root :is(h1, h2, h3, .drawer-title) {
+  font-family: var(--nb1-heading-font);
+  font-weight: 700;
+  letter-spacing: -.015em;
+  line-height: 1.35;
+}
+:root .device-bar h1 { font-size: 23px; }
+:root h2 { font-size: 21px; }
+:root :is(h3, .drawer-title) { font-size: 16px; }
+
+/* Explicit selectors override the compact base sheet's 9–12px labels. */
+:root :is(button, .top-nav a, .editor-tabs button, .job-buttons .text-button,
+  .library-toolbar .text-button, .preview-toolbar .text-button,
+  .locale-trigger, .locale-option, [role="menuitem"], [role="option"]) {
+  min-width: 44px;
+  min-height: 44px;
+  font-family: var(--nb1-ui-font);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.45;
+  letter-spacing: 0;
+}
+:root .action-grid strong {
+  font-family: var(--nb1-ui-font);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+:root :is(input:not([type="checkbox"]):not([type="radio"]), select,
+  .fields input, .fields select, .color-entry select,
+  .color-card > div[id^="text"] input, .channel-grid input,
+  .device-controls select, .library-grid .drawer-body > select[size],
+  .library-save-row input) {
+  min-height: 44px;
+  font-family: var(--nb1-ui-font);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.5;
+}
+:root :is(label, legend, .fields label, .channel-grid label,
+  #sequence-pane > label, #pattern-pane > label,
+  .library-grid .drawer-body > label, .library-save-row label) {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+:root input[type="color"] { min-width: 44px; min-height: 44px; }
+:root :is(.description, .notice, .device-bar p, .execution-note,
+  .device-facts > div, #selected-pattern, #job-message) {
+  font-size: 14px;
+  line-height: 1.65;
+}
+:root :is(.footnote, .drawer-subtitle, .readback-label, .observation-note,
+  .observation-time, .channel-label, .tag, .subtle-tag, footer, .footer-note) {
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.6;
+}
+:root :is(.description, .footnote, .drawer-subtitle, .readback-label,
+  .observation-note, .observation-time, .channel-label, .device-facts dt,
+  .brand small, .footer-note) { color: #59654c; }
+:root .panel-index { font-size: 12px; font-weight: 700; }
+:root .diagnostics summary { min-height: 44px; font-size: 14px; font-weight: 700; }
+
+/* Latin web fonts contain no CJK. Native Chinese UI text uses a real bold face. */
+:root:lang(zh-CN) :is(body, button, input, select, label, legend,
+  .brand small, .top-nav a, .editor-tabs button, .action-grid strong,
+  .description, .notice, .device-bar p, .footnote, .drawer-subtitle,
+  .readback-label, .observation-time, .channel-label, .tag, footer,
+  .locale-trigger, .locale-option, [role="menuitem"], [role="option"]) {
+  font-weight: 700;
+}
+
+/* Preserve technical content and character spacing in every language. */
+:root :is(code, pre, textarea, .observation-time time) {
+  font-family: var(--nb1-code-font);
+  font-weight: 400;
+  font-variant-ligatures: none;
+  letter-spacing: 0;
+}
+:root :is(pre, textarea, .diagnostics pre) { font-size: 13px; line-height: 1.75; }
+:root :is(.readback-channel code, .device-facts code, .resolve-row code,
+  .observation-time time) { font-size: 12px; }
+
+@media (max-width: 680px) {
+  :root .brand small { max-width: 17ch; font-size: 14px; }
+  :root :is(.footnote, .drawer-subtitle, .readback-label, .observation-note,
+    .observation-time, .channel-label, .tag, .subtle-tag, .panel-index,
+    #preview-summary, footer, .footer-note, pre, textarea,
+    .diagnostics pre, .readback-channel code, .device-facts code,
+    .resolve-row code, .observation-time time, .preview-grid h3) {
+    font-size: 14px;
+  }
+  :root :is(input:not([type="checkbox"]):not([type="radio"]), select,
+    .fields input, .fields select, .color-entry select,
+    .color-card > div[id^="text"] input, .channel-grid input,
+    .device-controls select, .library-save-row input, textarea) {
+    font-size: 16px;
+  }
+  :root .top-nav a { padding-inline: 10px; }
+}

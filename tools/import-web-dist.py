@@ -16,6 +16,15 @@ MAX_MANIFEST_BYTES = 16 * 1024
 ASSETS = frozenset((
     "index.html", "demo.css", "demo.js", "orbit.html", "orbit.css", "orbit.js", "LICENSE.txt",
     "patterns.html", "patterns.js", "patterns.css", "i18n.js", "locales.js",
+    "action-icons.js",
+    "locale-menu.css",
+    "typography.css",
+    "fonts/fredoka-700-latin.woff2",
+    "fonts/fredoka-700-latin-ext.woff2",
+    "fonts/mplusround-500-latin.woff2",
+    "fonts/mplusround-700-latin.woff2",
+    "fonts/Fredoka-OFL.txt",
+    "fonts/MPLUSRounded1c-OFL.txt",
 ))
 CONTRACTS = frozenset(("nb1-api/v1",))
 PENDING = b"Waiting for verified nb1-web dist.\n"
@@ -122,11 +131,23 @@ def read_plain(path, limit):
 
 def names(directory):
     plain_info(directory, directory=True)
+    parents = {str(Path(name).parent) for name in ASSETS if "/" in name}
     result = set()
-    with os.scandir(str(directory)) as entries:
-        for entry in entries:
-            require(len(result) < len(ASSETS) + 1, "too many dist entries")
-            result.add(entry.name)
+    def walk(current, prefix=""):
+        with os.scandir(str(current)) as entries:
+            for entry in entries:
+                require(len(result) < len(ASSETS) + 1, "too many dist entries")
+                name = prefix + entry.name
+                path = current / entry.name
+                info = path.lstat()
+                if stat.S_ISDIR(info.st_mode):
+                    plain_info(path, directory=True)
+                    require(name in parents, "unexpected asset directory: " + name)
+                    walk(path, name + "/")
+                else:
+                    plain_info(path)
+                    result.add(name)
+    walk(directory)
     return result
 
 
@@ -135,7 +156,7 @@ def validate_directory(directory, expected_commit, expected_manifest_sha):
     require(hex_value(expected_manifest_sha, 64), "expected manifest SHA-256 must be 64 lowercase hex characters")
     directory = Path(directory)
     present = names(directory)
-    require(present == ASSETS | {"manifest.json"}, "dist must match the complete 13-file v1 asset profile")
+    require(present == ASSETS | {"manifest.json"}, "dist must match the complete reviewed v1 asset profile")
     assets, required_contracts = ASSETS, CONTRACTS
     wanted = assets | {"manifest.json"}
     data = read_plain(directory / "manifest.json", MAX_MANIFEST_BYTES)
@@ -190,6 +211,7 @@ def snapshot_destination(base):
 
 
 def write_new(path, data):
+    path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("xb") as stream:
         stream.write(data)
         stream.flush()
@@ -202,6 +224,9 @@ def remove_exact(directory, contents):
         require(read_plain(directory / name, MAX_BYTES) == data, "cleanup refused changed file: " + name)
     for name in contents:
         (directory / name).unlink()
+    parents = {directory / Path(name).parent for name in contents if "/" in name}
+    for parent in sorted(parents, key=lambda path: len(path.parts), reverse=True):
+        parent.rmdir()
     directory.rmdir()
 
 

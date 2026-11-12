@@ -13,7 +13,7 @@ import (
 	"github.com/b1ug/nb1/internal/webui"
 )
 
-const sequenceWebCSP = "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'"
+const sequenceWebCSP = "default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'"
 
 var sequenceWebAssets = []struct{ path, file, contentType string }{
 	{"/demo/", "index.html", "text/html; charset=utf-8"},
@@ -27,6 +27,15 @@ var sequenceWebAssets = []struct{ path, file, contentType string }{
 	{"/demo/patterns.css", "patterns.css", "text/css; charset=utf-8"},
 	{"/demo/i18n.js", "i18n.js", "text/javascript; charset=utf-8"},
 	{"/demo/locales.js", "locales.js", "text/javascript; charset=utf-8"},
+	{"/demo/action-icons.js", "action-icons.js", "text/javascript; charset=utf-8"},
+	{"/demo/locale-menu.css", "locale-menu.css", "text/css; charset=utf-8"},
+	{"/demo/typography.css", "typography.css", "text/css; charset=utf-8"},
+	{"/demo/fonts/fredoka-700-latin.woff2", "fonts/fredoka-700-latin.woff2", "font/woff2"},
+	{"/demo/fonts/fredoka-700-latin-ext.woff2", "fonts/fredoka-700-latin-ext.woff2", "font/woff2"},
+	{"/demo/fonts/mplusround-500-latin.woff2", "fonts/mplusround-500-latin.woff2", "font/woff2"},
+	{"/demo/fonts/mplusround-700-latin.woff2", "fonts/mplusround-700-latin.woff2", "font/woff2"},
+	{"/demo/fonts/Fredoka-OFL.txt", "fonts/Fredoka-OFL.txt", "text/plain; charset=utf-8"},
+	{"/demo/fonts/MPLUSRounded1c-OFL.txt", "fonts/MPLUSRounded1c-OFL.txt", "text/plain; charset=utf-8"},
 }
 
 func assertSequenceWebHeaders(t *testing.T, header http.Header, contentType string) {
@@ -53,7 +62,7 @@ func TestSequenceWebRoutesServeVerifiedAssets(t *testing.T) {
 
 func TestSequenceWebSecurityBoundaries(t *testing.T) {
 	handler := httpapi.New(noPreviewIO{}, httpapi.WithSequenceAPI())
-	for _, path := range []string{"/demo", "/demo/", "/demo/orbit.html", "/demo/patterns.html", "/demo/locales.js"} {
+	for _, path := range []string{"/demo", "/demo/", "/demo/orbit.html", "/demo/patterns.html", "/demo/locales.js", "/demo/action-icons.js", "/demo/locale-menu.css", "/demo/typography.css", "/demo/fonts/fredoka-700-latin.woff2", "/demo/fonts/Fredoka-OFL.txt"} {
 		for _, method := range []string{"HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"} {
 			response := previewRequest(handler, method, path, "")
 			if response.Code != http.StatusMethodNotAllowed || response.Header().Get("Allow") != "GET" {
@@ -95,6 +104,7 @@ func TestSequenceWebSecurityBoundaries(t *testing.T) {
 	for _, path := range []string{
 		"/demo/manifest.json", "/demo/manifest.lock.json", "/demo/LICENSE.txt", "/demo/index.html",
 		"/demo/../manifest.lock.json", "/demo/%2e%2e/manifest.lock.json", "/demo//demo.js", "/demo/src/index.html", "/demox/index.html",
+		"/demo/fonts/", "/demo/fonts/unreviewed.woff2", "/demo/fonts/../manifest.json",
 		"/v1/programs/preview", "/v1/frame-programs/preview", "/v1/light/preview", "/v1/instance", "/v2/light/preview",
 	} {
 		if response := previewRequest(handler, "GET", path, ""); response.Code != http.StatusNotFound {

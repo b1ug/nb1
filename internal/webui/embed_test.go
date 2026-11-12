@@ -73,6 +73,11 @@ func TestBundleValidation(t *testing.T) {
 		{"duplicate-contract", func(_ fstest.MapFS, r *manifest) { r.APIContracts = append(r.APIContracts, r.APIContracts[0]) }},
 		{"changed-asset", func(f fstest.MapFS, _ *manifest) { f["dist/demo.js"].Data = []byte("changed") }},
 		{"extra", func(f fstest.MapFS, _ *manifest) { f["dist/.env"] = &fstest.MapFile{Data: []byte("fixture")} }},
+		{"extra-font", func(f fstest.MapFS, _ *manifest) {
+			f["dist/fonts/unreviewed.woff2"] = &fstest.MapFile{Data: []byte("fixture")}
+		}},
+		{"extra-directory", func(f fstest.MapFS, _ *manifest) { f["dist/unreviewed"] = &fstest.MapFile{Mode: fs.ModeDir} }},
+		{"linked-font-directory", func(f fstest.MapFS, _ *manifest) { f["dist/fonts"] = &fstest.MapFile{Mode: fs.ModeSymlink} }},
 		{"directory", func(f fstest.MapFS, _ *manifest) { f["dist/demo.js"].Mode = fs.ModeDir }},
 		{"link", func(f fstest.MapFS, _ *manifest) { f["dist/demo.js"].Mode = fs.ModeSymlink }},
 		{"total", func(f fstest.MapFS, r *manifest) {

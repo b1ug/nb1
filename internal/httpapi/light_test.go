@@ -29,7 +29,7 @@ func TestVerifiedWebBundleKeepsExistingRoutesAndPolicy(t *testing.T) {
 		if err != nil || response.Code != http.StatusOK || !bytes.Equal(response.Body.Bytes(), want) {
 			t.Fatalf("%s does not serve the exact verified asset: %d %v", path, response.Code, err)
 		}
-		if response.Header().Get("Content-Security-Policy") != "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'" || response.Header().Get("Cache-Control") != "no-store" || response.Header().Get("X-Content-Type-Options") != "nosniff" || response.Header().Get("Referrer-Policy") != "no-referrer" {
+		if response.Header().Get("Content-Security-Policy") != "default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'" || response.Header().Get("Cache-Control") != "no-store" || response.Header().Get("X-Content-Type-Options") != "nosniff" || response.Header().Get("Referrer-Policy") != "no-referrer" {
 			t.Fatalf("%s changed the static resource policy: %v", path, response.Header())
 		}
 	}
@@ -46,7 +46,7 @@ func TestPatternWebResourcesUseTheSelectedBundleProfileAndSameGuards(t *testing.
 		w := previewRequest(h, http.MethodGet, path, "")
 		data, err := webui.ReadFile(file)
 		if err == nil {
-			if w.Code != 200 || !bytes.Equal(w.Body.Bytes(), data) || w.Header().Get("Content-Security-Policy") != "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'" {
+			if w.Code != 200 || !bytes.Equal(w.Body.Bytes(), data) || w.Header().Get("Content-Security-Policy") != "default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'" {
 				t.Fatal(path, w.Code, w.Header())
 			}
 		} else if errors.Is(err, fs.ErrNotExist) && webui.Validate() == nil {
@@ -83,7 +83,7 @@ func TestBilingualWebResourcesKeepStaticGuardsWithoutBackendCalls(t *testing.T) 
 			if err != nil || response.Code != http.StatusOK || !bytes.Equal(response.Body.Bytes(), want) {
 				t.Fatal("locale asset differs from verified bundle", response.Code, err)
 			}
-			if response.Header().Get("Content-Type") != "text/javascript; charset=utf-8" || response.Header().Get("Content-Security-Policy") != "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'" || response.Header().Get("Cache-Control") != "no-store" || response.Header().Get("X-Content-Type-Options") != "nosniff" || response.Header().Get("Referrer-Policy") != "no-referrer" {
+			if response.Header().Get("Content-Type") != "text/javascript; charset=utf-8" || response.Header().Get("Content-Security-Policy") != "default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'" || response.Header().Get("Cache-Control") != "no-store" || response.Header().Get("X-Content-Type-Options") != "nosniff" || response.Header().Get("Referrer-Policy") != "no-referrer" {
 				t.Fatal("locale asset policy changed", response.Header())
 			}
 			for _, method := range []string{http.MethodPost, http.MethodHead, http.MethodPut} {

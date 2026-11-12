@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><meta name="theme-color" content="#f7f3e6"><title>nb1 · Little light workbench</title>
-<link rel="stylesheet" href="./demo.css"><link rel="stylesheet" href="./patterns.css"><script defer src="./locales.js"></script><script defer src="./i18n.js"></script><script defer src="./patterns.js"></script><script defer src="./demo.js"></script>
+<link rel="stylesheet" href="./demo.css"><link rel="stylesheet" href="./locale-menu.css"><link rel="stylesheet" href="./typography.css"><link rel="stylesheet" href="./patterns.css"><script defer src="./locales.js"></script><script defer src="./i18n.js"></script><script defer src="./patterns.js"></script><script defer src="./action-icons.js"></script><script defer src="./demo.js"></script>
 </head>
 <body>
 <a class="skip-link" href="#main-content">Skip to workbench</a>
@@ -10,7 +10,11 @@
 <nav class="workbench-topbar" aria-label="Workbench navigation">
   <a class="brand" href="./"><span class="brand-mark" aria-hidden="true"><i></i><i></i></span><span>nb1<small>Little light workbench</small></span></a>
   <div class="top-nav"><a href="./">Workbench</a><a href="./orbit.html">Orbit</a><a href="./patterns.html" aria-current="page">Pattern Book</a></div>
-  <label class="locale-control" for="locale-select"><span class="sr-only">Language</span><select id="locale-select"><option value="en">English</option><option value="zh-CN">中文</option></select></label>
+  <div class="locale-control" data-i18n-skip>
+    <span id="locale-label" class="sr-only">Language</span>
+    <button id="locale-select" class="locale-trigger" type="button" aria-haspopup="listbox" aria-expanded="false" aria-controls="locale-options" aria-labelledby="locale-label locale-current"><span id="locale-current">English</span><span class="locale-chevron" aria-hidden="true"></span></button>
+    <ul id="locale-options" class="locale-options" role="listbox" aria-labelledby="locale-label" tabindex="-1" hidden></ul>
+  </div>
 </nav>
 <section class="device-bar" id="main-content" tabindex="-1" aria-labelledby="device-title">
   <div class="device-heading"><span class="device-symbol" aria-hidden="true">✦</span><div><h1 id="device-title">Your local light</h1><p id="device-message">Reading the local service…</p></div></div>

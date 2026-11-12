@@ -265,6 +265,24 @@ func (h *handler) serveLightDemo(w http.ResponseWriter, r *http.Request) {
 		file, contentType = "i18n.js", "text/javascript; charset=utf-8"
 	case "/demo/locales.js":
 		file, contentType = "locales.js", "text/javascript; charset=utf-8"
+	case "/demo/action-icons.js":
+		file, contentType = "action-icons.js", "text/javascript; charset=utf-8"
+	case "/demo/locale-menu.css":
+		file, contentType = "locale-menu.css", "text/css; charset=utf-8"
+	case "/demo/typography.css":
+		file, contentType = "typography.css", "text/css; charset=utf-8"
+	case "/demo/fonts/fredoka-700-latin.woff2":
+		file, contentType = "fonts/fredoka-700-latin.woff2", "font/woff2"
+	case "/demo/fonts/fredoka-700-latin-ext.woff2":
+		file, contentType = "fonts/fredoka-700-latin-ext.woff2", "font/woff2"
+	case "/demo/fonts/mplusround-500-latin.woff2":
+		file, contentType = "fonts/mplusround-500-latin.woff2", "font/woff2"
+	case "/demo/fonts/mplusround-700-latin.woff2":
+		file, contentType = "fonts/mplusround-700-latin.woff2", "font/woff2"
+	case "/demo/fonts/Fredoka-OFL.txt":
+		file, contentType = "fonts/Fredoka-OFL.txt", "text/plain; charset=utf-8"
+	case "/demo/fonts/MPLUSRounded1c-OFL.txt":
+		file, contentType = "fonts/MPLUSRounded1c-OFL.txt", "text/plain; charset=utf-8"
 	default:
 		writeError(w, http.StatusNotFound, "not_found", "unknown demo resource")
 		return
@@ -275,7 +293,7 @@ func (h *handler) serveLightDemo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", contentType)
-	w.Header().Set("Content-Security-Policy", "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'")
+	w.Header().Set("Content-Security-Policy", "default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'")
 	w.Header().Set("Referrer-Policy", "no-referrer")
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write(data)

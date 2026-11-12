@@ -72,6 +72,83 @@
     const rendered = color ? localized(color[1]) + color[2] : swatch && locale !== fallback ? label + (swatch[1] === swatch[1].toLowerCase() ? " · " + source : swatch[2]) : localized(source); saved[name] = {source, rendered};
     if (current !== rendered) element.setAttribute(name, rendered);
   }
+  const control = document.querySelector(".locale-control");
+  const trigger = document.getElementById("locale-select");
+  const currentLabel = document.getElementById("locale-current");
+  const languageLabel = document.getElementById("locale-label");
+  const listbox = document.getElementById("locale-options");
+  // Current locale names stay familiar; future catalog entries use their native label.
+  const localeName = code => ({en: "English", "zh-CN": "中文"})[code] || catalog.locales[code].label;
+  const codes = Object.keys(catalog.locales);
+  const options = [];
+  let menuOpen = false, activeIndex = 0;
+  function focusOption(index) {
+    activeIndex = (index + codes.length) % codes.length;
+    options[activeIndex].focus({preventScroll: true});
+  }
+  function closeMenu(returnFocus = false) {
+    menuOpen = false;
+    listbox.hidden = true;
+    trigger.setAttribute("aria-expanded", "false");
+    control.classList.remove("is-open");
+    if (returnFocus) trigger.focus({preventScroll: true});
+  }
+  function openMenu(index = codes.indexOf(locale)) {
+    menuOpen = true;
+    listbox.hidden = false;
+    trigger.setAttribute("aria-expanded", "true");
+    control.classList.add("is-open");
+    focusOption(index < 0 ? 0 : index);
+  }
+  function chooseLocale(code) {
+    locale = supported(code) ? code : fallback;
+    try { localStorage.setItem(preferenceKey, locale); } catch (_) { /* This page still switches. */ }
+    refresh();
+    closeMenu(true);
+  }
+  for (const [index, code] of codes.entries()) {
+    const option = document.createElement("li");
+    option.id = "locale-option-" + index;
+    option.className = "locale-option";
+    option.setAttribute("role", "option");
+    option.setAttribute("lang", code);
+    option.setAttribute("tabindex", "-1");
+    option.dataset.locale = code;
+    const label = document.createElement("span"); label.textContent = localeName(code);
+    const mark = document.createElement("span"); mark.className = "locale-check"; mark.setAttribute("aria-hidden", "true");
+    option.append(label, mark);
+    option.addEventListener("click", () => chooseLocale(code));
+    option.addEventListener("focus", () => { activeIndex = index; });
+    options.push(option); listbox.append(option);
+  }
+  trigger.addEventListener("click", () => { if (menuOpen) closeMenu(true); else openMenu(); });
+  trigger.addEventListener("keydown", event => {
+    if (["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) {
+      event.preventDefault();
+      openMenu(event.key === "Home" ? 0 : event.key === "End" ? codes.length - 1 : codes.indexOf(locale));
+    } else if (event.key === "Escape" && menuOpen) { event.preventDefault(); closeMenu(true); }
+  });
+  listbox.addEventListener("keydown", event => {
+    if (["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) {
+      event.preventDefault();
+      focusOption(event.key === "Home" ? 0 : event.key === "End" ? codes.length - 1 : activeIndex + (event.key === "ArrowDown" ? 1 : -1));
+    } else if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault(); chooseLocale(codes[activeIndex]);
+    } else if (event.key === "Escape") { event.preventDefault(); closeMenu(true); }
+    else if (event.key === "Tab") {
+      // Continue from the trigger's place in page tab order, outside the popup.
+      closeMenu(true);
+    }
+  });
+  document.addEventListener("click", event => {
+    if (!menuOpen || control.contains(event.target)) return;
+    // Preserve focus on an outside input/button; return it after a background click.
+    const active = document.activeElement;
+    closeMenu(active === document.body || listbox.contains(active));
+  });
+  control.addEventListener("focusout", event => {
+    if (menuOpen && event.relatedTarget && !control.contains(event.relatedTarget)) closeMenu();
+  });
   const observer = new MutationObserver(() => refresh());
   function refresh() {
     observer.disconnect();
@@ -79,20 +156,11 @@
     let node; while ((node = walker.nextNode())) textNode(node);
     for (const element of document.querySelectorAll('[aria-label], [title], [placeholder]')) for (const name of ["aria-label", "title", "placeholder"]) attributeNode(element, name);
     document.documentElement.lang = locale;
-    document.getElementById("locale-select").value = locale;
+    languageLabel.textContent = localized("Language");
+    currentLabel.textContent = localeName(locale);
+    for (const [index, code] of codes.entries()) options[index].setAttribute("aria-selected", String(code === locale));
     observer.observe(document.documentElement, {subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ["aria-label", "title", "placeholder", "data-user-title"]});
   }
-  const select = document.getElementById("locale-select");
-  // Locale names identify the choices in their own languages.
-  select.setAttribute("data-i18n-skip", "");
-  for (const [code, value] of Object.entries(catalog.locales)) {
-    if (![...select.options].some(option => option.value === code)) { const option = document.createElement("option"); option.value = code; option.lang = code; option.textContent = value.label; select.append(option); }
-  }
-  select.addEventListener("change", () => {
-    locale = supported(select.value) ? select.value : fallback;
-    try { localStorage.setItem(preferenceKey, locale); } catch (_) { /* The current page still switches. */ }
-    refresh();
-  });
   Object.defineProperty(window, "nb1Locale", {value: Object.freeze({getLocale: () => locale, preferenceKey}), writable: false});
   refresh();
 })();

@@ -23,6 +23,15 @@ const maxManifestBytes = 16 * 1024
 var assetNames = []string{
 	"LICENSE.txt", "demo.css", "demo.js", "index.html", "orbit.css", "orbit.html", "orbit.js",
 	"patterns.css", "patterns.html", "patterns.js", "i18n.js", "locales.js",
+	"action-icons.js",
+	"locale-menu.css",
+	"typography.css",
+	"fonts/fredoka-700-latin.woff2",
+	"fonts/fredoka-700-latin-ext.woff2",
+	"fonts/mplusround-500-latin.woff2",
+	"fonts/mplusround-700-latin.woff2",
+	"fonts/Fredoka-OFL.txt",
+	"fonts/MPLUSRounded1c-OFL.txt",
 }
 
 //go:embed all:dist manifest.lock.json
@@ -252,17 +261,37 @@ func validateBundle(files fs.FS) error {
 	if treeDigest(contents) != record.Source.TreeSHA256 {
 		return fmt.Errorf("web source tree differs from the verified assets")
 	}
-	entries, err := fs.ReadDir(files, "dist")
+	parents := map[string]bool{"": true}
+	for name := range expected {
+		parts := strings.Split(name, "/")
+		for i := 1; i < len(parts); i++ {
+			parents[strings.Join(parts[:i], "/")] = true
+		}
+	}
+	count := 0
+	err = fs.WalkDir(files, "dist", func(path string, entry fs.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		name := strings.TrimPrefix(strings.TrimPrefix(path, "dist"), "/")
+		if entry.IsDir() {
+			if parents[name] {
+				return nil
+			}
+			return fmt.Errorf("unexpected web asset directory %s", name)
+		}
+		if !entry.Type().IsRegular() || !expected[name] {
+			return fmt.Errorf("unexpected web asset %s", name)
+		}
+		count++
+		return nil
+	})
 	if err != nil {
 		return err
 	}
-	if len(entries) != len(expected) {
+	if count != len(expected) {
 		return fmt.Errorf("unexpected web asset set")
 	}
-	for _, entry := range entries {
-		if !entry.Type().IsRegular() || !expected[entry.Name()] {
-			return fmt.Errorf("unexpected web asset %s", entry.Name())
-		}
-	}
+
 	return nil
 }

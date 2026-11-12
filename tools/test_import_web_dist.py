@@ -24,6 +24,7 @@ def fixture(path):
     assets = importer.ASSETS
     contracts = importer.CONTRACTS
     for name in assets:
+        (path / name).parent.mkdir(parents=True, exist_ok=True)
         (path / name).write_bytes(("fixture " + name + "\n").encode())
     manifest = {
         "schema_version": 1, "product": "nb1-web", "asset_base": "./",
@@ -57,7 +58,7 @@ def snapshot(path):
 
 
 class ImportBoundaryTests(unittest.TestCase):
-    def test_profile_requires_all_thirteen_files(self):
+    def test_profile_requires_all_reviewed_files(self):
         for name in importer.ASSETS:
             with self.subTest(name=name), tempfile.TemporaryDirectory() as temporary:
                 path = Path(temporary) / "dist"
@@ -152,13 +153,19 @@ class ImportBoundaryTests(unittest.TestCase):
                 importer.validate_directory(path, "../wrong", importer.sha((path / "manifest.json").read_bytes()))
 
     def test_file_identity_and_total_budget(self):
-        for mode in ["extra", "directory", "tampered", "symlink", "hardlink", "root-link", "total"]:
+        for mode in ["extra", "extra-font", "extra-directory", "font-directory-link", "directory", "tampered", "symlink", "hardlink", "root-link", "total"]:
             with self.subTest(mode=mode), tempfile.TemporaryDirectory() as temporary:
                 root = Path(temporary)
                 path = root / "dist"
                 manifest = fixture(path)
                 asset = path / "demo.js"
                 if mode == "extra": (path / ".env").write_text("fixture")
+                elif mode == "extra-font": (path / "fonts" / "unreviewed.woff2").write_text("fixture")
+                elif mode == "extra-directory": (path / "unreviewed").mkdir()
+                elif mode == "font-directory-link":
+                    outside = root / "outside-fonts"
+                    (path / "fonts").rename(outside)
+                    (path / "fonts").symlink_to(outside, target_is_directory=True)
                 elif mode == "directory":
                     asset.unlink(); asset.mkdir()
                 elif mode == "tampered": asset.write_text("changed")
@@ -211,7 +218,7 @@ class ImportBoundaryTests(unittest.TestCase):
                 item.update(bytes=size, sha256=importer.sha(data))
                 manifest["source"]["tree_sha256"] = importer.tree_digest({name: (path / name).read_bytes() for name in importer.ASSETS})
                 write_manifest(path, manifest)
-                if sum(p.stat().st_size for p in path.iterdir()) == importer.MAX_BYTES:
+                if sum(p.stat().st_size for p in path.rglob("*") if p.is_file()) == importer.MAX_BYTES:
                     break
             self.assertEqual(validate(path).total_bytes, importer.MAX_BYTES)
             data = (path / "demo.js").read_bytes() + b"x"

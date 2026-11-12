@@ -291,7 +291,7 @@
   $("sequence-json").value = JSON.stringify({timing: "serial", steps: [{targets: [{led: 0, color: "#ff0000"}], fade_ms: 100, hold_ms: 400}, {targets: [{led: 0, color: "#0000ff"}], fade_ms: 100, hold_ms: 400}], repeat: 1, on_finish: "off"}, null, 2);
   for (const [name, [label]] of Object.entries(actions)) {
     const button = document.createElement("button"); button.type = "button"; button.className = "action"; button.dataset.action = name;
-    const icon = document.createElement("span"); icon.textContent = ({set:"●",off:"○",fade:"◐",blink:"✦",breathe:"∿",pulse:"⌁",alternate:"⇄",orbit:"◌",rainbow:"◒"})[name];
+    const icon = document.createElement("span"); icon.className = "action-icon-wrap"; icon.setAttribute("aria-hidden", "true"); icon.append(window.NB1ActionIcons.create(name));
     const text = document.createElement("strong"); text.textContent = label; button.append(icon, text); button.addEventListener("click", () => selectKind(name)); document.querySelector(".action-grid").append(button);
   }
   for (const name of ["action", "sequence", "pattern"]) {

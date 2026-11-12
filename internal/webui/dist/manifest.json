@@ -4,9 +4,9 @@
   "asset_base": "./",
   "source": {
     "repository": "local:nb1-web",
-    "commit": "c5dd7bbe96b5ee5fe3d9b92dd191640d3d4b5b5d",
+    "commit": "abb2f18162fb653b89c6a91202d4d88a5954dc57",
     "dirty": false,
-    "tree_sha256": "d758770b552c89cdec62714e545d8a74d168118cb4ff34e1092ffc128b0cd58a"
+    "tree_sha256": "5d757f8dc02617e0997f0d82f4344adcb40250da5ee028e86ee6c98eab7c328f"
   },
   "build": {
     "tool": "copy-static/v1",
@@ -23,24 +23,64 @@
       "sha256": "a428d1101807989e11ae625f4316d360a27b2a922f4f6cb6ce5981e8cfeafe93"
     },
     {
+      "path": "action-icons.js",
+      "bytes": 3058,
+      "sha256": "0b13fd8c8d8030371ec06980abb53fbd51dc4372a29b7943a75e1a62318d721f"
+    },
+    {
       "path": "demo.css",
-      "bytes": 29179,
-      "sha256": "ee3cd78395edf4a811ce689166adf31c63027198bd53605311242ca345987690"
+      "bytes": 29372,
+      "sha256": "936eaa10913a8f4076e38acf35f106a6114bb4df6917be2ec30afac2b803b70b"
     },
     {
       "path": "demo.js",
-      "bytes": 28378,
-      "sha256": "8ce99f58c03414d0e8715b700513abf06f31587293c95c590d0dbf004d3044ea"
+      "bytes": 28365,
+      "sha256": "77221d48c7c0ebcf680419e74cd63f0ad7d5648c3a8ca59607a6630812e4006d"
+    },
+    {
+      "path": "fonts/Fredoka-OFL.txt",
+      "bytes": 4388,
+      "sha256": "5c9e7eee5c6b25f4b05b8d53b2e470ea4962f9ced742d044a98f7d95d1375bab"
+    },
+    {
+      "path": "fonts/MPLUSRounded1c-OFL.txt",
+      "bytes": 4397,
+      "sha256": "67f64c5509e5151796599e3ad47c3131cbe0c80c4f9430b90236a1249c2eacc9"
+    },
+    {
+      "path": "fonts/fredoka-700-latin-ext.woff2",
+      "bytes": 2676,
+      "sha256": "e5272989e860007c4dbb922c687aeea68d74ac0f4bcc6c052f1c21cffaec637d"
+    },
+    {
+      "path": "fonts/fredoka-700-latin.woff2",
+      "bytes": 15900,
+      "sha256": "ee61b48acab42fcfee4e1c398b03bbae7e09d1be8471779c440a97dc85118c16"
+    },
+    {
+      "path": "fonts/mplusround-500-latin.woff2",
+      "bytes": 22040,
+      "sha256": "9a7980fa96341230341fd240f68d14a327c8b856d260eeff2e426db78b7eab87"
+    },
+    {
+      "path": "fonts/mplusround-700-latin.woff2",
+      "bytes": 22708,
+      "sha256": "1688f14412dd12f79daffbb8bd9defe98f555aa5799184b8ddd0ae4583a2851f"
     },
     {
       "path": "i18n.js",
-      "bytes": 6464,
-      "sha256": "1b51c3aeace78176a5ba607a3755aa424da892a9f18b6f4fbcba6674464dc91d"
+      "bytes": 9745,
+      "sha256": "9b7822988efb74291696e1c9ed010ed1ed6d9436aade5819af0653d0d2f7f20a"
     },
     {
       "path": "index.html",
-      "bytes": 10799,
-      "sha256": "2cbb025de4726eba13d94838b31249cb0cbc1443d1b96cc8cc4cc99d4b7685eb"
+      "bytes": 11270,
+      "sha256": "63ac23cb6893b5a90811e276294db7fd53daae4ac797b7530a2bec58416a5eaf"
+    },
+    {
+      "path": "locale-menu.css",
+      "bytes": 3493,
+      "sha256": "7a49d68ec8480c561582d24537fcbbad1ec0b9bf178e020be0bdf469e905e7f3"
     },
     {
       "path": "locales.js",
@@ -54,8 +94,8 @@
     },
     {
       "path": "orbit.html",
-      "bytes": 10881,
-      "sha256": "b7d4c2dcb0ba3a07d1b45b868b573d9ba7c6b2940cadc3222ca486c1e901cd4a"
+      "bytes": 11352,
+      "sha256": "6c133cc26321beebd748f55a6cf69bd3e3af2421979c9b02c4fdf4780e7a7107"
     },
     {
       "path": "orbit.js",
@@ -69,13 +109,18 @@
     },
     {
       "path": "patterns.html",
-      "bytes": 10887,
-      "sha256": "269f7e84cc0e33a390004b84454f34b090555fdad5fe04f41bbc463524df2ee7"
+      "bytes": 11358,
+      "sha256": "da030b232940363f66b7c4774d6f954f8763e7c592e3d8a604e983dfec6451e9"
     },
     {
       "path": "patterns.js",
       "bytes": 82,
       "sha256": "54e941bdb4bcfad35e5163f81d3b2925f62b9d0da48708854d456a6509bb8600"
+    },
+    {
+      "path": "typography.css",
+      "bytes": 6524,
+      "sha256": "de75adf14d2ff7fd651db48b4fa5293f51f8954d3c81f3fa43913b6ee705502e"
     }
   ]
 }

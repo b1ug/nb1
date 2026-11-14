@@ -1,0 +1,6 @@
+{
+  "error": {
+    "code": "pattern_library_unsupported",
+    "message": "No v2 pattern store has been configured."
+  }
+}

@@ -1,0 +1,44 @@
+{
+  "status": "proposal_only_not_supported_by_current_nb1",
+  "source_head": "c4147cef3aff1a1f9622b4c29ec84d4130aedd9e",
+  "record_contract": "nb1-pattern-record/experimental-v2",
+  "records": [
+    {
+      "file": "records/orbit-red-blue.record.json",
+      "revision": "sha256:95c165aeacf05ef6ec8fb815afb7f04b727162e6bb28744f20ad1fa57efb0f87",
+      "execution_digest": "sha256:2f218bcddec72879546cb2f6ee18efccd5f4959355eaea39530983424dc4d6a8",
+      "execution_kind": "frame_program",
+      "expected_nominal_duration_ms": 9040,
+      "expected_total_frames": 12,
+      "expected_planned_target_writes": 26
+    },
+    {
+      "file": "records/pulse-lime.record.json",
+      "revision": "sha256:f2ab7093566ea4cd5e975cdc70482c85dc6f56f9347916a78d5d08658c2ca2fe",
+      "execution_digest": "sha256:fb318dc79419343f121a0c56806ee40ee9b4cc0c2a0086d12132d0bebbabcae3",
+      "execution_kind": "program",
+      "expected_nominal_duration_ms": 2060,
+      "expected_total_steps": 6
+    },
+    {
+      "file": "records/orbit-hex-equivalent.record.json",
+      "revision": "sha256:9bdb2680ea2f1a5bba7cb6500331ca89b412cd64efb384741060aae61181014c",
+      "execution_digest": "sha256:2f218bcddec72879546cb2f6ee18efccd5f4959355eaea39530983424dc4d6a8",
+      "same_execution_as": "records/orbit-red-blue.record.json",
+      "same_id_different_source_revision_conflicts_on_create": true
+    }
+  ],
+  "negative_cases": {
+    "cases/unknown-recipe.record.json": "new import/run: unsupported_recipe; on-disk read/export: valid_hash_but_unverified; do not recompile using current recipe",
+    "cases/rehashed-source-mismatch.record.json": "hash passes; source-to-frozen validation fails; reject",
+    "cases/wrong-revision.record.json": "integrity failure; reject",
+    "cases/duplicate-id.snapshot.json": "entire import rejected; no partial publication",
+    "cases/duplicate-key.json": "lexical duplicate key rejected before schema validation",
+    "cases/explicit-null.json": "null does not mean missing; reject"
+  },
+  "legacy_v1_revision": "sha256:fec23879e373b016d9b19cce6a2cc6b8a3f0396241ca0f2bcf36fa7e052d8d0f",
+  "notes": [
+    "API ticket/job IDs are illustrative; never submit these fixtures to hardware",
+    "No proposed v2 decoder or persistence code has been implemented"
+  ]
+}

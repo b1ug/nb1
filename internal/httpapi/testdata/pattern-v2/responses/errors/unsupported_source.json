@@ -1,0 +1,6 @@
+{
+  "error": {
+    "code": "pattern_source_unsupported",
+    "message": "The authoring source contract is not supported; no fallback was attempted."
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "error": {
+    "code": "pattern_library_limit",
+    "message": "The merged library exceeds a supported limit."
+  }
+}

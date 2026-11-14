@@ -1,0 +1,151 @@
+{
+  "schema_version": 1,
+  "product": "nb1-web",
+  "asset_base": "./",
+  "source": {
+    "repository": "local:nb1-web",
+    "commit": "884f77ef00b77d8126a6e777213a202dccc1da6a",
+    "dirty": false,
+    "tree_sha256": "e09f315023d61f78f90f697c9e9d29b0a46a7fec6e4d912ec2efdc33951a65e5"
+  },
+  "build": {
+    "tool": "static-editor/v1",
+    "node": "v26.12.1",
+    "lockfile_sha256": "c150cfd1a92012c360ab17e67d169ee14fcf7164fe9c3c146cbef3470342d42d"
+  },
+  "api_contracts": [
+    "nb1-api/v1"
+  ],
+  "files": [
+    {
+      "path": "LICENSE.txt",
+      "bytes": 1076,
+      "sha256": "a428d1101807989e11ae625f4316d360a27b2a922f4f6cb6ce5981e8cfeafe93"
+    },
+    {
+      "path": "action-icons.js",
+      "bytes": 3316,
+      "sha256": "ee536d6735f46326e07eae7da9b317d8d199c363d020bc27d89cbcd0d45a9382"
+    },
+    {
+      "path": "assets/nb1-icon.png",
+      "bytes": 4703,
+      "sha256": "cd6f0c2c635e52d8ccf6ffdcf080214e90aa80f4c48cad71c1c350e77f2d45d7"
+    },
+    {
+      "path": "assets/nb1-mascot.webp",
+      "bytes": 7174,
+      "sha256": "0d2ffe4927cb4519744fa691e74ae5aba7a84135cdfc08bf3e083acf05e96dce"
+    },
+    {
+      "path": "demo.css",
+      "bytes": 34509,
+      "sha256": "bda650854b9e0641b3eb84ab5f400b5f1349b548081217fe593c7a9c8521e53a"
+    },
+    {
+      "path": "demo.js",
+      "bytes": 50783,
+      "sha256": "7f6f162dd4c319905824dac710ff6c1059710365027155079f455d45b7bac70c"
+    },
+    {
+      "path": "editor-LICENSES.txt",
+      "bytes": 14811,
+      "sha256": "2e8eb0d5eadce5aad4a4c9e204f102ddb3f2005227cdf395ec73b9c84e66cec6"
+    },
+    {
+      "path": "fonts/Fredoka-OFL.txt",
+      "bytes": 4388,
+      "sha256": "5c9e7eee5c6b25f4b05b8d53b2e470ea4962f9ced742d044a98f7d95d1375bab"
+    },
+    {
+      "path": "fonts/MPLUSRounded1c-OFL.txt",
+      "bytes": 4397,
+      "sha256": "67f64c5509e5151796599e3ad47c3131cbe0c80c4f9430b90236a1249c2eacc9"
+    },
+    {
+      "path": "fonts/fredoka-700-latin-ext.woff2",
+      "bytes": 2676,
+      "sha256": "e5272989e860007c4dbb922c687aeea68d74ac0f4bcc6c052f1c21cffaec637d"
+    },
+    {
+      "path": "fonts/fredoka-700-latin.woff2",
+      "bytes": 15900,
+      "sha256": "ee61b48acab42fcfee4e1c398b03bbae7e09d1be8471779c440a97dc85118c16"
+    },
+    {
+      "path": "fonts/mplusround-500-latin.woff2",
+      "bytes": 22040,
+      "sha256": "9a7980fa96341230341fd240f68d14a327c8b856d260eeff2e426db78b7eab87"
+    },
+    {
+      "path": "fonts/mplusround-700-latin.woff2",
+      "bytes": 22708,
+      "sha256": "1688f14412dd12f79daffbb8bd9defe98f555aa5799184b8ddd0ae4583a2851f"
+    },
+    {
+      "path": "i18n.js",
+      "bytes": 10641,
+      "sha256": "d5be3a944efd77d9ac8033e1bf349d0c501f56042b8050bd93b9227e5adcfe91"
+    },
+    {
+      "path": "index.html",
+      "bytes": 14198,
+      "sha256": "0b912698b82ec39b0688074917bfe6e9e508ca2b32067e78d207eedc39ae6941"
+    },
+    {
+      "path": "json-editor.css",
+      "bytes": 3284,
+      "sha256": "2b908f3978c0a315b686b5821e0271c899326e1735ff3fefcd7068ed18072c15"
+    },
+    {
+      "path": "json-editor.js",
+      "bytes": 320805,
+      "sha256": "7fe33cfda9fc23b26fb23711bcaae567c9056e327730f402e1062be6deab8190"
+    },
+    {
+      "path": "locale-menu.css",
+      "bytes": 3520,
+      "sha256": "607aff1b9f324f9cfa2db8ffe81b506e2015e549b8ad602e28ae660e65c783f6"
+    },
+    {
+      "path": "locales.js",
+      "bytes": 9656,
+      "sha256": "1a6906f0095b06071785de6bd32abaacda9fce53b2c21bd107d440665f96adb7"
+    },
+    {
+      "path": "orbit.css",
+      "bytes": 35,
+      "sha256": "6ab15f0a63ddefc5bd0374623b5db137e5d1880dd5b3d74024914f55587011a3"
+    },
+    {
+      "path": "orbit.html",
+      "bytes": 14280,
+      "sha256": "6612fe242d09cc674c5c26fb3b1901c923ce3d764754145a9288ab2f7826ef0e"
+    },
+    {
+      "path": "orbit.js",
+      "bytes": 81,
+      "sha256": "236109522500ae023d334d2e8ad0524826acadfb9cc99a275ea47cc5fdd3e56b"
+    },
+    {
+      "path": "patterns.css",
+      "bytes": 35,
+      "sha256": "d9d9abdfd73ce8b76148baaaa7c5a7d0bbba70a0bb74be308ea4e801fa8caadc"
+    },
+    {
+      "path": "patterns.html",
+      "bytes": 14286,
+      "sha256": "c83dacd3f8c063d85365b99564c9acde3b95445f8e3d35b19ec2fe6d8cef1027"
+    },
+    {
+      "path": "patterns.js",
+      "bytes": 82,
+      "sha256": "54e941bdb4bcfad35e5163f81d3b2925f62b9d0da48708854d456a6509bb8600"
+    },
+    {
+      "path": "typography.css",
+      "bytes": 6453,
+      "sha256": "886df10eec3852e4a8ee64f84b10506c38755245733706c190b4f4adf3f7f336"
+    }
+  ]
+}

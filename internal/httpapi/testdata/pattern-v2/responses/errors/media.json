@@ -1,0 +1,6 @@
+{
+  "error": {
+    "code": "json_required",
+    "message": "Exactly one application/json Content-Type is required."
+  }
+}

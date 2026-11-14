@@ -1,0 +1,6 @@
+{
+  "error": {
+    "code": "pattern_not_found",
+    "message": "The requested pattern ID was not found."
+  }
+}

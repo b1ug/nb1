@@ -2,103 +2,112 @@ name: Build
 
 on:
   push:
-    branches: [ "master" ]
+    branches: [master]
   pull_request:
-    branches: [ "master" ]
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 defaults:
   run:
     shell: bash
 
 env:
-  GO_VERSION: 1.18.10
-  OSEXT_MAP: '{"Linux": "linux", "macOS": "macos", "Windows": "exe"}'
-  CACHE_PREFIX: upload-${{ github.run_id }}-${{ github.run_attempt }}
-  SAVE_ARTIFACT: ${{ github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/') }}
+  GOWORK: "off"
+  GOTOOLCHAIN: local
+  GID_TEST_ENUMERATE: "0"
+  GID_TEST_DEVICE_PATH: ""
 
 jobs:
-  # Job1: build and test
-  build:
-    # For various OS
-    name: Build on ${{ matrix.vm-os }}
-    runs-on: ${{ matrix.vm-os }}
+  native:
+    name: Native / ${{ matrix.os }} / Go ${{ matrix.go }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
     strategy:
-      max-parallel: 10
       fail-fast: false
       matrix:
-        vm-os: [ubuntu-20.04, macos-12, windows-2019]
-    outputs:
-      save_artifact: ${{ env.SAVE_ARTIFACT }}
+        os: [ubuntu-24.04, ubuntu-24.04-arm, macos-15, macos-15-intel, windows-2022]
+        go: ["1.26.x", "1.27.x"]
+    env:
+      CGO_ENABLED: "1"
     steps:
-      - uses: actions/checkout@v3
-      - name: Set up Go
-        uses: actions/setup-go@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          go-version: ${{ env.GO_VERSION }}
-      - name: Go Build
-        env:
-          OSEXT: ${{ fromJSON(env.OSEXT_MAP)[runner.os] }}
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: ${{ matrix.go }}
+          cache: false
+      - name: Record toolchain and locked modules
         run: |
-          export
-          git status
           go version
-          make build
-          make artifact
-      - name: Go Run
+          go env GOOS GOARCH CGO_ENABLED CC
+          gcc --version
+          go list -mod=readonly -m -json all
+          go mod verify
+      - name: Build native CLI
         run: |
-          make preview
-      - name: Cache Artifact
-        uses: actions/cache/save@v3
-        if: ${{ fromJSON(env.SAVE_ARTIFACT) }}
+          binary=nb1
+          if [[ "$RUNNER_OS" == Windows ]]; then binary=nb1.exe; fi
+          mkdir -p build
+          go build -mod=readonly -trimpath -buildvcs=true \
+            -ldflags "-X github.com/b1ug/nb1/config.GitCommit=$GITHUB_SHA -X github.com/b1ug/nb1/config.CIBuildNum=gh$GITHUB_RUN_NUMBER" \
+            -o "build/$binary" .
+          go version -m "build/$binary" > build/build-info.txt
+      - name: Test software paths without listing or opening hardware
+        run: go test -mod=readonly -race -count=1 -timeout=3m -v ./...
+      - name: Vet source
+        run: go vet -mod=readonly ./...
+      - name: Record development artifact source and checksums
+        if: ${{ matrix.go == '1.27.x' }}
+        run: |
+          {
+            echo "Development CI artifact; not a tagged release."
+            git rev-parse HEAD
+            go version
+            go env GOOS GOARCH CGO_ENABLED
+          } > build/source.txt
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib
+          directory = Path("build")
+          records = [hashlib.sha256(p.read_bytes()).hexdigest() + "  " + p.name
+                     for p in sorted(directory.iterdir()) if p.is_file()]
+          (directory / "SHA256SUMS").write_text("\n".join(records) + "\n")
+          PY
+      - name: Upload development CLI and provenance
+        if: ${{ matrix.go == '1.27.x' }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          path: _upload
-          key: ${{ env.CACHE_PREFIX }}-${{ runner.os }}
-          enableCrossOsArchive: true
-      - name: Analyze
-        if: ${{ runner.os == 'Linux' }}
-        run: |
-          # tokei -- count
-          wget -cqL https://github.com/XAMPPRocky/tokei/releases/download/v12.1.2/tokei-i686-unknown-linux-musl.tar.gz -O tokei.tgz
-          tar zxf tokei.tgz tokei && chmod +x tokei && $SUDO mv tokei /usr/local/bin && rm tokei.tgz
-          echo "=== Tokei Result ==="
-          tokei
-          # revive -- lint
-          wget -cqL https://github.com/mgechev/revive/releases/download/v1.3.3/revive_linux_amd64.tar.gz -O revive.tgz
-          tar zxf revive.tgz revive && chmod +x revive && $SUDO mv revive /usr/local/bin && rm revive.tgz
-          wget -cqL https://bitbucket.org/ai69/common/raw/master/revive.toml -O revive.toml
-          echo "=== Revive Result ==="
-          revive -config revive.toml -formatter friendly ./...
+          name: nb1-ci-${{ runner.os }}-${{ runner.arch }}
+          path: build/
+          if-no-files-found: error
+          retention-days: 14
 
-  # Job2: collect artifacts
-  collect:
-    name: Upload Artifact
-    runs-on: ubuntu-latest
-    needs: build
-    if: ${{ fromJSON(needs.build.outputs.save_artifact) }}
+  source-floor:
+    name: Source floor / ubuntu-22.04 / Go 1.18.10 / CGO0
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    env:
+      CGO_ENABLED: "0"
     steps:
-      - name: Restore Cache Linux
-        uses: actions/cache/restore@v3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          path: _upload
-          key: ${{ env.CACHE_PREFIX }}-Linux
-          enableCrossOsArchive: true
-          fail-on-cache-miss: true
-      - name: Restore Cache macOS
-        uses: actions/cache/restore@v3
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          path: _upload
-          key: ${{ env.CACHE_PREFIX }}-macOS
-          enableCrossOsArchive: true
-          fail-on-cache-miss: true
-      - name: Restore Cache Windows
-        uses: actions/cache/restore@v3
-        with:
-          path: _upload
-          key: ${{ env.CACHE_PREFIX }}-Windows
-          enableCrossOsArchive: true
-          fail-on-cache-miss: true
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v2
-        with:
-          name: dist-gh${{ github.run_number }}
-          path: _upload
+          go-version: "1.18.10"
+          cache: false
+      - name: Build and test the declared Go source floor
+        run: |
+          go version
+          go env GOOS GOARCH CGO_ENABLED
+          go mod verify
+          go build -mod=readonly ./...
+          go test -mod=readonly -count=1 -timeout=3m -v ./...

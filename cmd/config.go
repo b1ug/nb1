@@ -4,7 +4,7 @@ import (
 	"sort"
 	"strings"
 
-	"bitbucket.org/ai69/amoy"
+	"github.com/b1ug/nb1/internal/textfmt"
 	"github.com/spf13/cobra"
 )
 
@@ -20,6 +20,7 @@ var configCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(configCmd)
+	addProfileCommands(configCmd)
 
 	// Configuration settings
 
@@ -52,7 +53,7 @@ func (l configKeyValuePairList) String() string {
 	for _, kv := range l {
 		sb.WriteString(kv.Key)
 		sb.WriteString("=")
-		sb.WriteString(amoy.ToOneLineJSON(kv.Value))
+		sb.WriteString(textfmt.OneLineJSON(kv.Value))
 		sb.WriteString("\n")
 	}
 	return sb.String()

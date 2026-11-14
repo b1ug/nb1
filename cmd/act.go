@@ -16,11 +16,11 @@ var actCmd = &cobra.Command{
 	Short:   "Perform action on blink(1) device",
 	Long: hdoc(`
 		Perform a specific color changing action on a blink(1) device.
-		The action can be described in natural language, and should contain color, duration and led number.
-		Only one action can be performed at a time.
+		Use one complete SDK state: set red, off on led 2,
+		fade to blue over 2s on led 1, or led=1 color=red fade=20ms.
+		Parse errors are rejected before opening a device.
 	`),
-	Args:              cobra.MinimumNArgs(1),
-	PersistentPreRunE: openBlink1Device,
+	Args: cobra.MinimumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// parse query
 		query := util.NormalizeQuery(args...)
@@ -28,6 +28,9 @@ var actCmd = &cobra.Command{
 
 		st, err := b1.ParseStateQuery(query)
 		if err != nil {
+			return err
+		}
+		if err := openBlink1Device(cmd, args); err != nil {
 			return err
 		}
 		log.Debugw("parsed blink(1) state", "state", st)

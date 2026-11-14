@@ -20,7 +20,7 @@ var writeCmd = &cobra.Command{
 		Use --reset flag to erase the pattern stored on the blink(1) device before writing the pattern.
 		Use --flash flag to write the pattern to the Flash memory as well, otherwise the pattern is written to the RAM only.
 	`),
-	PersistentPreRunE: openBlink1Device,
+	Args: cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// load and parse pattern file if given
 		var (
@@ -34,6 +34,12 @@ var writeCmd = &cobra.Command{
 				return err
 			}
 		}
+		if ps == nil && !writeResetAll && !writeSaveFlash {
+			return errNoAction
+		}
+		if err := openBlink1Device(cmd, args); err != nil {
+			return err
+		}
 
 		// preview pattern if requested
 		if writePreviewPattern && ps != nil {
@@ -46,7 +52,7 @@ var writeCmd = &cobra.Command{
 			const maxPat = 32
 			seq := make(b1.StateSequence, maxPat)
 			for i := 0; i < maxPat; i++ {
-				seq[i] = b1.LightState{}
+				seq[i] = b1.NewLightState(b1.ColorBlack, 0, b1.LEDAll)
 			}
 			log.Infow("resetting blink(1) device", "sequence", seq)
 			if err := hdwr.WriteOnChipPattern(0, 0, seq); err != nil {

@@ -16,11 +16,10 @@ var executeCmd = &cobra.Command{
 		Load pattern files and execute them by playing the patterns.
 
 		Supported formats:
-		  - Play Text (e.g. "red blink 3 times")
+		  - Play Text (title:/repeat: metadata and complete set/off/fade states)
 		  - Pattern JSON (e.g. '{"repeat":1,"seq":"#FF0000L0T1500;#FF0000L0T3500"...}')
 	`),
-	Args:              cobra.ExactArgs(1),
-	PersistentPreRunE: openBlink1Device,
+	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// load and parse pattern file
 		ps, err := exchange.LoadPatternFile(args[0])
@@ -31,6 +30,12 @@ var executeCmd = &cobra.Command{
 		// override repeat times
 		if cmd.Flag("times").Changed {
 			ps.RepeatTimes = execRepeatTimes
+		}
+		if err := exchange.ValidatePatternSet(*ps); err != nil {
+			return err
+		}
+		if err := openBlink1Device(cmd, args); err != nil {
+			return err
 		}
 
 		// preview
@@ -76,7 +81,7 @@ func init() {
 	// Cobra supports Persistent Flags which will work for this command and all subcommands, e.g.:
 	// executeCmd.PersistentFlags().String("foo", "", "A help for foo")
 	executeCmd.PersistentFlags().BoolVarP(&execPreviewPattern, "preview", "p", false, "Preview the pattern to be executed")
-	executeCmd.PersistentFlags().UintVarP(&execRepeatTimes, "times", "t", 1, "Override the pattern repeat times (0 means forever)")
+	executeCmd.PersistentFlags().UintVarP(&execRepeatTimes, "times", "t", 1, "Override repeat count (1..255; 0 means forever)")
 
 	// Cobra supports local flags which will only run when this command is called directly, e.g.:
 	// executeCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")

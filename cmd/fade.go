@@ -25,10 +25,9 @@ var fadeCmd = &cobra.Command{
 		Supported preset colors:
 		  %s
 	`,
-		util.JoinWrapSlice([]string{"random", "off", "on"}, ", ", 100),
+		util.JoinWrapSlice([]string{"random"}, ", ", 100),
 		util.JoinWrapSlice(b1.GetColorNames(), ", ", 100)),
-	Args:              cobra.MinimumNArgs(1),
-	PersistentPreRunE: openBlink1Device,
+	Args: cobra.MinimumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// parse query as color
 		query := util.NormalizeQuery(args...)
@@ -37,8 +36,19 @@ var fadeCmd = &cobra.Command{
 			return err
 		}
 
+		// Validate the full-width CLI flag before converting it to LEDIndex.
+		if err := validateLEDSelection(cmd); err != nil {
+			return err
+		}
+
 		// build state
 		st := b1.NewLightState(cl, fadeTimeDur, b1.LEDIndex(fadeLedNum))
+		if err := st.Validate(); err != nil {
+			return err
+		}
+		if err := openBlink1Device(cmd, args); err != nil {
+			return err
+		}
 		log.Debugw("parsed blink(1) state", "state", st)
 
 		// perform action

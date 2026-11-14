@@ -1,161 +1,138 @@
 package exchange
 
 import (
-	"errors"
 	"fmt"
 	"strconv"
 	"strings"
-	"time"
+	"unicode/utf8"
 
-	"github.com/1set/gut/ystring"
 	"github.com/b1ug/blink1-go"
 	"github.com/b1ug/nb1/schema"
 )
 
-// ParsePlayText parses a slice of strings in play.txt format into a pattern set.
+// maxPlayRepeat follows the SDK Pattern's one-byte finite repeat range.
+// Zero remains the SDK's infinite-loop value, spelled "forever" in play text.
+const maxPlayRepeat = 255
+
+func validatePlayLine(line string) error {
+	if len(line) > 4096 || !utf8.ValidString(line) || strings.ContainsAny(line, "\r\n\v\f\u0085\u2028\u2029") {
+		return fmt.Errorf("play text requires valid UTF-8 lines of at most 4096 bytes")
+	}
+	return nil
+}
+
+// ParsePlayText reads explicit title:/repeat: metadata and complete SDK states.
+// It returns no PatternSet if any line is malformed or metadata is duplicated.
 func ParsePlayText(lines []string) (*schema.PatternSet, error) {
-	// parse it
-	log.Infow("parse input file", "lines", len(lines))
-
-	// turn into sequence
-	var (
-		seq             blink1.StateSequence
-		title           string
-		repeatTimes     uint
-		findRepeatTimes bool
-		findTitle       bool
-	)
-	for _, line := range lines {
-		// skip blank lines
-		if ystring.IsBlank(line) {
+	var seq blink1.StateSequence
+	title, repeatTimes := "", uint(1)
+	seenTitle, seenRepeat := false, false
+	for index, line := range lines {
+		if err := validatePlayLine(line); err != nil {
+			return nil, fmt.Errorf("line %d: %w", index+1, err)
+		}
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "" || strings.HasPrefix(trimmed, "//") {
 			continue
 		}
-		// parse as title
-		if tl, err := blink1.ParseTitle(line); err == nil {
-			if findTitle {
-				log.Warnw("duplicate title, take the first one", "line", line, "old_value", title, "new_value", tl)
-			} else {
-				title = tl
-				findTitle = true
+		parts := strings.SplitN(strings.TrimLeft(line, " \t"), ":", 2)
+		if len(parts) == 2 {
+			key := strings.ToLower(strings.TrimSpace(parts[0]))
+			switch key {
+			case "title":
+				if seenTitle {
+					return nil, fmt.Errorf("line %d: duplicate title metadata", index+1)
+				}
+				// One optional separator is syntax; the remaining title is literal.
+				title = parts[1]
+				if len(title) > 0 && (title[0] == ' ' || title[0] == '\t') {
+					title = title[1:]
+				}
+				seenTitle = true
+				continue
+			case "repeat":
+				if seenRepeat {
+					return nil, fmt.Errorf("line %d: duplicate repeat metadata", index+1)
+				}
+				value := strings.TrimSpace(parts[1])
+				if strings.EqualFold(value, "forever") {
+					repeatTimes = 0
+				} else {
+					for _, digit := range value {
+						if digit < '0' || digit > '9' {
+							return nil, fmt.Errorf("line %d: repeat must be 1..255 or forever", index+1)
+						}
+					}
+					times, err := strconv.ParseUint(value, 10, 8)
+					if err != nil {
+						return nil, fmt.Errorf("line %d: repeat must be 1..255 or forever: %w", index+1, err)
+					}
+					if times == 0 {
+						return nil, fmt.Errorf("line %d: numeric repeat 0 is not allowed; use forever", index+1)
+					}
+					repeatTimes = uint(times)
+				}
+				seenRepeat = true
+				continue
 			}
-			continue
 		}
-		// parse as state query
-		if st, err := blink1.ParseStateQuery(line); err == nil {
-			seq = append(seq, st)
-			continue
+		state, err := blink1.ParseStateQuery(line)
+		if err != nil {
+			return nil, fmt.Errorf("line %d: %w", index+1, err)
 		}
-		// parse as repeat times, only take the first one
-		if rt, err := blink1.ParseRepeatTimes(line); err != nil {
-			continue
-		} else if findRepeatTimes {
-			log.Warnw("duplicate repeat times, take the first one", "line", line, "old_value", repeatTimes, "new_value", rt)
-		} else {
-			repeatTimes = rt
-			findRepeatTimes = true
-		}
+		seq = append(seq, state)
 	}
-	log.Infow("parsed state sequence", "seq", len(seq), "repeat_times", repeatTimes)
-
-	// handle results
-	if len(seq) == 0 {
-		return nil, errors.New("no valid seq found")
-	}
-	if !findRepeatTimes {
-		// default repeat times is 1
-		repeatTimes = 1
-	}
-	ps := &schema.PatternSet{
-		Name:        title,
-		RepeatTimes: repeatTimes,
-		Sequence:    seq,
-	}
+	ps := &schema.PatternSet{Name: title, RepeatTimes: repeatTimes, Sequence: seq}
 	ps.AutoFill()
-
-	// return
+	if err := ValidatePatternSet(*ps); err != nil {
+		return nil, err
+	}
 	return ps, nil
 }
 
-// EncodePlayText encodes a pattern set into a slice of strings in play.txt format.
-func EncodePlayText(ps schema.PatternSet) []string {
-	ls := make([]string, 0, len(ps.Sequence)+2)
-
-	// title
-	if t := ps.Name; ystring.IsNotBlank(t) {
-		ls = append(ls, "Title: "+t)
+// ValidatePatternSet checks the application repeat range and delegates every
+// single-state execution rule to the SDK, without opening a device.
+func ValidatePatternSet(ps schema.PatternSet) error {
+	if err := ps.Validate(); err != nil {
+		return err
 	}
-
-	// repeat times
-	var rt string
-	switch ps.RepeatTimes {
-	case 0:
-		rt = "Repeat Forever"
-	case 1:
-		rt = "Repeat Once"
-	case 2:
-		rt = "Repeat Twice"
-	default:
-		rt = fmt.Sprintf("Repeat: %d times", ps.RepeatTimes)
+	if ps.RepeatTimes > maxPlayRepeat {
+		return fmt.Errorf("repeat exceeds SDK Pattern limit of %d", maxPlayRepeat)
 	}
-	ls = append(ls, "("+rt+")")
-
-	// sequence
-	var (
-		lastLED   blink1.LEDIndex
-		lastColor string
-	)
-	for i, st := range ps.Sequence {
-		// color
-		hn, ok := blink1.GetNameByColor(st.Color)
-		if ok {
-			hn = strings.Title(hn)
+	if ps.Name != "" {
+		if err := validatePlayLine("title: " + ps.Name); err != nil {
+			return fmt.Errorf("title: %w", err)
 		}
-
-		// led
-		var l, t string
-		switch st.LED {
-		case blink1.LEDAll:
-			l = "all LEDs"
-		default:
-			l = "LED " + strconv.Itoa(int(st.LED))
-		}
-
-		// fade time
-		switch f := st.FadeTime; {
-		case f < time.Second:
-			t = fmt.Sprintf("%d msec", f.Milliseconds())
-		case f == time.Second:
-			t = "1 second"
-		default:
-			t = fmt.Sprintf("%v seconds", f.Seconds())
-		}
-
-		// special flags
-		instantly := st.FadeTime < 10*time.Millisecond
-		isMaintain := lastLED == st.LED && lastColor == hn
-
-		// combined as sentence
-		var sent string
-		if isMaintain {
-			if instantly {
-				sent = fmt.Sprintf("Shift %s to %s instantly", l, hn)
-			} else {
-				sent = fmt.Sprintf("Maintain %s in %s for %s", l, hn, t)
-			}
-		} else {
-			if instantly {
-				sent = fmt.Sprintf("Immediately transition %s to %s", l, hn)
-			} else {
-				sent = fmt.Sprintf("Transition %s to %s over %s", l, hn, t)
-			}
-		}
-
-		// add with index
-		ls = append(ls, strconv.Itoa(i+1)+". "+sent)
-
-		// for next run
-		lastLED, lastColor = st.LED, hn
 	}
+	for index, state := range ps.Sequence {
+		if err := state.Validate(); err != nil {
+			return fmt.Errorf("state[%d]: %w", index, err)
+		}
+	}
+	return nil
+}
 
-	return ls
+// EncodePlayText emits canonical metadata and explicit compact SDK state data.
+// On failure it returns no lines, so callers can validate before opening files.
+func EncodePlayText(ps schema.PatternSet) ([]string, error) {
+	if err := ValidatePatternSet(ps); err != nil {
+		return nil, err
+	}
+	lines := make([]string, 0, len(ps.Sequence)+2)
+	if ps.Name != "" {
+		lines = append(lines, "title: "+ps.Name)
+	}
+	repeat := "forever"
+	if ps.RepeatTimes != 0 {
+		repeat = strconv.FormatUint(uint64(ps.RepeatTimes), 10)
+	}
+	lines = append(lines, "repeat: "+repeat)
+	for index, state := range ps.Sequence {
+		text, err := state.MarshalText()
+		if err != nil {
+			return nil, fmt.Errorf("state[%d]: %w", index, err)
+		}
+		lines = append(lines, string(text))
+	}
+	return lines, nil
 }

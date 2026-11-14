@@ -168,7 +168,10 @@ func TestSequenceRetentionStartsAtTerminalAndSurvivesLegacyHistory(t *testing.T)
 
 func TestSequenceIntervalAdmissionAndProgress(t *testing.T) {
 	e, b, _ := startFrameIntegration(t, Options{}, "set", "raw-rgb", "mk2-basic")
-	interval := 50
+	// This wall-clock test checks admission, logical progress and write order.
+	// Leave room for hosted Windows/race timer latency; exact interval deadlines
+	// are checked separately with the deterministic clock in frame_schedule_test.
+	interval := 500
 	input := sequence.Sequence{Timing: sequence.TimingInterval, Repeat: 2, OnFinish: "hold",
 		Initial: []sequence.Target{{LED: 1, Color: "#112233"}, {LED: 2, Color: "#445566"}},
 		Steps: []sequence.Step{{FadeMS: 50, IntervalMS: &interval, Targets: []sequence.Target{

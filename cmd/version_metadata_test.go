@@ -2,13 +2,19 @@ package cmd
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
+	"os"
+	"os/exec"
+	"path/filepath"
 	"reflect"
 	"runtime"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/b1ug/nb1/internal/doctor"
 	"github.com/spf13/cobra"
@@ -169,4 +175,144 @@ func TestVersionAliasesBypassUnrelatedRuntimeConfigurationErrors(t *testing.T) {
 			}
 		})
 	}
+}
+
+// Run the actual root command in a fresh process: a synthetic Cobra parent does
+// not exercise the package's registered OnInitialize callback or global logger.
+func TestVersionActualRootDoesNotInitializeRuntimeConfiguration(t *testing.T) {
+	binary, err := os.Executable()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, test := range []struct {
+		name      string
+		args      []string
+		noProfile bool
+	}{
+		{"debug before command", []string{"--debug", "version", "--json"}, false},
+		{"debug after command", []string{"version", "--json", "--debug"}, false},
+		{"short debug flag", []string{"-D", "version", "--json"}, false},
+		{"ver alias", []string{"--debug", "ver", "--json"}, false},
+		{"v alias", []string{"v", "--debug", "--json"}, false},
+		{"invalid log level before command", []string{"--log-level", "not-a-level", "version", "--json"}, false},
+		{"invalid log level after command", []string{"version", "--json", "--log-level=not-a-level"}, false},
+		{"explicit empty config", []string{"--config", "", "version", "--json"}, false},
+		{"missing default profile with debug", []string{"--debug", "version", "--json"}, true},
+		{"missing default profile with trailing debug", []string{"version", "--json", "--debug"}, true},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			directory := t.TempDir()
+			profile := filepath.Join(directory, "invalid profile.yaml")
+			if test.noProfile {
+				profile = ""
+			} else if err := os.WriteFile(profile, []byte("jobs:\n  terminal_limit: 0\n"), 0600); err != nil {
+				t.Fatal(err)
+			}
+			logPath := filepath.Join(directory, "must-not-exist.log")
+			args := append([]string{"--log-file", logPath}, test.args...)
+			stdout, stderr, err := executeVersionRootProcess(t, binary, directory, profile, args)
+			if err != nil || stderr != "" {
+				t.Fatalf("version failed: %v; stdout=%q stderr=%q", err, stdout, stderr)
+			}
+			var metadata versionMetadata
+			if err := json.Unmarshal([]byte(stdout), &metadata); err != nil {
+				t.Fatalf("stdout is not pure JSON: %v; %q", err, stdout)
+			}
+			if metadata.SchemaVersion != 1 || metadata.Name != "nb1" || metadata.Build.GoVersion == "" || strings.ContainsRune(stdout, '\x1b') {
+				t.Fatalf("incorrect or styled metadata: %q", stdout)
+			}
+			if _, err := os.Lstat(logPath); !os.IsNotExist(err) {
+				t.Fatalf("version created a runtime log file: %v", err)
+			}
+			entries, err := os.ReadDir(directory)
+			wantEntries := 1
+			if test.noProfile {
+				wantEntries = 0
+			}
+			if err != nil || len(entries) != wantEntries || (!test.noProfile && entries[0].Name() != filepath.Base(profile)) {
+				t.Fatalf("version created runtime files: %v; %v", entries, err)
+			}
+		})
+	}
+}
+
+func TestVersionInitializationBypassDoesNotApplyToOtherCommands(t *testing.T) {
+	binary, err := os.Executable()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, test := range []struct {
+		name string
+		args []string
+		want string
+	}{
+		{"configuration validation", []string{"config", "list"}, "terminal_limit"},
+		// The word version used as a flag value is not the version command.
+		{"command name as flag value", []string{"--device", "version", "config", "list"}, "terminal_limit"},
+		{"log level validation", []string{"--log-level", "not-a-level", "config", "list"}, "not-a-level"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			directory := t.TempDir()
+			profile := filepath.Join(directory, "invalid profile.yaml")
+			if err := os.WriteFile(profile, []byte("jobs:\n  terminal_limit: 0\n"), 0600); err != nil {
+				t.Fatal(err)
+			}
+			stdout, stderr, err := executeVersionRootProcess(t, binary, directory, profile, test.args)
+			if err == nil || !strings.Contains(stderr, test.want) {
+				t.Fatalf("runtime initialization was bypassed: err=%v stdout=%q stderr=%q; want %q", err, stdout, stderr, test.want)
+			}
+		})
+	}
+}
+
+func executeVersionRootProcess(t *testing.T, binary, directory, profile string, args []string) (string, string, error) {
+	t.Helper()
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	process := exec.CommandContext(ctx, binary, append([]string{"-test.run=^TestVersionActualRootHelper$", "--"}, args...)...)
+	// Retain platform execution settings, but never inherit a user's nb1 profile
+	// or local daemon/device selection into these USB-free diagnostic tests.
+	for _, value := range os.Environ() {
+		key := strings.ToUpper(strings.SplitN(value, "=", 2)[0])
+		if strings.HasPrefix(key, "NB1_") || key == "HOME" || key == "USERPROFILE" || key == "APPDATA" || key == "LOCALAPPDATA" || key == "XDG_CONFIG_HOME" || key == "XDG_STATE_HOME" {
+			continue
+		}
+		process.Env = append(process.Env, value)
+	}
+	process.Env = append(process.Env, "NB1_VERSION_ROOT_TEST_HELPER=1", "NB1_CONFIG="+profile,
+		"HOME="+directory, "USERPROFILE="+directory, "APPDATA="+directory, "LOCALAPPDATA="+directory,
+		"XDG_CONFIG_HOME="+directory, "XDG_STATE_HOME="+directory)
+	process.Dir = directory
+	var stdout, stderr bytes.Buffer
+	process.Stdout, process.Stderr = &stdout, &stderr
+	err := process.Run()
+	if ctx.Err() != nil {
+		t.Fatalf("root diagnostic timed out: %v", ctx.Err())
+	}
+	return stdout.String(), stderr.String(), err
+}
+
+func TestVersionActualRootHelper(t *testing.T) {
+	if os.Getenv("NB1_VERSION_ROOT_TEST_HELPER") != "1" {
+		return
+	}
+	for i, argument := range os.Args {
+		if argument != "--" {
+			continue
+		}
+		// Replace the testing runner arguments with the actual CLI invocation;
+		// both Cobra Execute and the initializer now see the real process args.
+		os.Args = append([]string{"nb1"}, os.Args[i+1:]...)
+		if err := rootCmd.Execute(); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(2)
+		}
+		command, _, err := rootCmd.Find(os.Args[1:])
+		if err == nil && command == versionCmd && log != nil {
+			fmt.Fprintln(os.Stderr, "version initialized the runtime logger")
+			os.Exit(3)
+		}
+		os.Exit(0)
+	}
+	t.Fatal("missing root command arguments")
 }

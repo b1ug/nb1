@@ -118,6 +118,25 @@ func TestTransportBlockedLogCannotBlockCleanupAndLossIsExplicit(t *testing.T) {
 			t.Error("logger did not finish after release")
 		}
 	})
+	// Start schedules discovery asynchronously. Establish an opened backend
+	// before asserting that shutdown stops and closes it; the synthetic trace
+	// below does not itself synchronize with the device worker.
+	ready, readyCancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer readyCancel()
+	for {
+		state, stateErr := e.Device("test-device")
+		if stateErr != nil {
+			t.Fatal(stateErr)
+		}
+		if state.Connection == "online" {
+			break
+		}
+		select {
+		case <-ready.Done():
+			t.Fatal("fake device did not become online", ready.Err())
+		case <-time.After(time.Millisecond):
+		}
+	}
 	r.Operation("20005601", transporttrace.EmptyScope(transporttrace.IdleObserve), transporttrace.QueryRGB, transporttrace.Target{LED: 1}).Begin(1).End(nil, false, false, 0)
 	select {
 	case <-writer.entered:

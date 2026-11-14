@@ -123,6 +123,13 @@ func init() {
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
+	// version inspects only the executable. Cobra runs initializers before
+	// PersistentPreRunE, so its pre-run override alone cannot prevent runtime
+	// configuration logs from contaminating --json output. Resolve the command
+	// through Cobra so aliases and persistent flag values remain unambiguous.
+	if command, _, err := rootCmd.Find(os.Args[1:]); err == nil && command == versionCmd {
+		return
+	}
 	configurationInitError = nil
 	// init logger
 	lg := hlog.NewPersistentLogger(logFile, debugMode)

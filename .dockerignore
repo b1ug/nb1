@@ -1,0 +1,20 @@
+# Allow only the standalone CLI build inputs into the Docker context.
+**
+!go.mod
+!go.sum
+!main.go
+!cmd/
+!cmd/**
+!config/
+!config/**
+!exchange/
+!exchange/**
+!hdwr/
+!hdwr/**
+!internal/
+!internal/**
+!schema/
+!schema/**
+!util/
+!util/**
+**/*_test.go

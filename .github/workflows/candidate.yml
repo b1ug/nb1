@@ -1,0 +1,141 @@
+name: Native candidate and daemon acceptance
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-candidate-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  CGO_ENABLED: "1"
+  GOWORK: "off"
+  GOTOOLCHAIN: local
+  PYTHONDONTWRITEBYTECODE: "1"
+
+jobs:
+  build:
+    name: Native candidate / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {os: ubuntu-24.04, goos: linux, goarch: amd64, extension: ""}
+          - {os: ubuntu-24.04-arm, goos: linux, goarch: arm64, extension: ""}
+          - {os: macos-15, goos: darwin, goarch: arm64, extension: ""}
+          - {os: macos-15-intel, goos: darwin, goarch: amd64, extension: ""}
+          - {os: windows-2022, goos: windows, goarch: amd64, extension: .exe}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+        with:
+          go-version: "1.27.4"
+          cache: true
+      - name: Check artifact validation helpers
+        run: python3 -B -m unittest discover -s ci -p test_build_artifact.py -v
+      - name: Check matching CLI, MCP and Skill archive boundaries
+        run: python3 -B -m unittest discover -s ci -p test_candidate_suite.py -v
+      - name: Check daemon acceptance safety boundaries
+        run: python3 -B -m unittest discover -s ci -p test_daemon_process_smoke.py -v
+      - name: Check standalone Agent Skill documentation
+        run: python3 -B -m unittest discover -s ci -p test_skill_package.py -v
+      - name: Check offline Homebrew draft renderer without installation
+        run: python3 -B -m unittest discover -s packaging/homebrew -p test_render_formula.py -v
+      - name: Build native CLI from public module versions
+        env:
+          NB1_CANDIDATE_BINARY: ${{ runner.temp }}/nb1-candidate-build/nb1${{ matrix.extension }}
+        run: |
+          mkdir -p "$(dirname "$NB1_CANDIDATE_BINARY")"
+          go build -mod=readonly -trimpath -o "$NB1_CANDIDATE_BINARY" .
+      - name: Build the matching standalone MCP server
+        working-directory: adapters/mcp
+        env:
+          CGO_ENABLED: "0"
+          NB1_MCP_BINARY: ${{ runner.temp }}/nb1-candidate-build/nb1-mcp${{ matrix.extension }}
+        run: go build -mod=readonly -trimpath -buildvcs=true -o "$NB1_MCP_BINARY" .
+      - name: Exercise standalone MCP discovery with no daemon or USB
+        env:
+          NB1_MCP_BINARY: ${{ runner.temp }}/nb1-candidate-build/nb1-mcp${{ matrix.extension }}
+          NB1_MCP_EVIDENCE: ${{ runner.temp }}/nb1-mcp-acceptance.json
+        run: python3 -B ci/mcp-candidate-smoke.py --binary "$NB1_MCP_BINARY" --output "$NB1_MCP_EVIDENCE"
+      - name: Check Formula help calls against the native Mac candidate without Homebrew
+        if: runner.os == 'macOS'
+        working-directory: packaging/homebrew
+        env:
+          NB1_HOMEBREW_TEST_BINARY: ${{ runner.temp }}/nb1-candidate-build/nb1
+        run: |
+          ruby --version
+          python3 -B -m unittest test_render_formula.FormulaDraftTests.test_rendered_formula_help_calls_use_current_binary -v
+      - name: Stage and verify source-bound candidate without USB
+        env:
+          NB1_CANDIDATE_BINARY: ${{ runner.temp }}/nb1-candidate-build/nb1${{ matrix.extension }}
+          NB1_CANDIDATE_OUTPUT: ${{ runner.temp }}/nb1-candidate
+          NB1_CANDIDATE_SOURCE: ${{ github.sha }}
+          NB1_CANDIDATE_OS: ${{ matrix.goos }}
+          NB1_CANDIDATE_ARCH: ${{ matrix.goarch }}
+        run: |
+          python3 ci/check-build-artifact.py stage \
+            --binary "$NB1_CANDIDATE_BINARY" --out "$NB1_CANDIDATE_OUTPUT" \
+            --expected-source "$NB1_CANDIDATE_SOURCE" \
+            --expected-os "$NB1_CANDIDATE_OS" --expected-arch "$NB1_CANDIDATE_ARCH"
+          python3 ci/check-build-artifact.py verify --out "$NB1_CANDIDATE_OUTPUT"
+      - name: Package and verify matching candidate archives
+        env:
+          NB1_CANDIDATE_CLI: ${{ runner.temp }}/nb1-candidate
+          NB1_MCP_BINARY: ${{ runner.temp }}/nb1-candidate-build/nb1-mcp${{ matrix.extension }}
+          NB1_SUITE_OUTPUT: ${{ runner.temp }}/nb1-candidate-suite
+        run: |
+          python3 -B ci/candidate-suite.py stage --root "$GITHUB_WORKSPACE" \
+            --cli-dir "$NB1_CANDIDATE_CLI" --mcp-binary "$NB1_MCP_BINARY" \
+            --output "$NB1_SUITE_OUTPUT"
+          python3 -B ci/candidate-suite.py verify --directory "$NB1_SUITE_OUTPUT"
+      - name: Exercise the actual native daemon and CLI without a device
+        timeout-minutes: 5
+        env:
+          NB1_CANDIDATE_BINARY: ${{ runner.temp }}/nb1-candidate/nb1${{ matrix.extension }}
+          NB1_DAEMON_EVIDENCE: ${{ runner.temp }}/nb1-daemon-acceptance
+        run: |
+          python3 -B ci/daemon-process-smoke.py \
+            --binary "$NB1_CANDIDATE_BINARY" --output "$NB1_DAEMON_EVIDENCE" \
+            --require-no-devices
+      - name: Preserve daemon acceptance evidence, including failures
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: nb1-daemon-${{ github.sha }}-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: |
+            ${{ runner.temp }}/nb1-daemon-acceptance/result.json
+            ${{ runner.temp }}/nb1-daemon-acceptance/*.log
+            ${{ runner.temp }}/nb1-mcp-acceptance.json
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Preserve verified candidate (not a Release)
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: nb1-candidate-${{ github.sha }}-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: ${{ runner.temp }}/nb1-candidate-suite
+          if-no-files-found: error
+          retention-days: 14
+      - name: Preserve the standalone Skill candidate (not installed or published)
+        if: matrix.goos == 'linux' && matrix.goarch == 'amd64'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: nb1-skill-candidate-${{ github.sha }}
+          path: ${{ runner.temp }}/nb1-candidate-suite/blink1-control-*.zip
+          if-no-files-found: error
+          retention-days: 14

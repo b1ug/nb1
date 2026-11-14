@@ -1,0 +1,75 @@
+{
+  "mode": "paired",
+  "initial": [
+    "#990000",
+    "#000099"
+  ],
+  "frames": [
+    {
+      "colors": [
+        "#c00021",
+        "#0c0045"
+      ],
+      "fade_ms": 380,
+      "interval_ms": 375
+    },
+    {
+      "colors": [
+        "#800080",
+        "#1a001a"
+      ],
+      "fade_ms": 380,
+      "interval_ms": 375
+    },
+    {
+      "colors": [
+        "#2100c0",
+        "#45000c"
+      ],
+      "fade_ms": 380,
+      "interval_ms": 375
+    },
+    {
+      "colors": [
+        "#000099",
+        "#990000"
+      ],
+      "fade_ms": 380,
+      "interval_ms": 375
+    },
+    {
+      "colors": [
+        "#0c0045",
+        "#c00021"
+      ],
+      "fade_ms": 380,
+      "interval_ms": 375
+    },
+    {
+      "colors": [
+        "#1a001a",
+        "#800080"
+      ],
+      "fade_ms": 380,
+      "interval_ms": 375
+    },
+    {
+      "colors": [
+        "#45000c",
+        "#2100c0"
+      ],
+      "fade_ms": 380,
+      "interval_ms": 375
+    },
+    {
+      "colors": [
+        "#990000",
+        "#000099"
+      ],
+      "fade_ms": 380,
+      "interval_ms": 375
+    }
+  ],
+  "repeat": 3,
+  "gap_ms": 10
+}

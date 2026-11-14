@@ -1,0 +1,1587 @@
+{
+  "schema_version": 1,
+  "record_domain": "nb1-pattern-record/v1",
+  "compile_contract": "nb1-program-effect/v1",
+  "case_count": 16,
+  "cases": [
+    {
+      "name": "pulse-800x2-chinese-defaults",
+      "authoring_package": {
+        "schema_version": 1,
+        "patterns": [
+          {
+            "id": "build-success",
+            "title": "构建完成短提示",
+            "effect": {
+              "kind": "pulse",
+              "color": "#00A000",
+              "cycles": 2,
+              "period_ms": 800
+            }
+          }
+        ]
+      },
+      "authoring_json": "{\"schema_version\":1,\"patterns\":[{\"id\":\"build-success\",\"title\":\"构建完成短提示\",\"effect\":{\"kind\":\"pulse\",\"color\":\"#00A000\",\"cycles\":2,\"period_ms\":800}}]}",
+      "record": {
+        "id": "build-success",
+        "title": "构建完成短提示",
+        "source": {
+          "effect": {
+            "kind": "pulse",
+            "color": "#00a000",
+            "led": 0,
+            "cycles": 2,
+            "period_ms": 800,
+            "on_finish": "off"
+          }
+        },
+        "compiled_program": {
+          "steps": [
+            {
+              "led": 0,
+              "color": "#000000",
+              "fade_ms": 0,
+              "hold_ms": 0
+            },
+            {
+              "led": 0,
+              "color": "#00a000",
+              "fade_ms": 380,
+              "hold_ms": 0
+            },
+            {
+              "led": 0,
+              "color": "#000000",
+              "fade_ms": 390,
+              "hold_ms": 0
+            }
+          ],
+          "repeat": 2,
+          "on_finish": "off"
+        },
+        "compile_contract": "nb1-program-effect/v1",
+        "revision": "sha256:d799c66cb9580f8342068ff586e7d61cd4377961fc8aab629f7e67cd370960b0"
+      },
+      "snapshot_package": {
+        "schema_version": 1,
+        "kind": "nb1-pattern-snapshot",
+        "records": [
+          {
+            "id": "build-success",
+            "title": "构建完成短提示",
+            "source": {
+              "effect": {
+                "kind": "pulse",
+                "color": "#00a000",
+                "led": 0,
+                "cycles": 2,
+                "period_ms": 800,
+                "on_finish": "off"
+              }
+            },
+            "compiled_program": {
+              "steps": [
+                {
+                  "led": 0,
+                  "color": "#000000",
+                  "fade_ms": 0,
+                  "hold_ms": 0
+                },
+                {
+                  "led": 0,
+                  "color": "#00a000",
+                  "fade_ms": 380,
+                  "hold_ms": 0
+                },
+                {
+                  "led": 0,
+                  "color": "#000000",
+                  "fade_ms": 390,
+                  "hold_ms": 0
+                }
+              ],
+              "repeat": 2,
+              "on_finish": "off"
+            },
+            "compile_contract": "nb1-program-effect/v1",
+            "revision": "sha256:d799c66cb9580f8342068ff586e7d61cd4377961fc8aab629f7e67cd370960b0"
+          }
+        ]
+      },
+      "canonical_json": "{\"id\":\"build-success\",\"title\":\"构建完成短提示\",\"source\":{\"effect\":{\"kind\":\"pulse\",\"color\":\"#00a000\",\"led\":0,\"cycles\":2,\"period_ms\":800,\"on_finish\":\"off\"}},\"compiled_program\":{\"steps\":[{\"led\":0,\"color\":\"#000000\",\"fade_ms\":0,\"hold_ms\":0},{\"led\":0,\"color\":\"#00a000\",\"fade_ms\":380,\"hold_ms\":0},{\"led\":0,\"color\":\"#000000\",\"fade_ms\":390,\"hold_ms\":0}],\"repeat\":2,\"on_finish\":\"off\"},\"compile_contract\":\"nb1-program-effect/v1\"}",
+      "canonical_hex": "7b226964223a226275696c642d73756363657373222c227469746c65223a22e69e84e5bbbae5ae8ce68890e79fade68f90e7a4ba222c22736f75726365223a7b22656666656374223a7b226b696e64223a2270756c7365222c22636f6c6f72223a2223303061303030222c226c6564223a302c226379636c6573223a322c22706572696f645f6d73223a3830302c226f6e5f66696e697368223a226f6666227d7d2c22636f6d70696c65645f70726f6772616d223a7b227374657073223a5b7b226c6564223a302c22636f6c6f72223a2223303030303030222c22666164655f6d73223a302c22686f6c645f6d73223a307d2c7b226c6564223a302c22636f6c6f72223a2223303061303030222c22666164655f6d73223a3338302c22686f6c645f6d73223a307d2c7b226c6564223a302c22636f6c6f72223a2223303030303030222c22666164655f6d73223a3339302c22686f6c645f6d73223a307d5d2c22726570656174223a322c226f6e5f66696e697368223a226f6666227d2c22636f6d70696c655f636f6e7472616374223a226e62312d70726f6772616d2d6566666563742f7631227d",
+      "preimage_hex": "6e62312d7061747465726e2d7265636f72642f76310a7b226964223a226275696c642d73756363657373222c227469746c65223a22e69e84e5bbbae5ae8ce68890e79fade68f90e7a4ba222c22736f75726365223a7b22656666656374223a7b226b696e64223a2270756c7365222c22636f6c6f72223a2223303061303030222c226c6564223a302c226379636c6573223a322c22706572696f645f6d73223a3830302c226f6e5f66696e697368223a226f6666227d7d2c22636f6d70696c65645f70726f6772616d223a7b227374657073223a5b7b226c6564223a302c22636f6c6f72223a2223303030303030222c22666164655f6d73223a302c22686f6c645f6d73223a307d2c7b226c6564223a302c22636f6c6f72223a2223303061303030222c22666164655f6d73223a3338302c22686f6c645f6d73223a307d2c7b226c6564223a302c22636f6c6f72223a2223303030303030222c22666164655f6d73223a3339302c22686f6c645f6d73223a307d5d2c22726570656174223a322c226f6e5f66696e697368223a226f6666227d2c22636f6d70696c655f636f6e7472616374223a226e62312d70726f6772616d2d6566666563742f7631227d",
+      "revision": "sha256:d799c66cb9580f8342068ff586e7d61cd4377961fc8aab629f7e67cd370960b0"
+    },
+    {
+      "name": "pulse-800x2-explicit-reordered",
+      "authoring_package": {
+        "schema_version": 1,
+        "patterns": [
+          {
+            "id": "build-success",
+            "title": "构建完成短提示",
+            "effect": {
+              "on_finish": "off",
+              "period_ms": 800,
+              "cycles": 2,
+              "led": 0,
+              "color": "#00a000",
+              "kind": "pulse"
+            }
+          }
+        ]
+      },
+      "authoring_json": "{\"schema_version\":1,\"patterns\":[{\"id\":\"build-success\",\"title\":\"构建完成短提示\",\"effect\":{\"on_finish\":\"off\",\"period_ms\":800,\"cycles\":2,\"led\":0,\"color\":\"#00a000\",\"kind\":\"pulse\"}}]}",
+      "record": {
+        "id": "build-success",
+        "title": "构建完成短提示",
+        "source": {
+          "effect": {
+            "kind": "pulse",
+            "color": "#00a000",
+            "led": 0,
+            "cycles": 2,
+            "period_ms": 800,
+            "on_finish": "off"
+          }
+        },
+        "compiled_program": {
+          "steps": [
+            {
+              "led": 0,
+              "color": "#000000",
+              "fade_ms": 0,
+              "hold_ms": 0
+            },
+            {
+              "led": 0,
+              "color": "#00a000",
+              "fade_ms": 380,
+              "hold_ms": 0
+            },
+            {
+              "led": 0,
+              "color": "#000000",
+              "fade_ms": 390,
+              "hold_ms": 0
+            }
+          ],
+          "repeat": 2,
+          "on_finish": "off"
+        },
+        "compile_contract": "nb1-program-effect/v1",
+        "revision": "sha256:d799c66cb9580f8342068ff586e7d61cd4377961fc8aab629f7e67cd370960b0"
+      },
+      "snapshot_package": {
+        "schema_version": 1,
+        "kind": "nb1-pattern-snapshot",
+        "records": [
+          {
+            "id": "build-success",
+            "title": "构建完成短提示",
+            "source": {
+              "effect": {
+                "kind": "pulse",
+                "color": "#00a000",
+                "led": 0,
+                "cycles": 2,
+                "period_ms": 800,
+                "on_finish": "off"
+              }
+            },
+            "compiled_program": {
+              "steps": [
+                {
+                  "led": 0,
+                  "color": "#000000",
+                  "fade_ms": 0,
+                  "hold_ms": 0
+                },
+                {
+                  "led": 0,
+                  "color": "#00a000",
+                  "fade_ms": 380,
+                  "hold_ms": 0
+                },
+                {
+                  "led": 0,
+                  "color": "#000000",
+                  "fade_ms": 390,
+                  "hold_ms": 0
+                }
+              ],
+              "repeat": 2,
+              "on_finish": "off"
+            },
+            "compile_contract": "nb1-program-effect/v1",
+            "revision": "sha256:d799c66cb9580f8342068ff586e7d61cd4377961fc8aab629f7e67cd370960b0"
+          }
+        ]
+      },
+      "canonical_json": "{\"id\":\"build-success\",\"title\":\"构建完成短提示\",\"source\":{\"effect\":{\"kind\":\"pulse\",\"color\":\"#00a000\",\"led\":0,\"cycles\":2,\"period_ms\":800,\"on_finish\":\"off\"}},\"compiled_program\":{\"steps\":[{\"led\":0,\"color\":\"#000000\",\"fade_ms\":0,\"hold_ms\":0},{\"led\":0,\"color\":\"#00a000\",\"fade_ms\":380,\"hold_ms\":0},{\"led\":0,\"color\":\"#000000\",\"fade_ms\":390,\"hold_ms\":0}],\"repeat\":2,\"on_finish\":\"off\"},\"compile_contract\":\"nb1-program-effect/v1\"}",
+      "canonical_hex": "7b226964223a226275696c642d73756363657373222c227469746c65223a22e69e84e5bbbae5ae8ce68890e79fade68f90e7a4ba222c22736f75726365223a7b22656666656374223a7b226b696e64223a2270756c7365222c22636f6c6f72223a2223303061303030222c226c6564223a302c226379636c6573223a322c22706572696f645f6d73223a3830302c226f6e5f66696e697368223a226f6666227d7d2c22636f6d70696c65645f70726f6772616d223a7b227374657073223a5b7b226c6564223a302c22636f6c6f72223a2223303030303030222c22666164655f6d73223a302c22686f6c645f6d73223a307d2c7b226c6564223a302c22636f6c6f72223a2223303061303030222c22666164655f6d73223a3338302c22686f6c645f6d73223a307d2c7b226c6564223a302c22636f6c6f72223a2223303030303030222c22666164655f6d73223a3339302c22686f6c645f6d73223a307d5d2c22726570656174223a322c226f6e5f66696e697368223a226f6666227d2c22636f6d70696c655f636f6e7472616374223a226e62312d70726f6772616d2d6566666563742f7631227d",
+      "preimage_hex": "6e62312d7061747465726e2d7265636f72642f76310a7b226964223a226275696c642d73756363657373222c227469746c65223a22e69e84e5bbbae5ae8ce68890e79fade68f90e7a4ba222c22736f75726365223a7b22656666656374223a7b226b696e64223a2270756c7365222c22636f6c6f72223a2223303061303030222c226c6564223a302c226379636c6573223a322c22706572696f645f6d73223a3830302c226f6e5f66696e697368223a226f6666227d7d2c22636f6d70696c65645f70726f6772616d223a7b227374657073223a5b7b226c6564223a302c22636f6c6f72223a2223303030303030222c22666164655f6d73223a302c22686f6c645f6d73223a307d2c7b226c6564223a302c22636f6c6f72223a2223303061303030222c22666164655f6d73223a3338302c22686f6c645f6d73223a307d2c7b226c6564223a302c22636f6c6f72223a2223303030303030222c22666164655f6d73223a3339302c22686f6c645f6d73223a307d5d2c22726570656174223a322c226f6e5f66696e697368223a226f6666227d2c22636f6d70696c655f636f6e7472616374223a226e62312d70726f6772616d2d6566666563742f7631227d",
+      "revision": "sha256:d799c66cb9580f8342068ff586e7d61cd4377961fc8aab629f7e67cd370960b0"
+    },
+    {
+      "name": "pulse-same-execution-program-source",
+      "authoring_package": {
+        "schema_version": 1,
+        "patterns": [
+          {
+            "id": "build-success",
+            "title": "构建完成短提示",
+            "program": {
+              "steps": [
+                {
+                  "led": 0,
+                  "color": "#000000",
+                  "fade_ms": 0,
+                  "hold_ms": 0
+                },
+                {
+                  "led": 0,
+                  "color": "#00a000",
+                  "fade_ms": 380,
+                  "hold_ms": 0
+                },
+                {
+                  "led": 0,
+                  "color": "#000000",
+                  "fade_ms": 390,
+                  "hold_ms": 0
+                }
+              ],
+              "repeat": 2,
+              "on_finish": "off"
+            }
+          }
+        ]
+      },
+      "authoring_json": "{\"schema_version\":1,\"patterns\":[{\"id\":\"build-success\",\"title\":\"构建完成短提示\",\"program\":{\"steps\":[{\"led\":0,\"color\":\"#000000\",\"fade_ms\":0,\"hold_ms\":0},{\"led\":0,\"color\":\"#00a000\",\"fade_ms\":380,\"hold_ms\":0},{\"led\":0,\"color\":\"#000000\",\"fade_ms\":390,\"hold_ms\":0}],\"repeat\":2,\"on_finish\":\"off\"}}]}",
+      "record": {
+        "id": "build-success",
+        "title": "构建完成短提示",
+        "source": {
+          "program": {
+            "steps": [
+              {
+                "led": 0,
+                "color": "#000000",
+                "fade_ms": 0,
+                "hold_ms": 0
+              },
+              {
+                "led": 0,
+                "color": "#00a000",
+                "fade_ms": 380,
+                "hold_ms": 0
+              },
+              {
+                "led": 0,
+                "color": "#000000",
+                "fade_ms": 390,
+                "hold_ms": 0
+              }
+            ],
+            "repeat": 2,
+            "on_finish": "off"
+          }
+        },
+        "compiled_program": {
+          "steps": [
+            {
+              "led": 0,
+              "color": "#000000",
+              "fade_ms": 0,
+              "hold_ms": 0
+            },
+            {
+              "led": 0,
+              "color": "#00a000",
+              "fade_ms": 380,
+              "hold_ms": 0
+            },
+            {
+              "led": 0,
+              "color": "#000000",
+              "fade_ms": 390,
+              "hold_ms": 0
+            }
+          ],
+          "repeat": 2,
+          "on_finish": "off"
+        },
+        "compile_contract": "nb1-program-effect/v1",
+        "revision": "sha256:f40afd16ca1e79c537a96954990150ec16806b1c461b08e1a9affdb60c48fd01"
+      },
+      "snapshot_package": {
+        "schema_version": 1,
+        "kind": "nb1-pattern-snapshot",
+        "records": [
+          {
+            "id": "build-success",
+            "title": "构建完成短提示",
+            "source": {
+              "program": {
+                "steps": [
+                  {
+                    "led": 0,
+                    "color": "#000000",
+                    "fade_ms": 0,
+                    "hold_ms": 0
+                  },
+                  {
+                    "led": 0,
+                    "color": "#00a000",
+                    "fade_ms": 380,
+                    "hold_ms": 0
+                  },
+                  {
+                    "led": 0,
+                    "color": "#000000",
+                    "fade_ms": 390,
+                    "hold_ms": 0
+                  }
+                ],
+                "repeat": 2,
+                "on_finish": "off"
+              }
+            },
+            "compiled_program": {
+              "steps": [
+                {
+                  "led": 0,
+                  "color": "#000000",
+                  "fade_ms": 0,
+                  "hold_ms": 0
+                },
+                {
+                  "led": 0,
+                  "color": "#00a000",
+                  "fade_ms": 380,
+                  "hold_ms": 0
+                },
+                {
+                  "led": 0,
+                  "color": "#000000",
+                  "fade_ms": 390,
+                  "hold_ms": 0
+                }
+              ],
+              "repeat": 2,
+              "on_finish": "off"
+            },
+            "compile_contract": "nb1-program-effect/v1",
+            "revision": "sha256:f40afd16ca1e79c537a96954990150ec16806b1c461b08e1a9affdb60c48fd01"
+          }
+        ]
+      },
+      "canonical_json": "{\"id\":\"build-success\",\"title\":\"构建完成短提示\",\"source\":{\"program\":{\"steps\":[{\"led\":0,\"color\":\"#000000\",\"fade_ms\":0,\"hold_ms\":0},{\"led\":0,\"color\":\"#00a000\",\"fade_ms\":380,\"hold_ms\":0},{\"led\":0,\"color\":\"#000000\",\"fade_ms\":390,\"hold_ms\":0}],\"repeat\":2,\"on_finish\":\"off\"}},\"compiled_program\":{\"steps\":[{\"led\":0,\"color\":\"#000000\",\"fade_ms\":0,\"hold_ms\":0},{\"led\":0,\"color\":\"#00a000\",\"fade_ms\":380,\"hold_ms\":0},{\"led\":0,\"color\":\"#000000\",\"fade_ms\":390,\"hold_ms\":0}],\"repeat\":2,\"on_finish\":\"off\"},\"compile_contract\":\"nb1-program-effect/v1\"}",
+      "canonical_hex": "7b226964223a226275696c642d73756363657373222c227469746c65223a22e69e84e5bbbae5ae8ce68890e79fade68f90e7a4ba222c22736f75726365223a7b2270726f6772616d223a7b227374657073223a5b7b226c6564223a302c22636f6c6f72223a2223303030303030222c22666164655f6d73223a302c22686f6c645f6d73223a307d2c7b226c6564223a302c22636f6c6f72223a2223303061303030222c22666164655f6d73223a3338302c22686f6c645f6d73223a307d2c7b226c6564223a302c22636f6c6f72223a2223303030303030222c22666164655f6d73223a3339302c22686f6c645f6d73223a307d5d2c22726570656174223a322c226f6e5f66696e697368223a226f6666227d7d2c22636f6d70696c65645f70726f6772616d223a7b227374657073223a5b7b226c6564223a302c22636f6c6f72223a2223303030303030222c22666164655f6d73223a302c22686f6c645f6d73223a307d2c7b226c6564223a302c22636f6c6f72223a2223303061303030222c22666164655f6d73223a3338302c22686f6c645f6d73223a307d2c7b226c6564223a302c22636f6c6f72223a2223303030303030222c22666164655f6d73223a3339302c22686f6c645f6d73223a307d5d2c22726570656174223a322c226f6e5f66696e697368223a226f6666227d2c22636f6d70696c655f636f6e7472616374223a226e62312d70726f6772616d2d6566666563742f7631227d",
+      "preimage_hex": "6e62312d7061747465726e2d7265636f72642f76310a7b226964223a226275696c642d73756363657373222c227469746c65223a22e69e84e5bbbae5ae8ce68890e79fade68f90e7a4ba222c22736f75726365223a7b2270726f6772616d223a7b227374657073223a5b7b226c6564223a302c22636f6c6f72223a2223303030303030222c22666164655f6d73223a302c22686f6c645f6d73223a307d2c7b226c6564223a302c22636f6c6f72223a2223303061303030222c22666164655f6d73223a3338302c22686f6c645f6d73223a307d2c7b226c6564223a302c22636f6c6f72223a2223303030303030222c22666164655f6d73223a3339302c22686f6c645f6d73223a307d5d2c22726570656174223a322c226f6e5f66696e697368223a226f6666227d7d2c22636f6d70696c65645f70726f6772616d223a7b227374657073223a5b7b226c6564223a302c22636f6c6f72223a2223303030303030222c22666164655f6d73223a302c22686f6c645f6d73223a307d2c7b226c6564223a302c22636f6c6f72223a2223303061303030222c22666164655f6d73223a3338302c22686f6c645f6d73223a307d2c7b226c6564223a302c22636f6c6f72223a2223303030303030222c22666164655f6d73223a3339302c22686f6c645f6d73223a307d5d2c22726570656174223a322c226f6e5f66696e697368223a226f6666227d2c22636f6d70696c655f636f6e7472616374223a226e62312d70726f6772616d2d6566666563742f7631227d",
+      "revision": "sha256:f40afd16ca1e79c537a96954990150ec16806b1c461b08e1a9affdb60c48fd01"
+    },
+    {
+      "name": "steady-defaults",
+      "authoring_package": {
+        "schema_version": 1,
+        "patterns": [
+          {
+            "id": "steady-ok",
+            "title": "常亮",
+            "effect": {
+              "kind": "steady",
+              "color": "#ABCDEF"
+            }
+          }
+        ]
+      },
+      "authoring_json": "{\"schema_version\":1,\"patterns\":[{\"id\":\"steady-ok\",\"title\":\"常亮\",\"effect\":{\"kind\":\"steady\",\"color\":\"#ABCDEF\"}}]}",
+      "record": {
+        "id": "steady-ok",
+        "title": "常亮",
+        "source": {
+          "effect": {
+            "kind": "steady",
+            "color": "#abcdef",
+            "led": 0,
+            "fade_ms": 0
+          }
+        },
+        "compiled_program": {
+          "steps": [
+            {
+              "led": 0,
+              "color": "#abcdef",
+              "fade_ms": 0,
+              "hold_ms": 0
+            }
+          ],
+          "repeat": 1,
+          "on_finish": "hold"
+        },
+        "compile_contract": "nb1-program-effect/v1",
+        "revision": "sha256:f5f9cfe5c920456701e18139a06dd7c73f8318413c5e7f3c4d30b30d911ed7fb"
+      },
+      "snapshot_package": {
+        "schema_version": 1,
+        "kind": "nb1-pattern-snapshot",
+        "records": [
+          {
+            "id": "steady-ok",
+            "title": "常亮",
+            "source": {
+              "effect": {
+                "kind": "steady",
+                "color": "#abcdef",
+                "led": 0,
+                "fade_ms": 0
+              }
+            },
+            "compiled_program": {
+              "steps": [
+                {
+                  "led": 0,
+                  "color": "#abcdef",
+                  "fade_ms": 0,
+                  "hold_ms": 0
+                }
+              ],
+              "repeat": 1,
+              "on_finish": "hold"
+            },
+            "compile_contract": "nb1-program-effect/v1",
+            "revision": "sha256:f5f9cfe5c920456701e18139a06dd7c73f8318413c5e7f3c4d30b30d911ed7fb"
+          }
+        ]
+      },
+      "canonical_json": "{\"id\":\"steady-ok\",\"title\":\"常亮\",\"source\":{\"effect\":{\"kind\":\"steady\",\"color\":\"#abcdef\",\"led\":0,\"fade_ms\":0}},\"compiled_program\":{\"steps\":[{\"led\":0,\"color\":\"#abcdef\",\"fade_ms\":0,\"hold_ms\":0}],\"repeat\":1,\"on_finish\":\"hold\"},\"compile_contract\":\"nb1-program-effect/v1\"}",
+      "canonical_hex": "7b226964223a227374656164792d6f6b222c227469746c65223a22e5b8b8e4baae222c22736f75726365223a7b22656666656374223a7b226b696e64223a22737465616479222c22636f6c6f72223a2223616263646566222c226c6564223a302c22666164655f6d73223a307d7d2c22636f6d70696c65645f70726f6772616d223a7b227374657073223a5b7b226c6564223a302c22636f6c6f72223a2223616263646566222c22666164655f6d73223a302c22686f6c645f6d73223a307d5d2c22726570656174223a312c226f6e5f66696e697368223a22686f6c64227d2c22636f6d70696c655f636f6e7472616374223a226e62312d70726f6772616d2d6566666563742f7631227d",
+      "preimage_hex": "6e62312d7061747465726e2d7265636f72642f76310a7b226964223a227374656164792d6f6b222c227469746c65223a22e5b8b8e4baae222c22736f75726365223a7b22656666656374223a7b226b696e64223a22737465616479222c22636f6c6f72223a2223616263646566222c226c6564223a302c22666164655f6d73223a307d7d2c22636f6d70696c65645f70726f6772616d223a7b227374657073223a5b7b226c6564223a302c22636f6c6f72223a2223616263646566222c22666164655f6d73223a302c22686f6c645f6d73223a307d5d2c22726570656174223a312c226f6e5f66696e697368223a22686f6c64227d2c22636f6d70696c655f636f6e7472616374223a226e62312d70726f6772616d2d6566666563742f7631227d",
+      "revision": "sha256:f5f9cfe5c920456701e18139a06dd7c73f8318413c5e7f3c4d30b30d911ed7fb"
+    },
+    {
+      "name": "steady-explicit-defaults",
+      "authoring_package": {
+        "schema_version": 1,
+        "patterns": [
+          {
+            "id": "steady-ok",
+            "title": "常亮",
+            "effect": {
+              "kind": "steady",
+              "color": "#abcdef",
+              "led": 0,
+              "fade_ms": 0
+            }
+          }
+        ]
+      },
+      "authoring_json": "{\"schema_version\":1,\"patterns\":[{\"id\":\"steady-ok\",\"title\":\"常亮\",\"effect\":{\"kind\":\"steady\",\"color\":\"#abcdef\",\"led\":0,\"fade_ms\":0}}]}",
+      "record": {
+        "id": "steady-ok",
+        "title": "常亮",
+        "source": {
+          "effect": {
+            "kind": "steady",
+            "color": "#abcdef",
+            "led": 0,
+            "fade_ms": 0
+          }
+        },
+        "compiled_program": {
+          "steps": [
+            {
+              "led": 0,
+              "color": "#abcdef",
+              "fade_ms": 0,
+              "hold_ms": 0
+            }
+          ],
+          "repeat": 1,
+          "on_finish": "hold"
+        },
+        "compile_contract": "nb1-program-effect/v1",
+        "revision": "sha256:f5f9cfe5c920456701e18139a06dd7c73f8318413c5e7f3c4d30b30d911ed7fb"
+      },
+      "snapshot_package": {
+        "schema_version": 1,
+        "kind": "nb1-pattern-snapshot",
+        "records": [
+          {
+            "id": "steady-ok",
+            "title": "常亮",
+            "source": {
+              "effect": {
+                "kind": "steady",
+                "color": "#abcdef",
+                "led": 0,
+                "fade_ms": 0
+              }
+            },
+            "compiled_program": {
+              "steps": [
+                {
+                  "led": 0,
+                  "color": "#abcdef",
+                  "fade_ms": 0,
+                  "hold_ms": 0
+                }
+              ],
+              "repeat": 1,
+              "on_finish": "hold"
+            },
+            "compile_contract": "nb1-program-effect/v1",
+            "revision": "sha256:f5f9cfe5c920456701e18139a06dd7c73f8318413c5e7f3c4d30b30d911ed7fb"
+          }
+        ]
+      },
+      "canonical_json": "{\"id\":\"steady-ok\",\"title\":\"常亮\",\"source\":{\"effect\":{\"kind\":\"steady\",\"color\":\"#abcdef\",\"led\":0,\"fade_ms\":0}},\"compiled_program\":{\"steps\":[{\"led\":0,\"color\":\"#abcdef\",\"fade_ms\":0,\"hold_ms\":0}],\"repeat\":1,\"on_finish\":\"hold\"},\"compile_contract\":\"nb1-program-effect/v1\"}",
+      "canonical_hex": "7b226964223a227374656164792d6f6b222c227469746c65223a22e5b8b8e4baae222c22736f75726365223a7b22656666656374223a7b226b696e64223a22737465616479222c22636f6c6f72223a2223616263646566222c226c6564223a302c22666164655f6d73223a307d7d2c22636f6d70696c65645f70726f6772616d223a7b227374657073223a5b7b226c6564223a302c22636f6c6f72223a2223616263646566222c22666164655f6d73223a302c22686f6c645f6d73223a307d5d2c22726570656174223a312c226f6e5f66696e697368223a22686f6c64227d2c22636f6d70696c655f636f6e7472616374223a226e62312d70726f6772616d2d6566666563742f7631227d",
+      "preimage_hex": "6e62312d7061747465726e2d7265636f72642f76310a7b226964223a227374656164792d6f6b222c227469746c65223a22e5b8b8e4baae222c22736f75726365223a7b22656666656374223a7b226b696e64223a22737465616479222c22636f6c6f72223a2223616263646566222c226c6564223a302c22666164655f6d73223a307d7d2c22636f6d70696c65645f70726f6772616d223a7b227374657073223a5b7b226c6564223a302c22636f6c6f72223a2223616263646566222c22666164655f6d73223a302c22686f6c645f6d73223a307d5d2c22726570656174223a312c226f6e5f66696e697368223a22686f6c64227d2c22636f6d70696c655f636f6e7472616374223a226e62312d70726f6772616d2d6566666563742f7631227d",
+      "revision": "sha256:f5f9cfe5c920456701e18139a06dd7c73f8318413c5e7f3c4d30b30d911ed7fb"
+    },
+    {
+      "name": "program-defaults",
+      "authoring_package": {
+        "schema_version": 1,
+        "patterns": [
+          {
+            "id": "program-default",
+            "title": "默认程序",
+            "program": {
+              "steps": [
+                {
+                  "color": "#ABCDEF"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "authoring_json": "{\"schema_version\":1,\"patterns\":[{\"id\":\"program-default\",\"title\":\"默认程序\",\"program\":{\"steps\":[{\"color\":\"#ABCDEF\"}]}}]}",
+      "record": {
+        "id": "program-default",
+        "title": "默认程序",
+        "source": {
+          "program": {
+            "steps": [
+              {
+                "led": 0,
+                "color": "#abcdef",
+                "fade_ms": 0,
+                "hold_ms": 0
+              }
+            ],
+            "repeat": 1,
+            "on_finish": "off"
+          }
+        },
+        "compiled_program": {
+          "steps": [
+            {
+              "led": 0,
+              "color": "#abcdef",
+              "fade_ms": 0,
+              "hold_ms": 0
+            }
+          ],
+          "repeat": 1,
+          "on_finish": "off"
+        },
+        "compile_contract": "nb1-program-effect/v1",
+        "revision": "sha256:479523f1f441363089722e7e3f33821b33acfc71f78244821fe4c4f69a1541c5"
+      },
+      "snapshot_package": {
+        "schema_version": 1,
+        "kind": "nb1-pattern-snapshot",
+        "records": [
+          {
+            "id": "program-default",
+            "title": "默认程序",
+            "source": {
+              "program": {
+                "steps": [
+                  {
+                    "led": 0,
+                    "color": "#abcdef",
+                    "fade_ms": 0,
+                    "hold_ms": 0
+                  }
+                ],
+                "repeat": 1,
+                "on_finish": "off"
+              }
+            },
+            "compiled_program": {
+              "steps": [
+                {
+                  "led": 0,
+                  "color": "#abcdef",
+                  "fade_ms": 0,
+                  "hold_ms": 0
+                }
+              ],
+              "repeat": 1,
+              "on_finish": "off"
+            },
+            "compile_contract": "nb1-program-effect/v1",
+            "revision": "sha256:479523f1f441363089722e7e3f33821b33acfc71f78244821fe4c4f69a1541c5"
+          }
+        ]
+      },
+      "canonical_json": "{\"id\":\"program-default\",\"title\":\"默认程序\",\"source\":{\"program\":{\"steps\":[{\"led\":0,\"color\":\"#abcdef\",\"fade_ms\":0,\"hold_ms\":0}],\"repeat\":1,\"on_finish\":\"off\"}},\"compiled_program\":{\"steps\":[{\"led\":0,\"color\":\"#abcdef\",\"fade_ms\":0,\"hold_ms\":0}],\"repeat\":1,\"on_finish\":\"off\"},\"compile_contract\":\"nb1-program-effect/v1\"}",
+      "canonical_hex": "7b226964223a2270726f6772616d2d64656661756c74222c227469746c65223a22e9bb98e8aea4e7a88be5ba8f222c22736f75726365223a7b2270726f6772616d223a7b227374657073223a5b7b226c6564223a302c22636f6c6f72223a2223616263646566222c22666164655f6d73223a302c22686f6c645f6d73223a307d5d2c22726570656174223a312c226f6e5f66696e697368223a226f6666227d7d2c22636f6d70696c65645f70726f6772616d223a7b227374657073223a5b7b226c6564223a302c22636f6c6f72223a2223616263646566222c22666164655f6d73223a302c22686f6c645f6d73223a307d5d2c22726570656174223a312c226f6e5f66696e697368223a226f6666227d2c22636f6d70696c655f636f6e7472616374223a226e62312d70726f6772616d2d6566666563742f7631227d",
+      "preimage_hex": "6e62312d7061747465726e2d7265636f72642f76310a7b226964223a2270726f6772616d2d64656661756c74222c227469746c65223a22e9bb98e8aea4e7a88be5ba8f222c22736f75726365223a7b2270726f6772616d223a7b227374657073223a5b7b226c6564223a302c22636f6c6f72223a2223616263646566222c22666164655f6d73223a302c22686f6c645f6d73223a307d5d2c22726570656174223a312c226f6e5f66696e697368223a226f6666227d7d2c22636f6d70696c65645f70726f6772616d223a7b227374657073223a5b7b226c6564223a302c22636f6c6f72223a2223616263646566222c22666164655f6d73223a302c22686f6c645f6d73223a307d5d2c22726570656174223a312c226f6e5f66696e697368223a226f6666227d2c22636f6d70696c655f636f6e7472616374223a226e62312d70726f6772616d2d6566666563742f7631227d",
+      "revision": "sha256:479523f1f441363089722e7e3f33821b33acfc71f78244821fe4c4f69a1541c5"
+    },
+    {
+      "name": "program-explicit-defaults",
+      "authoring_package": {
+        "schema_version": 1,
+        "patterns": [
+          {
+            "id": "program-default",
+            "title": "默认程序",
+            "program": {
+              "on_finish": "off",
+              "repeat": 1,
+              "steps": [
+                {
+                  "hold_ms": 0,
+                  "fade_ms": 0,
+                  "color": "#abcdef",
+                  "led": 0
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "authoring_json": "{\"schema_version\":1,\"patterns\":[{\"id\":\"program-default\",\"title\":\"默认程序\",\"program\":{\"on_finish\":\"off\",\"repeat\":1,\"steps\":[{\"hold_ms\":0,\"fade_ms\":0,\"color\":\"#abcdef\",\"led\":0}]}}]}",
+      "record": {
+        "id": "program-default",
+        "title": "默认程序",
+        "source": {
+          "program": {
+            "steps": [
+              {
+                "led": 0,
+                "color": "#abcdef",
+                "fade_ms": 0,
+                "hold_ms": 0
+              }
+            ],
+            "repeat": 1,
+            "on_finish": "off"
+          }
+        },
+        "compiled_program": {
+          "steps": [
+            {
+              "led": 0,
+              "color": "#abcdef",
+              "fade_ms": 0,
+              "hold_ms": 0
+            }
+          ],
+          "repeat": 1,
+          "on_finish": "off"
+        },
+        "compile_contract": "nb1-program-effect/v1",
+        "revision": "sha256:479523f1f441363089722e7e3f33821b33acfc71f78244821fe4c4f69a1541c5"
+      },
+      "snapshot_package": {
+        "schema_version": 1,
+        "kind": "nb1-pattern-snapshot",
+        "records": [
+          {
+            "id": "program-default",
+            "title": "默认程序",
+            "source": {
+              "program": {
+                "steps": [
+                  {
+                    "led": 0,
+                    "color": "#abcdef",
+                    "fade_ms": 0,
+                    "hold_ms": 0
+                  }
+                ],
+                "repeat": 1,
+                "on_finish": "off"
+              }
+            },
+            "compiled_program": {
+              "steps": [
+                {
+                  "led": 0,
+                  "color": "#abcdef",
+                  "fade_ms": 0,
+                  "hold_ms": 0
+                }
+              ],
+              "repeat": 1,
+              "on_finish": "off"
+            },
+            "compile_contract": "nb1-program-effect/v1",
+            "revision": "sha256:479523f1f441363089722e7e3f33821b33acfc71f78244821fe4c4f69a1541c5"
+          }
+        ]
+      },
+      "canonical_json": "{\"id\":\"program-default\",\"title\":\"默认程序\",\"source\":{\"program\":{\"steps\":[{\"led\":0,\"color\":\"#abcdef\",\"fade_ms\":0,\"hold_ms\":0}],\"repeat\":1,\"on_finish\":\"off\"}},\"compiled_program\":{\"steps\":[{\"led\":0,\"color\":\"#abcdef\",\"fade_ms\":0,\"hold_ms\":0}],\"repeat\":1,\"on_finish\":\"off\"},\"compile_contract\":\"nb1-program-effect/v1\"}",
+      "canonical_hex": "7b226964223a2270726f6772616d2d64656661756c74222c227469746c65223a22e9bb98e8aea4e7a88be5ba8f222c22736f75726365223a7b2270726f6772616d223a7b227374657073223a5b7b226c6564223a302c22636f6c6f72223a2223616263646566222c22666164655f6d73223a302c22686f6c645f6d73223a307d5d2c22726570656174223a312c226f6e5f66696e697368223a226f6666227d7d2c22636f6d70696c65645f70726f6772616d223a7b227374657073223a5b7b226c6564223a302c22636f6c6f72223a2223616263646566222c22666164655f6d73223a302c22686f6c645f6d73223a307d5d2c22726570656174223a312c226f6e5f66696e697368223a226f6666227d2c22636f6d70696c655f636f6e7472616374223a226e62312d70726f6772616d2d6566666563742f7631227d",
+      "preimage_hex": "6e62312d7061747465726e2d7265636f72642f76310a7b226964223a2270726f6772616d2d64656661756c74222c227469746c65223a22e9bb98e8aea4e7a88be5ba8f222c22736f75726365223a7b2270726f6772616d223a7b227374657073223a5b7b226c6564223a302c22636f6c6f72223a2223616263646566222c22666164655f6d73223a302c22686f6c645f6d73223a307d5d2c22726570656174223a312c226f6e5f66696e697368223a226f6666227d7d2c22636f6d70696c65645f70726f6772616d223a7b227374657073223a5b7b226c6564223a302c22636f6c6f72223a2223616263646566222c22666164655f6d73223a302c22686f6c645f6d73223a307d5d2c22726570656174223a312c226f6e5f66696e697368223a226f6666227d2c22636f6d70696c655f636f6e7472616374223a226e62312d70726f6772616d2d6566666563742f7631227d",
+      "revision": "sha256:479523f1f441363089722e7e3f33821b33acfc71f78244821fe4c4f69a1541c5"
+    },
+    {
+      "name": "all-C0-quote-backslash-html-lines-emoji",
+      "authoring_package": {
+        "schema_version": 1,
+        "patterns": [
+          {
+            "id": "all-escapes",
+            "title": "\u0000\u0001\u0002\u0003\u0004\u0005\u0006\u0007\b\t\n\u000b\f\r\u000e\u000f\u0010\u0011\u0012\u0013\u0014\u0015\u0016\u0017\u0018\u0019\u001a\u001b\u001c\u001d\u001e\u001f\"\\<>&/  😀",
+            "effect": {
+              "kind": "steady",
+              "color": "#102030",
+              "led": 2,
+              "fade_ms": 10
+            }
+          }
+        ]
+      },
+      "authoring_json": "{\"schema_version\":1,\"patterns\":[{\"id\":\"all-escapes\",\"title\":\"\\u0000\\u0001\\u0002\\u0003\\u0004\\u0005\\u0006\\u0007\\b\\t\\n\\u000b\\f\\r\\u000e\\u000f\\u0010\\u0011\\u0012\\u0013\\u0014\\u0015\\u0016\\u0017\\u0018\\u0019\\u001a\\u001b\\u001c\\u001d\\u001e\\u001f\\\"\\\\<>&/  😀\",\"effect\":{\"kind\":\"steady\",\"color\":\"#102030\",\"led\":2,\"fade_ms\":10}}]}",
+      "record": {
+        "id": "all-escapes",
+        "title": "\u0000\u0001\u0002\u0003\u0004\u0005\u0006\u0007\b\t\n\u000b\f\r\u000e\u000f\u0010\u0011\u0012\u0013\u0014\u0015\u0016\u0017\u0018\u0019\u001a\u001b\u001c\u001d\u001e\u001f\"\\<>&/  😀",
+        "source": {
+          "effect": {
+            "kind": "steady",
+            "color": "#102030",
+            "led": 2,
+            "fade_ms": 10
+          }
+        },
+        "compiled_program": {
+          "steps": [
+            {
+              "led": 2,
+              "color": "#102030",
+              "fade_ms": 10,
+              "hold_ms": 0
+            }
+          ],
+          "repeat": 1,
+          "on_finish": "hold"
+        },
+        "compile_contract": "nb1-program-effect/v1",
+        "revision": "sha256:4d6f597c78adc704b229aef9b8968d2be961d9f24a7a32b671aa8480da47128e"
+      },
+      "snapshot_package": {
+        "schema_version": 1,
+        "kind": "nb1-pattern-snapshot",
+        "records": [
+          {
+            "id": "all-escapes",
+            "title": "\u0000\u0001\u0002\u0003\u0004\u0005\u0006\u0007\b\t\n\u000b\f\r\u000e\u000f\u0010\u0011\u0012\u0013\u0014\u0015\u0016\u0017\u0018\u0019\u001a\u001b\u001c\u001d\u001e\u001f\"\\<>&/  😀",
+            "source": {
+              "effect": {
+                "kind": "steady",
+                "color": "#102030",
+                "led": 2,
+                "fade_ms": 10
+              }
+            },
+            "compiled_program": {
+              "steps": [
+                {
+                  "led": 2,
+                  "color": "#102030",
+                  "fade_ms": 10,
+                  "hold_ms": 0
+                }
+              ],
+              "repeat": 1,
+              "on_finish": "hold"
+            },
+            "compile_contract": "nb1-program-effect/v1",
+            "revision": "sha256:4d6f597c78adc704b229aef9b8968d2be961d9f24a7a32b671aa8480da47128e"
+          }
+        ]
+      },
+      "canonical_json": "{\"id\":\"all-escapes\",\"title\":\"\\u0000\\u0001\\u0002\\u0003\\u0004\\u0005\\u0006\\u0007\\u0008\\u0009\\u000a\\u000b\\u000c\\u000d\\u000e\\u000f\\u0010\\u0011\\u0012\\u0013\\u0014\\u0015\\u0016\\u0017\\u0018\\u0019\\u001a\\u001b\\u001c\\u001d\\u001e\\u001f\\\"\\\\<>&/  😀\",\"source\":{\"effect\":{\"kind\":\"steady\",\"color\":\"#102030\",\"led\":2,\"fade_ms\":10}},\"compiled_program\":{\"steps\":[{\"led\":2,\"color\":\"#102030\",\"fade_ms\":10,\"hold_ms\":0}],\"repeat\":1,\"on_finish\":\"hold\"},\"compile_contract\":\"nb1-program-effect/v1\"}",
+      "canonical_hex": "7b226964223a22616c6c2d65736361706573222c227469746c65223a225c75303030305c75303030315c75303030325c75303030335c75303030345c75303030355c75303030365c75303030375c75303030385c75303030395c75303030615c75303030625c75303030635c75303030645c75303030655c75303030665c75303031305c75303031315c75303031325c75303031335c75303031345c75303031355c75303031365c75303031375c75303031385c75303031395c75303031615c75303031625c75303031635c75303031645c75303031655c75303031665c225c5c3c3e262fe280a8e280a9f09f9880222c22736f75726365223a7b22656666656374223a7b226b696e64223a22737465616479222c22636f6c6f72223a2223313032303330222c226c6564223a322c22666164655f6d73223a31307d7d2c22636f6d70696c65645f70726f6772616d223a7b227374657073223a5b7b226c6564223a322c22636f6c6f72223a2223313032303330222c22666164655f6d73223a31302c22686f6c645f6d73223a307d5d2c22726570656174223a312c226f6e5f66696e697368223a22686f6c64227d2c22636f6d70696c655f636f6e7472616374223a226e62312d70726f6772616d2d6566666563742f7631227d",
+      "preimage_hex": "6e62312d7061747465726e2d7265636f72642f76310a7b226964223a22616c6c2d65736361706573222c227469746c65223a225c75303030305c75303030315c75303030325c75303030335c75303030345c75303030355c75303030365c75303030375c75303030385c75303030395c75303030615c75303030625c75303030635c75303030645c75303030655c75303030665c75303031305c75303031315c75303031325c75303031335c75303031345c75303031355c75303031365c75303031375c75303031385c75303031395c75303031615c75303031625c75303031635c75303031645c75303031655c75303031665c225c5c3c3e262fe280a8e280a9f09f9880222c22736f75726365223a7b22656666656374223a7b226b696e64223a22737465616479222c22636f6c6f72223a2223313032303330222c226c6564223a322c22666164655f6d73223a31307d7d2c22636f6d70696c65645f70726f6772616d223a7b227374657073223a5b7b226c6564223a322c22636f6c6f72223a2223313032303330222c22666164655f6d73223a31302c22686f6c645f6d73223a307d5d2c22726570656174223a312c226f6e5f66696e697368223a22686f6c64227d2c22636f6d70696c655f636f6e7472616374223a226e62312d70726f6772616d2d6566666563742f7631227d",
+      "revision": "sha256:4d6f597c78adc704b229aef9b8968d2be961d9f24a7a32b671aa8480da47128e"
+    },
+    {
+      "name": "unicode-precomposed",
+      "authoring_package": {
+        "schema_version": 1,
+        "patterns": [
+          {
+            "id": "unicode",
+            "title": "café",
+            "effect": {
+              "kind": "steady",
+              "color": "#abcdef"
+            }
+          }
+        ]
+      },
+      "authoring_json": "{\"schema_version\":1,\"patterns\":[{\"id\":\"unicode\",\"title\":\"café\",\"effect\":{\"kind\":\"steady\",\"color\":\"#abcdef\"}}]}",
+      "record": {
+        "id": "unicode",
+        "title": "café",
+        "source": {
+          "effect": {
+            "kind": "steady",
+            "color": "#abcdef",
+            "led": 0,
+            "fade_ms": 0
+          }
+        },
+        "compiled_program": {
+          "steps": [
+            {
+              "led": 0,
+              "color": "#abcdef",
+              "fade_ms": 0,
+              "hold_ms": 0
+            }
+          ],
+          "repeat": 1,
+          "on_finish": "hold"
+        },
+        "compile_contract": "nb1-program-effect/v1",
+        "revision": "sha256:383902e3930cc26a7a18139d5ce9dfdcbaff2e93ecead26c258e6f545abb0849"
+      },
+      "snapshot_package": {
+        "schema_version": 1,
+        "kind": "nb1-pattern-snapshot",
+        "records": [
+          {
+            "id": "unicode",
+            "title": "café",
+            "source": {
+              "effect": {
+                "kind": "steady",
+                "color": "#abcdef",
+                "led": 0,
+                "fade_ms": 0
+              }
+            },
+            "compiled_program": {
+              "steps": [
+                {
+                  "led": 0,
+                  "color": "#abcdef",
+                  "fade_ms": 0,
+                  "hold_ms": 0
+                }
+              ],
+              "repeat": 1,
+              "on_finish": "hold"
+            },
+            "compile_contract": "nb1-program-effect/v1",
+            "revision": "sha256:383902e3930cc26a7a18139d5ce9dfdcbaff2e93ecead26c258e6f545abb0849"
+          }
+        ]
+      },
+      "canonical_json": "{\"id\":\"unicode\",\"title\":\"café\",\"source\":{\"effect\":{\"kind\":\"steady\",\"color\":\"#abcdef\",\"led\":0,\"fade_ms\":0}},\"compiled_program\":{\"steps\":[{\"led\":0,\"color\":\"#abcdef\",\"fade_ms\":0,\"hold_ms\":0}],\"repeat\":1,\"on_finish\":\"hold\"},\"compile_contract\":\"nb1-program-effect/v1\"}",
+      "canonical_hex": "7b226964223a22756e69636f6465222c227469746c65223a22636166c3a9222c22736f75726365223a7b22656666656374223a7b226b696e64223a22737465616479222c22636f6c6f72223a2223616263646566222c226c6564223a302c22666164655f6d73223a307d7d2c22636f6d70696c65645f70726f6772616d223a7b227374657073223a5b7b226c6564223a302c22636f6c6f72223a2223616263646566222c22666164655f6d73223a302c22686f6c645f6d73223a307d5d2c22726570656174223a312c226f6e5f66696e697368223a22686f6c64227d2c22636f6d70696c655f636f6e7472616374223a226e62312d70726f6772616d2d6566666563742f7631227d",
+      "preimage_hex": "6e62312d7061747465726e2d7265636f72642f76310a7b226964223a22756e69636f6465222c227469746c65223a22636166c3a9222c22736f75726365223a7b22656666656374223a7b226b696e64223a22737465616479222c22636f6c6f72223a2223616263646566222c226c6564223a302c22666164655f6d73223a307d7d2c22636f6d70696c65645f70726f6772616d223a7b227374657073223a5b7b226c6564223a302c22636f6c6f72223a2223616263646566222c22666164655f6d73223a302c22686f6c645f6d73223a307d5d2c22726570656174223a312c226f6e5f66696e697368223a22686f6c64227d2c22636f6d70696c655f636f6e7472616374223a226e62312d70726f6772616d2d6566666563742f7631227d",
+      "revision": "sha256:383902e3930cc26a7a18139d5ce9dfdcbaff2e93ecead26c258e6f545abb0849"
+    },
+    {
+      "name": "unicode-decomposed",
+      "authoring_package": {
+        "schema_version": 1,
+        "patterns": [
+          {
+            "id": "unicode",
+            "title": "café",
+            "effect": {
+              "kind": "steady",
+              "color": "#abcdef"
+            }
+          }
+        ]
+      },
+      "authoring_json": "{\"schema_version\":1,\"patterns\":[{\"id\":\"unicode\",\"title\":\"café\",\"effect\":{\"kind\":\"steady\",\"color\":\"#abcdef\"}}]}",
+      "record": {
+        "id": "unicode",
+        "title": "café",
+        "source": {
+          "effect": {
+            "kind": "steady",
+            "color": "#abcdef",
+            "led": 0,
+            "fade_ms": 0
+          }
+        },
+        "compiled_program": {
+          "steps": [
+            {
+              "led": 0,
+              "color": "#abcdef",
+              "fade_ms": 0,
+              "hold_ms": 0
+            }
+          ],
+          "repeat": 1,
+          "on_finish": "hold"
+        },
+        "compile_contract": "nb1-program-effect/v1",
+        "revision": "sha256:de82e7e2104ad6afb8da384bba5853109d8f218622c46d8613b0d24018f78783"
+      },
+      "snapshot_package": {
+        "schema_version": 1,
+        "kind": "nb1-pattern-snapshot",
+        "records": [
+          {
+            "id": "unicode",
+            "title": "café",
+            "source": {
+              "effect": {
+                "kind": "steady",
+                "color": "#abcdef",
+                "led": 0,
+                "fade_ms": 0
+              }
+            },
+            "compiled_program": {
+              "steps": [
+                {
+                  "led": 0,
+                  "color": "#abcdef",
+                  "fade_ms": 0,
+                  "hold_ms": 0
+                }
+              ],
+              "repeat": 1,
+              "on_finish": "hold"
+            },
+            "compile_contract": "nb1-program-effect/v1",
+            "revision": "sha256:de82e7e2104ad6afb8da384bba5853109d8f218622c46d8613b0d24018f78783"
+          }
+        ]
+      },
+      "canonical_json": "{\"id\":\"unicode\",\"title\":\"café\",\"source\":{\"effect\":{\"kind\":\"steady\",\"color\":\"#abcdef\",\"led\":0,\"fade_ms\":0}},\"compiled_program\":{\"steps\":[{\"led\":0,\"color\":\"#abcdef\",\"fade_ms\":0,\"hold_ms\":0}],\"repeat\":1,\"on_finish\":\"hold\"},\"compile_contract\":\"nb1-program-effect/v1\"}",
+      "canonical_hex": "7b226964223a22756e69636f6465222c227469746c65223a2263616665cc81222c22736f75726365223a7b22656666656374223a7b226b696e64223a22737465616479222c22636f6c6f72223a2223616263646566222c226c6564223a302c22666164655f6d73223a307d7d2c22636f6d70696c65645f70726f6772616d223a7b227374657073223a5b7b226c6564223a302c22636f6c6f72223a2223616263646566222c22666164655f6d73223a302c22686f6c645f6d73223a307d5d2c22726570656174223a312c226f6e5f66696e697368223a22686f6c64227d2c22636f6d70696c655f636f6e7472616374223a226e62312d70726f6772616d2d6566666563742f7631227d",
+      "preimage_hex": "6e62312d7061747465726e2d7265636f72642f76310a7b226964223a22756e69636f6465222c227469746c65223a2263616665cc81222c22736f75726365223a7b22656666656374223a7b226b696e64223a22737465616479222c22636f6c6f72223a2223616263646566222c226c6564223a302c22666164655f6d73223a307d7d2c22636f6d70696c65645f70726f6772616d223a7b227374657073223a5b7b226c6564223a302c22636f6c6f72223a2223616263646566222c22666164655f6d73223a302c22686f6c645f6d73223a307d5d2c22726570656174223a312c226f6e5f66696e697368223a22686f6c64227d2c22636f6d70696c655f636f6e7472616374223a226e62312d70726f6772616d2d6566666563742f7631227d",
+      "revision": "sha256:de82e7e2104ad6afb8da384bba5853109d8f218622c46d8613b0d24018f78783"
+    },
+    {
+      "name": "unicode-alternate-JSON-escapes-order-whitespace",
+      "authoring_package": {
+        "schema_version": 1,
+        "patterns": [
+          {
+            "id": "unicode",
+            "title": "café",
+            "effect": {
+              "kind": "steady",
+              "color": "#abcdef"
+            }
+          }
+        ]
+      },
+      "authoring_json": "{\n  \"patterns\": [\n    {\n      \"effect\": {\n        \"color\": \"#abcdef\",\n        \"kind\": \"steady\"\n      },\n      \"id\": \"unicode\",\n      \"title\": \"caf\\u00e9\"\n    }\n  ],\n  \"schema_version\": 1\n}",
+      "record": {
+        "id": "unicode",
+        "title": "café",
+        "source": {
+          "effect": {
+            "kind": "steady",
+            "color": "#abcdef",
+            "led": 0,
+            "fade_ms": 0
+          }
+        },
+        "compiled_program": {
+          "steps": [
+            {
+              "led": 0,
+              "color": "#abcdef",
+              "fade_ms": 0,
+              "hold_ms": 0
+            }
+          ],
+          "repeat": 1,
+          "on_finish": "hold"
+        },
+        "compile_contract": "nb1-program-effect/v1",
+        "revision": "sha256:383902e3930cc26a7a18139d5ce9dfdcbaff2e93ecead26c258e6f545abb0849"
+      },
+      "snapshot_package": {
+        "schema_version": 1,
+        "kind": "nb1-pattern-snapshot",
+        "records": [
+          {
+            "id": "unicode",
+            "title": "café",
+            "source": {
+              "effect": {
+                "kind": "steady",
+                "color": "#abcdef",
+                "led": 0,
+                "fade_ms": 0
+              }
+            },
+            "compiled_program": {
+              "steps": [
+                {
+                  "led": 0,
+                  "color": "#abcdef",
+                  "fade_ms": 0,
+                  "hold_ms": 0
+                }
+              ],
+              "repeat": 1,
+              "on_finish": "hold"
+            },
+            "compile_contract": "nb1-program-effect/v1",
+            "revision": "sha256:383902e3930cc26a7a18139d5ce9dfdcbaff2e93ecead26c258e6f545abb0849"
+          }
+        ]
+      },
+      "canonical_json": "{\"id\":\"unicode\",\"title\":\"café\",\"source\":{\"effect\":{\"kind\":\"steady\",\"color\":\"#abcdef\",\"led\":0,\"fade_ms\":0}},\"compiled_program\":{\"steps\":[{\"led\":0,\"color\":\"#abcdef\",\"fade_ms\":0,\"hold_ms\":0}],\"repeat\":1,\"on_finish\":\"hold\"},\"compile_contract\":\"nb1-program-effect/v1\"}",
+      "canonical_hex": "7b226964223a22756e69636f6465222c227469746c65223a22636166c3a9222c22736f75726365223a7b22656666656374223a7b226b696e64223a22737465616479222c22636f6c6f72223a2223616263646566222c226c6564223a302c22666164655f6d73223a307d7d2c22636f6d70696c65645f70726f6772616d223a7b227374657073223a5b7b226c6564223a302c22636f6c6f72223a2223616263646566222c22666164655f6d73223a302c22686f6c645f6d73223a307d5d2c22726570656174223a312c226f6e5f66696e697368223a22686f6c64227d2c22636f6d70696c655f636f6e7472616374223a226e62312d70726f6772616d2d6566666563742f7631227d",
+      "preimage_hex": "6e62312d7061747465726e2d7265636f72642f76310a7b226964223a22756e69636f6465222c227469746c65223a22636166c3a9222c22736f75726365223a7b22656666656374223a7b226b696e64223a22737465616479222c22636f6c6f72223a2223616263646566222c226c6564223a302c22666164655f6d73223a307d7d2c22636f6d70696c65645f70726f6772616d223a7b227374657073223a5b7b226c6564223a302c22636f6c6f72223a2223616263646566222c22666164655f6d73223a302c22686f6c645f6d73223a307d5d2c22726570656174223a312c226f6e5f66696e697368223a22686f6c64227d2c22636f6d70696c655f636f6e7472616374223a226e62312d70726f6772616d2d6566666563742f7631227d",
+      "revision": "sha256:383902e3930cc26a7a18139d5ce9dfdcbaff2e93ecead26c258e6f545abb0849"
+    },
+    {
+      "name": "id-uppercase",
+      "authoring_package": {
+        "schema_version": 1,
+        "patterns": [
+          {
+            "id": "Build-Success",
+            "title": "ID区分大小写",
+            "effect": {
+              "kind": "steady",
+              "color": "#112233"
+            }
+          }
+        ]
+      },
+      "authoring_json": "{\"schema_version\":1,\"patterns\":[{\"id\":\"Build-Success\",\"title\":\"ID区分大小写\",\"effect\":{\"kind\":\"steady\",\"color\":\"#112233\"}}]}",
+      "record": {
+        "id": "Build-Success",
+        "title": "ID区分大小写",
+        "source": {
+          "effect": {
+            "kind": "steady",
+            "color": "#112233",
+            "led": 0,
+            "fade_ms": 0
+          }
+        },
+        "compiled_program": {
+          "steps": [
+            {
+              "led": 0,
+              "color": "#112233",
+              "fade_ms": 0,
+              "hold_ms": 0
+            }
+          ],
+          "repeat": 1,
+          "on_finish": "hold"
+        },
+        "compile_contract": "nb1-program-effect/v1",
+        "revision": "sha256:3871212030f1b34de76b511398fcb3ac8af92392d25c62e555c1640a0d0b714c"
+      },
+      "snapshot_package": {
+        "schema_version": 1,
+        "kind": "nb1-pattern-snapshot",
+        "records": [
+          {
+            "id": "Build-Success",
+            "title": "ID区分大小写",
+            "source": {
+              "effect": {
+                "kind": "steady",
+                "color": "#112233",
+                "led": 0,
+                "fade_ms": 0
+              }
+            },
+            "compiled_program": {
+              "steps": [
+                {
+                  "led": 0,
+                  "color": "#112233",
+                  "fade_ms": 0,
+                  "hold_ms": 0
+                }
+              ],
+              "repeat": 1,
+              "on_finish": "hold"
+            },
+            "compile_contract": "nb1-program-effect/v1",
+            "revision": "sha256:3871212030f1b34de76b511398fcb3ac8af92392d25c62e555c1640a0d0b714c"
+          }
+        ]
+      },
+      "canonical_json": "{\"id\":\"Build-Success\",\"title\":\"ID区分大小写\",\"source\":{\"effect\":{\"kind\":\"steady\",\"color\":\"#112233\",\"led\":0,\"fade_ms\":0}},\"compiled_program\":{\"steps\":[{\"led\":0,\"color\":\"#112233\",\"fade_ms\":0,\"hold_ms\":0}],\"repeat\":1,\"on_finish\":\"hold\"},\"compile_contract\":\"nb1-program-effect/v1\"}",
+      "canonical_hex": "7b226964223a224275696c642d53756363657373222c227469746c65223a224944e58cbae58886e5a4a7e5b08fe58699222c22736f75726365223a7b22656666656374223a7b226b696e64223a22737465616479222c22636f6c6f72223a2223313132323333222c226c6564223a302c22666164655f6d73223a307d7d2c22636f6d70696c65645f70726f6772616d223a7b227374657073223a5b7b226c6564223a302c22636f6c6f72223a2223313132323333222c22666164655f6d73223a302c22686f6c645f6d73223a307d5d2c22726570656174223a312c226f6e5f66696e697368223a22686f6c64227d2c22636f6d70696c655f636f6e7472616374223a226e62312d70726f6772616d2d6566666563742f7631227d",
+      "preimage_hex": "6e62312d7061747465726e2d7265636f72642f76310a7b226964223a224275696c642d53756363657373222c227469746c65223a224944e58cbae58886e5a4a7e5b08fe58699222c22736f75726365223a7b22656666656374223a7b226b696e64223a22737465616479222c22636f6c6f72223a2223313132323333222c226c6564223a302c22666164655f6d73223a307d7d2c22636f6d70696c65645f70726f6772616d223a7b227374657073223a5b7b226c6564223a302c22636f6c6f72223a2223313132323333222c22666164655f6d73223a302c22686f6c645f6d73223a307d5d2c22726570656174223a312c226f6e5f66696e697368223a22686f6c64227d2c22636f6d70696c655f636f6e7472616374223a226e62312d70726f6772616d2d6566666563742f7631227d",
+      "revision": "sha256:3871212030f1b34de76b511398fcb3ac8af92392d25c62e555c1640a0d0b714c"
+    },
+    {
+      "name": "id-lowercase",
+      "authoring_package": {
+        "schema_version": 1,
+        "patterns": [
+          {
+            "id": "build-success",
+            "title": "ID区分大小写",
+            "effect": {
+              "kind": "steady",
+              "color": "#112233"
+            }
+          }
+        ]
+      },
+      "authoring_json": "{\"schema_version\":1,\"patterns\":[{\"id\":\"build-success\",\"title\":\"ID区分大小写\",\"effect\":{\"kind\":\"steady\",\"color\":\"#112233\"}}]}",
+      "record": {
+        "id": "build-success",
+        "title": "ID区分大小写",
+        "source": {
+          "effect": {
+            "kind": "steady",
+            "color": "#112233",
+            "led": 0,
+            "fade_ms": 0
+          }
+        },
+        "compiled_program": {
+          "steps": [
+            {
+              "led": 0,
+              "color": "#112233",
+              "fade_ms": 0,
+              "hold_ms": 0
+            }
+          ],
+          "repeat": 1,
+          "on_finish": "hold"
+        },
+        "compile_contract": "nb1-program-effect/v1",
+        "revision": "sha256:fb4ec233c5141a4174aca9c594f4d68a2460b6f5cf497f3b6c98944b034f0454"
+      },
+      "snapshot_package": {
+        "schema_version": 1,
+        "kind": "nb1-pattern-snapshot",
+        "records": [
+          {
+            "id": "build-success",
+            "title": "ID区分大小写",
+            "source": {
+              "effect": {
+                "kind": "steady",
+                "color": "#112233",
+                "led": 0,
+                "fade_ms": 0
+              }
+            },
+            "compiled_program": {
+              "steps": [
+                {
+                  "led": 0,
+                  "color": "#112233",
+                  "fade_ms": 0,
+                  "hold_ms": 0
+                }
+              ],
+              "repeat": 1,
+              "on_finish": "hold"
+            },
+            "compile_contract": "nb1-program-effect/v1",
+            "revision": "sha256:fb4ec233c5141a4174aca9c594f4d68a2460b6f5cf497f3b6c98944b034f0454"
+          }
+        ]
+      },
+      "canonical_json": "{\"id\":\"build-success\",\"title\":\"ID区分大小写\",\"source\":{\"effect\":{\"kind\":\"steady\",\"color\":\"#112233\",\"led\":0,\"fade_ms\":0}},\"compiled_program\":{\"steps\":[{\"led\":0,\"color\":\"#112233\",\"fade_ms\":0,\"hold_ms\":0}],\"repeat\":1,\"on_finish\":\"hold\"},\"compile_contract\":\"nb1-program-effect/v1\"}",
+      "canonical_hex": "7b226964223a226275696c642d73756363657373222c227469746c65223a224944e58cbae58886e5a4a7e5b08fe58699222c22736f75726365223a7b22656666656374223a7b226b696e64223a22737465616479222c22636f6c6f72223a2223313132323333222c226c6564223a302c22666164655f6d73223a307d7d2c22636f6d70696c65645f70726f6772616d223a7b227374657073223a5b7b226c6564223a302c22636f6c6f72223a2223313132323333222c22666164655f6d73223a302c22686f6c645f6d73223a307d5d2c22726570656174223a312c226f6e5f66696e697368223a22686f6c64227d2c22636f6d70696c655f636f6e7472616374223a226e62312d70726f6772616d2d6566666563742f7631227d",
+      "preimage_hex": "6e62312d7061747465726e2d7265636f72642f76310a7b226964223a226275696c642d73756363657373222c227469746c65223a224944e58cbae58886e5a4a7e5b08fe58699222c22736f75726365223a7b22656666656374223a7b226b696e64223a22737465616479222c22636f6c6f72223a2223313132323333222c226c6564223a302c22666164655f6d73223a307d7d2c22636f6d70696c65645f70726f6772616d223a7b227374657073223a5b7b226c6564223a302c22636f6c6f72223a2223313132323333222c22666164655f6d73223a302c22686f6c645f6d73223a307d5d2c22726570656174223a312c226f6e5f66696e697368223a22686f6c64227d2c22636f6d70696c655f636f6e7472616374223a226e62312d70726f6772616d2d6566666563742f7631227d",
+      "revision": "sha256:fb4ec233c5141a4174aca9c594f4d68a2460b6f5cf497f3b6c98944b034f0454"
+    },
+    {
+      "name": "title-preserves-spaces",
+      "authoring_package": {
+        "schema_version": 1,
+        "patterns": [
+          {
+            "id": "steady-ok",
+            "title": "  常亮  ",
+            "effect": {
+              "kind": "steady",
+              "color": "#ABCDEF"
+            }
+          }
+        ]
+      },
+      "authoring_json": "{\"schema_version\":1,\"patterns\":[{\"id\":\"steady-ok\",\"title\":\"  常亮  \",\"effect\":{\"kind\":\"steady\",\"color\":\"#ABCDEF\"}}]}",
+      "record": {
+        "id": "steady-ok",
+        "title": "  常亮  ",
+        "source": {
+          "effect": {
+            "kind": "steady",
+            "color": "#abcdef",
+            "led": 0,
+            "fade_ms": 0
+          }
+        },
+        "compiled_program": {
+          "steps": [
+            {
+              "led": 0,
+              "color": "#abcdef",
+              "fade_ms": 0,
+              "hold_ms": 0
+            }
+          ],
+          "repeat": 1,
+          "on_finish": "hold"
+        },
+        "compile_contract": "nb1-program-effect/v1",
+        "revision": "sha256:8619b60cc44b9ad077232568db2dcb6d918c0daed36f9f8918645bb13d6d40ca"
+      },
+      "snapshot_package": {
+        "schema_version": 1,
+        "kind": "nb1-pattern-snapshot",
+        "records": [
+          {
+            "id": "steady-ok",
+            "title": "  常亮  ",
+            "source": {
+              "effect": {
+                "kind": "steady",
+                "color": "#abcdef",
+                "led": 0,
+                "fade_ms": 0
+              }
+            },
+            "compiled_program": {
+              "steps": [
+                {
+                  "led": 0,
+                  "color": "#abcdef",
+                  "fade_ms": 0,
+                  "hold_ms": 0
+                }
+              ],
+              "repeat": 1,
+              "on_finish": "hold"
+            },
+            "compile_contract": "nb1-program-effect/v1",
+            "revision": "sha256:8619b60cc44b9ad077232568db2dcb6d918c0daed36f9f8918645bb13d6d40ca"
+          }
+        ]
+      },
+      "canonical_json": "{\"id\":\"steady-ok\",\"title\":\"  常亮  \",\"source\":{\"effect\":{\"kind\":\"steady\",\"color\":\"#abcdef\",\"led\":0,\"fade_ms\":0}},\"compiled_program\":{\"steps\":[{\"led\":0,\"color\":\"#abcdef\",\"fade_ms\":0,\"hold_ms\":0}],\"repeat\":1,\"on_finish\":\"hold\"},\"compile_contract\":\"nb1-program-effect/v1\"}",
+      "canonical_hex": "7b226964223a227374656164792d6f6b222c227469746c65223a222020e5b8b8e4baae2020222c22736f75726365223a7b22656666656374223a7b226b696e64223a22737465616479222c22636f6c6f72223a2223616263646566222c226c6564223a302c22666164655f6d73223a307d7d2c22636f6d70696c65645f70726f6772616d223a7b227374657073223a5b7b226c6564223a302c22636f6c6f72223a2223616263646566222c22666164655f6d73223a302c22686f6c645f6d73223a307d5d2c22726570656174223a312c226f6e5f66696e697368223a22686f6c64227d2c22636f6d70696c655f636f6e7472616374223a226e62312d70726f6772616d2d6566666563742f7631227d",
+      "preimage_hex": "6e62312d7061747465726e2d7265636f72642f76310a7b226964223a227374656164792d6f6b222c227469746c65223a222020e5b8b8e4baae2020222c22736f75726365223a7b22656666656374223a7b226b696e64223a22737465616479222c22636f6c6f72223a2223616263646566222c226c6564223a302c22666164655f6d73223a307d7d2c22636f6d70696c65645f70726f6772616d223a7b227374657073223a5b7b226c6564223a302c22636f6c6f72223a2223616263646566222c22666164655f6d73223a302c22686f6c645f6d73223a307d5d2c22726570656174223a312c226f6e5f66696e697368223a22686f6c64227d2c22636f6d70696c655f636f6e7472616374223a226e62312d70726f6772616d2d6566666563742f7631227d",
+      "revision": "sha256:8619b60cc44b9ad077232568db2dcb6d918c0daed36f9f8918645bb13d6d40ca"
+    },
+    {
+      "name": "pulse-default-period-cycles",
+      "authoring_package": {
+        "schema_version": 1,
+        "patterns": [
+          {
+            "id": "pulse-default",
+            "title": "默认呼吸",
+            "effect": {
+              "kind": "pulse",
+              "color": "#AABBCC"
+            }
+          }
+        ]
+      },
+      "authoring_json": "{\"schema_version\":1,\"patterns\":[{\"id\":\"pulse-default\",\"title\":\"默认呼吸\",\"effect\":{\"kind\":\"pulse\",\"color\":\"#AABBCC\"}}]}",
+      "record": {
+        "id": "pulse-default",
+        "title": "默认呼吸",
+        "source": {
+          "effect": {
+            "kind": "pulse",
+            "color": "#aabbcc",
+            "led": 0,
+            "cycles": 1,
+            "period_ms": 1000,
+            "on_finish": "off"
+          }
+        },
+        "compiled_program": {
+          "steps": [
+            {
+              "led": 0,
+              "color": "#000000",
+              "fade_ms": 0,
+              "hold_ms": 0
+            },
+            {
+              "led": 0,
+              "color": "#aabbcc",
+              "fade_ms": 480,
+              "hold_ms": 0
+            },
+            {
+              "led": 0,
+              "color": "#000000",
+              "fade_ms": 490,
+              "hold_ms": 0
+            }
+          ],
+          "repeat": 1,
+          "on_finish": "off"
+        },
+        "compile_contract": "nb1-program-effect/v1",
+        "revision": "sha256:6c3a803a57506477b79a7f245a511abbcdfa96fe824c4f4febfee3d84a780aa2"
+      },
+      "snapshot_package": {
+        "schema_version": 1,
+        "kind": "nb1-pattern-snapshot",
+        "records": [
+          {
+            "id": "pulse-default",
+            "title": "默认呼吸",
+            "source": {
+              "effect": {
+                "kind": "pulse",
+                "color": "#aabbcc",
+                "led": 0,
+                "cycles": 1,
+                "period_ms": 1000,
+                "on_finish": "off"
+              }
+            },
+            "compiled_program": {
+              "steps": [
+                {
+                  "led": 0,
+                  "color": "#000000",
+                  "fade_ms": 0,
+                  "hold_ms": 0
+                },
+                {
+                  "led": 0,
+                  "color": "#aabbcc",
+                  "fade_ms": 480,
+                  "hold_ms": 0
+                },
+                {
+                  "led": 0,
+                  "color": "#000000",
+                  "fade_ms": 490,
+                  "hold_ms": 0
+                }
+              ],
+              "repeat": 1,
+              "on_finish": "off"
+            },
+            "compile_contract": "nb1-program-effect/v1",
+            "revision": "sha256:6c3a803a57506477b79a7f245a511abbcdfa96fe824c4f4febfee3d84a780aa2"
+          }
+        ]
+      },
+      "canonical_json": "{\"id\":\"pulse-default\",\"title\":\"默认呼吸\",\"source\":{\"effect\":{\"kind\":\"pulse\",\"color\":\"#aabbcc\",\"led\":0,\"cycles\":1,\"period_ms\":1000,\"on_finish\":\"off\"}},\"compiled_program\":{\"steps\":[{\"led\":0,\"color\":\"#000000\",\"fade_ms\":0,\"hold_ms\":0},{\"led\":0,\"color\":\"#aabbcc\",\"fade_ms\":480,\"hold_ms\":0},{\"led\":0,\"color\":\"#000000\",\"fade_ms\":490,\"hold_ms\":0}],\"repeat\":1,\"on_finish\":\"off\"},\"compile_contract\":\"nb1-program-effect/v1\"}",
+      "canonical_hex": "7b226964223a2270756c73652d64656661756c74222c227469746c65223a22e9bb98e8aea4e591bce590b8222c22736f75726365223a7b22656666656374223a7b226b696e64223a2270756c7365222c22636f6c6f72223a2223616162626363222c226c6564223a302c226379636c6573223a312c22706572696f645f6d73223a313030302c226f6e5f66696e697368223a226f6666227d7d2c22636f6d70696c65645f70726f6772616d223a7b227374657073223a5b7b226c6564223a302c22636f6c6f72223a2223303030303030222c22666164655f6d73223a302c22686f6c645f6d73223a307d2c7b226c6564223a302c22636f6c6f72223a2223616162626363222c22666164655f6d73223a3438302c22686f6c645f6d73223a307d2c7b226c6564223a302c22636f6c6f72223a2223303030303030222c22666164655f6d73223a3439302c22686f6c645f6d73223a307d5d2c22726570656174223a312c226f6e5f66696e697368223a226f6666227d2c22636f6d70696c655f636f6e7472616374223a226e62312d70726f6772616d2d6566666563742f7631227d",
+      "preimage_hex": "6e62312d7061747465726e2d7265636f72642f76310a7b226964223a2270756c73652d64656661756c74222c227469746c65223a22e9bb98e8aea4e591bce590b8222c22736f75726365223a7b22656666656374223a7b226b696e64223a2270756c7365222c22636f6c6f72223a2223616162626363222c226c6564223a302c226379636c6573223a312c22706572696f645f6d73223a313030302c226f6e5f66696e697368223a226f6666227d7d2c22636f6d70696c65645f70726f6772616d223a7b227374657073223a5b7b226c6564223a302c22636f6c6f72223a2223303030303030222c22666164655f6d73223a302c22686f6c645f6d73223a307d2c7b226c6564223a302c22636f6c6f72223a2223616162626363222c22666164655f6d73223a3438302c22686f6c645f6d73223a307d2c7b226c6564223a302c22636f6c6f72223a2223303030303030222c22666164655f6d73223a3439302c22686f6c645f6d73223a307d5d2c22726570656174223a312c226f6e5f66696e697368223a226f6666227d2c22636f6d70696c655f636f6e7472616374223a226e62312d70726f6772616d2d6566666563742f7631227d",
+      "revision": "sha256:6c3a803a57506477b79a7f245a511abbcdfa96fe824c4f4febfee3d84a780aa2"
+    },
+    {
+      "name": "pulse-explicit-default-period-cycles",
+      "authoring_package": {
+        "schema_version": 1,
+        "patterns": [
+          {
+            "id": "pulse-default",
+            "title": "默认呼吸",
+            "effect": {
+              "kind": "pulse",
+              "color": "#aabbcc",
+              "led": 0,
+              "cycles": 1,
+              "period_ms": 1000,
+              "on_finish": "off"
+            }
+          }
+        ]
+      },
+      "authoring_json": "{\"schema_version\":1,\"patterns\":[{\"id\":\"pulse-default\",\"title\":\"默认呼吸\",\"effect\":{\"kind\":\"pulse\",\"color\":\"#aabbcc\",\"led\":0,\"cycles\":1,\"period_ms\":1000,\"on_finish\":\"off\"}}]}",
+      "record": {
+        "id": "pulse-default",
+        "title": "默认呼吸",
+        "source": {
+          "effect": {
+            "kind": "pulse",
+            "color": "#aabbcc",
+            "led": 0,
+            "cycles": 1,
+            "period_ms": 1000,
+            "on_finish": "off"
+          }
+        },
+        "compiled_program": {
+          "steps": [
+            {
+              "led": 0,
+              "color": "#000000",
+              "fade_ms": 0,
+              "hold_ms": 0
+            },
+            {
+              "led": 0,
+              "color": "#aabbcc",
+              "fade_ms": 480,
+              "hold_ms": 0
+            },
+            {
+              "led": 0,
+              "color": "#000000",
+              "fade_ms": 490,
+              "hold_ms": 0
+            }
+          ],
+          "repeat": 1,
+          "on_finish": "off"
+        },
+        "compile_contract": "nb1-program-effect/v1",
+        "revision": "sha256:6c3a803a57506477b79a7f245a511abbcdfa96fe824c4f4febfee3d84a780aa2"
+      },
+      "snapshot_package": {
+        "schema_version": 1,
+        "kind": "nb1-pattern-snapshot",
+        "records": [
+          {
+            "id": "pulse-default",
+            "title": "默认呼吸",
+            "source": {
+              "effect": {
+                "kind": "pulse",
+                "color": "#aabbcc",
+                "led": 0,
+                "cycles": 1,
+                "period_ms": 1000,
+                "on_finish": "off"
+              }
+            },
+            "compiled_program": {
+              "steps": [
+                {
+                  "led": 0,
+                  "color": "#000000",
+                  "fade_ms": 0,
+                  "hold_ms": 0
+                },
+                {
+                  "led": 0,
+                  "color": "#aabbcc",
+                  "fade_ms": 480,
+                  "hold_ms": 0
+                },
+                {
+                  "led": 0,
+                  "color": "#000000",
+                  "fade_ms": 490,
+                  "hold_ms": 0
+                }
+              ],
+              "repeat": 1,
+              "on_finish": "off"
+            },
+            "compile_contract": "nb1-program-effect/v1",
+            "revision": "sha256:6c3a803a57506477b79a7f245a511abbcdfa96fe824c4f4febfee3d84a780aa2"
+          }
+        ]
+      },
+      "canonical_json": "{\"id\":\"pulse-default\",\"title\":\"默认呼吸\",\"source\":{\"effect\":{\"kind\":\"pulse\",\"color\":\"#aabbcc\",\"led\":0,\"cycles\":1,\"period_ms\":1000,\"on_finish\":\"off\"}},\"compiled_program\":{\"steps\":[{\"led\":0,\"color\":\"#000000\",\"fade_ms\":0,\"hold_ms\":0},{\"led\":0,\"color\":\"#aabbcc\",\"fade_ms\":480,\"hold_ms\":0},{\"led\":0,\"color\":\"#000000\",\"fade_ms\":490,\"hold_ms\":0}],\"repeat\":1,\"on_finish\":\"off\"},\"compile_contract\":\"nb1-program-effect/v1\"}",
+      "canonical_hex": "7b226964223a2270756c73652d64656661756c74222c227469746c65223a22e9bb98e8aea4e591bce590b8222c22736f75726365223a7b22656666656374223a7b226b696e64223a2270756c7365222c22636f6c6f72223a2223616162626363222c226c6564223a302c226379636c6573223a312c22706572696f645f6d73223a313030302c226f6e5f66696e697368223a226f6666227d7d2c22636f6d70696c65645f70726f6772616d223a7b227374657073223a5b7b226c6564223a302c22636f6c6f72223a2223303030303030222c22666164655f6d73223a302c22686f6c645f6d73223a307d2c7b226c6564223a302c22636f6c6f72223a2223616162626363222c22666164655f6d73223a3438302c22686f6c645f6d73223a307d2c7b226c6564223a302c22636f6c6f72223a2223303030303030222c22666164655f6d73223a3439302c22686f6c645f6d73223a307d5d2c22726570656174223a312c226f6e5f66696e697368223a226f6666227d2c22636f6d70696c655f636f6e7472616374223a226e62312d70726f6772616d2d6566666563742f7631227d",
+      "preimage_hex": "6e62312d7061747465726e2d7265636f72642f76310a7b226964223a2270756c73652d64656661756c74222c227469746c65223a22e9bb98e8aea4e591bce590b8222c22736f75726365223a7b22656666656374223a7b226b696e64223a2270756c7365222c22636f6c6f72223a2223616162626363222c226c6564223a302c226379636c6573223a312c22706572696f645f6d73223a313030302c226f6e5f66696e697368223a226f6666227d7d2c22636f6d70696c65645f70726f6772616d223a7b227374657073223a5b7b226c6564223a302c22636f6c6f72223a2223303030303030222c22666164655f6d73223a302c22686f6c645f6d73223a307d2c7b226c6564223a302c22636f6c6f72223a2223616162626363222c22666164655f6d73223a3438302c22686f6c645f6d73223a307d2c7b226c6564223a302c22636f6c6f72223a2223303030303030222c22666164655f6d73223a3439302c22686f6c645f6d73223a307d5d2c22726570656174223a312c226f6e5f66696e697368223a226f6666227d2c22636f6d70696c655f636f6e7472616374223a226e62312d70726f6772616d2d6566666563742f7631227d",
+      "revision": "sha256:6c3a803a57506477b79a7f245a511abbcdfa96fe824c4f4febfee3d84a780aa2"
+    }
+  ],
+  "relations": [
+    {
+      "name": "pulse-explicit-defaults-and-key-order",
+      "left": "pulse-800x2-chinese-defaults",
+      "right": "pulse-800x2-explicit-reordered",
+      "revision_equal": true,
+      "compiled_program_equal": true,
+      "status": "PASS"
+    },
+    {
+      "name": "same-execution-different-source",
+      "left": "pulse-800x2-chinese-defaults",
+      "right": "pulse-same-execution-program-source",
+      "revision_equal": false,
+      "compiled_program_equal": true,
+      "status": "PASS"
+    },
+    {
+      "name": "steady-explicit-defaults",
+      "left": "steady-defaults",
+      "right": "steady-explicit-defaults",
+      "revision_equal": true,
+      "compiled_program_equal": true,
+      "status": "PASS"
+    },
+    {
+      "name": "program-explicit-defaults",
+      "left": "program-defaults",
+      "right": "program-explicit-defaults",
+      "revision_equal": true,
+      "compiled_program_equal": true,
+      "status": "PASS"
+    },
+    {
+      "name": "unicode-normalization-not-implicit",
+      "left": "unicode-precomposed",
+      "right": "unicode-decomposed",
+      "revision_equal": false,
+      "compiled_program_equal": true,
+      "status": "PASS"
+    },
+    {
+      "name": "JSON-escape-order-whitespace-equivalence",
+      "left": "unicode-precomposed",
+      "right": "unicode-alternate-JSON-escapes-order-whitespace",
+      "revision_equal": true,
+      "compiled_program_equal": true,
+      "status": "PASS"
+    },
+    {
+      "name": "id-case-is-content",
+      "left": "id-uppercase",
+      "right": "id-lowercase",
+      "revision_equal": false,
+      "compiled_program_equal": true,
+      "status": "PASS"
+    },
+    {
+      "name": "title-no-trim",
+      "left": "steady-defaults",
+      "right": "title-preserves-spaces",
+      "revision_equal": false,
+      "compiled_program_equal": true,
+      "status": "PASS"
+    },
+    {
+      "name": "pulse-defaults",
+      "left": "pulse-default-period-cycles",
+      "right": "pulse-explicit-default-period-cycles",
+      "revision_equal": true,
+      "compiled_program_equal": true,
+      "status": "PASS"
+    }
+  ]
+}

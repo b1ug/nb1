@@ -22,7 +22,7 @@ var blinkCmd = &cobra.Command{
 		Blink a blink(1) device to given color (or random color) for a given times.
 		The colors should be given as arguments, and can be specified as a hex color code, a color name, or a preset color name.
 		For multiple colors, the blink(1) will blink to each color in order.
-		  e.g. <color1> <off> <color2> <off> <color3> <off> ... <color1> <off> <color2> <off> 
+		Each supplied color is followed by black automatically.
 		
 		Special colors:
 		  %s
@@ -30,9 +30,8 @@ var blinkCmd = &cobra.Command{
 		Supported preset colors:
 		  %s
 	`,
-		util.JoinWrapSlice([]string{"random", "on"}, ", ", 100),
+		util.JoinWrapSlice([]string{"random"}, ", ", 100),
 		util.JoinWrapSlice(b1.GetColorNames(), ", ", 100)),
-	PersistentPreRunE: openBlink1Device,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// clean up args
 		var colorRaw []string
@@ -53,6 +52,30 @@ var blinkCmd = &cobra.Command{
 			blinkTimes = 5
 		}
 		log.Debugw("raw colors to blink blink(1)", "count", len(colorRaw), "colors", colorRaw, "interval", blinkTimeDur, "led", blinkLedNum, "times", blinkTimes)
+
+		// Validate the full-width CLI flag before converting it to LEDIndex.
+		if err := validateLEDSelection(cmd); err != nil {
+			return err
+		}
+
+		// Resolve every application alias/random color once before device access.
+		colors := make([]color.Color, len(colorRaw))
+		for index, raw := range colorRaw {
+			cl, err := exchange.ParseColor(raw)
+			if err != nil {
+				return fmt.Errorf("color[%d] %q: %w", index, raw, err)
+			}
+			if cl == b1.ColorBlack {
+				return fmt.Errorf("blink(1) can't blink to black")
+			}
+			if err := b1.NewLightState(cl, 0, b1.LEDIndex(blinkLedNum)).Validate(); err != nil {
+				return err
+			}
+			colors[index] = cl
+		}
+		if err := openBlink1Device(cmd, args); err != nil {
+			return err
+		}
 
 		// set color now
 		performColorChange := func(index int, cl color.Color) error {
@@ -75,17 +98,7 @@ var blinkCmd = &cobra.Command{
 
 		// let blink(1) blink
 		for i := 0; i < int(blinkTimes); i++ {
-			// parse color
-			raw := colorRaw[i%len(colorRaw)]
-			cl, err := exchange.ParseColor(raw)
-			if err != nil {
-				return fmt.Errorf("%w: %q", err, raw)
-			}
-
-			// can't be off
-			if cl == b1.ColorBlack {
-				return fmt.Errorf("blink(1) can't blink to off")
-			}
+			cl := colors[i%len(colors)]
 
 			// blink on
 			if err := performColorChange(i, cl); err != nil {

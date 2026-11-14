@@ -35,6 +35,9 @@ var configSetCmd = &cobra.Command{
 		// ensure key exists
 		k, nv := args[0], args[1]
 		k1, kr := util.SplitConfigKey(k)
+		if k1 == "jobs" || k1 == "server" {
+			return fmt.Errorf("edit typed %s settings in the YAML configuration; config set only handles scalar and basic color settings", k1)
+		}
 		log.Debugw("key for config set", "key_raw", k, "value", nv, "key1", k1, "key_rest", kr)
 		if ok := viper.IsSet(k1); !ok {
 			log.Errorw("config key does not exist", "key_raw", k, "key1", k1)

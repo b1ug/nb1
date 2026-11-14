@@ -1,0 +1,6 @@
+{
+  "error": {
+    "code": "pattern_library_unavailable",
+    "message": "The library could not be read safely; no partial result is returned."
+  }
+}

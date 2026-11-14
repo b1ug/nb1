@@ -1,0 +1,16 @@
+{
+  "program": {
+    "steps": [
+      {
+        "color": "#102030",
+        "fade_ms": 100,
+        "hold_ms": 0
+      }
+    ],
+    "repeat": 1,
+    "on_finish": "hold"
+  },
+  "policy": "replace",
+  "request_id": "req_60000_0123456789abcdef0123456789abcdef",
+  "expected_daemon_instance_id": "daemon_0123456789abcdef0123456789abcdef"
+}

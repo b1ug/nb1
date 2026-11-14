@@ -1,0 +1,6 @@
+{
+  "error": {
+    "code": "pattern_library_read_only",
+    "message": "The library contains an unsupported source or recipe; read and export remain available."
+  }
+}

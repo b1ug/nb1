@@ -1,0 +1,6 @@
+{
+  "error": {
+    "code": "pattern_revision_conflict",
+    "message": "expected_revision differs from the source-derived candidate; the store was not called."
+  }
+}

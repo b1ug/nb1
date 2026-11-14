@@ -1,0 +1,156 @@
+/* A quiet language utility; all artwork and options remain local. */
+.locale-control {
+  position: relative;
+  flex: none;
+}
+.locale-control.is-open {
+  z-index: 50;
+}
+.locale-control .locale-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 44px;
+  min-width: 66px;
+  padding: 7px 8px;
+  border: 1px solid transparent;
+  border-radius: 11px;
+  background: transparent;
+  color: #6a583e;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.45;
+  letter-spacing: .01em;
+  box-shadow: none;
+}
+.locale-control .locale-trigger:hover:enabled,
+.locale-control .locale-trigger[aria-expanded=true] {
+  transform: none;
+  background: #fffdf080;
+  border-color: #c9d2b8;
+  box-shadow: none;
+}
+.locale-symbol {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  fill: none;
+  stroke: #66816b;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.locale-control .locale-chevron {
+  width: 5px;
+  height: 5px;
+  flex: none;
+  margin: -3px 1px 0 2px;
+  border-right: 2px solid #6b9475;
+  border-bottom: 2px solid #6b9475;
+  transform: rotate(45deg);
+}
+.locale-control .locale-trigger[aria-expanded=true] .locale-chevron {
+  margin-top: 3px;
+  transform: rotate(225deg);
+}
+.locale-control .locale-options {
+  position: absolute;
+  top: calc(100% + 9px);
+  right: 0;
+  z-index: 51;
+  width: 190px;
+  max-width: calc(100vw - 30px);
+  margin: 0;
+  padding: 8px;
+  list-style: none;
+  border: 1px solid #d6ceb3;
+  border-radius: 19px;
+  background: #fffdf0;
+  box-shadow: inset 0 2px 0 #ffffffed, 0 4px 0 #b5b18b26, 0 14px 28px #5a523724;
+}
+.locale-control .locale-options[hidden] {
+  display: none;
+}
+.locale-control .locale-options:before {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border: 1px dashed #dfd8bc;
+  border-radius: 15px;
+  pointer-events: none;
+}
+.locale-control .locale-option {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  color: #74664c;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.45;
+  cursor: pointer;
+  user-select: none;
+  touch-action: manipulation;
+}
+.locale-control .locale-option + .locale-option {
+  margin-top: 4px;
+}
+.locale-control .locale-option[aria-selected=true] {
+  color: #4a7054;
+  background: #e1eedb;
+  border-color: #bed0b2;
+  font-weight: 800;
+}
+.locale-control .locale-option:hover {
+  color: #4f7258;
+  background: #eef3df;
+}
+.locale-control .locale-option:focus-visible {
+  outline: 2px solid #6d9e81;
+  outline-offset: -2px;
+  background: #e9f0da;
+  box-shadow: none;
+}
+.locale-control .locale-trigger:focus-visible {
+  outline: 3px solid #b68b34;
+  outline-offset: 4px;
+  box-shadow: 0 0 0 6px #fff0ba;
+}
+.locale-control .locale-check {
+  display: block;
+  width: 7px;
+  height: 11px;
+  flex: none;
+  margin: -3px 3px 0 0;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg);
+  opacity: 0;
+}
+.locale-control .locale-option[aria-selected=true] .locale-check {
+  opacity: 1;
+}
+@media (max-width:640px) {
+  .locale-control .locale-trigger {
+    min-height: 44px;
+    min-width: 66px;
+    font-size: 13px;
+  }
+  .locale-control .locale-option {
+    min-height: 44px;
+    font-size: 15px;
+  }
+}
+@media (prefers-reduced-motion:reduce) {
+  .locale-control *, .locale-control *:before {
+    transition: none !important;
+  }
+}

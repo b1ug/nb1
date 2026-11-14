@@ -1,0 +1,12 @@
+{
+  "steps": [
+    {
+      "led": 1,
+      "color": "#ff8000",
+      "fade_ms": 100,
+      "hold_ms": 30000
+    }
+  ],
+  "repeat": 1,
+  "on_finish": "hold"
+}

@@ -1,0 +1,17 @@
+[
+  {
+    "label": "exact-decimal",
+    "input": "{\"v_pct\":12.340000,\"h_deg\":240.0}",
+    "canonical": "{\"h_deg\":240,\"v_pct\":12.34}"
+  },
+  {
+    "label": "utf8-no-html-escape",
+    "input": "{\"title\":\"红<&>\\n\"}",
+    "canonical": "{\"title\":\"红<&>\\u000a\"}"
+  },
+  {
+    "label": "key-order",
+    "input": "{\"b\":2,\"a\":1}",
+    "canonical": "{\"a\":1,\"b\":2}"
+  }
+]

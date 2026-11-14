@@ -2,19 +2,20 @@ package exchange
 
 import (
 	"image/color"
+	"strings"
 
 	b1 "github.com/b1ug/blink1-go"
 	"github.com/b1ug/nb1/config"
 )
 
-// ParseColor parses a natural language query string into a color.Color object.
+// ParseColor resolves an application random keyword or one configured alias,
+// then delegates a complete color expression to the SDK. Alias keys are exact.
 func ParseColor(raw string) (color.Color, error) {
-	// 1. for special colors
-	switch raw {
-	case "on":
-		return b1.ColorWhite, nil
-	case "off":
-		return b1.ColorBlack, nil
+	raw = strings.TrimSpace(raw)
+	// Application keywords are normalized locally, without lowercasing aliases.
+	switch strings.ToLower(raw) {
+	case "on", "off":
+		return b1.ParseColor(raw)
 	case "rand", "random":
 		return b1.RandomColor(), nil
 	}
@@ -25,7 +26,7 @@ func ParseColor(raw string) (color.Color, error) {
 		raw = c
 	}
 
-	// 3. for predefined colors, hex, rgb, hsv/hsl hacks
+	// Alias values are not recursively resolved or reinterpreted as random.
 	cl, err := b1.ParseColor(raw)
 	if err != nil {
 		return nil, err

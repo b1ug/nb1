@@ -16,7 +16,7 @@ var convertCmd = &cobra.Command{
 		Convert a pattern from one format to another.
 		
 		Supported formats:
-		  - Play Text (e.g. "red blink 3 times")
+		  - Play Text (title:/repeat: metadata and complete set/off/fade states)
 		  - Pattern JSON (e.g. '{"repeat":1,"seq":"#FF0000L0T1500;#FF0000L0T3500"...}')
 	`),
 }
@@ -90,11 +90,15 @@ var convertJSON2TextCmd = &cobra.Command{
 		}
 		ps.AutoFill()
 
+		ls, err := exchange.EncodePlayText(ps)
+		if err != nil {
+			return err
+		}
+
 		// output
 		if convertPreviewPattern {
 			_ = util.PrintPatternSet(&ps)
 		}
-		ls := exchange.EncodePlayText(ps)
 		return exchange.SaveAsLine(ls, outputPath)
 	},
 }

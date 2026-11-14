@@ -2,9 +2,9 @@ package util
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
-	"bitbucket.org/ai69/amoy"
 	"github.com/b1ug/blink1-go"
 	se "github.com/b1ug/nb1/schema"
 	tw "github.com/olekukonko/tablewriter"
@@ -77,7 +77,7 @@ func printTable(header []string, rows [][]string) {
 	table.SetTablePadding("\t")
 
 	for i, r := range rows {
-		table.Append(append([]string{amoy.Itoa(i + 1)}, r...))
+		table.Append(append([]string{strconv.Itoa(i + 1)}, r...))
 	}
 
 	table.Render()

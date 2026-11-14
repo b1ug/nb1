@@ -1,0 +1,6 @@
+{
+  "error": {
+    "code": "pattern_library_busy",
+    "message": "The library transaction is busy; no automatic retry."
+  }
+}

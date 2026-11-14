@@ -5,9 +5,9 @@ import (
 	"strings"
 )
 
-// NormalizeQuery joins the given query strings and returns a normalized query string.
+// NormalizeQuery joins arguments while preserving original case and Unicode.
 func NormalizeQuery(raw ...string) string {
-	return strings.TrimSpace(strings.ToLower(strings.Join(raw, " ")))
+	return strings.TrimSpace(strings.Join(raw, " "))
 }
 
 // SplitConfigKey splits the given config key into two parts: the first part is the top-level key, the second part is the rest.

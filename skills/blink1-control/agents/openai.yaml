@@ -1,0 +1,7 @@
+interface:
+  display_name: "blink(1) Control"
+  short_description: "Preview and control blink(1) with local nb1"
+  default_prompt: "Use $blink1-control to preview a blink(1) light action and run it when requested."
+
+policy:
+  allow_implicit_invocation: true

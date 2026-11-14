@@ -1,0 +1,84 @@
+{
+  "contract": "nb1-pattern-library/experimental-v2",
+  "execution_digest": "sha256:fb318dc79419343f121a0c56806ee40ee9b4cc0c2a0086d12132d0bebbabcae3",
+  "pattern_execution": {
+    "available": false,
+    "reason": "pattern_identity_admission_not_integrated"
+  },
+  "preview": {
+    "contract": "nb1-program-effect/v1",
+    "kind": "program",
+    "nominal_duration_ms": 2060,
+    "required_capabilities": [
+      "set",
+      "program",
+      "raw-rgb"
+    ],
+    "timing_basis": "host-nominal-excludes-native-io",
+    "total_steps": 6
+  },
+  "record": {
+    "record_contract": "nb1-pattern-record/experimental-v2",
+    "id": "pulse-lime",
+    "title": "绿色脉冲",
+    "source": {
+      "kind": "light_action",
+      "contract": "nb1-light-action/v1",
+      "action": {
+        "attack_ms": 60,
+        "color": "lime",
+        "cycles": 2,
+        "decay_ms": 240,
+        "kind": "pulse",
+        "on_finish": "off",
+        "rest_ms": 700
+      }
+    },
+    "compiled": {
+      "normalized_action": {
+        "attack_ms": 60,
+        "color": "#00ff00",
+        "cycles": 2,
+        "decay_ms": 240,
+        "kind": "pulse",
+        "led": 0,
+        "on_finish": "off",
+        "rest_ms": 700
+      },
+      "execution": {
+        "kind": "program",
+        "contract": "nb1-program-effect/v1",
+        "program": {
+          "steps": [
+            {
+              "led": 0,
+              "color": "#000000",
+              "fade_ms": 0,
+              "hold_ms": 0
+            },
+            {
+              "led": 0,
+              "color": "#00ff00",
+              "fade_ms": 60,
+              "hold_ms": 0
+            },
+            {
+              "led": 0,
+              "color": "#000000",
+              "fade_ms": 240,
+              "hold_ms": 700
+            }
+          ],
+          "repeat": 2,
+          "on_finish": "off"
+        }
+      }
+    },
+    "revision": "sha256:f2ab7093566ea4cd5e975cdc70482c85dc6f56f9347916a78d5d08658c2ca2fe"
+  },
+  "schema_version": 2,
+  "verification": {
+    "verified": true,
+    "reason": "verified"
+  }
+}

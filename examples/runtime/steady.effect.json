@@ -1,0 +1,6 @@
+{
+  "kind": "steady",
+  "color": "#102030",
+  "led": 0,
+  "fade_ms": 100
+}

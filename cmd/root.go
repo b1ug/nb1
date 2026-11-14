@@ -19,6 +19,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 // for package scope shared variables
@@ -132,7 +133,19 @@ func initConfig() {
 	}
 	configurationInitError = nil
 	// init logger
-	lg := hlog.NewPersistentLogger(logFile, debugMode)
+	// Keep diagnostics on stderr and command results on stdout. Retain the
+	// persistent logger's existing file format, size and retention policy.
+	loggerOptions := []hlog.Option{
+		hlog.WithNormalLogOutput(os.Stderr),
+		hlog.WithOutputFile(logFile),
+		hlog.WithOutputFileLogFormat(hlog.LogFormatJSON),
+		hlog.WithOutputFileMaxSizeInMB(10),
+		hlog.WithOutputFileRetainNum(0),
+	}
+	if debugMode {
+		loggerOptions = append(loggerOptions, hlog.WithDevelopmentMode(), hlog.WithLevel(zapcore.DebugLevel))
+	}
+	lg := hlog.NewLogger(loggerOptions...)
 	if debugMode {
 		logLevel = "debug"
 	}

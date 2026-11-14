@@ -20,7 +20,7 @@ import (
 	"github.com/b1ug/nb1/internal/userconfig"
 )
 
-var ErrUserServiceUnsupported = errors.New("自动用户服务管理目前只支持macOS；其他平台仍可使用 service render，不会调用launchctl")
+var ErrUserServiceUnsupported = errors.New("automatic user-service management in this adapter supports macOS only; service render remains available on other platforms; launchctl is not invoked")
 
 const (
 	managedMarker   = "<!-- nb1-managed-user-service-v1:"
@@ -84,7 +84,7 @@ func NewUserManager() (*UserManager, error) {
 	}
 	uid := os.Geteuid()
 	if uid <= 0 || os.Getuid() != uid {
-		return nil, fmt.Errorf("请以当前普通用户运行用户服务管理；不支持sudo、root或身份切换")
+		return nil, fmt.Errorf("run user-service management as the current ordinary user; sudo, root and identity switching are unsupported")
 	}
 	home, err := os.UserHomeDir()
 	if err != nil {
@@ -116,9 +116,9 @@ func (m *UserManager) plistPath() string {
 
 func (m *UserManager) initialStatus() UserStatus {
 	return UserStatus{SchemaVersion: 1, Label: Label, Target: m.target(), PlistPath: m.plistPath(), ConfigState: "not_checked", Registration: "not_checked", Actions: []string{}, Notes: []string{
-		"配置写入LaunchAgents后，即使本次不启动，下次图形登录也可能自动加载。",
-		"registered只表示launchd注册；不表示进程已运行、HTTP可用或USB设备在线，API/设备快照另用nb1 doctor检查。",
-		"launchctl print不是稳定机器API；归属字段无法严格核对时拒绝启动、停止和卸载。",
+		"Writing configuration to LaunchAgents may enable loading at the next graphical login, even without starting it now.",
+		"Registered means only that launchd has a registration; it does not establish that a process is running, HTTP is available or a USB device is ready. Check API/device snapshots separately with nb1 doctor.",
+		"launchctl print is not a stable machine API; start, stop and uninstall are refused when ownership fields cannot be strictly verified.",
 	}}
 }
 
@@ -171,7 +171,7 @@ func (m *UserManager) Start(ctx context.Context) (UserStatus, error) {
 		return status, err
 	}
 	if file == nil {
-		return status, fmt.Errorf("没有已核对的托管配置；请先service install，不会创建配置或接管同名注册项")
+		return status, fmt.Errorf("no verified managed configuration; run service install first; no configuration is created and no matching registration is taken over")
 	}
 	if err := m.bootstrap(ctx, &status, file); err != nil {
 		return status, err
@@ -191,8 +191,8 @@ func (m *UserManager) Stop(ctx context.Context) (UserStatus, error) {
 	}
 	defer lease.Close()
 	status, file, err := m.inspect(ctx, false)
-	status.Notes = append(status.Notes, "stop保留plist，不等于禁用下次图形登录加载；需要移除配置请用service uninstall。",
-		"注册已消失不等于进程退出、原生I/O、设备所有权释放或最后熄灯已完成；按需另行检查。")
+	status.Notes = append(status.Notes, "Stop retains the plist and does not disable loading at the next graphical login; use service uninstall to remove the configuration.",
+		"An absent registration does not establish process exit, native I/O completion, device ownership release or completion of the final Off command; check these separately as needed.")
 	if err != nil {
 		return status, err
 	}
@@ -252,7 +252,7 @@ func (m *UserManager) Install(ctx context.Context, config Config, start bool) (U
 		return status, err
 	}
 	if current != nil && !bytes.Equal(current.content, content) {
-		return status, fmt.Errorf("已有托管配置与请求不同；不会覆盖或升级，请先审阅并正常卸载旧配置")
+		return status, fmt.Errorf("the existing managed configuration differs from the request; it is not overwritten or upgraded; review and normally uninstall the old configuration first")
 	}
 	if status.Registration != "absent" {
 		// The shared helper only accepts a matching registration here and
@@ -266,7 +266,7 @@ func (m *UserManager) Install(ctx context.Context, config Config, start bool) (U
 		}
 		if err := createManaged(m.plistPath(), content); err != nil {
 			status.ConfigState, status.AutoLoadAtLogin = "conflict", nil
-			return status, fmt.Errorf("配置创建未完成；未请求启动，已有或部分文件保留供检查，不会覆盖或删除: %w", err)
+			return status, fmt.Errorf("configuration creation did not complete; startup was not requested; existing or partial files are retained for inspection and are not overwritten or deleted: %w", err)
 		}
 		status.Actions = append(status.Actions, "plist_created")
 		status.ConfigState, status.Config, status.AutoLoadAtLogin = "managed", &config, boolValue(true)
@@ -288,7 +288,7 @@ func (m *UserManager) Install(ctx context.Context, config Config, start bool) (U
 func executablePath(binary string) (string, error) {
 	info, err := os.Stat(binary)
 	if err != nil || !info.Mode().IsRegular() || info.Mode().Perm()&0111 == 0 {
-		return "", fmt.Errorf("--binary 必须指向已存在、可执行的普通文件；不会自动下载或执行它")
+		return "", fmt.Errorf("--binary must point to an existing executable regular file; it is not downloaded or executed automatically")
 	}
 	return filepath.EvalSymlinks(binary)
 }
@@ -297,7 +297,7 @@ func executablePath(binary string) (string, error) {
 // construction also rejects root and switched identities before any operation.
 func (m *UserManager) currentUser() error {
 	if os.Getuid() != m.uid || os.Geteuid() != m.uid {
-		return fmt.Errorf("当前用户身份已改变；拒绝启动或停止用户服务")
+		return fmt.Errorf("the current user identity has changed; starting or stopping the user service is refused")
 	}
 	return nil
 }
@@ -312,11 +312,11 @@ func (m *UserManager) bootstrap(ctx context.Context, status *UserStatus, file *m
 		return err
 	}
 	if status.Registration == "registered" && status.RegistrationOwned && file != nil {
-		status.Notes = append(status.Notes, "同一托管配置已注册；未重启、kickstart或替换进程。")
+		status.Notes = append(status.Notes, "The same managed configuration is already registered; no restart, kickstart or process replacement was performed.")
 		return nil
 	}
 	if status.Registration != "absent" || file == nil {
-		return fmt.Errorf("launchd中已有未确认归属的同名项或注册状态未知；不会bootstrap、替换或停止它")
+		return fmt.Errorf("launchd has a matching registration with unverified ownership, or registration state is unknown; it is not bootstrapped, replaced or stopped")
 	}
 	configuration := file.definition.Config
 	var binary string
@@ -330,7 +330,7 @@ func (m *UserManager) bootstrap(ctx context.Context, status *UserStatus, file *m
 		return err
 	}
 	if configuration.BinaryRoot == "" && binary != configuration.Binary {
-		return fmt.Errorf("托管二进制路径已变为符号链接；拒绝加载，请重新核对配置")
+		return fmt.Errorf("the managed binary path has become a symbolic link; loading is refused; verify the configuration again")
 	}
 	if err := m.unchanged(file); err != nil {
 		return err
@@ -339,7 +339,7 @@ func (m *UserManager) bootstrap(ctx context.Context, status *UserStatus, file *m
 	result, err := m.runner.Run(ctx, "bootstrap", m.domain(), m.plistPath())
 	if err != nil || result.ExitCode != 0 {
 		status.Registration = "unknown"
-		return fmt.Errorf("bootstrap未确认成功；配置保留，下次登录仍可能加载。请运行service status核对；不会自动回滚、重试或bootout")
+		return fmt.Errorf("bootstrap success is unconfirmed; the configuration is retained and may still load at the next login; check service status; no automatic rollback, retry or bootout is performed")
 	}
 	if err := m.registration(ctx, status); err != nil {
 		return err
@@ -348,7 +348,7 @@ func (m *UserManager) bootstrap(ctx context.Context, status *UserStatus, file *m
 		return err
 	}
 	if !status.RegistrationOwned {
-		return fmt.Errorf("bootstrap返回后无法确认注册项归属；配置保留，请查看service status，不会自动bootout")
+		return fmt.Errorf("registration ownership could not be verified after bootstrap returned; the configuration is retained; check service status; no automatic bootout is performed")
 	}
 	return nil
 }
@@ -366,13 +366,13 @@ func (m *UserManager) bootout(ctx context.Context, status *UserStatus, original 
 		return nil
 	}
 	if status.Registration != "registered" || !status.RegistrationOwned || original == nil {
-		return fmt.Errorf("同名注册项归属不明确；不会停止或删除配置")
+		return fmt.Errorf("ownership of the matching registration is unclear; the service is not stopped and configuration is not deleted")
 	}
 	status.Actions = append(status.Actions, "bootout_requested")
 	result, err := m.runner.Run(ctx, "bootout", m.target())
 	if err != nil || result.ExitCode != 0 {
 		status.Registration, status.RegistrationOwned = "unknown", false
-		return fmt.Errorf("bootout未确认成功；配置保留，请重新运行service status；不会强杀或删除文件")
+		return fmt.Errorf("bootout success is unconfirmed; the configuration is retained; run service status again; no force-kill or file deletion is performed")
 	}
 	// Do not use --wait, which current launchctl help says may wait forever.
 	for {
@@ -386,11 +386,11 @@ func (m *UserManager) bootout(ctx context.Context, status *UserStatus, original 
 			return nil
 		}
 		if !status.RegistrationOwned {
-			return fmt.Errorf("停止后注册项归属改变；配置保留")
+			return fmt.Errorf("registration ownership changed after stopping; the configuration is retained")
 		}
 		select {
 		case <-ctx.Done():
-			return fmt.Errorf("等待注销超时；配置保留，不能保证进程或硬件清理完成")
+			return fmt.Errorf("timed out waiting for deregistration; the configuration is retained; process or hardware cleanup completion is not guaranteed")
 		case <-time.After(100 * time.Millisecond):
 		}
 	}
@@ -414,17 +414,17 @@ func (m *UserManager) Uninstall(ctx context.Context, stop bool) (UserStatus, err
 	}
 	if status.Registration == "registered" {
 		if !status.RegistrationOwned {
-			return status, fmt.Errorf("同名注册项归属不明确；不会停止或删除配置")
+			return status, fmt.Errorf("ownership of the matching registration is unclear; the service is not stopped and configuration is not deleted")
 		}
 		if !stop {
-			return status, fmt.Errorf("服务仍已注册；需要显式service uninstall --stop才会请求停止并卸载")
+			return status, fmt.Errorf("the service is still registered; explicit service uninstall --stop is required to request stopping and uninstalling")
 		}
 		if err := m.bootout(ctx, &status, original); err != nil {
 			return status, err
 		}
 	}
 	if status.Registration != "absent" {
-		return status, fmt.Errorf("注册状态不明确；配置保留")
+		return status, fmt.Errorf("registration state is unclear; the configuration is retained")
 	}
 	file, err := m.readManaged()
 	if err != nil {
@@ -436,7 +436,7 @@ func (m *UserManager) Uninstall(ctx context.Context, stop bool) (UserStatus, err
 	if file != nil {
 		latest, err := os.Lstat(m.plistPath())
 		if err != nil || !os.SameFile(file.info, latest) {
-			return status, fmt.Errorf("配置文件在检查后发生变化；拒绝删除")
+			return status, fmt.Errorf("the configuration file changed after inspection; deletion is refused")
 		}
 		// The persistent management lease coordinates this tool's writers.
 		// Lstat/Remove is not atomic against a deliberately racing process
@@ -447,7 +447,7 @@ func (m *UserManager) Uninstall(ctx context.Context, stop bool) (UserStatus, err
 		status.Actions = append(status.Actions, "plist_removed")
 	}
 	status.ConfigState, status.Config, status.AutoLoadAtLogin = "absent", nil, boolValue(false)
-	status.Notes = append(status.Notes, "注册已移除不等于原生I/O、设备所有权释放或最后熄灯已完成；按需另行检查。持久管理锁文件保留。")
+	status.Notes = append(status.Notes, "Removing the registration does not establish native I/O completion, device ownership release or completion of the final Off command; check these separately as needed. The persistent management lock file is retained.")
 	return status, nil
 }
 
@@ -464,7 +464,7 @@ func sameManaged(original, current *managedFile) error {
 		return nil
 	}
 	if original == nil || current == nil || !os.SameFile(original.info, current.info) || !bytes.Equal(original.content, current.content) {
-		return fmt.Errorf("托管配置在检查期间发生替换或内容变化；拒绝启动、停止或删除，请重新核对")
+		return fmt.Errorf("the managed configuration was replaced or changed during inspection; start, stop and deletion are refused; verify it again")
 	}
 	return nil
 }
@@ -473,7 +473,7 @@ func (m *UserManager) registration(ctx context.Context, status *UserStatus) erro
 	status.Registration, status.RegistrationOwned = "unknown", false
 	result, err := m.runner.Run(ctx, "print", m.target())
 	if err != nil {
-		return fmt.Errorf("无法查询launchd；归属未知，不会启动、停止或删除配置")
+		return fmt.Errorf("launchd could not be queried; ownership is unknown; no start, stop or configuration deletion is performed")
 	}
 	if result.ExitCode == 0 {
 		status.Registration = "registered"
@@ -492,7 +492,7 @@ func (m *UserManager) registration(ctx context.Context, status *UserStatus) erro
 			return nil
 		}
 	}
-	return fmt.Errorf("launchd查询失败或GUI登录域不可用；注册状态未知，不会启动、停止或删除配置")
+	return fmt.Errorf("the launchd query failed or the GUI login domain is unavailable; registration state is unknown; no start, stop or configuration deletion is performed")
 }
 
 // print is explicitly a human diagnostic format. Recognize only a narrow
@@ -542,7 +542,7 @@ func (m *UserManager) readManaged() (*managedFile, error) {
 		return nil, nil
 	}
 	if err != nil {
-		return nil, fmt.Errorf("无法安全读取配置；不会覆盖或删除: %w", err)
+		return nil, fmt.Errorf("the configuration could not be read safely; it is not overwritten or deleted: %w", err)
 	}
 	defer f.Close()
 	info, err := f.Stat()
@@ -550,33 +550,33 @@ func (m *UserManager) readManaged() (*managedFile, error) {
 		return nil, err
 	}
 	if !info.Mode().IsRegular() || !ownedBy(info, m.uid) || info.Mode().Perm()&0022 != 0 {
-		return nil, fmt.Errorf("配置必须是当前用户拥有且组/其他用户不可写的普通文件；不会覆盖或删除")
+		return nil, fmt.Errorf("the configuration must be a regular file owned by the current user and not writable by group or others; it is not overwritten or deleted")
 	}
 	content, err := io.ReadAll(io.LimitReader(f, maxManagedSize+1))
 	if err != nil {
 		return nil, err
 	}
 	if len(content) > maxManagedSize {
-		return nil, fmt.Errorf("配置过大；视为未知文件，不会覆盖或删除")
+		return nil, fmt.Errorf("the configuration is too large; it is treated as an unknown file and is not overwritten or deleted")
 	}
 	lines := bytes.SplitN(content, []byte("\n"), 3)
 	if len(lines) != 3 || string(lines[0])+"\n" != xml.Header || !bytes.HasPrefix(lines[1], []byte(managedMarker)) || !bytes.HasSuffix(lines[1], []byte(" -->")) {
-		return nil, fmt.Errorf("已有plist不含本工具的完整托管标记；不会接管、覆盖或删除")
+		return nil, fmt.Errorf("the existing plist lacks this tool's complete managed marker; it is not taken over, overwritten or deleted")
 	}
 	encoded := strings.TrimSuffix(strings.TrimPrefix(string(lines[1]), managedMarker), " -->")
 	metadata, err := base64.StdEncoding.DecodeString(encoded)
 	if err != nil {
-		return nil, fmt.Errorf("托管标记损坏；不会覆盖或删除")
+		return nil, fmt.Errorf("the managed marker is damaged; the configuration is not overwritten or deleted")
 	}
 	var definition managedDefinition
 	decoder := json.NewDecoder(bytes.NewReader(metadata))
 	decoder.DisallowUnknownFields()
 	if err := decoder.Decode(&definition); err != nil || definition.Version != 1 || definition.Label != Label || definition.UID != m.uid || definition.Config.Platform != "darwin" {
-		return nil, fmt.Errorf("托管标记身份或版本不匹配；不会覆盖或删除")
+		return nil, fmt.Errorf("the managed marker identity or version does not match; the configuration is not overwritten or deleted")
 	}
 	canonical, err := managedContent(definition)
 	if err != nil || !bytes.Equal(canonical, content) {
-		return nil, fmt.Errorf("托管plist已修改或标记不一致；不会覆盖或删除")
+		return nil, fmt.Errorf("the managed plist was modified or its marker is inconsistent; it is not overwritten or deleted")
 	}
 	return &managedFile{definition: definition, content: content, info: info}, nil
 }
@@ -617,7 +617,7 @@ func (m *UserManager) directory(path string, create bool) error {
 			return err
 		}
 		if !info.IsDir() || !ownedBy(info, m.uid) || info.Mode().Perm()&0022 != 0 {
-			return fmt.Errorf("用户服务目录不是安全的当前用户目录；拒绝符号链接、他人拥有或组/其他用户可写的目录")
+			return fmt.Errorf("the user-service directory is not a safe current-user directory; symbolic links, directories owned by others, and directories writable by group or others are refused")
 		}
 	}
 	return nil
@@ -627,19 +627,19 @@ func boolValue(value bool) *bool { return &value }
 
 func WriteUserStatus(output io.Writer, status UserStatus) error {
 	var text strings.Builder
-	fmt.Fprintf(&text, "nb1 macOS 用户服务\nlabel：%s\n目标：%s\n配置：%s · %s\nlaunchd注册：%s · 归属已核对=%t\n", status.Label, status.Target, status.PlistPath, status.ConfigState, status.Registration, status.RegistrationOwned)
+	fmt.Fprintf(&text, "nb1 macOS user service\nlabel: %s\ntarget: %s\nconfiguration: %s · %s\nlaunchd registration: %s · ownership verified=%t\n", status.Label, status.Target, status.PlistPath, status.ConfigState, status.Registration, status.RegistrationOwned)
 	if status.AutoLoadAtLogin == nil {
-		fmt.Fprintln(&text, "下次图形登录自动加载：未检查或无法确认；不能据此判断配置存在、缺失或可安全操作。")
+		fmt.Fprintln(&text, "Automatic loading at the next graphical login: not checked or unconfirmed; this does not establish configuration presence, absence or whether it is safe to manage.")
 	} else if *status.AutoLoadAtLogin {
-		fmt.Fprintln(&text, "下次图形登录可能自动加载：是；这不表示现在已经运行。")
+		fmt.Fprintln(&text, "May load automatically at the next graphical login: yes; this does not establish that it is running now.")
 	} else {
-		fmt.Fprintln(&text, "托管plist不存在；未由这份配置安排下次登录加载。")
+		fmt.Fprintln(&text, "The managed plist is absent; this configuration has not arranged loading at the next login.")
 	}
 	if status.Config != nil {
-		fmt.Fprintf(&text, "二进制：%s\n设备：%s\n监听：%s\n", status.Config.Binary, strings.Join(status.Config.Devices, ","), status.Config.Listen)
+		fmt.Fprintf(&text, "binary: %s\ndevices: %s\nlisten: %s\n", status.Config.Binary, strings.Join(status.Config.Devices, ","), status.Config.Listen)
 	}
 	if len(status.Actions) != 0 {
-		fmt.Fprintf(&text, "本次操作：%s\n", strings.Join(status.Actions, ", "))
+		fmt.Fprintf(&text, "actions: %s\n", strings.Join(status.Actions, ", "))
 	}
 	for _, note := range status.Notes {
 		fmt.Fprintln(&text, note)

@@ -77,7 +77,7 @@ func Collect(ctx context.Context, options Options, build Build) (Report, error) 
 
 func collect(parent context.Context, options Options, build Build, now func() time.Time) (Report, error) {
 	if options.Serial != "" && !validSerial(options.Serial) {
-		return Report{}, fmt.Errorf("--serial 必须是1–128个字母、数字、下划线或连字符")
+		return Report{}, fmt.Errorf("--serial must contain 1-128 letters, digits, underscores or hyphens")
 	}
 	if options.Endpoint == "" {
 		options.Endpoint = daemonclient.DefaultEndpoint
@@ -86,7 +86,7 @@ func collect(parent context.Context, options Options, build Build, now func() ti
 	if err != nil {
 		// URL parsing errors may quote the original input, including accidental
 		// credentials. Report the constraint without echoing rejected input.
-		return Report{}, fmt.Errorf("--endpoint 必须是本地loopback HTTP地址，例如 %s", daemonclient.DefaultEndpoint)
+		return Report{}, fmt.Errorf("--endpoint must be a local loopback HTTP address, such as %s", daemonclient.DefaultEndpoint)
 	}
 	defer client.Close()
 	ctx, cancel := context.WithTimeout(parent, Budget)
@@ -95,9 +95,9 @@ func collect(parent context.Context, options Options, build Build, now func() ti
 		Daemon:    Daemon{Endpoint: strings.TrimRight(options.Endpoint, "/"), State: "unavailable", HTTPResponse: "unconfirmed"},
 		Selection: "daemon_configured", RequestedSerial: options.Serial, ObservationMaxAgeMS: ObservationMaxAge.Milliseconds(),
 		Devices: []Device{}, Issues: []Issue{}, Notes: []string{
-			"HTTP响应只验证服务；设备online来自daemon，observed是已有快照，不是此命令触发的新采样。",
-			"此命令只读取构建元数据和本地HTTP，不扫描或打开USB、不提交任务、不自动回退直控。",
-			"native_hid_supported只表示此二进制编译了原生后端，不代表当前系统版本或设备型号已经通过实物验证。",
+			"An HTTP response verifies only the service; device online state comes from the daemon, and observed is an existing snapshot, not a new sample triggered by this command.",
+			"This command only reads build metadata and local HTTP; it does not enumerate or open USB, submit Jobs or automatically fall back to direct control.",
+			"native_hid_supported means only that this binary includes a native backend; it does not establish physical validation of the current OS version or device model.",
 		}}
 	if options.Serial != "" {
 		report.Selection = "explicit_serial"
@@ -117,22 +117,22 @@ func collect(parent context.Context, options Options, build Build, now func() ti
 		if errors.As(err, &responseError) || errors.As(err, &decodeError) {
 			report.Daemon.HTTPResponse = "received"
 		}
-		start := "nb1 server --devices <明确序列号>"
+		start := "nb1 server --devices DEVICE_SERIAL"
 		if options.Serial != "" {
 			start = "nb1 server --devices " + options.Serial
 		}
-		report.issue("daemon_unavailable", "", "未能确认兼容的daemon；这不能说明硬件损坏或离线。", "检查 --endpoint 是否匹配已有服务；尚未启动时可运行 "+start+"。不要启动第二个进程抢占同一设备。")
+		report.issue("daemon_unavailable", "", "A compatible daemon could not be confirmed; this does not establish that the hardware is broken or offline.", "Check that --endpoint matches the existing service; if it has not been started, run "+start+". Do not start a second process to take over the same device.")
 		return finish(), nil
 	}
 	report.Daemon.HTTPResponse, report.Daemon.HealthStatus, report.Daemon.APIVersion = "received", health.Status, health.APIVersion
 	if health.APIVersion != "v1" {
 		report.Daemon.State = "incompatible"
-		report.issue("api_version_mismatch", "", "HTTP有响应，但API版本不是v1。", "确认端口上的进程是当前nb1 daemon；更新配套CLI与daemon后重新诊断。")
+		report.issue("api_version_mismatch", "", "HTTP responded, but the API version is not v1.", "Confirm that the process on this port is the current nb1 daemon; update the matching CLI and daemon, then diagnose again.")
 		return finish(), nil
 	}
 	if health.Status != "ok" {
 		report.Daemon.State = "unhealthy"
-		report.issue("daemon_unhealthy", "", "daemon的health状态不是ok。", "查看daemon运行日志并确认服务状态；此命令不会重启或改变设备。")
+		report.issue("daemon_unhealthy", "", "The daemon health status is not ok.", "Check the daemon logs and service status; this command does not restart it or change the device.")
 		return finish(), nil
 	}
 	states, err := client.Devices(ctx)
@@ -143,7 +143,7 @@ func collect(parent context.Context, options Options, build Build, now func() ti
 		} else {
 			report.Daemon.Error = "device response must be an array, not null"
 		}
-		report.issue("device_list_unavailable", "", "HTTP和v1健康检查通过，但设备列表不可用。", "查看daemon日志及配套版本；HTTP存活不能替代设备在线检查。")
+		report.issue("device_list_unavailable", "", "HTTP and the v1 health check passed, but the device list is unavailable.", "Check the daemon logs and matching versions; an HTTP response does not replace checking device connectivity.")
 		return finish(), nil
 	}
 	report.Daemon.State, report.Daemon.DeviceListRead = "ready", true
@@ -152,7 +152,7 @@ func collect(parent context.Context, options Options, build Build, now func() ti
 	for _, state := range states {
 		if !validSerial(state.Serial) || seen[state.Serial] || state.QueueDepth < 0 {
 			report.Daemon.State = "devices_error"
-			report.issue("invalid_device_state", "", "设备列表包含非法或重复序列号，或负数排队深度。", "检查daemon的API实现与配套版本；不要根据这个响应执行自动控制。")
+			report.issue("invalid_device_state", "", "The device list contains invalid or duplicate serial numbers, or a negative queue depth.", "Check the daemon API implementation and matching versions; do not perform automatic control based on this response.")
 			return finish(), nil
 		}
 		seen[state.Serial] = true
@@ -168,27 +168,27 @@ func collect(parent context.Context, options Options, build Build, now func() ti
 		switch state.Connection {
 		case "online":
 			if device.Observed.State != "fresh" {
-				report.issue("observation_"+device.Observed.State, state.Serial, "设备标记在线，但读回快照缺失、超过5秒或时间异常。", "比较sampled_at与本机时间，查看daemon日志；再次诊断确认采样是否继续更新。")
+				report.issue("observation_"+device.Observed.State, state.Serial, "The device is marked online, but its readback snapshot is missing, older than five seconds or has an inconsistent timestamp.", "Compare sampled_at with the local clock and check the daemon logs; diagnose again to see whether sampling continues to update.")
 			}
 		case "busy":
-			report.issue("device_busy", state.Serial, "设备被合作式所有权锁占用。", "通过持有它的daemon控制，或正常停止占用进程后再启动目标服务；保留锁文件，不要删除锁来抢占。")
+			report.issue("device_busy", state.Serial, "The device is held by a cooperative ownership lock.", "Control it through the owning daemon, or normally stop the owning process before starting the intended service; keep the lock file and do not delete it to take over the device.")
 		case "offline":
-			report.issue("device_offline", state.Serial, "daemon已配置该设备，但当前未在线。", "核对序列号、USB连接与访问权限，并查看last_error；daemon会继续尝试连接，不需要静默回退直控。")
+			report.issue("device_offline", state.Serial, "The daemon is configured for this device, but it is currently offline.", "Check the serial number, USB connection and access permissions, and inspect last_error; the daemon will continue connection attempts without silently falling back to direct control.")
 		case "connecting":
-			report.issue("device_connecting", state.Serial, "daemon仍在尝试连接设备。", "稍后重新诊断；持续失败时核对USB、序列号、权限和daemon日志。")
+			report.issue("device_connecting", state.Serial, "The daemon is still trying to connect to the device.", "Diagnose again later; if failures persist, check USB, the serial number, permissions and daemon logs.")
 		case "error":
-			report.issue("device_error", state.Serial, "设备执行或清理操作发生错误。", "查看last_error和daemon日志，确认清理及后续连接状态；不要把旧快照当作当前实物状态。")
+			report.issue("device_error", state.Serial, "A device operation or cleanup failed.", "Check last_error and daemon logs to confirm cleanup and subsequent connection state; do not treat an old snapshot as the current physical state.")
 		case "closing", "closed":
-			report.issue("device_"+state.Connection, state.Serial, "设备worker正在关闭或已经关闭。", "检查daemon是否正在正常退出；等待其释放设备后再启动服务。")
+			report.issue("device_"+state.Connection, state.Serial, "The device worker is closing or has closed.", "Check whether the daemon is exiting normally; wait for it to release the device before starting the service.")
 		default:
-			report.issue("device_state_unknown", state.Serial, "daemon返回了未知设备连接状态。", "检查CLI与daemon是否配套，并查看daemon日志。")
+			report.issue("device_state_unknown", state.Serial, "The daemon returned an unknown device connection state.", "Check that the CLI and daemon versions match, and inspect the daemon logs.")
 		}
 	}
 	if len(report.Devices) == 0 {
 		if options.Serial != "" {
-			report.issue("target_not_configured", options.Serial, "所选序列号不在daemon配置目标中。", "检查 nb1 server --devices 配置；需要时正常重启服务并明确加入该序列号。doctor不会选取第一个USB设备。")
+			report.issue("target_not_configured", options.Serial, "The selected serial number is not among the daemon's configured targets.", "Check the nb1 server --devices configuration; if needed, normally restart the service and explicitly include this serial number. doctor does not select the first USB device.")
 		} else {
-			report.issue("no_configured_devices", "", "daemon没有返回配置目标。", "检查 nb1 server --devices 配置与运行日志。")
+			report.issue("no_configured_devices", "", "The daemon returned no configured targets.", "Check the nb1 server --devices configuration and daemon logs.")
 		}
 	}
 	return finish(), nil
@@ -229,19 +229,19 @@ func snapshot(observed *control.Observation, now time.Time) Snapshot {
 
 func WriteText(output io.Writer, report Report) error {
 	var text strings.Builder
-	fmt.Fprintf(&text, "nb1 doctor · 只读诊断 · %s\n", report.Status)
-	fmt.Fprintf(&text, "检查时间：%s\n构建：%s %s/%s · CGO=%t · 原生HID后端=%t\n", report.CapturedAt.Format(time.RFC3339Nano), report.Build.GoVersion, report.Build.OS, report.Build.Arch, report.Build.CGOEnabled, report.Build.NativeHIDSupported)
-	fmt.Fprintf(&text, "nb1：%s · revision=%s · modified=%s\n", moduleLabel(report.Build.Main), report.Build.Revision, report.Build.Modified)
+	fmt.Fprintf(&text, "nb1 doctor · read-only diagnostics · %s\n", report.Status)
+	fmt.Fprintf(&text, "checked at: %s\nbuild: %s %s/%s · CGO=%t · native HID backend=%t\n", report.CapturedAt.Format(time.RFC3339Nano), report.Build.GoVersion, report.Build.OS, report.Build.Arch, report.Build.CGOEnabled, report.Build.NativeHIDSupported)
+	fmt.Fprintf(&text, "nb1: %s · revision=%s · modified=%s\n", moduleLabel(report.Build.Main), report.Build.Revision, report.Build.Modified)
 	for _, module := range report.Build.Dependencies {
-		fmt.Fprintf(&text, "%s：%s\n", module.Path, moduleLabel(module))
+		fmt.Fprintf(&text, "%s: %s\n", module.Path, moduleLabel(module))
 	}
-	fmt.Fprintf(&text, "daemon：%s · %s · HTTP=%s · API=%q · health=%q\n", report.Daemon.Endpoint, report.Daemon.State, report.Daemon.HTTPResponse, report.Daemon.APIVersion, report.Daemon.HealthStatus)
+	fmt.Fprintf(&text, "daemon: %s · %s · HTTP=%s · API=%q · health=%q\n", report.Daemon.Endpoint, report.Daemon.State, report.Daemon.HTTPResponse, report.Daemon.APIVersion, report.Daemon.HealthStatus)
 	if report.Daemon.Error != "" {
-		fmt.Fprintf(&text, "诊断错误：%q\n", report.Daemon.Error)
+		fmt.Fprintf(&text, "diagnostic error: %q\n", report.Daemon.Error)
 	}
 	for _, device := range report.Devices {
-		fmt.Fprintf(&text, "设备 %q：%s · queue=%d · active_job=%q · firmware=%d\n", device.Serial, device.Connection, device.QueueDepth, device.ActiveJob, device.Firmware)
-		fmt.Fprintf(&text, "  observed：%s", device.Observed.State)
+		fmt.Fprintf(&text, "device %q: %s · queue=%d · active_job=%q · firmware=%d\n", device.Serial, device.Connection, device.QueueDepth, device.ActiveJob, device.Firmware)
+		fmt.Fprintf(&text, "  observed: %s", device.Observed.State)
 		if device.Observed.SampledAt != nil {
 			fmt.Fprintf(&text, " · sampled_at=%s · LED1=%q · LED2=%q", device.Observed.SampledAt.Format(time.RFC3339Nano), device.Observed.LED1, device.Observed.LED2)
 		}
@@ -250,11 +250,11 @@ func WriteText(output io.Writer, report Report) error {
 		}
 		fmt.Fprintln(&text)
 		if device.LastError != "" {
-			fmt.Fprintf(&text, "  last_error：%q\n", device.LastError)
+			fmt.Fprintf(&text, "  last_error: %q\n", device.LastError)
 		}
 	}
 	for _, issue := range report.Issues {
-		fmt.Fprintf(&text, "待检查 [%s] %q：%s\n  建议：%s\n", issue.Code, issue.Serial, issue.Message, issue.Advice)
+		fmt.Fprintf(&text, "attention [%s] %q: %s\n  advice: %s\n", issue.Code, issue.Serial, issue.Message, issue.Advice)
 	}
 	for _, note := range report.Notes {
 		fmt.Fprintln(&text, note)
@@ -266,11 +266,11 @@ func WriteText(output io.Writer, report Report) error {
 func moduleLabel(module Module) string {
 	switch module.Source {
 	case "unavailable":
-		return "构建信息不可用"
+		return "build information unavailable"
 	case "local_unversioned":
-		return "本地工作区/替换，实际版本未编号（requested=" + module.RequestedVersion + "）"
+		return "local workspace/replacement, actual version unversioned (requested=" + module.RequestedVersion + ")"
 	case "replacement":
-		return module.Version + "（替换，requested=" + module.RequestedVersion + "）"
+		return module.Version + " (replacement, requested=" + module.RequestedVersion + ")"
 	default:
 		return module.Version
 	}

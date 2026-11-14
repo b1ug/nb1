@@ -44,6 +44,8 @@ The macOS/Linux candidate provides `nb1 service install --devices DEVICE_SERIAL 
 
 Use `nb1 version --json` for the executable's build identity, Go toolchain and pinned hardware dependencies without contacting a daemon or USB device. Plain source builds report their commit; unknown identity is reported as development.
 
+CLI diagnostics use English by default. Command results go to stdout; diagnostic logging, including `--debug`, goes to stderr so JSON results remain readable by other tools. The Web workbench provides English and Chinese.
+
 ## Configuration and storage
 
 On macOS and Linux, configuration and the local color/Pattern library use `$XDG_CONFIG_HOME/nb1`, defaulting to `~/.config/nb1` when the variable is empty or unset. A nonempty XDG root must be absolute. Windows keeps the native `%APPDATA%\nb1` location. Use `nb1 config path` and `nb1 config show` to inspect this process's selected file and resolved settings.

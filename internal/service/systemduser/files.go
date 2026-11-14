@@ -64,7 +64,7 @@ func (m *Manager) inspect() (*snapshot, error) {
 		return s, err
 	}
 	if _, err := os.Lstat(m.unitPath() + ".d"); err == nil || !errors.Is(err, os.ErrNotExist) {
-		return s, fmt.Errorf("存在未托管的unit drop-in目录或无法检查；拒绝接管")
+		return s, fmt.Errorf("an unmanaged unit drop-in directory exists or could not be inspected; takeover is refused")
 	}
 	f, err := openRegular(m.unitPath())
 	if err == nil {
@@ -74,33 +74,33 @@ func (m *Manager) inspect() (*snapshot, error) {
 			return s, err
 		}
 		if !info.Mode().IsRegular() || !ownedBy(info, m.uid) || info.Mode().Perm()&0022 != 0 {
-			return s, fmt.Errorf("unit不是安全的当前用户普通文件")
+			return s, fmt.Errorf("the unit is not a safe current-user regular file")
 		}
 		content, err := io.ReadAll(io.LimitReader(f, (128<<10)+1))
 		if err != nil || len(content) > 128<<10 {
-			return s, fmt.Errorf("无法读取完整受控unit或文件过大")
+			return s, fmt.Errorf("the complete managed unit could not be read, or the file is too large")
 		}
 		parts := bytes.SplitN(content, []byte("\n"), 2)
 		if len(parts) != 2 || !bytes.HasPrefix(parts[0], []byte(marker)) {
-			return s, fmt.Errorf("已有unit不是本工具完整托管文件，不会覆盖或删除")
+			return s, fmt.Errorf("the existing unit is not this tool's complete managed file; it is not overwritten or deleted")
 		}
 		metadata, err := base64.StdEncoding.DecodeString(strings.TrimPrefix(string(parts[0]), marker))
 		if err != nil {
-			return s, fmt.Errorf("unit托管标记损坏")
+			return s, fmt.Errorf("the unit managed marker is damaged")
 		}
 		var d definition
 		decoder := json.NewDecoder(bytes.NewReader(metadata))
 		decoder.DisallowUnknownFields()
 		if err := decoder.Decode(&d); err != nil || d.Version != 1 || d.Unit != UnitName || d.UID != m.uid || d.Config.Platform != "linux" {
-			return s, fmt.Errorf("unit托管身份/版本不匹配")
+			return s, fmt.Errorf("the unit managed identity or version does not match")
 		}
 		canonical, err := unitContent(d)
 		if err != nil || !bytes.Equal(canonical, content) {
-			return s, fmt.Errorf("unit内容被修改或托管标记不一致，不会覆盖或删除")
+			return s, fmt.Errorf("the unit content was modified or its managed marker is inconsistent; it is not overwritten or deleted")
 		}
 		s.unit = &unitFile{definition: d, content: content, info: info}
 	} else if !errors.Is(err, os.ErrNotExist) {
-		return s, fmt.Errorf("无法安全读取unit，不会覆盖或删除: %w", err)
+		return s, fmt.Errorf("the unit could not be read safely; it is not overwritten or deleted: %w", err)
 	}
 	if err := m.directory(filepath.Dir(m.linkPath()), false); err != nil {
 		if errors.Is(err, os.ErrNotExist) {
@@ -116,11 +116,11 @@ func (m *Manager) inspect() (*snapshot, error) {
 		return s, err
 	}
 	if info.Mode()&os.ModeSymlink == 0 || !ownedBy(info, m.uid) {
-		return s, fmt.Errorf("登录启用路径不是当前用户受控symlink，不会覆盖或删除")
+		return s, fmt.Errorf("the login-enablement path is not a managed symbolic link owned by the current user; it is not overwritten or deleted")
 	}
 	target, err := os.Readlink(m.linkPath())
 	if err != nil || target != m.unitPath() || s.unit == nil {
-		return s, fmt.Errorf("登录启用链接目标或unit归属未知，不会接管")
+		return s, fmt.Errorf("the login-enablement link target or unit ownership is unknown; no takeover is performed")
 	}
 	s.link = &enableLink{target: target, info: info}
 	return s, nil
@@ -132,7 +132,7 @@ func (m *Manager) unchanged(original *snapshot) error {
 		return err
 	}
 	if !sameSnapshot(original, current) {
-		return fmt.Errorf("unit或登录链接在检查期间改变；拒绝启动、停止或删除")
+		return fmt.Errorf("the unit or login link changed during inspection; start, stop and deletion are refused")
 	}
 	return nil
 }
@@ -163,7 +163,7 @@ func (m *Manager) managementLease() (*ownership.Lease, error) {
 func (m *Manager) directory(path string, create bool) error {
 	rel, err := filepath.Rel(m.configRoot, path)
 	if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
-		return fmt.Errorf("unit目录超出用户配置根")
+		return fmt.Errorf("the unit directory is outside the user configuration root")
 	}
 	if create {
 		if err := os.MkdirAll(m.configRoot, 0700); err != nil {
@@ -190,7 +190,7 @@ func (m *Manager) directory(path string, create bool) error {
 			return err
 		}
 		if !info.IsDir() || !ownedBy(info, m.uid) || info.Mode().Perm()&0022 != 0 {
-			return fmt.Errorf("用户配置目录不是安全的当前用户目录；拒绝symlink或他人可写目录")
+			return fmt.Errorf("the user configuration directory is not a safe current-user directory; symbolic links and directories writable by others are refused")
 		}
 	}
 	return nil
@@ -239,10 +239,10 @@ func safeAncestors(path string, uid int) error {
 			return err
 		}
 		if !info.IsDir() || (!ownedBy(info, uid) && !ownedBy(info, 0)) {
-			return fmt.Errorf("配置路径祖先归属不安全")
+			return fmt.Errorf("ownership of a configuration path ancestor is unsafe")
 		}
 		if info.Mode().Perm()&0022 != 0 && !(ownedBy(info, 0) && info.Mode()&os.ModeSticky != 0) {
-			return fmt.Errorf("配置路径祖先可被其他用户改写")
+			return fmt.Errorf("a configuration path ancestor is writable by other users")
 		}
 	}
 	return nil

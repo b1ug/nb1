@@ -272,8 +272,8 @@ type userServiceAction struct {
 	configOnly bool
 }
 
-var errUserServiceUnsupported = errors.New("该用户服务操作不受当前平台支持；自动管理仅macOS/Linux普通用户，Windows候选仅service status只读查询与render；不自动提权")
-var errWindowsServiceUnsupported = fmt.Errorf("%w；Windows的install/start/stop/uninstall和status --config-only尚未实现，不构造查询器或修改任务", errUserServiceUnsupported)
+var errUserServiceUnsupported = errors.New("this user-service operation is unsupported on the current platform; automatic management supports ordinary users on macOS/Linux only; Windows supports candidate read-only service status and render; privileges are not elevated")
+var errWindowsServiceUnsupported = fmt.Errorf("%w; Windows install/start/stop/uninstall and status --config-only are not implemented; no query adapter is created and no task is modified", errUserServiceUnsupported)
 
 func (management userServiceRuntime) run(cmd *cobra.Command, asJSON bool, action userServiceAction) error {
 	switch management.goos {
@@ -310,24 +310,24 @@ func runWindowsServiceQuery(cmd *cobra.Command, asJSON bool, factory func() (win
 
 func writeWindowsServiceStatus(output io.Writer, status taskquery.Status) error {
 	var text strings.Builder
-	fmt.Fprintf(&text, "nb1 Windows任务只读查询（候选）\n目标：%s\n注册存在性：%s\n归属：%s（未验证托管归属）\n", status.TaskPath, status.Presence, status.Ownership)
+	fmt.Fprintf(&text, "nb1 Windows read-only task query (candidate)\ntarget: %s\nregistration presence: %s\nownership: %s (managed ownership not verified)\n", status.TaskPath, status.Presence, status.Ownership)
 	if !status.CheckedAt.IsZero() {
-		fmt.Fprintf(&text, "查询采样：%s\n", status.CheckedAt.Format("2006-01-02T15:04:05Z07:00"))
+		fmt.Fprintf(&text, "query sampled at: %s\n", status.CheckedAt.Format("2006-01-02T15:04:05Z07:00"))
 	}
 	if status.Task != nil {
-		fmt.Fprintf(&text, "enabled：%t\nScheduler状态：%s（%d）\n上次任务结果：%d\n", status.Task.Enabled, status.Task.SchedulerStateName, status.Task.SchedulerState, status.Task.LastTaskResult)
+		fmt.Fprintf(&text, "enabled: %t\nScheduler state: %s (%d)\nlast task result: %d\n", status.Task.Enabled, status.Task.SchedulerStateName, status.Task.SchedulerState, status.Task.LastTaskResult)
 	} else {
-		fmt.Fprintln(&text, "Scheduler字段：不可确认；不能据此判断任务不存在。")
+		fmt.Fprintln(&text, "Scheduler fields: unconfirmed; this does not establish that the task is absent.")
 	}
 	if status.Failure != nil {
-		fmt.Fprintf(&text, "查询失败：%s · 阶段=%s", status.Failure.Kind, status.Failure.Stage)
+		fmt.Fprintf(&text, "query failure: %s · stage=%s", status.Failure.Kind, status.Failure.Stage)
 		if status.Failure.HRESULT != "" {
 			fmt.Fprintf(&text, " · HRESULT=%s", status.Failure.HRESULT)
 		}
 		fmt.Fprintln(&text)
 	}
-	fmt.Fprintln(&text, "同名任务不等于本工具托管；Scheduler状态不代表daemon PID、HTTP可用或USB在线。")
-	fmt.Fprintln(&text, "Windows目前仅候选只读status与render；管理与可靠stop协议未实现，普通用户原生查询待独立验收，不提权、不注册/运行/停止任务。")
+	fmt.Fprintln(&text, "A matching task name does not establish managed ownership; Scheduler state does not establish a daemon PID, HTTP availability or USB readiness.")
+	fmt.Fprintln(&text, "Windows currently supports only candidate read-only status and render; management and a reliable stop protocol are not implemented. Native ordinary-user query validation remains pending. No privilege elevation or task registration, execution or stopping is performed.")
 	_, err := io.WriteString(output, text.String())
 	return err
 }
@@ -366,31 +366,31 @@ func runUserServiceBackend[S any](cmd *cobra.Command, asJSON bool, action userSe
 
 func writeSystemdUserStatus(output io.Writer, status systemduser.Status) error {
 	var text strings.Builder
-	fmt.Fprintf(&text, "nb1 Linux systemd 用户服务\nunit：%s\n目标：%s\n配置：%s · %s\nmanager加载：%s · 归属已核对=%t\n", status.Label, status.Target, status.UnitPath, status.ConfigState, status.Registration, status.RegistrationOwned)
-	fmt.Fprintf(&text, "持久启用链接：%s · %s\n", status.EnableLinkPath, status.EnableLinkState)
+	fmt.Fprintf(&text, "nb1 Linux systemd user service\nunit: %s\ntarget: %s\nconfiguration: %s · %s\nmanager registration: %s · ownership verified=%t\n", status.Label, status.Target, status.UnitPath, status.ConfigState, status.Registration, status.RegistrationOwned)
+	fmt.Fprintf(&text, "persistent enablement link: %s · %s\n", status.EnableLinkPath, status.EnableLinkState)
 	if status.ManagedEnabledForLogin == nil {
-		fmt.Fprintln(&text, "本工具登录启用：未检查或无法确认。")
+		fmt.Fprintln(&text, "Managed login enablement: not checked or unconfirmed.")
 	} else {
-		fmt.Fprintf(&text, "本工具登录启用：%t；仅描述default.target持久链接，其他来源看unit_file_state。\n", *status.ManagedEnabledForLogin)
+		fmt.Fprintf(&text, "Managed login enablement: %t; this describes only the persistent default.target link; see unit_file_state for other sources.\n", *status.ManagedEnabledForLogin)
 	}
 	if status.Properties == nil {
-		fmt.Fprintln(&text, "load_state / active_state / sub_state / unit_file_state：未检查或无法确认。")
+		fmt.Fprintln(&text, "load_state / active_state / sub_state / unit_file_state: not checked or unconfirmed.")
 	} else {
 		p := status.Properties
-		fmt.Fprintf(&text, "load_state：%s\nactive_state：%s\nsub_state：%s\nunit_file_state：%s\n", p.LoadState, p.ActiveState, p.SubState, p.UnitFileState)
+		fmt.Fprintf(&text, "load_state: %s\nactive_state: %s\nsub_state: %s\nunit_file_state: %s\n", p.LoadState, p.ActiveState, p.SubState, p.UnitFileState)
 		if p.NoNewPrivileges == nil {
-			fmt.Fprintln(&text, "NoNewPrivileges：未检查或无法确认。")
+			fmt.Fprintln(&text, "NoNewPrivileges: not checked or unconfirmed.")
 		} else {
-			fmt.Fprintf(&text, "NoNewPrivileges：%t\n", *p.NoNewPrivileges)
+			fmt.Fprintf(&text, "NoNewPrivileges: %t\n", *p.NoNewPrivileges)
 		}
 	}
 	if status.Config != nil {
-		fmt.Fprintf(&text, "二进制：%s\n设备：%s\n监听：%s\n", status.Config.Binary, strings.Join(status.Config.Devices, ","), status.Config.Listen)
+		fmt.Fprintf(&text, "binary: %s\ndevices: %s\nlisten: %s\n", status.Config.Binary, strings.Join(status.Config.Devices, ","), status.Config.Listen)
 	}
 	if len(status.Actions) != 0 {
-		fmt.Fprintf(&text, "本次操作：%s\n", strings.Join(status.Actions, ", "))
+		fmt.Fprintf(&text, "actions: %s\n", strings.Join(status.Actions, ", "))
 	}
-	fmt.Fprintln(&text, "loaded、active、登录启用与归属已核对均不表示HTTP可用或USB在线；停止也不证明硬件清理已完成。")
+	fmt.Fprintln(&text, "Loaded, active, login-enabled or ownership-verified states do not establish HTTP availability or USB readiness; stopping does not establish that hardware cleanup is complete.")
 	for _, note := range status.Notes {
 		fmt.Fprintln(&text, note)
 	}

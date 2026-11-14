@@ -18,7 +18,7 @@ const (
 	maxOutput       = 64 << 10
 )
 
-var ErrUnsupported = errors.New("systemd用户服务管理只支持Linux普通用户；其他平台可继续使用service render")
+var ErrUnsupported = errors.New("systemd user-service management supports ordinary Linux users only; service render remains available on other platforms")
 
 // Result is adapter data, never copied wholesale into a status or log.
 type Result struct {

@@ -32,7 +32,7 @@ func New() (*Manager, error) {
 	}
 	uid := os.Geteuid()
 	if uid <= 0 || os.Getuid() != uid {
-		return nil, fmt.Errorf("请使用当前普通用户；不支持root、sudo或身份切换")
+		return nil, fmt.Errorf("use the current ordinary user; root, sudo and identity switching are unsupported")
 	}
 	configRoot, err := userconfig.RootDir()
 	if err != nil {
@@ -51,7 +51,7 @@ func New() (*Manager, error) {
 		}
 	}
 	if executable == "" {
-		return nil, fmt.Errorf("找不到受信任的系统systemctl；未进行任何服务操作")
+		return nil, fmt.Errorf("a trusted system systemctl executable was not found; no service operation was performed")
 	}
 	return newManager(configRoot, uid, nativeRunner{binary: executable})
 }
@@ -144,21 +144,21 @@ func (m *Manager) inspectStatus(ctx context.Context, configOnly bool) (Status, *
 
 func (m *Manager) trustedLoaded(s *snapshot, p Properties) error {
 	if s.unit == nil || p.LoadState != "loaded" || p.ID != UnitName || p.Transient || p.NeedDaemonReload || p.SourcePath != "" || p.DropInPaths != "" || p.NoNewPrivileges == nil || !*p.NoNewPrivileges {
-		return fmt.Errorf("unit来源、覆盖或reload状态不明确；拒绝操作")
+		return fmt.Errorf("the unit source, overrides or reload state is unclear; the operation is refused")
 	}
 	if !filepath.IsAbs(p.FragmentPath) || strings.IndexFunc(p.FragmentPath, unicode.IsControl) >= 0 {
-		return fmt.Errorf("FragmentPath未知，拒绝操作")
+		return fmt.Errorf("FragmentPath is unknown; the operation is refused")
 	}
 	fragment, err := filepath.EvalSymlinks(p.FragmentPath)
 	if err != nil || fragment != m.unitPath() {
-		return fmt.Errorf("同名unit来自其他位置，拒绝操作")
+		return fmt.Errorf("the matching unit comes from another location; the operation is refused")
 	}
 	wantState := "disabled"
 	if s.link != nil {
 		wantState = "enabled"
 	}
 	if p.UnitFileState != wantState {
-		return fmt.Errorf("登录启用状态含未知链接、runtime覆盖或其他来源，拒绝接管")
+		return fmt.Errorf("login enablement includes unknown links, runtime overrides or other sources; takeover is refused")
 	}
 	return nil
 }
@@ -174,7 +174,7 @@ func (m *Manager) run(ctx context.Context, action string, status *Status) error 
 	if err != nil || result.ExitCode != 0 || result.Truncated {
 		status.Registration = "unknown"
 		status.RegistrationOwned = false
-		return fmt.Errorf("systemctl %s结果未确认；不重试、不强杀、不自动回滚文件，请重新查询状态", action)
+		return fmt.Errorf("the result of systemctl %s is unconfirmed; no retry, force-kill or automatic file rollback is performed; query status again", action)
 	}
 	return nil
 }
@@ -202,7 +202,7 @@ func (m *Manager) Install(ctx context.Context, config service.Config, start bool
 	}
 	info, err := os.Stat(config.Binary)
 	if err != nil || !info.Mode().IsRegular() || info.Mode().Perm()&0111 == 0 {
-		return status, fmt.Errorf("binary必须是明确的已存在绝对可执行普通文件")
+		return status, fmt.Errorf("binary must explicitly name an existing executable regular file by its absolute path")
 	}
 	if config.BinaryRoot == "" {
 		config.Binary, err = filepath.EvalSymlinks(config.Binary)
@@ -229,11 +229,11 @@ func (m *Manager) Install(ctx context.Context, config service.Config, start bool
 		return status, err
 	}
 	if s.unit != nil && !bytes.Equal(s.unit.content, content) {
-		return status, fmt.Errorf("现有托管配置不同；不覆盖升级，请先审阅并正常卸载")
+		return status, fmt.Errorf("the existing managed configuration differs; it is not overwritten or upgraded; review and normally uninstall it first")
 	}
 	if status.Registration != "absent" {
 		if status.Properties == nil || m.trustedLoaded(s, *status.Properties) != nil {
-			return status, fmt.Errorf("已有同名外部/未知unit或覆盖，不会安装")
+			return status, fmt.Errorf("a matching external or unknown unit or override already exists; installation is refused")
 		}
 	}
 	if err := m.unchanged(s); err != nil {
@@ -273,7 +273,7 @@ func (m *Manager) Install(ctx context.Context, config service.Config, start bool
 			return status, err
 		}
 		if status.Properties == nil || m.trustedLoaded(current, *status.Properties) != nil {
-			return status, fmt.Errorf("重载后无法确认本工具unit来源；文件保留，未设置登录启用")
+			return status, fmt.Errorf("this tool's unit source could not be verified after reload; files are retained and login enablement was not set")
 		}
 		s = current
 	}
@@ -285,7 +285,7 @@ func (m *Manager) Install(ctx context.Context, config service.Config, start bool
 			return status, err
 		}
 		if err := os.Symlink(m.unitPath(), m.linkPath()); err != nil {
-			return status, fmt.Errorf("启用链接已存在或创建失败；不会覆盖: %w", err)
+			return status, fmt.Errorf("the enablement link already exists or could not be created; it is not overwritten: %w", err)
 		}
 		status.Actions = append(status.Actions, "enable_link_created")
 		s, err = m.inspect()
@@ -306,7 +306,7 @@ func (m *Manager) Install(ctx context.Context, config service.Config, start bool
 			return status, err
 		}
 		if status.Properties == nil || m.trustedLoaded(current, *status.Properties) != nil {
-			return status, fmt.Errorf("登录链接已创建但启用结果未确认；保留配置，不自动启动")
+			return status, fmt.Errorf("the login link was created but enablement is unconfirmed; the configuration is retained and is not started automatically")
 		}
 	}
 	if !start {
@@ -337,26 +337,26 @@ func (m *Manager) changeLocked(ctx context.Context, start bool, actions []string
 		return status, err
 	}
 	if expected != nil && !sameSnapshot(expected, s) {
-		return status, fmt.Errorf("unit在外层检查后改变；未开始或停止新配置")
+		return status, fmt.Errorf("the unit changed after the outer inspection; the new configuration was not started or stopped")
 	}
 	if err := m.unchanged(s); err != nil {
 		return status, err
 	}
 	if status.Properties == nil || m.trustedLoaded(s, *status.Properties) != nil {
-		return status, fmt.Errorf("未确认是本工具完整unit及启用状态，拒绝开始/停止")
+		return status, fmt.Errorf("this tool's complete unit and enablement state were not verified; start and stop are refused")
 	}
 	p := *status.Properties
 	if p.Job != 0 {
-		return status, fmt.Errorf("unit有待处理任务，不替换其他start/stop操作")
+		return status, fmt.Errorf("the unit has a pending job; other start or stop operations are not replaced")
 	}
 	if (start && p.ActiveState == "active") || (!start && inactive(p)) {
 		return status, nil
 	}
 	if start && !inactive(p) {
-		return status, fmt.Errorf("unit不在可开始的稳定状态，未替换当前任务")
+		return status, fmt.Errorf("the unit is not in a stable state for starting; the current job was not replaced")
 	}
 	if !start && p.ActiveState != "active" && p.ActiveState != "activating" && p.ActiveState != "reloading" {
-		return status, fmt.Errorf("unit停止状态未知，未发出命令")
+		return status, fmt.Errorf("the unit stop state is unknown; no command was sent")
 	}
 	if start {
 		config := s.unit.definition.Config
@@ -390,21 +390,21 @@ func (m *Manager) changeLocked(ctx context.Context, start bool, actions []string
 		return status, err
 	}
 	if status.Properties == nil || m.trustedLoaded(current, *status.Properties) != nil {
-		return status, fmt.Errorf("操作后unit归属未知，文件保留")
+		return status, fmt.Errorf("unit ownership is unknown after the operation; files are retained")
 	}
 	if status.Properties.Job != 0 || start && status.Properties.ActiveState != "active" || !start && !inactive(*status.Properties) {
-		return status, fmt.Errorf("systemd操作返回后未确认目标活动状态；不据此声称HTTP或硬件就绪")
+		return status, fmt.Errorf("the target active state was not confirmed after the systemd operation returned; this does not establish HTTP or hardware readiness")
 	}
 	return status, nil
 }
 
 func validateBinary(path string, uid int) error {
 	if err := safeAncestors(filepath.Dir(path), uid); err != nil {
-		return fmt.Errorf("binary路径祖先可被不受信任用户改写，未启动或安装: %w", err)
+		return fmt.Errorf("a binary path ancestor is writable by untrusted users; startup or installation was not performed: %w", err)
 	}
 	info, err := os.Lstat(path)
 	if err != nil || !info.Mode().IsRegular() || info.Mode().Perm()&0111 == 0 || info.Mode().Perm()&0022 != 0 || (!ownedBy(info, uid) && !ownedBy(info, 0)) {
-		return fmt.Errorf("binary缺失、非可执行普通文件、成为symlink或可被其他用户改写；未安装或启动")
+		return fmt.Errorf("binary is missing, is not an executable regular file, has become a symbolic link or is writable by other users; installation or startup was not performed")
 	}
 	return nil
 }
@@ -425,11 +425,11 @@ func (m *Manager) Uninstall(ctx context.Context, stop bool) (Status, error) {
 	original := s
 	if status.Registration != "absent" {
 		if status.Properties == nil || m.trustedLoaded(s, *status.Properties) != nil {
-			return status, fmt.Errorf("同名unit归属/覆盖未知，拒绝停止或删除")
+			return status, fmt.Errorf("ownership or overrides of the matching unit are unknown; stop and deletion are refused")
 		}
 		if !inactive(*status.Properties) {
 			if !stop {
-				return status, fmt.Errorf("unit仍活动；显式Uninstall(stop=true)才会先停止")
+				return status, fmt.Errorf("the unit is still active; explicit Uninstall(stop=true) is required to stop it first")
 			}
 			if err := m.unchanged(original); err != nil {
 				return status, err
@@ -466,7 +466,7 @@ func (m *Manager) Uninstall(ctx context.Context, stop bool) (Status, error) {
 			return status, err
 		}
 		if status.Properties == nil || m.trustedLoaded(current, *status.Properties) != nil || !inactive(*status.Properties) {
-			return status, fmt.Errorf("移除本工具链接后仍有未知启用/覆盖或活动状态；保留unit，不删除其他链接")
+			return status, fmt.Errorf("unknown enablement, overrides or active state remain after removing this tool's link; the unit is retained and other links are not deleted")
 		}
 		s = current
 	}
@@ -485,7 +485,7 @@ func (m *Manager) Uninstall(ctx context.Context, stop bool) (Status, error) {
 		return status, err
 	}
 	if status.Registration != "absent" && (status.Properties == nil || m.trustedLoaded(current, *status.Properties) != nil || !inactive(*status.Properties)) {
-		return status, fmt.Errorf("删除unit前发现活动、覆盖或未知来源；保留文件")
+		return status, fmt.Errorf("activity, overrides or an unknown source were found before deleting the unit; files are retained")
 	}
 	if err := m.unchanged(s); err != nil {
 		return status, err
@@ -508,7 +508,7 @@ func (m *Manager) Uninstall(ctx context.Context, stop bool) (Status, error) {
 		return status, err
 	}
 	if status.Registration != "absent" {
-		return status, fmt.Errorf("本工具文件已移除，但manager还有同名来源；不接管或停止它")
+		return status, fmt.Errorf("this tool's files were removed, but the manager still has a matching source; it is not taken over or stopped")
 	}
 	return status, nil
 }

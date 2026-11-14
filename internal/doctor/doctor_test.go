@@ -12,6 +12,7 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
+	"unicode"
 
 	"github.com/b1ug/nb1/internal/control"
 )
@@ -93,8 +94,12 @@ func TestDeviceProblemsAreDistinctFromHTTPHealth(t *testing.T) {
 			if err != nil || report.Status != "attention" || report.Daemon.State != "ready" || report.Issues[0].Code != test.code || report.Devices[0].LastError != state.LastError {
 				t.Fatalf("HTTP/device health conflated: %+v %v", report, err)
 			}
-			if test.connection == "busy" && !strings.Contains(report.Issues[0].Advice, "不要删除锁") {
+			if test.connection == "busy" && !strings.Contains(report.Issues[0].Advice, "do not delete it to take over the device") {
 				t.Fatal("busy advice must preserve the cooperative lock file")
+			}
+			var text bytes.Buffer
+			if err := WriteText(&text, report); err != nil || strings.ContainsFunc(text.String(), func(r rune) bool { return unicode.Is(unicode.Han, r) }) {
+				t.Fatalf("default diagnostics are not English: %s %v", text.String(), err)
 			}
 		})
 	}
@@ -201,7 +206,7 @@ func TestUnavailableEndpointDoesNotAssertHardwareFailure(t *testing.T) {
 	endpoint := server.URL
 	server.Close()
 	report, err := collect(context.Background(), Options{Endpoint: endpoint, Serial: "target"}, testBuild(), func() time.Time { return testTime })
-	if err != nil || report.Issues[0].Code != "daemon_unavailable" || len(report.Devices) != 0 || report.Daemon.HTTPResponse != "unconfirmed" || !strings.Contains(report.Issues[0].Advice, "nb1 server --devices target") || !strings.Contains(report.Issues[0].Message, "不能说明硬件") {
+	if err != nil || report.Issues[0].Code != "daemon_unavailable" || len(report.Devices) != 0 || report.Daemon.HTTPResponse != "unconfirmed" || !strings.Contains(report.Issues[0].Advice, "nb1 server --devices target") || !strings.Contains(report.Issues[0].Message, "does not establish that the hardware") {
 		t.Fatalf("unavailable service misdiagnosed: %+v %v", report, err)
 	}
 }
@@ -263,7 +268,22 @@ func TestReportJSONAndTextOnAttention(t *testing.T) {
 		t.Fatalf("missing values/empty arrays lost stable types: %s", encoded)
 	}
 	var text bytes.Buffer
-	if err := WriteText(&text, report); err != nil || !strings.Contains(text.String(), "HTTP响应只验证服务") || !strings.Contains(text.String(), "device_offline") || !strings.Contains(text.String(), "只读诊断") {
+	if err := WriteText(&text, report); err != nil || !strings.Contains(text.String(), "An HTTP response verifies only the service") || !strings.Contains(text.String(), "device_offline") || !strings.Contains(text.String(), "read-only diagnostics") {
 		t.Fatalf("text report missing actionable distinction: %s %v", text.String(), err)
+	}
+}
+
+func TestModuleLabelsUseEnglishAndPreserveRequestedValues(t *testing.T) {
+	for _, test := range []struct {
+		module Module
+		want   string
+	}{
+		{Module{Source: "unavailable"}, "build information unavailable"},
+		{Module{Source: "local_unversioned", RequestedVersion: "v0.0.1"}, "local workspace/replacement, actual version unversioned (requested=v0.0.1)"},
+		{Module{Source: "replacement", Version: "v0.0.2", RequestedVersion: "v0.0.1"}, "v0.0.2 (replacement, requested=v0.0.1)"},
+	} {
+		if got := moduleLabel(test.module); got != test.want {
+			t.Fatalf("module label changed identity or language: got %q, want %q", got, test.want)
+		}
 	}
 }

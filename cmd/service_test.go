@@ -12,6 +12,7 @@ import (
 	"strings"
 	"testing"
 	"time"
+	"unicode"
 
 	"github.com/b1ug/nb1/internal/service"
 	"github.com/b1ug/nb1/internal/service/systemduser"
@@ -333,7 +334,7 @@ func TestWindowsServiceStatusUsesOnlyReadOnlyFactory(t *testing.T) {
 			if asJSON {
 				assertServiceCLIJSON(t, output.Bytes(), fixture.windows.status)
 			} else {
-				for _, part := range []string{"Windows任务只读查询（候选）", "注册存在性：present", "归属：not_checked", "未验证托管归属", "Scheduler状态：ready（3）", "上次任务结果：0", "不代表daemon PID、HTTP可用或USB在线", "管理与可靠stop协议未实现", "原生查询待独立验收"} {
+				for _, part := range []string{"Windows read-only task query (candidate)", "registration presence: present", "ownership: not_checked", "managed ownership not verified", "Scheduler state: ready (3)", "last task result: 0", "does not establish a daemon PID, HTTP availability or USB readiness", "management and a reliable stop protocol are not implemented", "Native ordinary-user query validation remains pending"} {
 					if !strings.Contains(output.String(), part) {
 						t.Fatal("missing Windows boundary", part, output.String())
 					}
@@ -421,7 +422,7 @@ func TestWindowsQueryRefusalsNeverFallbackAndPreserveUnknown(t *testing.T) {
 			if asJSON {
 				assertServiceCLIJSON(t, output.Bytes(), fixture.windows.status)
 			} else {
-				for _, part := range []string{"注册存在性：unknown", "不能据此判断任务不存在", "not_found_unverified", "HRESULT=0x80070002"} {
+				for _, part := range []string{"registration presence: unknown", "does not establish that the task is absent", "not_found_unverified", "HRESULT=0x80070002"} {
 					if !strings.Contains(output.String(), part) {
 						t.Fatal("unknown became absence", output.String())
 					}
@@ -586,18 +587,38 @@ func TestServiceCLITextPreservesMacAndSeparatesLinuxStates(t *testing.T) {
 				t.Fatal(err)
 			}
 			text := output.String()
-			for _, field := range []string{"manager加载：", "归属已核对=", "持久启用链接：", "本工具登录启用：", "active_state", "unit_file_state", "不表示HTTP可用或USB在线", "停止也不证明硬件清理已完成"} {
+			for _, field := range []string{"manager registration: ", "ownership verified=", "persistent enablement link: ", "Managed login enablement: ", "active_state", "unit_file_state", "do not establish HTTP availability or USB readiness", "stopping does not establish that hardware cleanup is complete"} {
 				if !strings.Contains(text, field) {
 					t.Fatalf("Linux text dropped %q: %s", field, text)
 				}
 			}
 			if configOnly {
-				if !strings.Contains(text, "未检查或无法确认") || strings.Contains(text, "本工具登录启用：false") || strings.Contains(text, "active_state：inactive") {
+				if !strings.Contains(text, "not checked or unconfirmed") || strings.Contains(text, "Managed login enablement: false") || strings.Contains(text, "active_state: inactive") {
 					t.Fatalf("unchecked state invented absence/inactivity: %s", text)
 				}
-			} else if !strings.Contains(text, "manager加载：loaded") || !strings.Contains(text, "active_state：inactive") || !strings.Contains(text, "unit_file_state：enabled") || !strings.Contains(text, "NoNewPrivileges：true") {
+			} else if !strings.Contains(text, "manager registration: loaded") || !strings.Contains(text, "active_state: inactive") || !strings.Contains(text, "unit_file_state: enabled") || !strings.Contains(text, "NoNewPrivileges: true") {
 				t.Fatalf("loaded/inactive/enabled were conflated: %s", text)
 			}
 		})
+	}
+}
+
+func TestServiceCLIDefaultMessagesUseEnglish(t *testing.T) {
+	for _, platform := range []string{"darwin", "linux", "windows"} {
+		t.Run(platform, func(t *testing.T) {
+			fixture := serviceCLITestFixture(t, platform)
+			var output bytes.Buffer
+			if err := executeServiceCLI(fixture.management, context.Background(), &output, "status"); err != nil {
+				t.Fatal(err)
+			}
+			if !strings.Contains(output.String(), "nb1 ") || strings.ContainsFunc(output.String(), func(r rune) bool { return unicode.Is(unicode.Han, r) }) {
+				t.Fatalf("default %s status is not English: %s", platform, output.String())
+			}
+		})
+	}
+	for _, err := range []error{errUserServiceUnsupported, errWindowsServiceUnsupported} {
+		if strings.ContainsFunc(err.Error(), func(r rune) bool { return unicode.Is(unicode.Han, r) }) {
+			t.Fatalf("default unsupported message is not English: %v", err)
+		}
 	}
 }

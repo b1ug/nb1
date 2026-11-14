@@ -44,6 +44,8 @@ macOS/Linux 候选支持用 `nb1 service install --devices DEVICE_SERIAL --start
 
 用 `nb1 version --json` 查看这份程序的构建身份、Go 工具链及硬件依赖版本；该操作不连接 daemon 或 USB。普通源码构建会报告实际提交，无法确认版本时明确显示 development。
 
+CLI 默认诊断文案使用英文。命令结果写入 stdout，诊断日志（包括 `--debug`）写入 stderr，避免影响其他工具解析 JSON；Web 工作台保留英文与中文。
+
 ## 配置与存储
 
 macOS/Linux 的配置与本机颜色／Pattern 作品库使用 `$XDG_CONFIG_HOME/nb1`；变量为空或未设置时，默认为 `~/.config/nb1`。非空 XDG 根目录必须是绝对路径。Windows 保留 `%APPDATA%\nb1` 原生位置。用 `nb1 config path` 和 `nb1 config show` 查看当前进程选中的文件与解析结果。

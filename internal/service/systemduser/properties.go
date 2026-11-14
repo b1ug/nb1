@@ -36,24 +36,24 @@ func parseProperties(output string) (Properties, error) {
 	for _, line := range strings.Split(strings.TrimRight(output, "\n"), "\n") {
 		parts := strings.SplitN(line, "=", 2)
 		if len(parts) != 2 || !allowed[parts[0]] {
-			return Properties{}, fmt.Errorf("systemctl show返回未知或不完整属性")
+			return Properties{}, fmt.Errorf("systemctl show returned unknown or incomplete properties")
 		}
 		if _, exists := values[parts[0]]; exists {
-			return Properties{}, fmt.Errorf("systemctl show返回重复属性")
+			return Properties{}, fmt.Errorf("systemctl show returned duplicate properties")
 		}
 		if strings.IndexFunc(parts[1], unicode.IsControl) >= 0 {
-			return Properties{}, fmt.Errorf("systemctl属性含控制字符，状态未知")
+			return Properties{}, fmt.Errorf("systemctl properties contain control characters; state is unknown")
 		}
 		values[parts[0]] = parts[1]
 	}
 	missingOptionalSecurity := values["LoadState"] == "not-found"
 	for name := range allowed {
 		if _, exists := values[name]; !exists && !(missingOptionalSecurity && name == "NoNewPrivileges") {
-			return Properties{}, fmt.Errorf("systemctl属性缺失")
+			return Properties{}, fmt.Errorf("systemctl properties are missing")
 		}
 	}
 	if values["Id"] != UnitName {
-		return Properties{}, fmt.Errorf("systemctl属性缺失或unit身份不匹配")
+		return Properties{}, fmt.Errorf("systemctl properties are missing or the unit identity does not match")
 	}
 	boolean := func(name string) (bool, error) {
 		switch values[name] {
@@ -62,7 +62,7 @@ func parseProperties(output string) (Properties, error) {
 		case "no":
 			return false, nil
 		default:
-			return false, fmt.Errorf("systemctl布尔属性无法识别")
+			return false, fmt.Errorf("a systemctl boolean property is unrecognized")
 		}
 	}
 	transient, err := boolean("Transient")
@@ -85,11 +85,11 @@ func parseProperties(output string) (Properties, error) {
 	if value := values["Job"]; value != "" {
 		job, err = strconv.ParseUint(value, 10, 32)
 		if err != nil || strconv.FormatUint(job, 10) != value {
-			return Properties{}, fmt.Errorf("systemctl Job属性无法识别")
+			return Properties{}, fmt.Errorf("the systemctl Job property is unrecognized")
 		}
 	}
 	if values["LoadState"] == "" || values["ActiveState"] == "" || values["SubState"] == "" {
-		return Properties{}, fmt.Errorf("systemctl状态属性为空")
+		return Properties{}, fmt.Errorf("systemctl state properties are empty")
 	}
 	return Properties{ID: values["Id"], LoadState: values["LoadState"], ActiveState: values["ActiveState"], SubState: values["SubState"],
 		FragmentPath: values["FragmentPath"], SourcePath: values["SourcePath"], DropInPaths: values["DropInPaths"], UnitFileState: values["UnitFileState"],

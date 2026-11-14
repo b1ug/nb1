@@ -14,6 +14,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"unicode"
 
 	"github.com/b1ug/nb1/internal/ownership"
 )
@@ -23,6 +24,29 @@ type fakeCall struct {
 	result CommandResult
 	err    error
 	check  func()
+}
+
+func TestUserStatusDefaultNotesUseEnglishAndPreserveValues(t *testing.T) {
+	manager, _, _ := fixtureManager(t)
+	status, err := manager.Status(context.Background(), true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var output bytes.Buffer
+	if err := WriteUserStatus(&output, status); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(output.String(), "nb1 macOS user service") || strings.ContainsFunc(output.String(), func(r rune) bool { return unicode.Is(unicode.Han, r) }) {
+		t.Fatalf("default status or notes are not English: %s", output.String())
+	}
+	status.Config = &Config{Binary: "/tmp/小灯/nb1", Devices: []string{"20005601"}, Listen: "127.0.0.1:8931"}
+	output.Reset()
+	if err := WriteUserStatus(&output, status); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(output.String(), "binary: /tmp/小灯/nb1") || !strings.Contains(output.String(), "devices: 20005601") {
+		t.Fatalf("human formatting changed user values: %s", output.String())
+	}
 }
 
 type fakeLaunchctl struct {
@@ -597,7 +621,7 @@ func TestUserEarlyFailureDoesNotReportAnUncheckedPlistAbsent(t *testing.T) {
 	if err := WriteUserStatus(&text, status); err != nil {
 		t.Fatal(err)
 	}
-	if strings.Contains(text.String(), "托管plist不存在") || !strings.Contains(text.String(), "未检查或无法确认") {
+	if strings.Contains(text.String(), "The managed plist is absent") || !strings.Contains(text.String(), "not checked or unconfirmed") {
 		t.Fatalf("text asserted unchecked absence: %s", text.String())
 	}
 }
@@ -657,7 +681,7 @@ func TestUserStatusDoesNotPersistLaunchctlEnvironment(t *testing.T) {
 	if err := WriteUserStatus(&text, status); err != nil {
 		t.Fatal(err)
 	}
-	if bytes.Contains(encoded, []byte("PRIVATE_SECRET")) || strings.Contains(text.String(), "PRIVATE_SECRET") || !strings.Contains(text.String(), "不表示进程已运行") {
+	if bytes.Contains(encoded, []byte("PRIVATE_SECRET")) || strings.Contains(text.String(), "PRIVATE_SECRET") || !strings.Contains(text.String(), "does not establish that a process is running") {
 		t.Fatal("status leaked print output or confused registration with readiness")
 	}
 	status, err = m.Status(context.Background(), true)
@@ -697,7 +721,7 @@ func TestUserStandaloneStartStopPreserveConfigurationAndRegistrationMeaning(t *t
 	if err := WriteUserStatus(&output, status); err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(output.String(), "stop保留plist，不等于禁用下次图形登录加载") || !strings.Contains(output.String(), "注册已消失不等于进程退出") {
+	if !strings.Contains(output.String(), "Stop retains the plist and does not disable loading at the next graphical login") || !strings.Contains(output.String(), "An absent registration does not establish process exit") {
 		t.Fatalf("stop overstated lifecycle completion: %s", output.String())
 	}
 	runner.steps = absentCalls(m)
@@ -840,7 +864,7 @@ func TestUserStandaloneStopCancellationPreservesUncertainRegistration(t *testing
 	pending.check = cancel
 	runner.steps = []fakeCall{registeredCall(m, config), {args: []string{"bootout", m.target()}}, pending}
 	status, err := m.Stop(ctx)
-	if err == nil || !strings.Contains(err.Error(), "等待注销超时") || status.Registration != "registered" || !reflect.DeepEqual(status.Actions, []string{"bootout_requested"}) {
+	if err == nil || !strings.Contains(err.Error(), "timed out waiting for deregistration") || status.Registration != "registered" || !reflect.DeepEqual(status.Actions, []string{"bootout_requested"}) {
 		t.Fatalf("unconfirmed unregister reported complete: %+v %v", status, err)
 	}
 	assertContent(t, m.plistPath(), original)

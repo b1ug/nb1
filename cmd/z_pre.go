@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -24,11 +25,30 @@ var (
 
 // openBlink1Device works as a PersistentPreRunE function that opens a blink(1) device for use.
 func openBlink1Device(cmd *cobra.Command, args []string) error {
+	if err := validateLEDSelection(cmd); err != nil {
+		return err
+	}
 	err := hdwr.OpenBlink1Device(config.GetPreferredDevice())
 	if allowAbsent {
 		return nil
 	}
 	return err
+}
+
+// validateLEDSelection checks LED flags before a device is opened or a uint is
+// converted to the SDK's byte-sized LEDIndex.
+func validateLEDSelection(cmd *cobra.Command) error {
+	if cmd.Flags().Lookup("led") == nil {
+		return nil
+	}
+	led, err := cmd.Flags().GetUint("led")
+	if err != nil {
+		return err
+	}
+	if led > 2 {
+		return fmt.Errorf("invalid LED index %d: --led must be 0 (all), 1 (top), or 2 (bottom)", led)
+	}
+	return nil
 }
 
 var (

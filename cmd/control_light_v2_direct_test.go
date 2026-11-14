@@ -93,7 +93,10 @@ func TestLightV2DirectOwnedEngineUsesSameFrameExecutor(t *testing.T) {
 			t.Error(err)
 		}
 	}()
-	compiled, err := lightactionv2.CompileRequest([]byte(`{"contract":"nb1-light-action/experimental-v2","action":{"kind":"orbit","period_ms":200,"segments":4}}`))
+	// This integration checks executor reuse and ownership, not 50ms scheduling.
+	// Four 250ms frames leave room for hosted race-test latency while the whole
+	// program still completes within the existing two-second context budget.
+	compiled, err := lightactionv2.CompileRequest([]byte(`{"contract":"nb1-light-action/experimental-v2","action":{"kind":"orbit","period_ms":1000,"segments":4}}`))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -104,7 +107,7 @@ func TestLightV2DirectOwnedEngineUsesSameFrameExecutor(t *testing.T) {
 		t.Fatal(err)
 	}
 	if !out.Accepted || out.Job == nil || out.Job.Status != "succeeded" || !reflect.DeepEqual(out.Job.Program, compiled.Program) || out.RequestTicket != nil {
-		t.Fatalf("unexpected direct result: %#v", out)
+		t.Fatalf("unexpected direct result: %#v; job=%+v", out, out.Job)
 	}
 	b.mu.Lock()
 	defer b.mu.Unlock()

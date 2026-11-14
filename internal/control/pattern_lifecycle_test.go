@@ -83,7 +83,25 @@ func TestPatternReplaceAcrossAllOriginsAndExecutionKinds(t *testing.T) {
 					queuedRef, queuedTicket := patternRef(111), receiptTicket(e, 111)
 					mustPattern(t, e, patternResolved(t, "frame", queuedRef, "#333333"), "queue", queuedTicket)
 					newRef, newTicket := patternRef(112), receiptTicket(e, 112)
-					replacement := mustPattern(t, e, patternResolved(t, newKind, newRef, "#777777"), "replace", newTicket)
+					resolvedReplacement := patternResolved(t, newKind, newRef, "#777777")
+					if newKind == "frame" {
+						// This wall-clock test checks replacement ownership and cleanup.
+						// Exact scheduling deadlines are covered by fake-clock tests.
+						p := *resolvedReplacement.Execution.FrameProgram
+						for i := range p.Frames {
+							p.Frames[i].IntervalMS = 500
+						}
+						p, err := NormalizeFrameProgram(p)
+						if err != nil {
+							t.Fatal(err)
+						}
+						resolvedReplacement.Execution.FrameProgram = &p
+						resolvedReplacement.ExecutionDigest, err = resolvedReplacement.Execution.Digest()
+						if err != nil {
+							t.Fatal(err)
+						}
+					}
+					replacement := mustPattern(t, e, resolvedReplacement, "replace", newTicket)
 					e.mu.Lock()
 					oldStatus := e.jobs[oldID].state.Status
 					e.mu.Unlock()

@@ -96,7 +96,11 @@ func awaitPattern(t *testing.T, e *Engine, ref patternidentity.Ref, ticket Recei
 		return job.ProgramJob != nil && job.ProgramJob.FinishedAt != nil || job.FrameJob != nil && job.FrameJob.FinishedAt != nil
 	})
 	if patternEnvelopeStatus(job) != status {
-		t.Fatalf("Pattern status=%s, want %s: %#v", patternEnvelopeStatus(job), status, job)
+		details, err := json.Marshal(job)
+		if err != nil {
+			t.Fatalf("Pattern status=%s, want %s; encode terminal job: %v", patternEnvelopeStatus(job), status, err)
+		}
+		t.Fatalf("Pattern status=%s, want %s: %s", patternEnvelopeStatus(job), status, details)
 	}
 	return job
 }

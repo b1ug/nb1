@@ -1,13 +1,15 @@
 package exchange
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
 
-	"bitbucket.org/ai69/amoy"
 	"github.com/1set/gut/yos"
 	"github.com/b1ug/nb1/schema"
 )
@@ -23,17 +25,69 @@ func SaveAsJSON(data interface{}, path string) error {
 
 // LoadFromJSON loads data from JSON file.
 func LoadFromJSON(data interface{}, path string) error {
-	return amoy.LoadJSONFile(data, path)
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	return json.Unmarshal(content, data)
 }
 
 // SaveAsLine saves lines of text to the given path.
 func SaveAsLine(data []string, path string) error {
-	return amoy.WriteFileLines(path, data)
+	file, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0644)
+	if err != nil {
+		return err
+	}
+	return writeAndCloseLines(file, data)
+}
+
+func writeAndCloseLines(file io.WriteCloser, data []string) error {
+	writeErr := writeLines(file, data)
+	closeErr := file.Close()
+	if writeErr != nil {
+		return writeErr
+	}
+	return closeErr
 }
 
 // LoadFromLine loads lines of text from the given path.
 func LoadFromLine(path string) ([]string, error) {
-	return amoy.ReadFileLines(path)
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+	return readLines(file)
+}
+
+func readLines(input io.Reader) ([]string, error) {
+	var lines []string
+	reader := bufio.NewReader(input)
+	for {
+		line, err := reader.ReadString('\n')
+		if err != nil && err != io.EOF {
+			return lines, err
+		}
+		if len(line) > 0 {
+			if strings.HasSuffix(line, "\n") {
+				line = strings.TrimSuffix(strings.TrimSuffix(line, "\n"), "\r")
+			}
+			lines = append(lines, line)
+		}
+		if err == io.EOF {
+			return lines, nil
+		}
+	}
+}
+
+func writeLines(output io.Writer, lines []string) error {
+	writer := bufio.NewWriter(output)
+	for _, line := range lines {
+		if _, err := fmt.Fprintln(writer, line); err != nil {
+			return err
+		}
+	}
+	return writer.Flush()
 }
 
 // LoadPatternFile loads a pattern file from the given path.

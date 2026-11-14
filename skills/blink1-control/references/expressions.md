@@ -1,6 +1,6 @@
 # Expressions and field lookup
 
-Use the running MCP tool schema or installed CLI help first. This compact reference travels with the Skill; read the versioned [API v1 reference](https://github.com/b1ug/nb1/blob/4c2c8d644c0ff428f2367d143879eae035c777a7/docs/api-v1.md) or [OpenAPI](https://github.com/b1ug/nb1/blob/4c2c8d644c0ff428f2367d143879eae035c777a7/docs/api-v1.openapi.json) only for exact ranges or more complex input. The [MCP adapter guide](https://github.com/b1ug/nb1/blob/4c2c8d644c0ff428f2367d143879eae035c777a7/adapters/mcp/README.md) covers setup, transport and result envelopes. These are development-candidate references, not proof of the installed version's capabilities.
+Use the running MCP tool schema or installed CLI help first. This compact reference travels with the Skill; read the versioned [API v1 reference](https://github.com/b1ug/nb1/blob/72c2f097319bc7ce0086204b8e713c8b3f16cbbc/docs/api-v1.md) or [OpenAPI](https://github.com/b1ug/nb1/blob/72c2f097319bc7ce0086204b8e713c8b3f16cbbc/docs/api-v1.openapi.json) only for exact ranges or more complex input. The [MCP adapter guide](https://github.com/b1ug/nb1/blob/72c2f097319bc7ce0086204b8e713c8b3f16cbbc/adapters/mcp/README.md) covers setup, transport and result envelopes. These are development-candidate references, not proof of the installed version's capabilities.
 
 ## Action, Sequence and request envelope
 

@@ -4,7 +4,7 @@
 
 ## 从源码到归档
 
-1. 固定 Go1.27.3、GOWORK=off、只读模块；CLI 以 CGO=1 构建，核对干净源码 VCS、GOOS/GOARCH、SDK/GID 精确公开版本及 sum、内嵌 Web 锁。
+1. 固定 Go1.27.4、GOWORK=off、只读模块；CLI 以 CGO=1 构建，核对干净源码 VCS、GOOS/GOARCH、SDK/GID 精确公开版本及 sum、内嵌 Web 锁。
 2. 同一 checkout 的 `adapters/mcp` 以 CGO=0、`-buildvcs=true` 编译独立 `nb1-mcp`。仅允许 core 的本地 `../..` 替换，必须解析到同一源码根；不借此放宽 CLI 的 replacement 检查。
 3. CLI 运行隔离配置的帮助检查。MCP 使用真实 stdio 完成初始化、12 工具发现，并验证无 daemon 的只读设备查询明确失败。它不打开 USB、不调用 CLI、不提交 Job。
 4. `candidate-suite.py` 将原 CLI 五文件、独立 MCP 五文件、独立 Skill 五文件分别打包；Unix 二进制使用 tar.gz，Windows 使用 zip，Skill 一律 zip。`suite.json` 与外层 `SHA256SUMS` 绑定完整提交、目标、Web、模块、二进制及文件散列，全部标明 `release:false`。

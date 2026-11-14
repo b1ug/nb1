@@ -4,9 +4,9 @@
 
 `.github/workflows/runtime.yml` 仍有独立的 **Linux systemd user lifecycle / USB-free fixture** job；它只覆盖fixture模式，与既有软件矩阵分开。下面说明这条接线，不把它与新增真实server阶段混为一谈。
 
-job使用现有 `actions/checkout@v7`、`actions/setup-go@v7` 和Go 1.27.x，保持 `contents: read`、`persist-credentials: false`，不声明secrets。独立模块构建关闭GOWORK并核对与既有runtime-native基线一致的SDK/GID pin：
+job使用现有 `actions/checkout@v7`、`actions/setup-go@v7` 和Go 1.27.4，保持 `contents: read`、`persist-credentials: false`，不声明secrets。独立模块构建关闭GOWORK并核对当前候选的SDK/GID pin：
 
-- blink1-go：`v0.0.2-0.20261110161339-17f690dc746c`，源码commit `17f690dc746c2368f04fbfedfae5fc6cb36b6db5`。
+- blink1-go：`v0.0.2-0.20261113182636-d60e9fd083d5`，源码commit `d60e9fd083d59b6e7843e72d778db126d39bb09a`。
 - GID：`v0.0.3-0.20261110160506-7858785cfdf0`，源码commit `7858785cfdf0ccc811ec3864508e70c5fa95bca8`。
 
 CLI与独立stdlib fixture都以 `CGO_ENABLED=0` 构建。被安装运行的是fixture，产品CLI只管理服务；这验证真实systemd用户manager、普通UID、NoNewPrivileges与生命周期，**不验证Linux USB或运行真实nb1 server**。验收工具范围见[工具说明](README.systemd-user.zh-CN.md)。

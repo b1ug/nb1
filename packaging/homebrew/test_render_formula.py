@@ -41,6 +41,114 @@ class FormulaDraftTests(unittest.TestCase):
         self.assertNotIn("post_install", text)
         with self.assertRaises(ValueError): render(data)
 
+    def run_toolchain_guard(self, go_version, phase, query_exit=0):
+        # Evaluate the actual Formula methods with Ruby's real Gem::Version and
+        # Open3. Only Homebrew's DSL/build/install effects are stubbed. The
+        # temporary go command records real argv and environment, then returns
+        # the selected fixture version; no installed Go or Homebrew is changed.
+        harness = r'''
+require "json"
+require "pathname"
+$effects = []
+class InstallSink
+  def install(name); $effects << ["install", name]; end
+end
+class Formula
+  class << self
+    def desc(*args); end
+    def homepage(*args); end
+    def url(*args); end
+    def version(*args); end
+    def sha256(*args); end
+    def license(*args); end
+    def depends_on(*args); end
+    def on_macos(&block); instance_eval(&block); end
+    def deny_network_access!; end
+    def test(&block); end
+  end
+  def bin; Pathname.new(ENV.fetch("NB1_FORMULA_BIN")); end
+  def opt_bin; bin; end
+  def rack; bin.parent/"Cellar/nb1"; end
+  def version; "123.456.789-fixture.1"; end
+  def std_go_args(output:, ldflags:); ["-o", output.to_s, "-ldflags", ldflags.join(" ")]; end
+  def system(*args); $effects << ["system", *args.map(&:to_s)]; end
+  def pkgshare; InstallSink.new; end
+  def doc; InstallSink.new; end
+  def odie(message); raise message; end
+end
+'''
+        invoke = r'''
+begin
+  Nb1.new.public_send(ENV.fetch("NB1_FORMULA_PHASE"))
+  puts JSON.generate({accepted: true, effects: $effects})
+rescue => error
+  puts JSON.generate({accepted: false, error: error.message, effects: $effects})
+end
+'''
+        with tempfile.TemporaryDirectory(prefix="nb1-formula-go-gate-") as temporary:
+            root = Path(temporary)
+            fake_bin = root / "fake-bin"; fake_bin.mkdir()
+            install_bin = root / "prefix-bin"; install_bin.mkdir()
+            binary = install_bin / "nb1"; binary.write_bytes(b"not executed\n"); binary.chmod(0o600)
+            probes = root / "go-probes.jsonl"
+            fake_go = fake_bin / "go"
+            fake_go.write_text("#!" + sys.executable + "\n" + r'''
+import json, os, sys
+with open(os.environ["NB1_FORMULA_GO_PROBES"], "a") as output:
+    output.write(json.dumps({"argv": sys.argv[1:], "toolchain": os.environ.get("GOTOOLCHAIN"), "workspace": os.environ.get("GOWORK")}) + "\n")
+if sys.argv[1:] != ["env", "GOVERSION"]:
+    raise SystemExit("unexpected Go invocation")
+print(os.environ["NB1_FORMULA_GO_VERSION"])
+raise SystemExit(int(os.environ["NB1_FORMULA_GO_EXIT"]))
+''', encoding="utf-8")
+            fake_go.chmod(0o755)
+            environment = dict(os.environ, PATH=str(fake_bin) + os.pathsep + os.environ["PATH"],
+                               NB1_FORMULA_BIN=str(install_bin), NB1_FORMULA_PHASE=phase,
+                               NB1_FORMULA_GO_VERSION=go_version, NB1_FORMULA_GO_EXIT=str(query_exit),
+                               NB1_FORMULA_GO_PROBES=str(probes), GOTOOLCHAIN="auto", GOWORK="auto")
+            process = subprocess.run(["ruby", "--disable-gems", "-e", harness + render(fixture(), allow_fixture=True) + invoke],
+                                     cwd=root, env=environment, capture_output=True, text=True, timeout=15)
+            self.assertEqual(process.returncode, 0, process.stdout + process.stderr)
+            result = json.loads(process.stdout)
+            result["probes"] = [json.loads(line) for line in probes.read_text().splitlines()]
+            result["binary_mode"] = binary.stat().st_mode & 0o777
+            self.assertEqual(result["probes"], [{"argv": ["env", "GOVERSION"], "toolchain": "local", "workspace": "off"}])
+            return result
+
+    @unittest.skipUnless(shutil.which("ruby") and os.name != "nt", "Formula toolchain gate requires POSIX Ruby")
+    def test_go_toolchain_guard_refuses_old_go_without_fetch_or_build(self):
+        for phase in ("fetch", "install"):
+            with self.subTest(phase=phase):
+                result = self.run_toolchain_guard("go1.27.3", phase)
+                self.assertFalse(result["accepted"])
+                self.assertIn("requires Go 1.27.4 or newer", result["error"])
+                self.assertEqual(result["effects"], [])
+                self.assertEqual(result["binary_mode"], 0o600)
+
+    @unittest.skipUnless(shutil.which("ruby") and os.name != "nt", "Formula toolchain gate requires POSIX Ruby")
+    def test_go_toolchain_guard_accepts_current_and_numerically_newer_go(self):
+        for version in ("go1.27.4", "go1.27.10", "go1.28.0"):
+            for phase in ("fetch", "install"):
+                with self.subTest(version=version, phase=phase):
+                    result = self.run_toolchain_guard(version, phase)
+                    self.assertTrue(result["accepted"], result)
+                    commands = [entry for entry in result["effects"] if entry[0] == "system"]
+                    if phase == "fetch":
+                        self.assertEqual(commands, [["system", "go", "mod", "download"], ["system", "go", "mod", "verify"]])
+                    else:
+                        self.assertEqual(len(commands), 1)
+                        self.assertEqual(commands[0][:3], ["system", "go", "build"])
+                        self.assertEqual(result["binary_mode"], 0o755)
+
+    @unittest.skipUnless(shutil.which("ruby") and os.name != "nt", "Formula toolchain gate requires POSIX Ruby")
+    def test_go_toolchain_guard_refuses_failed_or_unknown_version(self):
+        for version, exit_code in (("go1.27.4", 1), ("go1.28rc1", 0), ("devel go1.28", 0), ("", 0)):
+            with self.subTest(version=version, exit_code=exit_code):
+                result = self.run_toolchain_guard(version, "install", exit_code)
+                self.assertFalse(result["accepted"])
+                self.assertIn("requires Go 1.27.4 or newer", result["error"])
+                self.assertEqual(result["effects"], [])
+
     @unittest.skipUnless(os.environ.get("NB1_HOMEBREW_TEST_BINARY") and shutil.which("ruby"),
                          "set NB1_HOMEBREW_TEST_BINARY to a current nb1 executable and provide Ruby")
     def test_rendered_formula_help_calls_use_current_binary(self):

@@ -50,7 +50,7 @@ jobs:
           import subprocess
 
           expected = {
-              "github.com/b1ug/blink1-go": "v0.0.2-0.20261110161339-17f690dc746c",
+              "github.com/b1ug/blink1-go": "v0.0.2-0.20261113182636-d60e9fd083d5",
               "github.com/b1ug/gid": "v0.0.3-0.20261110160506-7858785cfdf0",
           }
           modules = {}

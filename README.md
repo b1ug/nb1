@@ -42,6 +42,8 @@ Starting `server` does not install a startup service. Run it in a terminal, mana
 
 The macOS/Linux candidate provides `nb1 service install --devices DEVICE_SERIAL --start` for explicit login-service installation. It selects the running nb1 executable by default; use `--binary /absolute/path/to/nb1` to choose another executable. See [daemon platform validation](docs/daemon-validation.md) for actual installation, upgrade and reboot evidence. Windows automatic service management remains unimplemented.
 
+Use `nb1 version --json` for the executable's build identity, Go toolchain and pinned hardware dependencies without contacting a daemon or USB device. Plain source builds report their commit; unknown identity is reported as development.
+
 ## Configuration and storage
 
 On macOS and Linux, configuration and the local color/Pattern library use `$XDG_CONFIG_HOME/nb1`, defaulting to `~/.config/nb1` when the variable is empty or unset. A nonempty XDG root must be absolute. Windows keeps the native `%APPDATA%\nb1` location. Use `nb1 config path` and `nb1 config show` to inspect this process's selected file and resolved settings.
@@ -60,6 +62,6 @@ Device locks follow the established native OS coordination policy. On macOS they
 
 Actions are `set`, `off`, `fade`, `blink`, `breathe`, `pulse`, `alternate`, `orbit` and `rainbow`. Colors accept names, Hex, RGB8, HSV/HSB and local `@name` references. Patterns are saved on the computer. Native DeviceSequence rows use required numeric `led` values `0` (all outputs), `1` or `2`, matching Action and Step. Device storage has separate limits and deployment requirements. [Device-native draft](docs/device-native-sequence.md)
 
-MCP provides 12 tools for this contract. The bilingual Web workbench is embedded at `/demo/`; opening or previewing does not play a Job. The adapter is a separate Go 1.25 module; the core retains its Go 1.18 baseline. Independently maintained [nb1-web](https://github.com/b1ug/nb1-web) source becomes a pinned bundle embedded in nb1. The [nb1-site](https://github.com/b1ug/nb1-site) repository contains initial documentation website content; both repositories are private during development.
+MCP provides 12 tools for this contract. The bilingual Web workbench is embedded at `/demo/`; opening or previewing does not play a Job. The CLI and the separate MCP module require Go 1.25 or newer source tooling; release candidates are built with Go 1.27.4. The newer floor comes from patched dependencies, not a change to the device protocol. Independently maintained [nb1-web](https://github.com/b1ug/nb1-web) source becomes a pinned bundle embedded in nb1. The [nb1-site](https://github.com/b1ug/nb1-site) repository contains the bilingual documentation website. The independent [nb1-browser](https://github.com/b1ug/nb1-browser) workbench and Chrome extension use WebHID directly and require explicit device ownership handoff. These companion repositories remain private during development.
 
 Software, physical USB and optical checks are distinct. Local MK2 results do not establish MK3, Linux/Windows USB or nonvolatile storage. A development commit does not imply a tag or Release.

@@ -32,9 +32,12 @@ nb1 server --devices DEVICE_SERIAL
 
 HTTP CLI 可以用 `--endpoint` 或 profile 的 `server.listen` 选择地址；[MCP 适配器](../adapters/mcp/README.md)使用自己的 `--endpoint`，不读取 nb1 YAML。应说明目标地址和设备，尤其是本机有多套安装时。连接失败时由用户选择启动或显式直连，Skill 不授权自动启动或静默切换 USB。前台 direct 有独立生命周期。
 
+内嵌调试器使用该 daemon。独立浏览器 WebHID 工具自行拥有 USB，不共享原生 nb1 的设备锁；使用前需要明确切换控制权。
+
 MCP 宿主可能另行要求保存或播放工具的审批。被拦截不等于保存或执行成功；只授权所需服务和工具，不应为了加载 Skill 放宽 shell 沙盒。配置说明见 [Codex MCP 工具策略](https://learn.chatgpt.com/docs/extend/mcp?surface=cli)。
 
 Agent 应先核对工具或 `nb1 control --help`，预览表达式，再执行用户请求的任务。HTTP202 只代表接受，Job 终态才代表执行结束。丢失回执时保留原地址、输入和 Job ID；记录不存在不等于从未播放。
+需要可靠恢复时，在提交前显式选择并记录 Job ID。若自动生成的 ID 随工具响应一起丢失，应报告结果未知，不能猜测 ID 或重新提交播放。
 
 需要选择回合结束灯光时，见 [Codex notify 指南](../examples/command-notify/CODEX.zh-CN.md)：它区分外部 notify JSON 参数与 stdin Stop hook，默认预览，并提供无需全局安装的单次调用配置。蓝色表示回合结束，播放结果应检查 Job 报告。
 

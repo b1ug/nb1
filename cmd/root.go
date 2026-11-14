@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"bitbucket.org/ai69/amoy"
 	"bitbucket.org/neiku/hlog"
 	"bitbucket.org/neiku/winornot"
 	"github.com/1set/gut/ystring"
@@ -15,6 +14,7 @@ import (
 	"github.com/b1ug/nb1/exchange"
 	"github.com/b1ug/nb1/hdwr"
 	"github.com/b1ug/nb1/internal/appconfig"
+	"github.com/b1ug/nb1/internal/textfmt"
 	"github.com/b1ug/nb1/util"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -24,8 +24,8 @@ import (
 // for package scope shared variables
 var (
 	log   *zap.SugaredLogger
-	hdoc  = amoy.HereDoc
-	hdocf = amoy.HereDocf
+	hdoc  = textfmt.HereDoc
+	hdocf = textfmt.HereDocf
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -80,7 +80,7 @@ func Execute() {
 		err = closeErr
 	}
 	if err != nil {
-		amoy.Eprintln("🚨Error:", err)
+		fmt.Fprintln(os.Stderr, "🚨Error:", err)
 		os.Exit(1)
 	}
 }

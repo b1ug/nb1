@@ -5,6 +5,13 @@
 The minimum macOS requirement applies only on macOS. The template does not
 install the separate MCP binary.
 
+Building requires stable Go 1.27.4 or newer. The Formula checks the actual
+`go env GOVERSION` before module downloads and again before compilation, with
+`GOTOOLCHAIN=local`; merely having a previously installed Go dependency does not
+satisfy this check. An older, prerelease, development or unidentifiable toolchain
+is refused before those operations. Update the Homebrew Go dependency, then
+retry; the Formula does not download another toolchain automatically.
+
 There is no published tap or new release yet. The production renderer still
 requires an actual versioned upstream tag archive, SHA-256, source commit and
 explicit minimum macOS version. `release-input.required.json` intentionally

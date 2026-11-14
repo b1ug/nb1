@@ -1,6 +1,7 @@
 # Source URL, checksum, version and commit must be explicitly bound before use.
 # Release inputs and installation evidence are recorded separately.
 require "open3"
+require "rubygems"
 
 class Nb1 < Formula
   desc "Control blink(1) through a local CLI and daemon"
@@ -20,6 +21,7 @@ class Nb1 < Formula
   def fetch
     ENV["GOWORK"] = "off"
     ENV["GOTOOLCHAIN"] = "local"
+    check_go_version
     system "go", "mod", "download"
     system "go", "mod", "verify"
   end
@@ -28,6 +30,7 @@ class Nb1 < Formula
     ENV["CGO_ENABLED"] = "1"
     ENV["GOWORK"] = "off"
     ENV["GOTOOLCHAIN"] = "local"
+    check_go_version
     ldflags = ["-X", "github.com/b1ug/nb1/config.GitCommit=" + @@SOURCE_COMMIT@@,
                "-X", "github.com/b1ug/nb1/config.GitSummary=v#{version}",
                "-X", "github.com/b1ug/nb1/config.ServiceBinary=#{opt_bin}/nb1",
@@ -38,6 +41,15 @@ class Nb1 < Formula
     (bin/"nb1").chmod 0755
     pkgshare.install "LICENSE"
     doc.install "README.md"
+  end
+
+  def check_go_version
+    output, _error, status = Open3.capture3("go", "env", "GOVERSION")
+    actual = output.strip
+    match = /\Ago(\d+\.\d+\.\d+)\z/.match(actual)
+    return if status.success? && match && Gem::Version.new(match[1]) >= Gem::Version.new("1.27.4")
+
+    odie "nb1 requires Go 1.27.4 or newer; found #{actual.inspect}. Update Go before building."
   end
 
   test do

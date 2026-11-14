@@ -47,6 +47,10 @@ when several installations exist. A missing daemon produces a connection error;
 the Skill does not authorize automatic startup or USB fallback. Explicit direct
 mode has a separate lifecycle.
 
+The embedded debugger uses that daemon. Standalone browser WebHID tools own
+USB separately and do not share native nb1 device locks; switch controllers
+explicitly before using them.
+
 An MCP host can separately require approval for saving or playback tools. A
 blocked call is not a successful save or run. Approve only the intended server
 and tools; loading this Skill is not a reason to relax the shell sandbox. See
@@ -56,6 +60,9 @@ Inspect available tools or `nb1 control --help`, preview, then execute the
 requested task. HTTP202 is acceptance; terminal Job status is completion.
 Keep the original endpoint, input and Job ID when a response is lost. A missing
 record cannot prove that playback never ran.
+Choose and record an explicit Job ID before submission when recovery matters.
+If an automatically generated ID was lost with the tool response, report the
+unknown outcome; do not guess an ID or submit replacement playback.
 
 For optional turn-ended lighting, use the [Codex notify guide](../examples/command-notify/CODEX.md).
 It separates external notify JSON arguments from stdin Stop hooks, previews by

@@ -37,7 +37,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           repository: b1ug/blink1-go
-          ref: 17f690dc746c2368f04fbfedfae5fc6cb36b6db5
+          ref: d60e9fd083d59b6e7843e72d778db126d39bb09a
           path: sdk
           persist-credentials: false
       - uses: actions/checkout@v7
@@ -48,7 +48,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-go@v7
         with:
-          go-version: "1.27.x"
+          go-version: "1.27.4"
           cache: false
       - name: Workspace and native toolchain
         run: |
@@ -81,8 +81,8 @@ jobs:
           fi
           NB1_NOTIFY_TEST_BINARY="$binary" "$python_cmd" -m unittest discover -s cli/examples/command-notify -p 'test_*.py' -v
 
-  legacy-cli:
-    name: Go 1.18 CLI source / ubuntu-22.04
+  source-floor-cli:
+    name: Go 1.25 CLI source / ubuntu-22.04
     runs-on: ubuntu-22.04
     timeout-minutes: 15
     steps:
@@ -93,7 +93,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           repository: b1ug/blink1-go
-          ref: 17f690dc746c2368f04fbfedfae5fc6cb36b6db5
+          ref: d60e9fd083d59b6e7843e72d778db126d39bb09a
           path: sdk
           persist-credentials: false
       - uses: actions/checkout@v7
@@ -104,9 +104,9 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-go@v7
         with:
-          go-version: "1.18.10"
+          go-version: "1.25.0"
           cache: false
-      - name: Test CLI source floor without the Go 1.25 MCP module
+      - name: Test CLI source floor with patched dependency requirements
         run: |
           GOWORK=off go work init ./cli ./sdk ./gid
           go build ./cli/...
@@ -122,7 +122,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           repository: b1ug/blink1-go
-          ref: 17f690dc746c2368f04fbfedfae5fc6cb36b6db5
+          ref: d60e9fd083d59b6e7843e72d778db126d39bb09a
           path: sdk
           persist-credentials: false
       - uses: actions/checkout@v7
@@ -166,7 +166,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           repository: b1ug/blink1-go
-          ref: 17f690dc746c2368f04fbfedfae5fc6cb36b6db5
+          ref: d60e9fd083d59b6e7843e72d778db126d39bb09a
           path: sdk
           persist-credentials: false
       - uses: actions/checkout@v7
@@ -177,7 +177,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-go@v7
         with:
-          go-version: "1.27.x"
+          go-version: "1.27.4"
           architecture: x64
           cache: false
       # MINGW32 is deprecated but currently still provides the i686 compiler;
@@ -287,12 +287,12 @@ jobs:
       - uses: actions/checkout@v7
         with:
           repository: b1ug/blink1-go
-          ref: 17f690dc746c2368f04fbfedfae5fc6cb36b6db5
+          ref: d60e9fd083d59b6e7843e72d778db126d39bb09a
           path: sdk
           persist-credentials: false
       - uses: actions/setup-go@v7
         with:
-          go-version: "1.27.x"
+          go-version: "1.27.4"
           cache: false
       - name: Verify standalone module graph without local replacements
         run: |
@@ -306,7 +306,7 @@ jobs:
 
           sdk = "github.com/b1ug/blink1-go"
           gid = "github.com/b1ug/gid"
-          sdk_version = "v0.0.2-0.20261110161339-17f690dc746c"
+          sdk_version = "v0.0.2-0.20261113182636-d60e9fd083d5"
           gid_version = "v0.0.3-0.20261110160506-7858785cfdf0"
           for directory, dependencies in [
               ("cli", {sdk: sdk_version, gid: gid_version}),
@@ -366,7 +366,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-go@v7
         with:
-          go-version: "1.27.x"
+          go-version: "1.27.4"
           cache: false
       - name: Build pinned standalone CLI and USB-free fixture
         working-directory: cli
@@ -380,7 +380,7 @@ jobs:
           import subprocess
 
           expected = {
-              "github.com/b1ug/blink1-go": "v0.0.2-0.20261110161339-17f690dc746c",
+              "github.com/b1ug/blink1-go": "v0.0.2-0.20261113182636-d60e9fd083d5",
               "github.com/b1ug/gid": "v0.0.3-0.20261110160506-7858785cfdf0",
           }
           modules = {}

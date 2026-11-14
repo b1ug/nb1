@@ -42,6 +42,8 @@ direct 在打开 USB 前校验输入并解析本机引用，始终等待，并�
 
 macOS/Linux 候选支持用 `nb1 service install --devices DEVICE_SERIAL --start` 显式安装登录服务，默认使用正在运行的 nb1；需要选择另一份程序时提供 `--binary /absolute/path/to/nb1`。[Daemon 平台验收](docs/daemon-validation.zh-CN.md)列出实际安装、升级与重启证据。Windows 自动服务管理仍未实现。
 
+用 `nb1 version --json` 查看这份程序的构建身份、Go 工具链及硬件依赖版本；该操作不连接 daemon 或 USB。普通源码构建会报告实际提交，无法确认版本时明确显示 development。
+
 ## 配置与存储
 
 macOS/Linux 的配置与本机颜色／Pattern 作品库使用 `$XDG_CONFIG_HOME/nb1`；变量为空或未设置时，默认为 `~/.config/nb1`。非空 XDG 根目录必须是绝对路径。Windows 保留 `%APPDATA%\nb1` 原生位置。用 `nb1 config path` 和 `nb1 config show` 查看当前进程选中的文件与解析结果。
@@ -56,8 +58,8 @@ macOS/Linux 的配置与本机颜色／Pattern 作品库使用 `$XDG_CONFIG_HOME
 - [Agent Skill](skills/blink1-control/SKILL.md)、[安装与使用](docs/agent-guide.zh-CN.md)和 [llms.txt](llms.txt)：Agent 的选择、跟踪和恢复指南。
 - [Codex 回合通知](examples/command-notify/CODEX.zh-CN.md)：可选的 notify／Stop 接入，默认预览，通过本机 daemon 播放，包含单次调用配置与软件验收记录。
 
-Web 位于 `/demo/`，默认英文，可切中文。其源码在独立的 nb1-web 私有仓库维护，固定构建结果内嵌到 nb1。官网文档种子在 nb1-site 私有仓库。仅打开网页或预览不会播放。
+Web 位于 `/demo/`，默认英文，可切中文。其源码在独立的 nb1-web 私有仓库维护，固定构建结果内嵌到 nb1。双语文档站位于 nb1-site 私有仓库；独立 nb1-browser 网页与 Chrome 扩展通过 WebHID 直连，需明确交接同一只灯的控制权。仅打开网页或预览不会播放。
 
 九个动作分别为 `set`、`off`、`fade`、`blink`、`breathe`、`pulse`、`alternate`、`orbit`、`rainbow`。颜色接受名字、Hex、RGB8、HSV/HSB 和 `@本机名字`。Pattern 存在电脑上；原生 DeviceSequence 的容量与部署另有能力要求。
 
-核心保持 Go 1.18 下限，MCP 适配器为单独的 Go 1.25 模块。软件、实机 USB、安装和相机光学结果分开记录。Mac/MK2 的有限结果不代表 MK3、Linux/Windows USB 或非易失存储已通过。开发提交不等于 tag 或 Release。
+CLI 与独立 MCP 模块源码要求 Go 1.25 或更新版本，发布候选使用 Go 1.27.4 构建。新的源码下限来自依赖安全修复，设备协议不变。软件、实机 USB、安装和相机光学结果分开记录。Mac/MK2 的有限结果不代表 MK3、Linux/Windows USB 或非易失存储已通过。开发提交不等于 tag 或 Release。

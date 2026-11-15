@@ -19,6 +19,10 @@ import (
 
 const maxBundleBytes = 640 * 1024
 const maxManifestBytes = 16 * 1024
+const maxNightlabStoredBytes = 6 * 1024 * 1024
+const maxNightlabDecodedBytes = 16 * 1024 * 1024
+const maxNightlabBaseBytes = 768 * 1024
+const maxNightlabManifestBytes = 32 * 1024
 
 var assetNames = []string{
 	"LICENSE.txt", "demo.css", "demo.js", "index.html", "orbit.css", "orbit.html", "orbit.js",
@@ -52,9 +56,12 @@ type buildRecord struct {
 	LockfileSHA256 string `json:"lockfile_sha256"`
 }
 type assetRecord struct {
-	Path   string `json:"path"`
-	Bytes  *int64 `json:"bytes"`
-	SHA256 string `json:"sha256"`
+	Path          string  `json:"path"`
+	Bytes         *int64  `json:"bytes"`
+	SHA256        string  `json:"sha256"`
+	Encoding      *string `json:"encoding,omitempty"`
+	DecodedBytes  *int64  `json:"decoded_bytes,omitempty"`
+	DecodedSHA256 *string `json:"decoded_sha256,omitempty"`
 }
 type manifest struct {
 	SchemaVersion int           `json:"schema_version"`
@@ -74,11 +81,28 @@ type bundleLock struct {
 
 var validateOnce sync.Once
 var validationError error
+var bundledRecord manifest
 
 // Validate checks the complete embedded file set and its source-bound lock.
 func Validate() error {
-	validateOnce.Do(func() { validationError = validateBundle(bundled) })
+	validateOnce.Do(func() {
+		validationError = validateBundle(bundled)
+		if validationError == nil {
+			data, err := bundled.ReadFile("dist/manifest.json")
+			if err != nil {
+				validationError = err
+				return
+			}
+			validationError = decodeRecord(data, &bundledRecord, maxNightlabManifestBytes)
+		}
+	})
 	return validationError
+}
+
+// IsNightlab reports the validated embedded profile. It never reads frontend
+// source, starts a compiler, or contacts a device.
+func IsNightlab() bool {
+	return Validate() == nil && bundledRecord.SchemaVersion == 2
 }
 
 // ReadFile returns only a known UI asset after validating the entire bundle.
@@ -90,11 +114,24 @@ func ReadFile(name string) ([]byte, error) {
 	if err := Validate(); err != nil {
 		return nil, err
 	}
-	return bundled.ReadFile("dist/" + name)
+	data, err := bundled.ReadFile("dist/" + name)
+	if err != nil || bundledRecord.SchemaVersion == 1 {
+		return data, err
+	}
+	for _, file := range bundledRecord.Files {
+		if file.Path == name {
+			return decodeAsset(data, *file.Encoding, *file.DecodedBytes)
+		}
+	}
+	return nil, fs.ErrNotExist
 }
 
 func knownAsset(name string) bool {
-	for _, allowed := range assetNames {
+	return listedAsset(name, assetNames) || listedAsset(name, nightlabAssetNames)
+}
+
+func listedAsset(name string, names []string) bool {
+	for _, allowed := range names {
 		if name == allowed {
 			return true
 		}
@@ -210,7 +247,7 @@ func validateBundle(files fs.FS) error {
 	if lock.SchemaVersion != 1 || lock.Product != "nb1-web" || !validHex(lock.SourceCommit, 40) || !validHex(lock.ManifestSHA256, 64) {
 		return fmt.Errorf("invalid web bundle lock")
 	}
-	data, err := readBounded(files, "dist/manifest.json", maxManifestBytes)
+	data, err := readBounded(files, "dist/manifest.json", maxNightlabManifestBytes)
 	if err != nil {
 		return err
 	}
@@ -218,10 +255,24 @@ func validateBundle(files fs.FS) error {
 		return fmt.Errorf("web manifest differs from its lock")
 	}
 	var record manifest
-	if err = decodeRecord(data, &record, maxManifestBytes); err != nil {
+	if err = decodeRecord(data, &record, maxNightlabManifestBytes); err != nil {
 		return err
 	}
-	if record.SchemaVersion != 1 || record.Product != "nb1-web" || record.AssetBase != "./" || record.Source.Repository != "local:nb1-web" || record.Source.Commit != lock.SourceCommit || record.Source.Dirty == nil || *record.Source.Dirty || !validHex(record.Source.TreeSHA256, 64) || record.Build.Tool != "static-editor/v1" || !validHex(record.Build.LockfileSHA256, 64) || len(record.Build.Node) == 0 || len(record.Build.Node) > 128 || strings.TrimSpace(record.Build.Node) != record.Build.Node {
+	allowed, maxStored, maxDecoded, maxBase := assetNames, int64(maxBundleBytes), int64(maxBundleBytes), int64(maxBundleBytes)
+	switch record.SchemaVersion {
+	case 1:
+		if record.Build.Tool != "static-editor/v1" || len(data) > maxManifestBytes {
+			return fmt.Errorf("invalid legacy web profile")
+		}
+	case 2:
+		if record.Build.Tool != "static-nightlab/v1" {
+			return fmt.Errorf("invalid Nightlab web profile")
+		}
+		allowed, maxStored, maxDecoded, maxBase = nightlabAssetNames, maxNightlabStoredBytes, maxNightlabDecodedBytes, maxNightlabBaseBytes
+	default:
+		return fmt.Errorf("unsupported web profile")
+	}
+	if record.Product != "nb1-web" || record.AssetBase != "./" || record.Source.Repository != "local:nb1-web" || record.Source.Commit != lock.SourceCommit || record.Source.Dirty == nil || *record.Source.Dirty || !validHex(record.Source.TreeSHA256, 64) || !validHex(record.Build.LockfileSHA256, 64) || len(record.Build.Node) == 0 || len(record.Build.Node) > 128 || strings.TrimSpace(record.Build.Node) != record.Build.Node {
 		return fmt.Errorf("invalid web manifest provenance")
 	}
 	for _, char := range record.Build.Node {
@@ -232,14 +283,15 @@ func validateBundle(files fs.FS) error {
 	if len(record.APIContracts) != 1 || record.APIContracts[0] != "nb1-api/v1" {
 		return fmt.Errorf("web bundle requires the nb1-api/v1 contract")
 	}
-	if len(record.Files) != len(assetNames) {
+	if len(record.Files) != len(allowed) {
 		return fmt.Errorf("incomplete web asset set")
 	}
 	expected := map[string]bool{"manifest.json": true}
 	contents := make(map[string][]byte, len(record.Files))
 	total := int64(len(data))
+	decodedTotal, baseTotal := total, total
 	for _, file := range record.Files {
-		if !knownAsset(file.Path) || expected[file.Path] || file.Bytes == nil || *file.Bytes <= 0 || *file.Bytes > maxBundleBytes || !validHex(file.SHA256, 64) {
+		if !listedAsset(file.Path, allowed) || expected[file.Path] || file.Bytes == nil || *file.Bytes <= 0 || *file.Bytes > maxStored || !validHex(file.SHA256, 64) {
 			return fmt.Errorf("invalid web asset declaration")
 		}
 		expected[file.Path] = true
@@ -252,11 +304,33 @@ func validateBundle(files fs.FS) error {
 		}
 		contents[file.Path] = content
 		total += *file.Bytes
-		if total > maxBundleBytes {
-			return fmt.Errorf("web bundle exceeds %d bytes", maxBundleBytes)
+		decodedSize := *file.Bytes
+		if record.SchemaVersion == 1 {
+			if file.Encoding != nil || file.DecodedBytes != nil || file.DecodedSHA256 != nil {
+				return fmt.Errorf("legacy assets do not declare an encoding")
+			}
+		} else {
+			if file.Encoding == nil || file.DecodedBytes == nil || *file.DecodedBytes <= 0 || *file.DecodedBytes > maxDecoded || file.DecodedSHA256 == nil || !validHex(*file.DecodedSHA256, 64) {
+				return fmt.Errorf("invalid decoded web asset declaration")
+			}
+			decoded, err := decodeAsset(content, *file.Encoding, *file.DecodedBytes)
+			if err != nil || int64(len(decoded)) != *file.DecodedBytes || digest(decoded) != *file.DecodedSHA256 {
+				return fmt.Errorf("web asset %s differs from its decoded manifest", file.Path)
+			}
+			decodedSize = *file.DecodedBytes
+			if *file.Encoding == "identity" && (decodedSize != *file.Bytes || *file.DecodedSHA256 != file.SHA256) {
+				return fmt.Errorf("identity web asset has different stored and decoded declarations")
+			}
+		}
+		decodedTotal += decodedSize
+		if record.SchemaVersion == 1 || nightlabBaseAsset(file.Path) {
+			baseTotal += decodedSize
+		}
+		if total > maxStored || decodedTotal > maxDecoded || baseTotal > maxBase {
+			return fmt.Errorf("web bundle exceeds its stored, decoded or base byte limit")
 		}
 	}
-	for _, name := range assetNames {
+	for _, name := range allowed {
 		if !expected[name] {
 			return fmt.Errorf("incomplete web asset set")
 		}

@@ -1,17 +1,17 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "product": "nb1-web",
   "asset_base": "./",
   "source": {
     "repository": "local:nb1-web",
-    "commit": "884f77ef00b77d8126a6e777213a202dccc1da6a",
+    "commit": "fa68c91c3d1d90cd77a2a48ac061e1c7ba7077cc",
     "dirty": false,
-    "tree_sha256": "e09f315023d61f78f90f697c9e9d29b0a46a7fec6e4d912ec2efdc33951a65e5"
+    "tree_sha256": "5a354f26103f68aa7fa6be0893221aac2da315f9d247a2f9e54191e9f6609d5b"
   },
   "build": {
-    "tool": "static-editor/v1",
+    "tool": "static-nightlab/v1",
     "node": "v26.12.1",
-    "lockfile_sha256": "c150cfd1a92012c360ab17e67d169ee14fcf7164fe9c3c146cbef3470342d42d"
+    "lockfile_sha256": "1bf62d6454de03edc114b7dd5fc84e54659a0aa74b9e59262716618b92f2e3e6"
   },
   "api_contracts": [
     "nb1-api/v1"
@@ -20,132 +20,514 @@
     {
       "path": "LICENSE.txt",
       "bytes": 1076,
-      "sha256": "a428d1101807989e11ae625f4316d360a27b2a922f4f6cb6ce5981e8cfeafe93"
+      "sha256": "a428d1101807989e11ae625f4316d360a27b2a922f4f6cb6ce5981e8cfeafe93",
+      "encoding": "identity",
+      "decoded_bytes": 1076,
+      "decoded_sha256": "a428d1101807989e11ae625f4316d360a27b2a922f4f6cb6ce5981e8cfeafe93"
     },
     {
       "path": "action-icons.js",
       "bytes": 3316,
-      "sha256": "ee536d6735f46326e07eae7da9b317d8d199c363d020bc27d89cbcd0d45a9382"
+      "sha256": "ee536d6735f46326e07eae7da9b317d8d199c363d020bc27d89cbcd0d45a9382",
+      "encoding": "identity",
+      "decoded_bytes": 3316,
+      "decoded_sha256": "ee536d6735f46326e07eae7da9b317d8d199c363d020bc27d89cbcd0d45a9382"
     },
     {
       "path": "assets/nb1-icon.png",
       "bytes": 4703,
-      "sha256": "cd6f0c2c635e52d8ccf6ffdcf080214e90aa80f4c48cad71c1c350e77f2d45d7"
+      "sha256": "cd6f0c2c635e52d8ccf6ffdcf080214e90aa80f4c48cad71c1c350e77f2d45d7",
+      "encoding": "identity",
+      "decoded_bytes": 4703,
+      "decoded_sha256": "cd6f0c2c635e52d8ccf6ffdcf080214e90aa80f4c48cad71c1c350e77f2d45d7"
     },
     {
       "path": "assets/nb1-mascot.webp",
       "bytes": 7174,
-      "sha256": "0d2ffe4927cb4519744fa691e74ae5aba7a84135cdfc08bf3e083acf05e96dce"
+      "sha256": "0d2ffe4927cb4519744fa691e74ae5aba7a84135cdfc08bf3e083acf05e96dce",
+      "encoding": "identity",
+      "decoded_bytes": 7174,
+      "decoded_sha256": "0d2ffe4927cb4519744fa691e74ae5aba7a84135cdfc08bf3e083acf05e96dce"
     },
     {
       "path": "demo.css",
       "bytes": 34509,
-      "sha256": "bda650854b9e0641b3eb84ab5f400b5f1349b548081217fe593c7a9c8521e53a"
+      "sha256": "bda650854b9e0641b3eb84ab5f400b5f1349b548081217fe593c7a9c8521e53a",
+      "encoding": "identity",
+      "decoded_bytes": 34509,
+      "decoded_sha256": "bda650854b9e0641b3eb84ab5f400b5f1349b548081217fe593c7a9c8521e53a"
     },
     {
       "path": "demo.js",
       "bytes": 50783,
-      "sha256": "7f6f162dd4c319905824dac710ff6c1059710365027155079f455d45b7bac70c"
+      "sha256": "7f6f162dd4c319905824dac710ff6c1059710365027155079f455d45b7bac70c",
+      "encoding": "identity",
+      "decoded_bytes": 50783,
+      "decoded_sha256": "7f6f162dd4c319905824dac710ff6c1059710365027155079f455d45b7bac70c"
     },
     {
       "path": "editor-LICENSES.txt",
       "bytes": 14811,
-      "sha256": "2e8eb0d5eadce5aad4a4c9e204f102ddb3f2005227cdf395ec73b9c84e66cec6"
+      "sha256": "2e8eb0d5eadce5aad4a4c9e204f102ddb3f2005227cdf395ec73b9c84e66cec6",
+      "encoding": "identity",
+      "decoded_bytes": 14811,
+      "decoded_sha256": "2e8eb0d5eadce5aad4a4c9e204f102ddb3f2005227cdf395ec73b9c84e66cec6"
     },
     {
       "path": "fonts/Fredoka-OFL.txt",
       "bytes": 4388,
-      "sha256": "5c9e7eee5c6b25f4b05b8d53b2e470ea4962f9ced742d044a98f7d95d1375bab"
+      "sha256": "5c9e7eee5c6b25f4b05b8d53b2e470ea4962f9ced742d044a98f7d95d1375bab",
+      "encoding": "identity",
+      "decoded_bytes": 4388,
+      "decoded_sha256": "5c9e7eee5c6b25f4b05b8d53b2e470ea4962f9ced742d044a98f7d95d1375bab"
     },
     {
       "path": "fonts/MPLUSRounded1c-OFL.txt",
       "bytes": 4397,
-      "sha256": "67f64c5509e5151796599e3ad47c3131cbe0c80c4f9430b90236a1249c2eacc9"
+      "sha256": "67f64c5509e5151796599e3ad47c3131cbe0c80c4f9430b90236a1249c2eacc9",
+      "encoding": "identity",
+      "decoded_bytes": 4397,
+      "decoded_sha256": "67f64c5509e5151796599e3ad47c3131cbe0c80c4f9430b90236a1249c2eacc9"
     },
     {
       "path": "fonts/fredoka-700-latin-ext.woff2",
       "bytes": 2676,
-      "sha256": "e5272989e860007c4dbb922c687aeea68d74ac0f4bcc6c052f1c21cffaec637d"
+      "sha256": "e5272989e860007c4dbb922c687aeea68d74ac0f4bcc6c052f1c21cffaec637d",
+      "encoding": "identity",
+      "decoded_bytes": 2676,
+      "decoded_sha256": "e5272989e860007c4dbb922c687aeea68d74ac0f4bcc6c052f1c21cffaec637d"
     },
     {
       "path": "fonts/fredoka-700-latin.woff2",
       "bytes": 15900,
-      "sha256": "ee61b48acab42fcfee4e1c398b03bbae7e09d1be8471779c440a97dc85118c16"
+      "sha256": "ee61b48acab42fcfee4e1c398b03bbae7e09d1be8471779c440a97dc85118c16",
+      "encoding": "identity",
+      "decoded_bytes": 15900,
+      "decoded_sha256": "ee61b48acab42fcfee4e1c398b03bbae7e09d1be8471779c440a97dc85118c16"
     },
     {
       "path": "fonts/mplusround-500-latin.woff2",
       "bytes": 22040,
-      "sha256": "9a7980fa96341230341fd240f68d14a327c8b856d260eeff2e426db78b7eab87"
+      "sha256": "9a7980fa96341230341fd240f68d14a327c8b856d260eeff2e426db78b7eab87",
+      "encoding": "identity",
+      "decoded_bytes": 22040,
+      "decoded_sha256": "9a7980fa96341230341fd240f68d14a327c8b856d260eeff2e426db78b7eab87"
     },
     {
       "path": "fonts/mplusround-700-latin.woff2",
       "bytes": 22708,
-      "sha256": "1688f14412dd12f79daffbb8bd9defe98f555aa5799184b8ddd0ae4583a2851f"
+      "sha256": "1688f14412dd12f79daffbb8bd9defe98f555aa5799184b8ddd0ae4583a2851f",
+      "encoding": "identity",
+      "decoded_bytes": 22708,
+      "decoded_sha256": "1688f14412dd12f79daffbb8bd9defe98f555aa5799184b8ddd0ae4583a2851f"
     },
     {
       "path": "i18n.js",
       "bytes": 10641,
-      "sha256": "d5be3a944efd77d9ac8033e1bf349d0c501f56042b8050bd93b9227e5adcfe91"
+      "sha256": "d5be3a944efd77d9ac8033e1bf349d0c501f56042b8050bd93b9227e5adcfe91",
+      "encoding": "identity",
+      "decoded_bytes": 10641,
+      "decoded_sha256": "d5be3a944efd77d9ac8033e1bf349d0c501f56042b8050bd93b9227e5adcfe91"
     },
     {
       "path": "index.html",
-      "bytes": 14198,
-      "sha256": "0b912698b82ec39b0688074917bfe6e9e508ca2b32067e78d207eedc39ae6941"
+      "bytes": 15705,
+      "sha256": "e6c58d75d1fa69ccf8c837d67a3130ee1e9611d80dfb64e7739b2535b2935e3f",
+      "encoding": "identity",
+      "decoded_bytes": 15705,
+      "decoded_sha256": "e6c58d75d1fa69ccf8c837d67a3130ee1e9611d80dfb64e7739b2535b2935e3f"
     },
     {
       "path": "json-editor.css",
       "bytes": 3284,
-      "sha256": "2b908f3978c0a315b686b5821e0271c899326e1735ff3fefcd7068ed18072c15"
+      "sha256": "2b908f3978c0a315b686b5821e0271c899326e1735ff3fefcd7068ed18072c15",
+      "encoding": "identity",
+      "decoded_bytes": 3284,
+      "decoded_sha256": "2b908f3978c0a315b686b5821e0271c899326e1735ff3fefcd7068ed18072c15"
     },
     {
       "path": "json-editor.js",
       "bytes": 320805,
-      "sha256": "7fe33cfda9fc23b26fb23711bcaae567c9056e327730f402e1062be6deab8190"
+      "sha256": "7fe33cfda9fc23b26fb23711bcaae567c9056e327730f402e1062be6deab8190",
+      "encoding": "identity",
+      "decoded_bytes": 320805,
+      "decoded_sha256": "7fe33cfda9fc23b26fb23711bcaae567c9056e327730f402e1062be6deab8190"
     },
     {
       "path": "locale-menu.css",
       "bytes": 3520,
-      "sha256": "607aff1b9f324f9cfa2db8ffe81b506e2015e549b8ad602e28ae660e65c783f6"
+      "sha256": "607aff1b9f324f9cfa2db8ffe81b506e2015e549b8ad602e28ae660e65c783f6",
+      "encoding": "identity",
+      "decoded_bytes": 3520,
+      "decoded_sha256": "607aff1b9f324f9cfa2db8ffe81b506e2015e549b8ad602e28ae660e65c783f6"
     },
     {
       "path": "locales.js",
       "bytes": 9656,
-      "sha256": "1a6906f0095b06071785de6bd32abaacda9fce53b2c21bd107d440665f96adb7"
+      "sha256": "1a6906f0095b06071785de6bd32abaacda9fce53b2c21bd107d440665f96adb7",
+      "encoding": "identity",
+      "decoded_bytes": 9656,
+      "decoded_sha256": "1a6906f0095b06071785de6bd32abaacda9fce53b2c21bd107d440665f96adb7"
+    },
+    {
+      "path": "nightlab/THREE-LICENSE.txt",
+      "bytes": 1081,
+      "sha256": "8b378ebe60e2fe500158cb0ac71cb5e8b7d92953c2abcc63a0eb90499653b5bc",
+      "encoding": "identity",
+      "decoded_bytes": 1081,
+      "decoded_sha256": "8b378ebe60e2fe500158cb0ac71cb5e8b7d92953c2abcc63a0eb90499653b5bc"
+    },
+    {
+      "path": "nightlab/airwave-tokens.css",
+      "bytes": 1759,
+      "sha256": "ddebd8181bb960fe3e4ed2c8e4c26dfd51e60d3380e3b9d9179f50d20fb790a3",
+      "encoding": "identity",
+      "decoded_bytes": 1759,
+      "decoded_sha256": "ddebd8181bb960fe3e4ed2c8e4c26dfd51e60d3380e3b9d9179f50d20fb790a3"
+    },
+    {
+      "path": "nightlab/airwave.css",
+      "bytes": 25993,
+      "sha256": "de333a92a75ef91570b3dec65f920a001fd3eb00909e717b0b072613cff79343",
+      "encoding": "identity",
+      "decoded_bytes": 25993,
+      "decoded_sha256": "de333a92a75ef91570b3dec65f920a001fd3eb00909e717b0b072613cff79343"
+    },
+    {
+      "path": "nightlab/compiler-loader.js",
+      "bytes": 3876,
+      "sha256": "1b9309e650c052db2939c729371f5a0e723226cdc277fc6a8b6d2d41db66dfb6",
+      "encoding": "identity",
+      "decoded_bytes": 3876,
+      "decoded_sha256": "1b9309e650c052db2939c729371f5a0e723226cdc277fc6a8b6d2d41db66dfb6"
+    },
+    {
+      "path": "nightlab/compiler/GO-LICENSE.txt",
+      "bytes": 1453,
+      "sha256": "911f8f5782931320f5b8d1160a76365b83aea6447ee6c04fa6d5591467db9dad",
+      "encoding": "identity",
+      "decoded_bytes": 1453,
+      "decoded_sha256": "911f8f5782931320f5b8d1160a76365b83aea6447ee6c04fa6d5591467db9dad"
+    },
+    {
+      "path": "nightlab/compiler/NB1-LICENSE.txt",
+      "bytes": 1076,
+      "sha256": "a428d1101807989e11ae625f4316d360a27b2a922f4f6cb6ce5981e8cfeafe93",
+      "encoding": "identity",
+      "decoded_bytes": 1076,
+      "decoded_sha256": "a428d1101807989e11ae625f4316d360a27b2a922f4f6cb6ce5981e8cfeafe93"
+    },
+    {
+      "path": "nightlab/compiler/compiler-source.json",
+      "bytes": 5923,
+      "sha256": "77a7a8fa8b5129e530c7a6a708bd0d27a852922bf012f6e70256b3d0e6aa03bc",
+      "encoding": "identity",
+      "decoded_bytes": 5923,
+      "decoded_sha256": "77a7a8fa8b5129e530c7a6a708bd0d27a852922bf012f6e70256b3d0e6aa03bc"
+    },
+    {
+      "path": "nightlab/compiler/nb1.wasm",
+      "bytes": 1350464,
+      "sha256": "d767ec204bcdd12362d9b32358cb0a3bfba8116c0ea16f21af3cfb7c5392b02f",
+      "encoding": "gzip",
+      "decoded_bytes": 4978528,
+      "decoded_sha256": "6c0fcf511b811b807f7c49391a3f01f750db192550663fde7299473f7aa438ea"
+    },
+    {
+      "path": "nightlab/compiler/wasm_exec.js",
+      "bytes": 16992,
+      "sha256": "0c949f4996f9a89698e4b5c586de32249c3b69b7baadb64d220073cc04acba14",
+      "encoding": "identity",
+      "decoded_bytes": 16992,
+      "decoded_sha256": "0c949f4996f9a89698e4b5c586de32249c3b69b7baadb64d220073cc04acba14"
+    },
+    {
+      "path": "nightlab/composer-ui.js",
+      "bytes": 9879,
+      "sha256": "5abdec552649d15edf4cfe98d1fecac821c5d9426821a50552cceabc1c81bae3",
+      "encoding": "identity",
+      "decoded_bytes": 9879,
+      "decoded_sha256": "5abdec552649d15edf4cfe98d1fecac821c5d9426821a50552cceabc1c81bae3"
+    },
+    {
+      "path": "nightlab/docs/INTEGRATION.md",
+      "bytes": 15781,
+      "sha256": "16b4efb4be2770d4b8cd81c86d44f64b2e98105160ccba4f23054bee82aae2f4",
+      "encoding": "identity",
+      "decoded_bytes": 15781,
+      "decoded_sha256": "16b4efb4be2770d4b8cd81c86d44f64b2e98105160ccba4f23054bee82aae2f4"
+    },
+    {
+      "path": "nightlab/embedded-studio.css",
+      "bytes": 18215,
+      "sha256": "d05a9e01d6a96e22f17c7cb4f20e437b7b6d7e6da53f23b6925ee5f88a2dcbc5",
+      "encoding": "identity",
+      "decoded_bytes": 18215,
+      "decoded_sha256": "d05a9e01d6a96e22f17c7cb4f20e437b7b6d7e6da53f23b6925ee5f88a2dcbc5"
+    },
+    {
+      "path": "nightlab/enclosure-fit.js",
+      "bytes": 21789,
+      "sha256": "33a8c0fba98e078b9497da20289508ff5da08a4cfccc8abafbeec36a336ece99",
+      "encoding": "identity",
+      "decoded_bytes": 21789,
+      "decoded_sha256": "33a8c0fba98e078b9497da20289508ff5da08a4cfccc8abafbeec36a336ece99"
+    },
+    {
+      "path": "nightlab/hardware-checks/led-face-20261114T143506Z.json",
+      "bytes": 5567,
+      "sha256": "7eefb1d0b9603ba56e6bb9f5900c4a5bcf8bd2dd58214219fe7f5c41a645f9c3",
+      "encoding": "identity",
+      "decoded_bytes": 5567,
+      "decoded_sha256": "7eefb1d0b9603ba56e6bb9f5900c4a5bcf8bd2dd58214219fe7f5c41a645f9c3"
+    },
+    {
+      "path": "nightlab/home.css",
+      "bytes": 4122,
+      "sha256": "75a48375d1b052ec8412b96f917cea2a43b5f52791eb6ce2514ce14d3b852520",
+      "encoding": "identity",
+      "decoded_bytes": 4122,
+      "decoded_sha256": "75a48375d1b052ec8412b96f917cea2a43b5f52791eb6ce2514ce14d3b852520"
+    },
+    {
+      "path": "nightlab/light-model.js",
+      "bytes": 23443,
+      "sha256": "b8231a6cd4342869cf0f7ea4f3533738b76712e452f3ec9262c436d38ffd731c",
+      "encoding": "identity",
+      "decoded_bytes": 23443,
+      "decoded_sha256": "b8231a6cd4342869cf0f7ea4f3533738b76712e452f3ec9262c436d38ffd731c"
+    },
+    {
+      "path": "nightlab/model-assets/LICENSE.txt",
+      "bytes": 351,
+      "sha256": "e0a5f70deb9c79bb8533122057d00f6fb20b2c050ee63123e3e6538da329ceea",
+      "encoding": "identity",
+      "decoded_bytes": 351,
+      "decoded_sha256": "e0a5f70deb9c79bb8533122057d00f6fb20b2c050ee63123e3e6538da329ceea"
+    },
+    {
+      "path": "nightlab/model-assets/blink1mk2_enclosure_diffuser_v3k.stl",
+      "bytes": 441136,
+      "sha256": "ef91f9fad6b69aea6f474cb108bb25f485b0018a0d189fbe2de5853a565f5196",
+      "encoding": "gzip",
+      "decoded_bytes": 3940514,
+      "decoded_sha256": "297986ee78dee7ce5607b43edd8967cd7b9d509496261214c5c68587d892af18"
+    },
+    {
+      "path": "nightlab/model-assets/blink1mk2_enclosure_frame_v3k.stl",
+      "bytes": 143689,
+      "sha256": "f1cdcb27e9d89ae3ff1d1d00eca989861b91312d3d0dd99a3b4afd9028838855",
+      "encoding": "gzip",
+      "decoded_bytes": 1606855,
+      "decoded_sha256": "ba0797af2873c0fc4c3477b87cde07ca1b9ec761eda001b21abe101ce035b465"
+    },
+    {
+      "path": "nightlab/model-assets/project-led-faces.txt",
+      "bytes": 620,
+      "sha256": "e1bd2c95e112edee15dd603ad1a7665313fa221eedd74b26dd2d80b089314bad",
+      "encoding": "identity",
+      "decoded_bytes": 620,
+      "decoded_sha256": "e1bd2c95e112edee15dd603ad1a7665313fa221eedd74b26dd2d80b089314bad"
+    },
+    {
+      "path": "nightlab/model-assets/seating-fit.json",
+      "bytes": 3399,
+      "sha256": "04516bf501b32ff8667a1738a99fad4cfde10cb5bcfc30836841115111d0c3c5",
+      "encoding": "identity",
+      "decoded_bytes": 3399,
+      "decoded_sha256": "04516bf501b32ff8667a1738a99fad4cfde10cb5bcfc30836841115111d0c3c5"
+    },
+    {
+      "path": "nightlab/model-assets/source.json",
+      "bytes": 16398,
+      "sha256": "34d5d2f9e129cf482be12485b34073ffbb51b8882bc000e13694a9ca503f7761",
+      "encoding": "identity",
+      "decoded_bytes": 16398,
+      "decoded_sha256": "34d5d2f9e129cf482be12485b34073ffbb51b8882bc000e13694a9ca503f7761"
+    },
+    {
+      "path": "nightlab/model-notes.js",
+      "bytes": 4527,
+      "sha256": "4702e2dd4889e07f05e3c276a68b5b7b1f9242ba88c9e65d587d3a9a7963a685",
+      "encoding": "identity",
+      "decoded_bytes": 4527,
+      "decoded_sha256": "4702e2dd4889e07f05e3c276a68b5b7b1f9242ba88c9e65d587d3a9a7963a685"
+    },
+    {
+      "path": "nightlab/model.html",
+      "bytes": 4349,
+      "sha256": "1ce562f3360fbe99ad98bbf62959fa98493b8ce8f3151e978292fdea029a564f",
+      "encoding": "identity",
+      "decoded_bytes": 4349,
+      "decoded_sha256": "1ce562f3360fbe99ad98bbf62959fa98493b8ce8f3151e978292fdea029a564f"
+    },
+    {
+      "path": "nightlab/preview-timeline.js",
+      "bytes": 7049,
+      "sha256": "b23ae94095100282d34c68c3dd4b7dc8aa35e27bbf061e0e1fafbfebf8eb3cc4",
+      "encoding": "identity",
+      "decoded_bytes": 7049,
+      "decoded_sha256": "b23ae94095100282d34c68c3dd4b7dc8aa35e27bbf061e0e1fafbfebf8eb3cc4"
+    },
+    {
+      "path": "nightlab/readback.js",
+      "bytes": 2080,
+      "sha256": "3cec77ebffc42e33468d1ae472a343d35f6b7f2bfa03c7284580657e6647cbf8",
+      "encoding": "identity",
+      "decoded_bytes": 2080,
+      "decoded_sha256": "3cec77ebffc42e33468d1ae472a343d35f6b7f2bfa03c7284580657e6647cbf8"
+    },
+    {
+      "path": "nightlab/screenshots/joint-capture.json",
+      "bytes": 1656,
+      "sha256": "f451a8378796b2cd9ad450f9a91c8141c86354e7198ce1b46d00ce5b82672701",
+      "encoding": "identity",
+      "decoded_bytes": 1656,
+      "decoded_sha256": "f451a8378796b2cd9ad450f9a91c8141c86354e7198ce1b46d00ce5b82672701"
+    },
+    {
+      "path": "nightlab/screenshots/joint-front-on-lit.png",
+      "bytes": 239527,
+      "sha256": "e6344c6413c7b315d2e95b2238b39eb132b04baac11dbd04f00fe5562b918b16",
+      "encoding": "identity",
+      "decoded_bytes": 239527,
+      "decoded_sha256": "e6344c6413c7b315d2e95b2238b39eb132b04baac11dbd04f00fe5562b918b16"
+    },
+    {
+      "path": "nightlab/screenshots/joint-usb-quarter-unlit.png",
+      "bytes": 282500,
+      "sha256": "f2470b432c7c8586dbb27ae6327440e252730453ad1e4c896088679130621344",
+      "encoding": "identity",
+      "decoded_bytes": 282500,
+      "decoded_sha256": "f2470b432c7c8586dbb27ae6327440e252730453ad1e4c896088679130621344"
+    },
+    {
+      "path": "nightlab/screenshots/model-two-faces.jpg",
+      "bytes": 75318,
+      "sha256": "5f4d3233feca8962667cc0376c2a4a4c2050262edf7087658f675d41a4199347",
+      "encoding": "identity",
+      "decoded_bytes": 75318,
+      "decoded_sha256": "5f4d3233feca8962667cc0376c2a4a4c2050262edf7087658f675d41a4199347"
+    },
+    {
+      "path": "nightlab/screenshots/physical-joint-reference.png",
+      "bytes": 1690382,
+      "sha256": "f96e1cbc7a30b3963b57108b2bd683061083384cf84239585e18b0ffb07ca45b",
+      "encoding": "identity",
+      "decoded_bytes": 1690382,
+      "decoded_sha256": "f96e1cbc7a30b3963b57108b2bd683061083384cf84239585e18b0ffb07ca45b"
+    },
+    {
+      "path": "nightlab/studio-3d.js",
+      "bytes": 209068,
+      "sha256": "718201e7881546967465b156b4bafdf9eb9807e5098f9324e45a2aaa8054c697",
+      "encoding": "gzip",
+      "decoded_bytes": 806805,
+      "decoded_sha256": "6f9045b30389d0f667248b531892f07a15b50ecdbbeb391d9c97e7c44687e012"
+    },
+    {
+      "path": "nightlab/studio-appearance.js",
+      "bytes": 7915,
+      "sha256": "0ebb37284d1e56cec1afdf616f253931ff480ab8401241b758a924a885a6a46c",
+      "encoding": "identity",
+      "decoded_bytes": 7915,
+      "decoded_sha256": "0ebb37284d1e56cec1afdf616f253931ff480ab8401241b758a924a885a6a46c"
+    },
+    {
+      "path": "nightlab/studio-preview.js",
+      "bytes": 11817,
+      "sha256": "5515c7dbed4a0a3a10f3b3068ad84c5fcb275ebb6e7adf7a374de59ca638007e",
+      "encoding": "identity",
+      "decoded_bytes": 11817,
+      "decoded_sha256": "5515c7dbed4a0a3a10f3b3068ad84c5fcb275ebb6e7adf7a374de59ca638007e"
+    },
+    {
+      "path": "nightlab/studio-skins.css",
+      "bytes": 17964,
+      "sha256": "341e2f2dc51f7ab89062b76479571d030c74f705b678af6f389ae3f887b612d0",
+      "encoding": "identity",
+      "decoded_bytes": 17964,
+      "decoded_sha256": "341e2f2dc51f7ab89062b76479571d030c74f705b678af6f389ae3f887b612d0"
+    },
+    {
+      "path": "nightlab/studio.css",
+      "bytes": 11773,
+      "sha256": "9eae598a9aee81b83f78f4e9eb7a0d3fbd6afd9b80f090868cc3d1dbde1fc3a0",
+      "encoding": "identity",
+      "decoded_bytes": 11773,
+      "decoded_sha256": "9eae598a9aee81b83f78f4e9eb7a0d3fbd6afd9b80f090868cc3d1dbde1fc3a0"
+    },
+    {
+      "path": "nightlab/studio.js",
+      "bytes": 16978,
+      "sha256": "f8b12f0992139d8a2ffff47df696da41f548694e639b6e2cb68d868099f1eb29",
+      "encoding": "identity",
+      "decoded_bytes": 16978,
+      "decoded_sha256": "f8b12f0992139d8a2ffff47df696da41f548694e639b6e2cb68d868099f1eb29"
+    },
+    {
+      "path": "nightlab/time-format.js",
+      "bytes": 834,
+      "sha256": "9a630b32a819d95f6a73e0612813aa47ccee6df6e2e4343130a9f81492b0e814",
+      "encoding": "identity",
+      "decoded_bytes": 834,
+      "decoded_sha256": "9a630b32a819d95f6a73e0612813aa47ccee6df6e2e4343130a9f81492b0e814"
     },
     {
       "path": "orbit.css",
       "bytes": 35,
-      "sha256": "6ab15f0a63ddefc5bd0374623b5db137e5d1880dd5b3d74024914f55587011a3"
+      "sha256": "6ab15f0a63ddefc5bd0374623b5db137e5d1880dd5b3d74024914f55587011a3",
+      "encoding": "identity",
+      "decoded_bytes": 35,
+      "decoded_sha256": "6ab15f0a63ddefc5bd0374623b5db137e5d1880dd5b3d74024914f55587011a3"
     },
     {
       "path": "orbit.html",
-      "bytes": 14280,
-      "sha256": "6612fe242d09cc674c5c26fb3b1901c923ce3d764754145a9288ab2f7826ef0e"
+      "bytes": 15787,
+      "sha256": "80aebc161288f20413b83de7403083a2fa97305ae180022e2e860f7599959c83",
+      "encoding": "identity",
+      "decoded_bytes": 15787,
+      "decoded_sha256": "80aebc161288f20413b83de7403083a2fa97305ae180022e2e860f7599959c83"
     },
     {
       "path": "orbit.js",
       "bytes": 81,
-      "sha256": "236109522500ae023d334d2e8ad0524826acadfb9cc99a275ea47cc5fdd3e56b"
+      "sha256": "236109522500ae023d334d2e8ad0524826acadfb9cc99a275ea47cc5fdd3e56b",
+      "encoding": "identity",
+      "decoded_bytes": 81,
+      "decoded_sha256": "236109522500ae023d334d2e8ad0524826acadfb9cc99a275ea47cc5fdd3e56b"
     },
     {
       "path": "patterns.css",
       "bytes": 35,
-      "sha256": "d9d9abdfd73ce8b76148baaaa7c5a7d0bbba70a0bb74be308ea4e801fa8caadc"
+      "sha256": "d9d9abdfd73ce8b76148baaaa7c5a7d0bbba70a0bb74be308ea4e801fa8caadc",
+      "encoding": "identity",
+      "decoded_bytes": 35,
+      "decoded_sha256": "d9d9abdfd73ce8b76148baaaa7c5a7d0bbba70a0bb74be308ea4e801fa8caadc"
     },
     {
       "path": "patterns.html",
-      "bytes": 14286,
-      "sha256": "c83dacd3f8c063d85365b99564c9acde3b95445f8e3d35b19ec2fe6d8cef1027"
+      "bytes": 15793,
+      "sha256": "c70c401b158b8a7cc9a530b06b759c418709c61319618b5b72978731520d2b9f",
+      "encoding": "identity",
+      "decoded_bytes": 15793,
+      "decoded_sha256": "c70c401b158b8a7cc9a530b06b759c418709c61319618b5b72978731520d2b9f"
     },
     {
       "path": "patterns.js",
       "bytes": 82,
-      "sha256": "54e941bdb4bcfad35e5163f81d3b2925f62b9d0da48708854d456a6509bb8600"
+      "sha256": "54e941bdb4bcfad35e5163f81d3b2925f62b9d0da48708854d456a6509bb8600",
+      "encoding": "identity",
+      "decoded_bytes": 82,
+      "decoded_sha256": "54e941bdb4bcfad35e5163f81d3b2925f62b9d0da48708854d456a6509bb8600"
     },
     {
       "path": "typography.css",
       "bytes": 6453,
-      "sha256": "886df10eec3852e4a8ee64f84b10506c38755245733706c190b4f4adf3f7f336"
+      "sha256": "886df10eec3852e4a8ee64f84b10506c38755245733706c190b4f4adf3f7f336",
+      "encoding": "identity",
+      "decoded_bytes": 6453,
+      "decoded_sha256": "886df10eec3852e4a8ee64f84b10506c38755245733706c190b4f4adf3f7f336"
     }
   ]
 }

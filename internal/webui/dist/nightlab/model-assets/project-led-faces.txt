@@ -1,0 +1,12 @@
+Project face / LED reference
+Source: 开发 blink(1) 的配套软件和服务
+Path: reference/extracted/Notion-Doc1/开发 blink(1) 的配套软件和服务 37c106177ff54194ba7b04bcf63ef253.md
+Original metadata: Last edited December 14, 2023 12:43 PM (timezone not stated)
+Lines 101–103, variable n:
+0=all/1=top/2=bottom
+1为上面，有blink(1)字样；
+2为下面，有thingM商标；
+
+This is the project's original research record, not a manufacturer quotation.
+Official ThingM documentation independently confirms LED 1=top and LED 2=bottom:
+https://thingm.com/blog/2017/12/using-the-blink1-mk2-led-strip-adapter

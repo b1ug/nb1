@@ -72,9 +72,13 @@ func TestSequenceWebBrowserFixture(t *testing.T) {
 	if dist == "" {
 		t.Skip("set NB1_V1_WEB_FIXTURE_DIST for the disposable browser fixture")
 	}
-	info, err := os.Lstat(dist)
-	if err != nil || !filepath.IsAbs(dist) || !info.IsDir() {
-		t.Fatal("fixture dist must be an absolute regular directory")
+	embedded := dist == "embedded"
+	var err error
+	if !embedded {
+		info, statErr := os.Lstat(dist)
+		if statErr != nil || !filepath.IsAbs(dist) || !info.IsDir() {
+			t.Fatal("fixture dist must be an absolute regular directory or embedded")
+		}
 	}
 	seconds := 180
 	if text := os.Getenv("NB1_V1_WEB_FIXTURE_SECONDS"); text != "" {
@@ -130,6 +134,10 @@ func TestSequenceWebBrowserFixture(t *testing.T) {
 			return
 		}
 		if r.URL.Path == "/demo" || strings.HasPrefix(r.URL.Path, "/demo/") {
+			if embedded {
+				api.ServeHTTP(w, r)
+				return
+			}
 			if r.Method != "GET" {
 				w.Header().Set("Allow", "GET")
 				http.Error(w, "GET only", http.StatusMethodNotAllowed)

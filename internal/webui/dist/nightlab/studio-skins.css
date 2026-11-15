@@ -1,0 +1,190 @@
+/* Independent workbench appearances. Load after the shared and workbench CSS.
+   Local design studies informed composition, not copied brand artwork:
+   awesome-design-md/design-md/{apple,dji,oura,linear.app,raycast}/DESIGN.md.
+   Four type roles, LED colors, model geometry and all UI behavior stay shared. */
+
+/* Appearance picker is the only addition to the default Airwave surface. */
+.studio-appearance { position: relative; display: inline-flex; flex: 0 0 auto; min-width: 0; z-index: 110; }
+.workbench-topbar > .studio-appearance { margin-left: auto; margin-right: 8px; }
+.studio-appearance-trigger { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 40px; padding: 7px 10px; border: 1px solid var(--ui-control-line); border-radius: 7px; background: var(--ui-panel); color: var(--ui-ink); box-shadow: none; font: 500 var(--type-caption)/1.5 var(--font-ui); font-size: var(--type-caption) !important; white-space: nowrap; }
+.studio-appearance-trigger > svg { flex: none; }
+.studio-appearance-trigger:hover:enabled, .studio-appearance-trigger[aria-expanded="true"] { color: var(--ui-blue); border-color: var(--ui-blue); background: var(--ui-blue-soft); transform: none; box-shadow: none; }
+.studio-appearance-menu { position: absolute; top: calc(100% + 8px); right: 0; z-index: 111; width: min(300px, calc(100vw - 32px)); max-height: min(420px, calc(100dvh - 130px)); overflow-y: auto; overscroll-behavior: contain; padding: 5px; border: 1px solid var(--ui-control-line); border-radius: 10px; background: var(--ui-panel); color: var(--ui-ink); box-shadow: 0 14px 32px #14253625; transform: translateX(var(--appearance-menu-shift, 0px)); }
+.studio-appearance-menu[hidden] { display: none !important; }
+.studio-appearance-choice { display: grid; grid-template-columns: 28px minmax(0, 1fr) 16px; align-items: center; gap: 10px; width: 100%; min-height: 64px; padding: 9px; border: 1px solid transparent; border-radius: 6px; background: transparent; color: var(--ui-ink); box-shadow: none; text-align: left; }
+.studio-appearance-choice:hover:enabled, .studio-appearance-choice:focus-visible { color: var(--ui-ink); background: var(--ui-panel-soft); border-color: var(--ui-control-line); transform: none; box-shadow: none; }
+.studio-appearance-choice[aria-checked="true"] { background: var(--ui-blue-soft); border-color: var(--ui-blue); }
+.studio-appearance-copy { display: grid; min-width: 0; gap: 2px; }
+.studio-appearance-copy strong { font: 600 var(--type-body)/1.4 var(--font-ui); font-size: var(--type-body) !important; color: var(--ui-ink); }
+.studio-appearance-copy small { color: var(--ui-muted); font: var(--type-caption)/1.5 var(--font-ui); font-size: var(--type-caption) !important; }
+.studio-appearance-check { color: var(--ui-blue); visibility: hidden; }
+.studio-appearance-choice[aria-checked="true"] .studio-appearance-check { visibility: visible; }
+.studio-appearance-swatch { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; width: 28px; height: 30px; overflow: hidden; border: 1px solid var(--ui-control-line); border-radius: 4px; }
+.studio-appearance-swatch i:first-child { grid-column: 1 / -1; }
+.studio-appearance-swatch[data-swatch-skin="airwave"] i:nth-child(1) { background: #eff8fc; }
+.studio-appearance-swatch[data-swatch-skin="airwave"] i:nth-child(2) { background: #7ebbd8; }
+.studio-appearance-swatch[data-swatch-skin="airwave"] i:nth-child(3) { background: #f3b8c5; }
+.studio-appearance-swatch[data-swatch-skin="instrument"] i:nth-child(1) { background: #f4f3ed; }
+.studio-appearance-swatch[data-swatch-skin="instrument"] i:nth-child(2) { background: #6d8c90; }
+.studio-appearance-swatch[data-swatch-skin="instrument"] i:nth-child(3) { background: #e5bb68; }
+.studio-appearance-swatch[data-swatch-skin="nightlab"] i:nth-child(1) { background: #181c22; }
+.studio-appearance-swatch[data-swatch-skin="nightlab"] i:nth-child(2) { background: #9bd9ff; }
+.studio-appearance-swatch[data-swatch-skin="nightlab"] i:nth-child(3) { background: #e7afbf; }
+.studio-appearance :is(button):focus-visible { outline: 3px solid var(--ui-focus); outline-offset: 2px; }
+
+/* Instrument: a warm work surface, straight panel edges and a control matrix.
+   The selection blue, execution amber and interruption coral have separate jobs. */
+:root[data-studio-skin="instrument"] {
+  color-scheme: light;
+  --ui-canvas: #efefea;
+  --ui-panel: #fffefa;
+  --ui-panel-soft: #e8ece9;
+  --ui-ink: #26332f;
+  --ui-muted: #53635e;
+  --ui-line: #c6cec8;
+  --ui-control-line: #83938c;
+  --ui-blue: #17677d;
+  --ui-blue-soft: #e1f0f1;
+  --ui-rose: #edbfb2;
+  --ui-rose-ink: #55372f;
+  --ui-rose-soft: #f9e9e3;
+  --ui-danger: #a24b3d;
+  --ui-danger-soft: #fae9e2;
+  --ui-success: #296b52;
+  --ui-success-soft: #e1f0e7;
+  --ui-focus: #0b738c;
+  --ui-shadow: none;
+  --airwave-rose-line: #b38170;
+  --airwave-radius: 4px;
+  --airwave-control-radius: 3px;
+  --studio-sky: #e1e8e1;
+  --studio-sky-high: #fafbf6;
+  --studio-edge: #bac6bd;
+  --studio-metal: #a9b6ae;
+  --studio-shadow: #253e2d0d;
+  --skin-input: #ffffff;
+  --skin-play: #e5bb68;
+  --skin-play-ink: #392c17;
+  --skin-radius: 4px;
+}
+
+/* Nightlab: the canvas, panel, input and active surface are distinct levels.
+   Blue locates selection, rose starts device playback, amber marks its timeline. */
+:root[data-studio-skin="nightlab"] {
+  color-scheme: dark;
+  --ui-canvas: #101318;
+  --ui-panel: #191f27;
+  --ui-panel-soft: #26313e;
+  --ui-ink: #eff4fa;
+  --ui-muted: #b4c1d0;
+  --ui-line: #354353;
+  --ui-control-line: #74879c;
+  --ui-blue: #9bd9ff;
+  --ui-blue-soft: #203b4c;
+  --ui-rose: #e7afbf;
+  --ui-rose-ink: #35232d;
+  --ui-rose-soft: #392b35;
+  --ui-danger: #f3a6ad;
+  --ui-danger-soft: #402a33;
+  --ui-success: #a0dfb3;
+  --ui-success-soft: #22392e;
+  --ui-focus: #b9e5ff;
+  --ui-shadow: none;
+  --airwave-rose-line: #a37989;
+  --airwave-radius: 12px;
+  --airwave-control-radius: 6px;
+  --studio-sky: #20313f;
+  --studio-sky-high: #1b2631;
+  --studio-edge: #4b6175;
+  --studio-metal: #a8b7bf;
+  --studio-shadow: #00000028;
+  --skin-input: #11171e;
+  --skin-play: #e7afbf;
+  --skin-play-ink: #35232d;
+  --skin-radius: 12px;
+}
+
+/* Shared component contracts for the two alternatives. No layout/canvas resize,
+   no font-scale change, and no selector replaces an authored LED fill. */
+:root:is([data-studio-skin="instrument"], [data-studio-skin="nightlab"]) { background: var(--ui-canvas); color: var(--ui-ink); }
+:root:is([data-studio-skin="instrument"], [data-studio-skin="nightlab"]) body { color: var(--ui-ink); background: var(--ui-canvas); background-image: none; }
+:root:is([data-studio-skin="instrument"], [data-studio-skin="nightlab"]) :is(header, .design-preview-banner) { color: var(--ui-ink); background: var(--ui-panel); border-color: var(--ui-line); }
+:root:is([data-studio-skin="instrument"], [data-studio-skin="nightlab"]) .workbench-topbar { background: transparent; }
+:root:is([data-studio-skin="instrument"], [data-studio-skin="nightlab"]) :is(h1, h2, h3, label, legend, .brand) { color: var(--ui-ink); }
+:root:is([data-studio-skin="instrument"], [data-studio-skin="nightlab"]) :is(.composer, .studio-editor > .composer) { border-color: var(--ui-line); border-radius: var(--skin-radius); background: var(--ui-panel); box-shadow: none; }
+:root:is([data-studio-skin="instrument"], [data-studio-skin="nightlab"]) :is(input:not([type="radio"]):not([type="checkbox"]), textarea, select, .select-trigger) { color: var(--ui-ink); background-color: var(--skin-input); border-color: var(--ui-control-line); border-radius: var(--airwave-control-radius); box-shadow: none; }
+:root:is([data-studio-skin="instrument"], [data-studio-skin="nightlab"]) :is(.select-options, .locale-options) { color: var(--ui-ink); background: var(--ui-panel); border-color: var(--ui-control-line); border-radius: var(--airwave-control-radius); }
+:root:is([data-studio-skin="instrument"], [data-studio-skin="nightlab"]) :is(.select-option, .locale-option) { color: var(--ui-ink); border-radius: var(--airwave-control-radius); }
+:root:is([data-studio-skin="instrument"], [data-studio-skin="nightlab"]) :is(.select-option[aria-selected="true"], .locale-option[aria-selected="true"]) { color: var(--ui-blue); background: var(--ui-blue-soft); border-color: var(--ui-blue); }
+:root:is([data-studio-skin="instrument"], [data-studio-skin="nightlab"]) :is(.select-option, .locale-option):focus-visible { color: var(--ui-blue); background: var(--ui-blue-soft); outline-color: var(--ui-focus); }
+:root:is([data-studio-skin="instrument"], [data-studio-skin="nightlab"]) :is(.choice span, .stage-preview-transport [data-preview-control]) { color: var(--ui-ink); background: var(--ui-panel); border-color: var(--ui-control-line); border-radius: var(--airwave-control-radius); }
+:root:is([data-studio-skin="instrument"], [data-studio-skin="nightlab"]) .choice input:checked + span { color: var(--ui-blue); background: var(--ui-blue-soft); border-color: var(--ui-blue); box-shadow: inset 0 0 0 1px var(--ui-blue); }
+:root:is([data-studio-skin="instrument"], [data-studio-skin="nightlab"]) :is(.play-actions #play, #author #play) { color: var(--skin-play-ink); background: var(--skin-play); border-color: var(--skin-play); border-radius: var(--airwave-control-radius); box-shadow: none; }
+:root:is([data-studio-skin="instrument"], [data-studio-skin="nightlab"]) :is(.play-actions #play, #author #play):hover:enabled { color: var(--skin-play-ink); background: color-mix(in srgb, var(--skin-play) 88%, white); border-color: var(--ui-ink); }
+:root:is([data-studio-skin="instrument"], [data-studio-skin="nightlab"]) :is(.play-actions #play:disabled, #author #play:disabled) { color: var(--ui-muted); background: var(--ui-panel-soft); border-color: var(--ui-line); opacity: .6; }
+:root:is([data-studio-skin="instrument"], [data-studio-skin="nightlab"]) :is(#preview, #connect) { color: var(--ui-blue); background: var(--ui-blue-soft); border-color: var(--ui-control-line); border-radius: var(--airwave-control-radius); box-shadow: none; }
+:root:is([data-studio-skin="instrument"], [data-studio-skin="nightlab"]) :is(button.danger, .play-actions #off) { color: var(--ui-danger); background: var(--ui-danger-soft); border-color: var(--ui-danger); border-radius: var(--airwave-control-radius); box-shadow: none; }
+:root:is([data-studio-skin="instrument"], [data-studio-skin="nightlab"]) :is(.stage-view-tools, .stage-zoom-tools) { border-color: var(--ui-control-line); background: var(--ui-panel); box-shadow: none; }
+:root:is([data-studio-skin="instrument"], [data-studio-skin="nightlab"]) .stage-channels { background: var(--skin-input); border-color: var(--ui-line); }
+:root:is([data-studio-skin="instrument"], [data-studio-skin="nightlab"]) :is(.stage-channel, .stage-footer, .stage-preview-transport, .secondary-tools, .execution-area, .studio-library) { border-color: var(--ui-line); }
+:root:is([data-studio-skin="instrument"], [data-studio-skin="nightlab"]) :is(.palette button, .palette-color) { border-radius: var(--airwave-control-radius); }
+:root:is([data-studio-skin="instrument"], [data-studio-skin="nightlab"]) :is(.tag, .badge) { border-radius: var(--airwave-control-radius); color: var(--ui-muted); background: var(--ui-panel-soft); border-color: var(--ui-line); }
+:root:is([data-studio-skin="instrument"], [data-studio-skin="nightlab"]) .connection-tag[data-state="online"] { color: var(--ui-success); background: var(--ui-success-soft); }
+:root:is([data-studio-skin="instrument"], [data-studio-skin="nightlab"]) .studio-appearance-menu { border-radius: var(--skin-radius); }
+:root:is([data-studio-skin="instrument"], [data-studio-skin="nightlab"]) .studio-appearance-trigger { border-radius: var(--airwave-control-radius); }
+
+/* Instrument uses a joined pad matrix and a ruled, level working surface. */
+:root[data-studio-skin="instrument"] :is(.composer, .studio-editor > .composer) { box-shadow: inset 0 3px 0 #b68b43; }
+:root[data-studio-skin="instrument"] :is(.presets, .effect-bank .action-grid) { gap: 1px; background: var(--ui-line); outline: 1px solid var(--ui-line); border-radius: 2px; }
+:root[data-studio-skin="instrument"] :is(.presets .preset, .effect-bank .action) { border-radius: 1px; border-color: transparent; background: var(--ui-panel); box-shadow: none; }
+:root[data-studio-skin="instrument"] :is(.preset[aria-pressed="true"], .effect-bank .action.selected) { border-color: var(--action-color, var(--action-ink)); background: var(--action-soft, var(--action-wash)); box-shadow: inset 0 -3px 0 var(--action-color, var(--action-ink)); }
+:root[data-studio-skin="instrument"] .editor-tabs button[aria-selected="true"] { color: var(--ui-blue); border-bottom-color: var(--ui-blue); }
+:root[data-studio-skin="instrument"] :is(.color-controls, .color-entry, .fields, .field-grid) { border-radius: 2px; }
+:root[data-studio-skin="instrument"] :is(.stage-view-tools, .stage-zoom-tools) { border-radius: 4px; }
+:root[data-studio-skin="instrument"] .stage-theatre { border-radius: 4px; background: #f7f7f1; box-shadow: inset 0 0 0 1px var(--ui-line); }
+:root[data-studio-skin="instrument"] .stage-channel { box-shadow: inset 0 2px 0 #c6cec8; }
+:root[data-studio-skin="instrument"] :is(.stage-preview-transport [data-preview-progress], .play-stage progress, #job-progress-bar) { accent-color: #a17325; color: #a17325; }
+:root[data-studio-skin="instrument"] .stage-preview-transport [data-preview-progress]::-webkit-progress-value { background: #a17325; }
+:root[data-studio-skin="instrument"] .stage-preview-transport [data-preview-progress]::-moz-progress-bar { background: #a17325; }
+
+/* Nightlab separates the recessed input deck from floating selection and view tools. */
+:root[data-studio-skin="nightlab"] :is(.presets .preset, .effect-bank .action) { border-color: var(--ui-line); border-radius: 7px; background: #202832; box-shadow: none; }
+:root[data-studio-skin="nightlab"] :is(.preset[aria-pressed="true"], .effect-bank .action.selected) { border-color: var(--action-color, var(--action-ink)); background: var(--action-soft, var(--action-wash)); box-shadow: inset 0 0 0 1px var(--action-color, var(--action-ink)); }
+:root[data-studio-skin="nightlab"] .editor-tabs { border-bottom-color: transparent; }
+:root[data-studio-skin="nightlab"] .editor-tabs button { border-radius: 6px; border-bottom-color: transparent; }
+:root[data-studio-skin="nightlab"] .editor-tabs button[aria-selected="true"] { color: var(--ui-blue); background: var(--ui-blue-soft); border-bottom-color: transparent; }
+:root[data-studio-skin="nightlab"] .stage-theatre { border-radius: 12px; background: radial-gradient(ellipse at 50% 60%, #253747, #151b23 70%); box-shadow: inset 0 0 0 1px #354353; }
+:root[data-studio-skin="nightlab"] :is(.stage-view-tools, .stage-zoom-tools) { background: #26313e; }
+:root[data-studio-skin="nightlab"] .stage-channel + .stage-channel { border-left-color: var(--ui-line); }
+:root[data-studio-skin="nightlab"] .composer-action-heading { box-shadow: 0 1px 0 var(--ui-line); }
+:root[data-studio-skin="nightlab"] .studio-appearance-menu { box-shadow: 0 15px 45px #00000066; }
+:root[data-studio-skin="nightlab"] .nb1-json-number { color: #c7b8f4; }
+:root[data-studio-skin="nightlab"] .nb1-json-literal { color: #efb0c9; }
+:root[data-studio-skin="nightlab"] :is(.stage-preview-transport [data-preview-progress], .play-stage progress, #job-progress-bar) { color: #edc483; accent-color: #edc483; }
+:root[data-studio-skin="nightlab"] .stage-preview-transport [data-preview-progress]::-webkit-progress-value { background: #edc483; }
+:root[data-studio-skin="nightlab"] .stage-preview-transport [data-preview-progress]::-moz-progress-bar { background: #edc483; }
+
+/* Category color is information. These variables style glyphs and selection only. */
+:root[data-studio-skin="nightlab"] :is([data-kind="set"], [data-action="set"]) { --action-color: #a0dfb3; --action-ink: #a0dfb3; --action-soft: #20372b; --action-wash: #20372b; }
+:root[data-studio-skin="nightlab"] :is([data-kind="off"], [data-action="off"]) { --action-color: #bfccdc; --action-ink: #bfccdc; --action-soft: #2c3540; --action-wash: #2c3540; }
+:root[data-studio-skin="nightlab"] :is([data-kind="fade"], [data-action="fade"]) { --action-color: #f0aec6; --action-ink: #f0aec6; --action-soft: #3c2c3a; --action-wash: #3c2c3a; }
+:root[data-studio-skin="nightlab"] :is([data-kind="blink"], [data-action="blink"]) { --action-color: #f1c67e; --action-ink: #f1c67e; --action-soft: #3c311f; --action-wash: #3c311f; }
+:root[data-studio-skin="nightlab"] :is([data-kind="breathe"], [data-action="breathe"]) { --action-color: #9bd9ff; --action-ink: #9bd9ff; --action-soft: #203b4c; --action-wash: #203b4c; }
+:root[data-studio-skin="nightlab"] :is([data-kind="pulse"], [data-action="pulse"]) { --action-color: #ecb08e; --action-ink: #ecb08e; --action-soft: #3d2d25; --action-wash: #3d2d25; }
+:root[data-studio-skin="nightlab"] :is([data-kind="alternate"], [data-action="alternate"]) { --action-color: #8edbd2; --action-ink: #8edbd2; --action-soft: #203b3b; --action-wash: #203b3b; }
+:root[data-studio-skin="nightlab"] :is([data-kind="orbit"], [data-action="orbit"]) { --action-color: #c8b6f5; --action-ink: #c8b6f5; --action-soft: #342e48; --action-wash: #342e48; }
+:root[data-studio-skin="nightlab"] :is([data-kind="rainbow"], [data-action="rainbow"]) { --action-color: #b7c1ff; --action-ink: #b7c1ff; --action-soft: #2b3450; --action-wash: #2b3450; }
+
+@media (max-width: 620px) {
+  .studio-appearance-trigger { width: 44px; min-width: 44px; min-height: 44px; padding: 0; }
+  .studio-appearance-current, .studio-appearance-chevron { display: none; }
+  .workbench-topbar { gap: 8px; }
+  .workbench-topbar > .studio-appearance { margin-right: 4px; }
+  .studio-appearance-menu { right: -42px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .studio-appearance * { transition: none; }
+}
+@media (forced-colors: active) {
+  .studio-appearance-choice[aria-checked="true"] { outline: 2px solid Highlight; }
+}

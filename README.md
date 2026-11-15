@@ -59,6 +59,7 @@ Device locks follow the established native OS coordination policy. On macOS they
 - [Terminology](docs/api-v1-terminology.md): names shared by all interfaces.
 - [MCP adapter](adapters/mcp/README.md): real stdio MCP to local HTTP.
 - [Web presentation](docs/web-typography.md): custom language menu, local fonts, SVG icons and embedded asset boundaries.
+- [Nightlab embedding](docs/web-nightlab.md): complete local 3D, screen playback, compressed assets and the current host contract.
 - [Agent skill](skills/blink1-control/SKILL.md), [setup and use](docs/agent-guide.md), and [llms.txt](llms.txt): guidance for AI clients.
 - [Codex turn notifications](examples/command-notify/CODEX.md): optional, preview-first notify or Stop integration through the local daemon, with one-invocation setup and recorded software acceptance.
 

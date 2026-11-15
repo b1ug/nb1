@@ -31,7 +31,7 @@ func renderDemoHTML(source []byte, randomness io.Reader) ([]byte, string, error)
 	return response, policy, nil
 }
 
-func writeDemoAsset(w http.ResponseWriter, contentType string, data []byte, randomness io.Reader) {
+func writeDemoAsset(w http.ResponseWriter, contentType string, data []byte, randomness io.Reader, wasm ...bool) {
 	policy := demoContentSecurityPolicy
 	if contentType == "text/html; charset=utf-8" {
 		var err error
@@ -40,6 +40,9 @@ func writeDemoAsset(w http.ResponseWriter, contentType string, data []byte, rand
 			w.Header().Set("Content-Type", "application/json; charset=utf-8")
 			writeError(w, http.StatusInternalServerError, "internal_error", "embedded demo HTML unavailable")
 			return
+		}
+		if len(wasm) == 1 && wasm[0] {
+			policy = strings.Replace(policy, "script-src 'self'", "script-src 'self' 'wasm-unsafe-eval'", 1)
 		}
 	}
 	w.Header().Set("Content-Type", contentType)

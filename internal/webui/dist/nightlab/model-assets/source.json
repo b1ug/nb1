@@ -1,0 +1,327 @@
+{
+  "title": "Official blink(1) mk2 enclosure CAD reference",
+  "repository": "https://github.com/todbot/blink1",
+  "commit": "101abe3599c661c4dd4d1204b4d50fb592293143",
+  "checked_on": "2026-11-14",
+  "copyright": "ThingM, 2012–2020",
+  "license": "CC-BY-SA-4.0",
+  "license_file": "LICENSE.txt",
+  "license_url": "https://github.com/todbot/blink1/blob/101abe3599c661c4dd4d1204b4d50fb592293143/LICENSE.txt",
+  "license_note": "The exact LICENSE.txt at this commit states CC BY-SA 4.0; README.md still says 3.0. Preserve this discrepancy rather than silently substituting one. blink(1) is a ThingM trademark.",
+  "modifications": "Original STL and LICENSE bytes are unchanged. The derived render frame has a seating fit, exterior material clearance and local USB-corner subdivision. Original devel-blink1 files are unchanged.",
+  "assets": [
+    {
+      "file": "blink1mk2_enclosure_diffuser_v3k.stl",
+      "source_path": "hardware/enclosure/blink1mk2_enclosure_diffuser_v3k.stl",
+      "url": "https://raw.githubusercontent.com/todbot/blink1/101abe3599c661c4dd4d1204b4d50fb592293143/hardware/enclosure/blink1mk2_enclosure_diffuser_v3k.stl",
+      "source_url": "https://github.com/todbot/blink1/blob/101abe3599c661c4dd4d1204b4d50fb592293143/hardware/enclosure/blink1mk2_enclosure_diffuser_v3k.stl",
+      "commit": "101abe3599c661c4dd4d1204b4d50fb592293143",
+      "sha256": "297986ee78dee7ce5607b43edd8967cd7b9d509496261214c5c68587d892af18",
+      "bytes": 3940514,
+      "license": "CC-BY-SA-4.0",
+      "format": "ascii-stl",
+      "triangles": 13896,
+      "geometry_units": {
+        "declared": null,
+        "interpretation": "Likely millimetres, inferred from USB/device scale; STL has no unit declaration. Not measurement-certified."
+      },
+      "bbox": {
+        "min": [
+          0.5235122,
+          0.001878478,
+          0.135025
+        ],
+        "max": [
+          11.62234,
+          22.66724,
+          17.13503
+        ],
+        "size": [
+          11.098827799999999,
+          22.665361522,
+          17.000005
+        ],
+        "center": [
+          6.0729261,
+          11.334559238999999,
+          8.6350275
+        ]
+      },
+      "export_axes": "z width; y body length; x diffuser thickness"
+    },
+    {
+      "file": "blink1mk2_enclosure_frame_v3k.stl",
+      "source_path": "hardware/enclosure/blink1mk2_enclosure_frame_v3k.stl",
+      "url": "https://raw.githubusercontent.com/todbot/blink1/101abe3599c661c4dd4d1204b4d50fb592293143/hardware/enclosure/blink1mk2_enclosure_frame_v3k.stl",
+      "source_url": "https://github.com/todbot/blink1/blob/101abe3599c661c4dd4d1204b4d50fb592293143/hardware/enclosure/blink1mk2_enclosure_frame_v3k.stl",
+      "commit": "101abe3599c661c4dd4d1204b4d50fb592293143",
+      "sha256": "ba0797af2873c0fc4c3477b87cde07ca1b9ec761eda001b21abe101ce035b465",
+      "bytes": 1606855,
+      "license": "CC-BY-SA-4.0",
+      "format": "ascii-stl",
+      "triangles": 5668,
+      "geometry_units": {
+        "declared": null,
+        "interpretation": "Likely millimetres, inferred from USB/device scale; STL has no unit declaration. Not measurement-certified."
+      },
+      "bbox": {
+        "min": [
+          0,
+          0,
+          0
+        ],
+        "max": [
+          17,
+          19.99237,
+          6
+        ],
+        "size": [
+          17,
+          19.99237,
+          6
+        ],
+        "center": [
+          8.5,
+          9.996185,
+          3
+        ]
+      },
+      "export_axes": "x width; y body length; z frame thickness"
+    },
+    {
+      "file": "LICENSE.txt",
+      "source_path": "LICENSE.txt",
+      "url": "https://raw.githubusercontent.com/todbot/blink1/101abe3599c661c4dd4d1204b4d50fb592293143/LICENSE.txt",
+      "source_url": "https://github.com/todbot/blink1/blob/101abe3599c661c4dd4d1204b4d50fb592293143/LICENSE.txt",
+      "commit": "101abe3599c661c4dd4d1204b4d50fb592293143",
+      "sha256": "e0a5f70deb9c79bb8533122057d00f6fb20b2c050ee63123e3e6538da329ceea",
+      "bytes": 351,
+      "license": "CC-BY-SA-4.0"
+    }
+  ],
+  "alignment": {
+    "status": "Derived display assembly: common front-opening datum, metal seating fit and front/side material ownership. Raw CAD and the plastic engraving are unchanged.",
+    "common_axes": "Frame convention: x width, y body length, z thickness. Model agent may apply one further rigid transform to the whole assembled object for Three.js Y-up.",
+    "frame_transform": {
+      "rotation_degrees_xyz": [
+        0,
+        0,
+        0
+      ],
+      "translation": [
+        0,
+        0,
+        0
+      ]
+    },
+    "diffuser_transform": {
+      "operation_order": "Rotate around origin, then translate.",
+      "rotation_degrees_xyz": [
+        0,
+        90,
+        0
+      ],
+      "rotation_matrix_row_major": [
+        [
+          0,
+          0,
+          1
+        ],
+        [
+          0,
+          1,
+          0
+        ],
+        [
+          -1,
+          0,
+          0
+        ]
+      ],
+      "coordinate_mapping": "(x,y,z) -> (z,y,-x) + translation",
+      "translation": [
+        -0.13502749999999963,
+        -0.001878478,
+        9.0729261
+      ]
+    },
+    "aligned_diffuser_bbox": {
+      "min": [
+        -0.0000024999999996278,
+        0,
+        -2.5494138999999993
+      ],
+      "max": [
+        17.0000025,
+        22.665361522,
+        8.5494139
+      ],
+      "size": [
+        17.000005,
+        22.665361522,
+        11.098827799999999
+      ]
+    },
+    "shared_bbox_center": [
+      8.5,
+      9.996185,
+      3
+    ],
+    "basis": "The two exports have different axes and unequal lengths. Width and thickness centers are aligned; the front min-Y datum is shared. Only the derived metal frame is then fitted to the original plastic inner seating faces. Plastic/engraving vertices and raw files are preserved. Internal overlap is recorded in seating-fit.json.",
+    "topology_check": {
+      "method": "Triangles joined by vertex coordinates rounded to 4 decimal places.",
+      "diffuser_connected_components": 1,
+      "frame_connected_components": 1
+    },
+    "usb_connector": "Neither downloaded enclosure file includes a full USB-A metal connector. Any separately rendered connector is a visual reconstruction and must not be labeled official CAD.",
+    "usb_end_candidate": {
+      "axis_in_frame_coordinates": "negative Y end",
+      "status": "Geometric inference, not an official assembly instruction.",
+      "basis": "At Y=0.01, Z=3, central opening spans X=2.31..14.69 (12.38 units); at Y=10 and 19.9 it spans X=1.2..15.8 (14.6 units). The narrowed low-Y end is consistent with the USB-A connector neck."
+    },
+    "renderer_orientation": {
+      "coordinate_mapping": "(x,y,z) in assembled frame coordinates -> (y-centerY, diffuserMaxZ-z, centerX-x), followed by uniform normalization",
+      "basis": "Rigid orientation places the original blink(1) CAD face upward and ThingM downward, as specified by the local project source. The reconstructed USB roof remains upward. Raw source meshes are unchanged."
+    }
+  },
+  "geometry_units": {
+    "declared": null,
+    "interpretation": "Likely millimetres, inferred from USB-A/device scale. STL does not encode units; these are model-coordinate dimensions, not certified production measurements."
+  },
+  "physical_references": [
+    {
+      "url": "https://blink1.thingm.com/faq/",
+      "note": "Official Hardware FAQ says mk2 has independently addressable LEDs on both top and bottom. Place luminous sources on opposing thickness faces, rather than splitting the top view into two flat panels."
+    },
+    {
+      "url": "https://blink1.thingm.com/blink1-variations/",
+      "note": "Official variation page confirms dual RGB LEDs and metal + plastic design for mk2."
+    },
+    {
+      "source_path": "/Users/vej/Codebase/devel-blink1/planning/assets/blink1-hardware/blink1mk2-device-preview.png",
+      "note": "Read-only local official preview; source/licence recorded in adjacent device-attribution.json."
+    },
+    {
+      "source_path": "/Users/vej/Codebase/devel-blink1/planning/assets/blink1-hardware/blink1mk2-twocolor-long.jpg",
+      "note": "Read-only local official photograph; upper face blue/cyan and underside/table red. Source/licence recorded in adjacent attribution.json."
+    }
+  ],
+  "led_numbering": {
+    "verified_index": {
+      "1": "top LED",
+      "2": "bottom LED"
+    },
+    "sources": [
+      {
+        "url": "https://github.com/todbot/blink1-tool#usage",
+        "evidence": "Official CLI describes 0=all, 1=top, 2=bottom (mk2+)."
+      },
+      {
+        "url": "https://thingm.com/blog/2017/12/using-the-blink1-mk2-led-strip-adapter",
+        "evidence": "Official text explicitly assigns LEDs 1 and 2 to top and bottom, respectively."
+      },
+      {
+        "url": "https://blink1.thingm.com/wp-content/uploads/2019/04/Blink1Control2-manual.pdf#page=7",
+        "evidence": "Actual page image inspected: A is top and B is bottom; the UI icons show upper/lower strips. No enclosure wordmarks label these icons."
+      },
+      {
+        "url": "https://github.com/todbot/Blink1Control2/blob/main/app/components/gui/virtualBlink1.js",
+        "evidence": "Official renderer calls colors[0] topColor and colors[1] botColor. The corresponding top/bottom image assets have no readable wordmarks."
+      }
+    ],
+    "wordmark_correspondence": {
+      "status": "Confirmed on the local physical mk2 by device RGB readback and the user's optical identification, consistent with the existing project record. Manufacturer sources independently confirm top/bottom numbering.",
+      "note": "Device readback establishes LED 1 red and LED 2 blue; the user directly identified blink(1) on the red face and ThingM on the blue face. The wordmark mapping is local physical evidence and project research, not a manufacturer quotation. Camera rotation never swaps these physical bindings.",
+      "reviewed_visuals": [
+        "Official manual pages 4, 5 and 7, rendered with macOS PDFKit and visually inspected.",
+        "Official Blink1Control2 device-light-bg-top.png and device-light-bg-bottom.png, visually inspected; only diffuser contours are visible.",
+        "Official blink1 hardware/firmware_mk2/blink1mk2-reprogram-diag.jpg, visually inspected; power/ICSP annotations do not identify LED indices.",
+        "Getting Started / FAQ / faqss image alt, title and lazy source filenames; no index-to-wordmark annotation found."
+      ],
+      "mapping": {
+        "1": "blink(1) wordmark face / top / model +Y",
+        "2": "ThingM wordmark face / bottom / model -Y"
+      },
+      "project_source": {
+        "path": "/Users/vej/Codebase/devel-blink1/reference/extracted/Notion-Doc1/开发 blink(1) 的配套软件和服务 37c106177ff54194ba7b04bcf63ef253.md",
+        "lines": [
+          101,
+          102,
+          103
+        ],
+        "sha256": "0268097386d52f16924cb47377e24f12775ae9311d9d6604324fdda12a6d7301",
+        "excerpt_file": "project-led-faces.txt",
+        "excerpt_sha256": "e1bd2c95e112edee15dd603ad1a7665313fa221eedd74b26dd2d80b089314bad"
+      },
+      "physical_verification": {
+        "date": "2026-11-14",
+        "product": "blink(1) mk2",
+        "serial": "20005601",
+        "receipt_path": "hardware-checks/led-face-20261114T143506Z.json",
+        "job_id": "nb1-face-01713ef5a85ba5019716deb5",
+        "job_status": "succeeded",
+        "readback": {
+          "led1": "#ff0000",
+          "led2": "#0000ff",
+          "sampled_at": "2026-11-14T14:35:06.502013Z"
+        },
+        "user_optical_confirmation": {
+          "red_face_wordmark": "blink(1)",
+          "blue_face_wordmark": "ThingM",
+          "source": "User's direct observation of this physical unit in the current session"
+        },
+        "scope": "RGB values come from fresh device readback; the corresponding wordmarks come from the user's optical identification on this unit. Manufacturer references separately establish LED 1=top and LED 2=bottom."
+      }
+    }
+  },
+  "visual_polish": {
+    "date": "2026-11-15",
+    "source_geometry": "Raw official STL files retain their recorded hashes. The derived metal frame has fitted seats, local conforming USB-corner subdivision and minimal exterior clearances. Plastic and engraving are preserved; crease-preserving normals are rebuilt.",
+    "supplemental_geometry": "Visual USB shell has thin bevelled sheets, openings, dark tongue and recessed contacts.",
+    "materials": "Matte metal and frosted plastic; continuous side-frame UVs; no anisotropy or negative metal depth bias. Both fixed sources feed one continuous diffuser light field.",
+    "presentation": "30 degree perspective, restrained object tilt, broad low-contrast studio light and soft contact shadow; explicit bounded zoom.",
+    "scope": "Illustration for design review; not engineering fit or optical calibration.",
+    "emission": "Continuous model-local two-source scattering with additive linear RGB before tone mapping; the frosted surface tint is separate from emitted radiance. No binary face atlas or camera-dependent color split. Canonical channel RGB remains unchanged."
+  },
+  "usb_orientation": {
+    "source": "User physical observation in this design session",
+    "blink1_side": "+Y / open half of the USB connector",
+    "thingm_side": "-Y / black insulating tongue",
+    "contacts": "Travel with the tongue and face the open half",
+    "scope": "Supplemental visualization geometry; no original CAD positions, wordmarks or LED identities changed."
+  },
+  "seam_correction": {
+    "cause": "Dominant-axis UV projection switched inside a metal curve triangle, producing a tangent/anisotropy reflection discontinuity. Ray casting confirmed the bright pixels hit the opaque metal frame, not a plastic pillar.",
+    "correction": "Continuous circumferential side-frame UVs; planar top/bottom UVs; per-triangle projection for other metal parts; matte finish and anisotropy disabled.",
+    "geometry": "No bridge, cover strip or source CAD position change."
+  },
+  "two_face_preview": {
+    "mapping": {
+      "1": "front / blink(1) wordmark",
+      "2": "back / ThingM wordmark"
+    },
+    "display": "Independent orthographic two-face schematic during loading, missing WebGL or context loss; also directly reviewable via ?view=faces.",
+    "states": "Resolved colors, #000000 off, and an unspecified target are distinct; reads the same presentation targets as the 3D model.",
+    "scope": "Code-native schematic, not a photograph or engineering drawing; original mascot and official CAD source bytes remain unchanged.",
+    "wordmarks": "Orthographic paths extracted from the fixed official diffuser STL engraving; no invented ThingM logo. These paths are CAD derivatives under CC-BY-SA-4.0. See inline source notes in studio.js and the preserved original enclosure license."
+  },
+  "light_overlap": {
+    "date": "2026-11-15",
+    "model": "One continuous frosted diffuser, two fixed opposed light sources.",
+    "calculation": "Smooth distance attenuation in model-local position; decode canonical sRGB source colors once and add their linear radiance before tone mapping. No average over source count and no hard face/UV split.",
+    "scope": "Visual scattering parameters, not measured optics. Opaque metal, enclosure geometry, USB orientation and wordmarks are preserved.",
+    "data": "Rendered mixture does not alter source RGB, Go playback plans or diagnostic 2D swatches.",
+    "verification": "The production GLSL is executed on software WebGL to check additive radiance, source dominance, finite cross-face transmission, continuity, black-state clearing and pose-invariant identity. Same-view red/blue comparison is retained in screenshots/blend-before-side.jpg and blend-after-side.jpg."
+  },
+  "seating_fit": {
+    "date": "2026-11-15",
+    "record": "seating-fit.json",
+    "implementation": "enclosure-fit.js",
+    "test": "scripts/enclosure-fit.test.mjs",
+    "scope": "Derived display geometry with hidden mounting overlap; not engineering fit certification.",
+    "version": "derived-frame-seating-fit/v2",
+    "reference": "../screenshots/physical-joint-reference.png",
+    "cause": "Coincident side planes plus metal depth bias; front roundover projected at stale pre-fit Z, exposing hidden metal triangle edges.",
+    "correction": "Physical side clearance, no metal depth bias, local shared-edge subdivision and final-Z front-surface seating."
+  }
+}

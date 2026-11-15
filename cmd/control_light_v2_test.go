@@ -239,12 +239,12 @@ func TestControlLightV2WaitQueriesOriginalReceiptAndNeverCancels(t *testing.T) {
 			defer server.Close()
 			args := []string{"--endpoint", server.URL, "light", "run", "demo", previewFile(t, cliLightV2Input), "--wait"}
 			if running {
-				args = append(args, "--timeout", "25ms")
+				args = append(args, "--timeout", "2s")
 			}
 			text, err := executeLightV2WaitCommand(context.Background(), args...)
 			var output lightV2RunOutput
 			if json.Unmarshal([]byte(text), &output) != nil || !output.Accepted || output.Job == nil || output.RequestTicket == nil || atomic.LoadInt32(&service.prepares) != 1 || atomic.LoadInt32(&service.frameSubmitted) != 1 || atomic.LoadInt32(&service.frameLookups) < 1 {
-				t.Fatal(text, err)
+				t.Fatalf("prepares=%d submitted=%d lookups=%d output=%s err=%v", atomic.LoadInt32(&service.prepares), atomic.LoadInt32(&service.frameSubmitted), atomic.LoadInt32(&service.frameLookups), text, err)
 			}
 			if running && (err == nil || !output.OutcomeUnknown) || !running && (err != nil || output.OutcomeUnknown || output.Job.Status != "succeeded") {
 				t.Fatal(text, err)

@@ -4,9 +4,9 @@
   "asset_base": "./",
   "source": {
     "repository": "local:nb1-web",
-    "commit": "7481687e99755aeead0fdf7c8c0e8b4ab31cff6a",
+    "commit": "3dcf71f79d9d1737fed1fa4952c8e67b74ee94a7",
     "dirty": false,
-    "tree_sha256": "af10ef152eb617df0865bd55a3981f784de6a77b014d209556530e3a208f1761"
+    "tree_sha256": "cd9c98b473d10e0a149df4c3f89d161708a0a543ed9c05cdf03db4f98fd5e4f0"
   },
   "build": {
     "tool": "static-nightlab/v1",
@@ -259,11 +259,11 @@
     },
     {
       "path": "nightlab/embedded-studio.css",
-      "bytes": 21744,
-      "sha256": "45b2948aefc52f2a60a40543adb2cd447c3d96b6ad62dfc7a9ac11574a1a6ec9",
+      "bytes": 21773,
+      "sha256": "3849f2292e125a06180d236445c1690c5d60d8fcc8887978548e2fc66596bbd2",
       "encoding": "identity",
-      "decoded_bytes": 21744,
-      "decoded_sha256": "45b2948aefc52f2a60a40543adb2cd447c3d96b6ad62dfc7a9ac11574a1a6ec9"
+      "decoded_bytes": 21773,
+      "decoded_sha256": "3849f2292e125a06180d236445c1690c5d60d8fcc8887978548e2fc66596bbd2"
     },
     {
       "path": "nightlab/enclosure-fit.js",

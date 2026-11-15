@@ -234,6 +234,6 @@ main.workbench { width: min(1320px, calc(100% - 48px)); }
 }
 
 /* Retained execution uncertainty stays actionable beside Play. */
-.play-recovery { gap: 8px; flex-wrap: wrap; align-items: center; }
+.play-recovery:not([hidden]) { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 .play-recovery code { flex-basis: 100%; overflow-wrap: anywhere; font-size: var(--type-caption); }
 .play-recovery button { min-height: 44px; }

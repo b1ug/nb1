@@ -267,4 +267,5 @@ main.workbench { width: min(1320px, calc(100% - 48px)); }
 .composer .color-set-compare-chip { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; white-space: nowrap; }
 .composer .color-set-compare-chip > span { flex: 0 0 16px; height: 16px; border: 1px solid var(--ui-control-line); border-radius: 3px; }
 .composer .color-set-compare-chip > code { padding: 0; background: transparent; color: var(--ui-ink); font: 400 var(--type-caption)/1.5 var(--font-mono); }
+@media(max-width:480px) { .composer #color-set-compare-table th:first-child { width: 112px; } }
 /* nb1-color-sets:end */

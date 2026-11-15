@@ -19,7 +19,8 @@
   const pairs = kind => ["alternate", "orbit"].includes(kind);
   const loops = kind => !["set", "off", "fade"].includes(kind);
   let mode = page.mode, kind = page.action, version = 0, preview = null, task = null, loaded = null, polling = null, queryingTask = null, submitting = false, previewing = false, playIntent = 0;
-  let deviceGeneration = 0, colorLibraryGeneration = 0;
+  let deviceGeneration = 0, colorLibraryGeneration = 0, recovery = null, pageActive = true, pageEpoch = 0, queryToken = null;
+  const recoveryDelays = [1000, 2000, 4000];
   let localColors = [];
   const outputs = new Map(), actionDrafts = new Map();
   const colorSaves = Object.fromEntries(["a", "b"].map(suffix => [suffix, {key: null, color: null, pending: false, saving: false, unknown: null, generation: 0, timer: null, controller: null}]));
@@ -65,11 +66,16 @@
     if (options.signal?.aborted) controller.abort();
     else options.signal?.addEventListener("abort", abort, {once: true});
     try {
-      const response = await fetch(path, {method, body, headers: body === undefined ? {} : {"Content-Type": "application/json"}, cache: "no-store", credentials: "same-origin", redirect: "error", signal: controller.signal});
+      let response;
+      try { response = await fetch(path, {method, body, headers: body === undefined ? {} : {"Content-Type": "application/json"}, cache: "no-store", credentials: "same-origin", redirect: "error", signal: controller.signal}); }
+      catch (error) { if (error instanceof TypeError || error.name === "AbortError") error.lookupTransient = true; throw error; }
       if (!/^application\/json\b/i.test(response.headers.get("content-type") || "")) throw Error("Expected a JSON response");
       const reader = response.body.getReader(), chunks = []; let size = 0;
       for (;;) {
-        const next = await reader.read(); if (next.done) break;
+        let next;
+        try { next = await reader.read(); }
+        catch (error) { if (error instanceof TypeError || error.name === "AbortError") error.lookupTransient = true; throw error; }
+        if (next.done) break;
         size += next.value.length;
         if (size > 1048576) { await reader.cancel(); throw Error("Response exceeds 1 MiB"); }
         chunks.push(next.value);
@@ -246,6 +252,7 @@
     const waiting = task && (task.unknown || !task.rejected && !terminal(task.job?.status));
     $("play").disabled = submitting || previewing || waiting || !serial.test($("device-select").value);
     $("play").setAttribute("aria-busy", String(submitting));
+    $("play-feedback").dataset.recoveryState = recoveryState();
     $("preview").disabled = submitting || previewing;
     $("new-run").disabled = submitting || previewing;
     $("query").disabled = !task || submitting || queryingTask === task;
@@ -257,7 +264,7 @@
     $("new-run").hidden = !task || !(task.unknown || terminal(task.job?.status) || task.rejected);
     $("save-pattern").disabled = mode === "pattern" || patternSave.pending || patternSave.unknown;
     $("use-sequence").disabled = !preview || preview.version !== version;
-    if (!submitting && waiting) playFeedback(task.unknown ? "Result unknown. Check status." : states[task.job?.status] + ". Wait for this Job before playing again.", Boolean(task.unknown));
+    if (!submitting && waiting) playFeedback(task.unknown ? unknownFeedback() : states[task.job?.status] + ". Wait for this Job before playing again.", Boolean(task.unknown));
     else if (!submitting) {
       if (previewing) playFeedback("Preparing preview…");
       else {
@@ -367,7 +374,7 @@
   }
   function playFeedback(message, error = false) {
     if (!message && !submitting && task && (task.unknown || !task.rejected && !terminal(task.job?.status))) {
-      message = task.unknown ? "Result unknown. Check status." : states[task.job?.status] + ". Wait for this Job before playing again."; error = Boolean(task.unknown);
+      message = task.unknown ? unknownFeedback() : states[task.job?.status] + ". Wait for this Job before playing again."; error = Boolean(task.unknown);
     }
     $("play-feedback").hidden = !message;
     text("play-feedback", message);
@@ -401,18 +408,56 @@
     if (terminal(value.status) !== (typeof value.finished_at === "string" && Number.isFinite(Date.parse(value.finished_at))) || value.status === "succeeded" && value.completed_steps !== value.total_steps) throw Error("Job terminal state is inconsistent");
     return value;
   }
-  function scheduleQuery() { clearTimeout(polling); if (task?.job && !task.unknown && !terminal(task.job.status)) polling = setTimeout(queryJob, 500); }
-  function acceptJob(value) { task.job = validateJob(value); task.unknown = false; task.rejected = false; saveTask(); showTask(); scheduleQuery(); }
-  function uncertainJob(error) { clearTimeout(polling); $("error-detail").textContent = error.message; if (task?.job && terminal(task.job.status)) { playFeedback(states[task.job.status] + " · Refresh failed", true); return; } if (task) { task.unknown = true; saveTask(); showTask(); } playFeedback("Result unknown. Check status.", true); }
-  async function queryJob() {
-    const captured = task; if (!captured || queryingTask === captured) return;
+  function clearRecovery() { clearTimeout(recovery?.timer); recovery = null; }
+  function recoveryForTask() {
+    if (!recovery || recovery.task !== task || recovery.id !== task.id) {
+      clearRecovery(); recovery = {task, id: task.id, attempts: 0, timer: null, reason: null};
+    }
+    return recovery;
+  }
+  function recoveryState() {
+    if (!task?.unknown) return "none";
+    if (queryingTask === task || recovery?.task === task && recovery.timer) return "checking";
+    if (recovery?.task !== task) return "none";
+    return recovery.reason || (recovery.attempts >= recoveryDelays.length ? "paused" : "none");
+  }
+  function unknownFeedback() {
+    return ({checking: "Result unknown. Checking status…", missing: "Result unknown. Job record unavailable. Choose New run to prepare another playback.", invalid: "Result unknown. Status response could not be verified. Check status or choose New run.", paused: "Result unknown. Automatic checks paused. Check status or choose New run."})[recoveryState()] || "Result unknown. Check status.";
+  }
+  function scheduleRecovery() {
+    if (!pageActive || !task?.unknown) return;
+    const captured = recoveryForTask(), epoch = pageEpoch;
+    if (captured.timer || captured.reason || captured.attempts >= recoveryDelays.length) return;
+    captured.timer = setTimeout(() => {
+      captured.timer = null;
+      if (!pageActive || pageEpoch !== epoch || recovery !== captured || task !== captured.task || task.id !== captured.id || !task.unknown) return;
+      captured.attempts++; queryJob(true);
+    }, recoveryDelays[captured.attempts]);
+  }
+  function scheduleQuery() { clearTimeout(polling); if (pageActive && task?.job && !task.unknown && !terminal(task.job.status)) polling = setTimeout(() => queryJob(), 500); }
+  function acceptJob(value) { const job = validateJob(value); clearRecovery(); task.job = job; task.unknown = false; task.rejected = false; saveTask(); showTask(); scheduleQuery(); }
+  function uncertainJob(error, fromLookup = false) {
+    clearTimeout(polling); $("error-detail").textContent = error.message;
+    if (task?.job && terminal(task.job.status)) { playFeedback(states[task.job.status] + " · Refresh failed", true); return; }
+    if (!task) return;
+    task.unknown = true;
+    const current = recoveryForTask();
+    if (fromLookup && !error.lookupTransient && !(error.httpStatus >= 500 && error.httpStatus <= 599)) {
+      clearTimeout(current.timer); current.timer = null; current.reason = error.httpStatus === 404 ? "missing" : "invalid";
+    } else scheduleRecovery();
+    saveTask(); showTask(); playFeedback(unknownFeedback(), true);
+  }
+  async function queryJob(automatic = false) {
+    const captured = task; if (!pageActive || !captured || queryingTask === captured) return;
+    if (!automatic && recovery?.task === captured) { clearTimeout(recovery.timer); recovery.timer = null; recovery.reason = null; recovery.attempts = 0; }
+    const token = {task: captured, id: captured.id, epoch: pageEpoch}; queryToken = token;
     queryingTask = captured; updateButtons();
     try {
-      const reply = await request("/v1/jobs/" + encodeURIComponent(captured.id));
-      if (task !== captured || task.id !== captured.id) return;
+      const reply = await request("/v1/jobs/" + encodeURIComponent(token.id));
+      if (!pageActive || pageEpoch !== token.epoch || task !== captured || task.id !== token.id) return;
       acceptJob(reply.value); readDevice().catch(report);
-    } catch (error) { if (task === captured && task.id === captured.id) uncertainJob(error); }
-    finally { if (queryingTask === captured) queryingTask = null; updateButtons(); }
+    } catch (error) { if (pageActive && pageEpoch === token.epoch && task === captured && task.id === token.id) uncertainJob(error, true); }
+    finally { if (queryToken === token) { queryToken = null; queryingTask = null; updateButtons(); } }
   }
   async function play() {
     if (submitting || previewing || task && (task.unknown || !task.rejected && !terminal(task.job?.status))) return;
@@ -428,7 +473,7 @@
       }
       if (value.device_check.status !== "supported") throw Error("This device cannot play the current draft. Check its connection and supported effects.");
       const alphabet = "0123456789ABCDEFGHJKMNPQRSTVWXYZ", random = crypto.getRandomValues(new Uint8Array(10));
-      rememberTask();
+      rememberTask(); clearRecovery();
       task = submitted = {id: "j_" + [...random].map(v => alphabet[v & 31]).join(""), serial: capture.device, unknown: true, job: null};
       saveTask(); showTask(); playFeedback("Starting…");
       // Freeze resolved aliases and saved Patterns at the validation boundary.
@@ -450,8 +495,8 @@
     } catch (error) {
       if (!submitted) playFeedback("Not started: " + error.message, true);
       else if (task === submitted) {
-        if (error.rejected) { task.unknown = false; task.rejected = true; saveTask(); showTask(); playFeedback("Not started: " + error.message, true); $("error-detail").textContent = error.message; }
-        else { uncertainJob(error); playFeedback("Result unknown. Check status.", true); }
+        if (error.rejected) { clearRecovery(); task.unknown = false; task.rejected = true; saveTask(); showTask(); playFeedback("Not started: " + error.message, true); $("error-detail").textContent = error.message; }
+        else { uncertainJob(error); playFeedback(unknownFeedback(), true); }
       }
     } finally { submitting = false; if (submitted && task === submitted && task.unknown) showTask(); updateButtons(); }
   }
@@ -772,7 +817,7 @@
   bind("copy-color-reference", copyColorReference); $("sequence-local-color").addEventListener("change", updateSequenceReference);
   bind("edit-sequence", () => { if (loaded) { sequenceEditor.setValue(JSON.stringify(loaded.sequence, null, 2)); changeMode("sequence"); } });
   bind("save-pattern", savePattern); bind("verify-save", checkSavedPattern);
-  function newRun() { if (submitting || previewing) return; clearTimeout(polling); rememberTask(); task = null; saveTask(); showTask(); notice("Ready for a separate run. Previous IDs stay in this tab's history."); }
+  function newRun() { if (submitting || previewing) return; clearTimeout(polling); clearRecovery(); rememberTask(); task = null; saveTask(); showTask(); notice("Ready for a separate run. Previous IDs stay in this tab's history."); }
   bind("new-run", newRun); bind("play-new-run", newRun);
   selectKind(kind); changeMode(mode);
   try {
@@ -788,5 +833,6 @@
   if (task?.unknown) queryJob(); // Read-only reconciliation; preserve validated terminal facts without a noisy startup refresh.
   Promise.allSettled([refreshDevices(), refreshColors(), refreshPatterns()]).then(results => { const failed = results.find(result => result.status === "rejected"); if (failed) report(failed.reason); });
   document.addEventListener("visibilitychange", () => { if (document.hidden) playIntent++; });
-  window.addEventListener("pagehide", () => { playIntent++; clearTimeout(polling); for (const state of Object.values(colorSaves)) { clearTimeout(state.timer); state.controller?.abort(); } });
+  window.addEventListener("pageshow", event => { if (event.persisted) { pageActive = true; if (task?.unknown) queryJob(); else scheduleQuery(); updateButtons(); } });
+  window.addEventListener("pagehide", () => { playIntent++; pageActive = false; pageEpoch++; clearTimeout(polling); clearRecovery(); queryToken = null; queryingTask = null; for (const state of Object.values(colorSaves)) { clearTimeout(state.timer); state.controller?.abort(); } });
 })();

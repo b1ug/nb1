@@ -253,4 +253,18 @@ main.workbench { width: min(1320px, calc(100% - 48px)); }
 .composer .color-set-actions { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 12px 12px; }
 .composer .color-set-actions button, .composer [data-color-set-swatch] { min-width: 44px; min-height: 44px; }
 @media(max-width:620px) { .composer .color-set-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+/* Read-only comparison uses the same lamp recipes and semantic columns. */
+.composer #color-set-compare { min-width: 0; margin: 0; padding: 0 12px 12px; border-top: 1px solid var(--ui-line); }
+.composer #color-set-compare > summary { display: flex; align-items: center; justify-content: space-between; min-height: 44px; margin: 0; padding: 8px 0; color: var(--ui-ink); font: 500 var(--type-body)/1.5 var(--font-ui); cursor: pointer; }
+.composer #color-set-compare > summary::after { content: '+'; color: var(--ui-blue); }
+.composer #color-set-compare[open] > summary::after { content: '−'; }
+.composer #color-set-compare-note { margin: 0 0 8px; color: var(--ui-muted); font: 400 var(--type-caption)/1.5 var(--font-ui); }
+.composer #color-set-compare-scroll { min-width: 0; max-width: 100%; overflow-x: auto; overscroll-behavior-x: contain; outline-offset: 2px; }
+.composer #color-set-compare-table { width: 100%; min-width: 920px; margin: 0; border-collapse: separate; border-spacing: 0; table-layout: fixed; color: var(--ui-ink); font: 400 var(--type-caption)/1.5 var(--font-ui); }
+.composer #color-set-compare-table th, .composer #color-set-compare-table td { padding: 8px; border: 0; border-bottom: 1px solid var(--ui-line); text-align: left; vertical-align: top; }
+.composer #color-set-compare-table th { font-weight: 500; }
+.composer #color-set-compare-table th:first-child { position: sticky; left: 0; z-index: 1; width: 144px; background: var(--ui-panel); overflow-wrap: anywhere; }
+.composer .color-set-compare-chip { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; white-space: nowrap; }
+.composer .color-set-compare-chip > span { flex: 0 0 16px; height: 16px; border: 1px solid var(--ui-control-line); border-radius: 3px; }
+.composer .color-set-compare-chip > code { padding: 0; background: transparent; color: var(--ui-ink); font: 400 var(--type-caption)/1.5 var(--font-mono); }
 /* nb1-color-sets:end */

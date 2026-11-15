@@ -5,8 +5,12 @@
   const composer = document.querySelector('.composer');
   if (!composer) return;
   // UI-local lamp recipes; no compiler, saved Pattern or execution behavior.
-  const sets = [{"id":"essentials","label":{"en":"Essentials","zh-CN":"基础"},"character":{"en":"Common colors","zh-CN":"常用颜色"},"colors":["#ff0000","#ffa500","#ffff00","#00ff00","#00a060","#00ffff","#0000ff","#8f00ff","#ffffff"]},{"id":"candlelight","label":{"en":"Afterglow","zh-CN":"晚霞余晖"},"character":{"en":"Sunset amber, night blue and rose","zh-CN":"琥珀、夜蓝与玫红的冷暖交错"},"colors":["#c86404","#1434a0","#c00000","#c0a008","#7424a8","#ac286c"]},{"id":"tide","label":{"en":"Sea Breeze","zh-CN":"海风轻拂"},"character":{"en":"Sea blues, sand gold and coral","zh-CN":"海蓝、沙金与珊瑚红"},"colors":["#0090a8","#b87408","#123ca8","#24703c","#9c2440","#6844b0"]},{"id":"petals","label":{"en":"Garden Song","zh-CN":"花间小调"},"character":{"en":"Rose, leaf green and violet accents","zh-CN":"玫红、叶绿与紫色相映"},"colors":["#984064","#30784c","#644c98","#b09808","#246c98","#a44418"]},{"id":"neon","label":{"en":"City Lights","zh-CN":"霓虹夜色"},"character":{"en":"Bright pink, cyan and electric accents","zh-CN":"桃红、青与鲜明亮色"},"colors":["#c00068","#00a0b0","#80b000","#6000c0","#c04800","#143cc0"]},{"id":"forest","label":{"en":"Woodland Glow","zh-CN":"林间微光"},"character":{"en":"Leaf, stream and autumn red colors","zh-CN":"叶绿、溪水青与秋叶红"},"colors":["#387c18","#a86c10","#006868","#88385c","#204c94","#a00000"]},{"id":"dusk","label":{"en":"Blue Hour","zh-CN":"蓝调时分"},"character":{"en":"Indigo shadows and warm points of light","zh-CN":"靛蓝暮色与暖色光点"},"colors":["#2438a0","#b06810","#087c80","#9c2050","#6834a0","#648c18"]},{"id":"citrus","label":{"en":"Summer Orchard","zh-CN":"夏日果园"},"character":{"en":"Fruit colors with green and blue accents","zh-CN":"果实暖色与青绿蓝色"},"colors":["#c45408","#30a050","#b81c38","#bca808","#7430ac","#086ca0"]},{"id":"aurora","label":{"en":"Aurora","zh-CN":"极光流转"},"character":{"en":"Emerald, magenta and blue in motion","zh-CN":"翠绿、洋红与蓝色流转"},"colors":["#00a000","#ac2078","#2050bc","#a88c04","#6030a8","#00a4a4"]}];
-  for (const set of sets) { Object.freeze(set.label); Object.freeze(set.character); Object.freeze(set.colors); Object.freeze(set); }
+  const sets = [{"id":"essentials","label":{"en":"Essentials","zh-CN":"基础"},"character":{"en":"Common colors","zh-CN":"常用颜色"},"colors":["#ff0000","#ffa500","#ffff00","#00ff00","#00a060","#00ffff","#0000ff","#8f00ff","#ffffff"],"pair":["#ff0000","#0000ff"]},{"id":"candlelight","label":{"en":"Afterglow","zh-CN":"晚霞余晖"},"character":{"en":"Warm last light, indigo and rose","zh-CN":"暖色余晖、靛蓝与玫红"},"colors":["#c04800","#c0a008","#2438a0","#ac286c"],"pair":["#c04800","#2438a0"]},{"id":"tide","label":{"en":"Sea Breeze","zh-CN":"海风轻拂"},"character":{"en":"Sea, jade and warm sand","zh-CN":"海水、青玉与暖沙色"},"colors":["#b87408","#30a050","#006868","#246c98"],"pair":["#006868","#b87408"]},{"id":"petals","label":{"en":"Garden Song","zh-CN":"花间小调"},"character":{"en":"Rose and orchid among leaves","zh-CN":"玫红、兰紫与叶间暖光"},"colors":["#c0a008","#30a050","#644c98","#ac286c"],"pair":["#ac286c","#30a050"]},{"id":"neon","label":{"en":"City Lights","zh-CN":"霓虹夜色"},"character":{"en":"Six bright city lights","zh-CN":"六种鲜明的城市灯色"},"colors":["#c04800","#80b000","#00a0b0","#2050bc","#6000c0","#c00068"],"pair":["#c00068","#00a0b0"]},{"id":"forest","label":{"en":"Woodland Glow","zh-CN":"林间微光"},"character":{"en":"Leaf, stream, clay and berries","zh-CN":"叶绿、溪水青、陶土与莓果"},"colors":["#a44418","#b87408","#387c18","#006868","#88385c"],"pair":["#387c18","#b87408"]},{"id":"dusk","label":{"en":"Blue Hour","zh-CN":"蓝调时分"},"character":{"en":"Blue shadows and one warm light","zh-CN":"蓝紫暮色与一盏暖光"},"colors":["#b87408","#006868","#2438a0","#644c98"],"pair":["#2438a0","#b87408"]},{"id":"citrus","label":{"en":"Summer Orchard","zh-CN":"夏日果园"},"character":{"en":"Fruit reds, orange and fresh greens","zh-CN":"果实红橙与鲜嫩绿意"},"colors":["#c00000","#c04800","#80b000","#00a000"],"pair":["#c04800","#00a000"]},{"id":"aurora","label":{"en":"Aurora","zh-CN":"极光流转"},"character":{"en":"Green, cyan, violet and pink","zh-CN":"翠绿、亮青、电紫与桃红"},"colors":["#00a000","#00a0b0","#6000c0","#c00068"],"pair":["#00a000","#c00068"]}];
+  const hueColumns = ['red', 'orange', 'gold', 'green', 'cyan', 'blue', 'violet', 'rose'];
+  const hueNames = {en: ['Red', 'Orange', 'Yellow', 'Green', 'Cyan', 'Blue', 'Violet', 'Rose'], 'zh-CN': ['红', '橙', '黄', '绿', '青', '蓝', '紫', '玫红']};
+  // Editorial categories and names, not color conversion or measured appearance.
+  const colorBank = {"#c00000":["red","Red","正红"],"#a44418":["orange","Clay","陶土橙"],"#c04800":["orange","Orange","鲜橙"],"#b87408":["orange","Amber","琥珀"],"#c0a008":["gold","Gold","金黄"],"#80b000":["gold","Lime","青柠"],"#387c18":["green","Leaf","叶绿"],"#00a000":["green","Green","翠绿"],"#30a050":["green","Jade","青玉"],"#006868":["cyan","Teal","溪水青"],"#00a0b0":["cyan","Cyan","亮青"],"#246c98":["blue","Sky","湖蓝"],"#2050bc":["blue","Blue","湛蓝"],"#2438a0":["blue","Indigo","靛蓝"],"#644c98":["violet","Orchid","兰紫"],"#6000c0":["violet","Violet","电紫"],"#c00068":["rose","Pink","桃红"],"#ac286c":["rose","Rose","玫红"],"#88385c":["rose","Berry","莓红"]};
+  for (const set of sets) { Object.freeze(set.label); Object.freeze(set.character); Object.freeze(set.colors); Object.freeze(set.pair); Object.freeze(set); }
   Object.freeze(sets);
   let selectedId = 'essentials';
   const getSet = id => sets.find(set => set.id === id);
@@ -23,7 +27,27 @@
   const setActions = document.createElement('div'); setActions.className = 'color-set-actions';
   const pairButton = document.createElement('button'), sequenceButton = document.createElement('button'); pairButton.id = 'color-set-pair'; sequenceButton.id = 'color-set-sequence';
   for (const [button, event] of [[pairButton, 'nb1-color-set-pair'], [sequenceButton, 'nb1-color-set-sequence']]) { button.type = 'button'; button.className = 'secondary'; button.addEventListener('click', () => document.dispatchEvent(new CustomEvent(event, {detail: {id: selectedId}}))); }
-  setActions.append(pairButton, sequenceButton); chooser.append(summary, grid, setActions);
+  const comparison = document.createElement('details'); comparison.id = 'color-set-compare';
+  const compareSummary = document.createElement('summary'), compareNote = document.createElement('p'); compareNote.id = 'color-set-compare-note';
+  const compareScroll = document.createElement('div'); compareScroll.id = 'color-set-compare-scroll'; compareScroll.tabIndex = 0; compareScroll.setAttribute('role', 'region'); compareScroll.setAttribute('aria-describedby', compareNote.id);
+  const table = document.createElement('table'); table.id = 'color-set-compare-table';
+  const tableHead = table.createTHead().insertRow(), groupHead = document.createElement('th'); groupHead.scope = 'col'; tableHead.append(groupHead);
+  const columnHeads = hueColumns.map(() => { const th = document.createElement('th'); th.scope = 'col'; tableHead.append(th); return th; });
+  const body = table.createTBody(), compareColors = [];
+  const compareRows = sets.slice(1).map(set => {
+    const row = body.insertRow(); row.dataset.colorSetRow = set.id;
+    const label = document.createElement('th'); label.scope = 'row'; row.append(label);
+    const cells = hueColumns.map(() => row.insertCell());
+    for (const color of set.colors) {
+      const info = colorBank[color], chip = document.createElement('span'), swatch = document.createElement('span'), code = document.createElement('code');
+      chip.className = 'color-set-compare-chip'; chip.dataset.colorSetCompareHex = color; chip.setAttribute('role', 'img');
+      swatch.style.backgroundColor = color; swatch.setAttribute('aria-hidden', 'true'); code.textContent = color; chip.append(swatch, code);
+      cells[hueColumns.indexOf(info[0])].append(chip); compareColors.push({set, color, info, chip});
+    }
+    return {set, label};
+  });
+  compareScroll.append(table); comparison.append(compareSummary, compareNote, compareScroll);
+  setActions.append(pairButton, sequenceButton); chooser.append(summary, grid, setActions, comparison);
   window.NB1ColorSets = Object.freeze({sets, get: getSet, get selectedId() { return selectedId; }, refresh: schedule,
     sequence(id) { const set = getSet(id); if (!set) throw Error('Unknown color set'); return {timing: 'serial', steps: set.colors.map(color => ({targets: [{led: 0, color}], fade_ms: 600, hold_ms: 400})), repeat: 3, on_finish: 'off'}; }
   });
@@ -35,6 +59,14 @@
     if (pairButton.hidden !== (count !== 2)) pairButton.hidden = count !== 2;
     text(heading, locale === 'zh-CN' ? '配色组' : 'Color sets'); text(selectedName, getSet(selectedId).label[locale]);
     text(pairButton, locale === 'zh-CN' ? '应用双色' : 'Use pair'); text(sequenceButton, locale === 'zh-CN' ? '创建序列' : 'Create Sequence');
+    attr(pairButton, 'title', `A: ${getSet(selectedId).pair[0]} · B: ${getSet(selectedId).pair[1]}`);
+    const compareLabel = locale === 'zh-CN' ? '按色系对比' : 'Compare by hue';
+    text(compareSummary, compareLabel); attr(compareScroll, 'aria-label', compareLabel); attr(table, 'aria-label', compareLabel);
+    text(compareNote, locale === 'zh-CN' ? '相同色值为同一配方' : 'Same hex = same recipe');
+    text(groupHead, locale === 'zh-CN' ? '配色组' : 'Color set');
+    columnHeads.forEach((node, index) => text(node, hueNames[locale][index]));
+    for (const {set, label} of compareRows) text(label, set.label[locale]);
+    for (const {set, color, info, chip} of compareColors) { const title = `${set.label[locale]} · ${info[locale === 'zh-CN' ? 2 : 1]} · ${color}`; attr(chip, 'title', title); attr(chip, 'aria-label', title); }
     for (const {set, button, label} of cards) { text(label, set.label[locale]); attr(button, 'title', set.character[locale]); attr(button, 'aria-pressed', String(set.id === selectedId)); }
   }
   const copy = {

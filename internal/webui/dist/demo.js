@@ -808,7 +808,7 @@
   document.addEventListener("nb1-color-set-pair", event => {
     const set = window.NB1ColorSets?.get(event.detail?.id);
     if (!set || mode !== "action" || !(pairs(kind) || separateSolid())) return;
-    for (const [index, suffix] of ["a", "b"].entries()) { $("color-mode-" + suffix).value = "text"; renderChannels(suffix); $("color-" + suffix).value = set.colors[index]; $("picker-" + suffix).value = set.colors[index]; }
+    for (const [index, suffix] of ["a", "b"].entries()) { $("color-mode-" + suffix).value = "text"; renderChannels(suffix); $("color-" + suffix).value = set.pair[index]; $("picker-" + suffix).value = set.pair[index]; }
     // Both slots are ready before one ordinary draft event invalidates preview.
     $("color-a").dispatchEvent(new Event("input", {bubbles: true}));
   });

@@ -10,7 +10,7 @@
 <a class="skip-link" href="#main-content">Skip to workbench</a>
 <main class="workbench">
 <header class="workbench-topbar">
-  <a class="brand" href="./"><img class="brand-mascot" src="./assets/nb1-mascot.webp" alt="" width="52" height="52"><span>nb1<small>Little light workbench</small></span></a>
+  <a class="brand" href="./"><img class="brand-mascot" src="./assets/nb1-mascot.webp" alt="" width="52" height="52"><span>nb1<small>Workbench</small></span></a>
   <div class="locale-control" data-i18n-skip>
     <span id="locale-label" class="sr-only">Language</span>
     <button id="locale-select" class="locale-trigger" type="button" aria-haspopup="listbox" aria-expanded="false" aria-controls="locale-options" aria-labelledby="locale-label locale-current"><svg class="locale-symbol" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="7.2"/><path d="M2.8 10h14.4M10 2.8c4 4 4 10.4 0 14.4-4-4-4-10.4 0-14.4Z"/></svg><span id="locale-current" class="sr-only">English</span><span id="locale-short" aria-hidden="true">EN</span><span class="locale-chevron" aria-hidden="true"></span></button>
@@ -18,33 +18,13 @@
   </div>
 </header>
 <section class="studio-heading" id="main-content" tabindex="-1" aria-labelledby="device-title">
-<div class="device-heading"><span class="device-symbol" aria-hidden="true">✦</span><div><h1 id="device-title" data-type-role="heading">Your local light</h1><p id="device-message">Reading the local service…</p></div></div>
+<div class="device-heading"><span class="device-symbol" aria-hidden="true">✦</span><div><h1 id="device-title" data-type-role="heading">Device</h1><p id="device-message">Reading the local service…</p></div></div>
 <section class="device-bar" aria-labelledby="device-title">
 
   <div class="device-controls"><span id="connection" class="tag connection-tag" data-state="disconnected" role="status">Disconnected</span><div class="device-picker"><label id="device-select-label" for="device-select" class="sr-only">Device</label><select id="device-select" data-i18n-skip><option value="">—</option></select></div><button id="refresh" class="secondary">Refresh</button></div>
 </section>
 </section>
 <div class="workspace studio-workspace">
-<aside class="studio-sidebar" aria-label="Light object, device observation and playback">
-
-<div id="notice" class="notice" role="status" aria-live="polite">Ready to make a little light.</div>
-<details class="studio-model-view" open><summary data-studio-text="modelView" data-i18n-skip>Light preview</summary><section class="light-stage" data-light-stage data-i18n-skip aria-label="Light object, screen study"></section></details>
-
-<details class="panel observation-card">
-    <summary class="section-title"><span class="section-heading"><span>At the light</span></span><span class="tag subtle-tag">Cached RGB</span></summary>
-    <p class="readback-label">Logical LED channel readback</p>
-    <div class="readback-swatches"><div class="readback-channel"><span class="channel-label">LED 1</span><div class="led" id="led-one" data-available="false" aria-hidden="true"></div><code id="rgb-one">—</code></div><div class="readback-channel"><span class="channel-label">LED 2</span><div class="led" id="led-two" data-available="false" aria-hidden="true"></div><code id="rgb-two">—</code></div></div>
-    <p class="observation-time"><span>Sampled</span><time id="sample-time" data-i18n-skip>—</time></p>
-    <p class="footnote observation-note">Cached device values, not a measurement of physical light.</p>
-  </details>
-<section class="panel playback-card">
-    <div class="section-title"><h2>This playback</h2><span class="playback-symbol" aria-hidden="true">↗</span></div>
-    <dl class="device-facts"><div><dt>Job ID</dt><dd><code id="job-id">—</code></dd></div><div><dt>Status</dt><dd id="job-status" data-state="idle" role="status" aria-live="polite">Not submitted</dd></div><div><dt>Steps</dt><dd id="job-progress" data-i18n-skip>—</dd></div></dl>
-    <progress id="job-progress-bar" value="0" max="1" aria-label="Job progress"></progress>
-    <div class="job-buttons"><button id="query" class="secondary" disabled>Query Job</button><button id="stop" class="danger" disabled>Stop this Job</button><button id="new-run" class="text-button" hidden>Keep ID and start a separate run</button></div>
-    <p id="job-message" class="footnote">A Job is complete when device cleanup is confirmed.</p>
-  </section>
-</aside>
 <div class="studio-editor">
 <section class="panel composer" id="author" aria-labelledby="composer-title">
   <div class="section-title sr-only"><div class="section-heading"><h2 id="composer-title">Make a little light</h2></div></div>
@@ -59,20 +39,43 @@
 <div id="pattern-pane" role="tabpanel" aria-labelledby="mode-pattern" hidden><div class="local-color-heading"><label for="pattern-select">Saved Pattern</label><button id="patterns-refresh" class="text-button" type="button">Refresh Patterns</button></div><select id="pattern-select" data-i18n-skip><option value="">—</option></select><button id="load-pattern" class="secondary">Read Pattern</button><p id="selected-pattern" data-i18n-skip>—</p><button id="edit-sequence" class="text-button" disabled>Edit as Sequence</button></div>
 <div class="execution-area"><div class="execution-controls"><button id="preview" class="secondary">Preview only</button><button id="play" class="primary" aria-describedby="execution-note" disabled>Play on device</button></div><p class="footnote" id="play-feedback" hidden role="status" aria-live="polite"></p><p class="footnote execution-note" id="execution-note">Preview and save keep the light unchanged. Playback starts only when you choose Play.</p></div>
 </section>
-<section class="panel pattern-library-card" id="patterns-library" data-local-library aria-labelledby="pattern-library-title">
-    <div class="section-title"><div class="section-heading"><span class="drawer-icon" aria-hidden="true">▤</span><h2 id="pattern-library-title">Save a Pattern</h2></div></div>
+<details class="panel pattern-library-card" id="patterns-library" data-local-library aria-labelledby="pattern-library-title">
+    <summary class="section-title"><span class="section-heading"><span class="drawer-icon" aria-hidden="true">▤</span><span id="pattern-library-title">Save Pattern</span></span></summary>
     <div class="pattern-source"><span class="field-caption">Current draft</span><strong id="pattern-source">—</strong><p id="pattern-source-detail" class="footnote">All settings in this Action.</p></div>
     <div class="pattern-metadata"><div><label for="pattern-id">Pattern ID</label><input id="pattern-id" placeholder="evening-light" maxlength="64" spellcheck="false"></div><div><label for="pattern-title">Title</label><input id="pattern-title" maxlength="512" placeholder="A little evening light"></div></div>
-    <div class="pattern-save-controls"><button id="save-pattern" class="secondary">Save this draft</button><button id="verify-save" class="text-button" hidden>Check saved Pattern</button></div>
-    <p id="save-capture" class="save-capture" data-i18n-skip hidden></p><p id="save-message" class="footnote" role="status">Saved on this computer. Saving does not play it.</p>
-  </section>
+    <div class="pattern-save-controls"><button id="save-pattern" class="secondary">Save</button><button id="verify-save" class="text-button" hidden>Check saved Pattern</button></div>
+    <p id="save-capture" class="save-capture" data-i18n-skip hidden></p><p id="save-message" class="footnote" role="status">Saving does not play.</p>
+  </details>
 </div>
+<aside class="studio-sidebar" aria-label="Light object, device observation and playback">
+
+<div id="notice" class="notice" role="status" aria-live="polite" hidden></div>
+
+
+<section class="panel playback-card" data-job-state="idle">
+    <div class="section-title"><h2>Playback</h2><span id="job-status" data-state="idle" aria-live="off">No active Job</span></div>
+    <dl class="device-facts"><div><dt>Job ID</dt><dd><code id="job-id">—</code></dd></div><div><dt>Steps</dt><dd id="job-progress" data-i18n-skip>—</dd></div></dl>
+    <progress id="job-progress-bar" value="0" max="1" aria-label="Job progress"></progress>
+    <div class="job-buttons"><button id="query" class="secondary" disabled>Check status</button><button id="stop" class="danger" aria-label="Stop this device Job" disabled>Stop</button><button id="new-run" class="text-button" aria-label="Keep this Job ID and start a separate run" hidden>New run</button></div>
+    <p id="job-message" class="footnote" hidden></p>
+  </section>
+<details class="studio-model-view" open><summary data-studio-text="modelView" data-i18n-skip>Light preview</summary><section class="light-stage" data-light-stage data-i18n-skip aria-label="Light object, screen study"></section></details>
+<details class="panel observation-card">
+    <summary class="section-title"><span class="section-heading"><span>At the light</span></span><span class="tag subtle-tag">Cached RGB</span></summary>
+    <p class="readback-label">Logical LED channel readback</p>
+    <div class="readback-swatches"><div class="readback-channel"><span class="channel-label">LED 1</span><div class="led" id="led-one" data-available="false" aria-hidden="true"></div><code id="rgb-one">—</code></div><div class="readback-channel"><span class="channel-label">LED 2</span><div class="led" id="led-two" data-available="false" aria-hidden="true"></div><code id="rgb-two">—</code></div></div>
+    <p class="observation-time"><span>Sampled</span><time id="sample-time" data-i18n-skip>—</time></p>
+    <p class="footnote observation-note">Cached device values, not a measurement of physical light.</p>
+  </details>
+
+</aside>
 </div>
 <section class="panel preview-panel">
-  <details id="request-details" class="tool-drawer"><summary><span class="drawer-icon" aria-hidden="true">⌘</span><span class="drawer-heading"><span class="drawer-title">Understand the request</span><span class="drawer-subtitle">Inspect the input and compiled Sequence.</span></span><span id="preview-summary" class="tag">No preview yet</span><span class="drawer-chevron" aria-hidden="true">⌄</span></summary>
+  <details id="request-details" class="tool-drawer"><summary><span class="drawer-icon" aria-hidden="true">⌘</span><span class="drawer-heading"><span class="drawer-title">Request</span><span class="drawer-subtitle">Input and compiled Sequence.</span></span><span id="preview-summary" class="tag">No preview yet</span><span class="drawer-chevron" aria-hidden="true">⌄</span></summary>
     <div class="drawer-body"><div class="preview-toolbar"><p id="preview-check" class="footnote">Preview will show the device check and nominal duration.</p><button id="use-sequence" class="text-button" disabled>Use compiled Sequence</button></div><div class="preview-grid"><div><h3>Input</h3><pre id="input-detail" data-i18n-skip>{}</pre></div><div><h3>Compiled Sequence</h3><pre id="compiled" data-i18n-skip>{}</pre></div></div></div>
   </details>
 </section>
+<details class="panel routine-help"><summary>Help</summary><p>Preview stays on screen. Play controls the light.</p><p>Stop requests cancellation of this Job. Wait for Stopped. Done does not mean Off.</p><p>Cached RGB is not an optical measurement.</p></details>
 <details class="panel diagnostics"><summary>Details</summary><pre id="error-detail" data-i18n-skip>—</pre></details>
 <footer><span class="footer-mark" aria-hidden="true">✦</span><span>nb1 · Local light, shared ideas.</span><span class="footer-note">On this computer.</span></footer>
 </main></body></html>

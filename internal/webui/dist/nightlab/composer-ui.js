@@ -6,10 +6,10 @@
   if (!composer) return;
   const copy = {
     en: {
-      controls: 'Light controls', effects: 'Effects', sequence: 'Sequence', patterns: 'Saved patterns', choose: 'Choose effect',
+      controls: 'Light controls', effects: 'Effects', sequence: 'Sequence', patterns: 'Patterns', choose: 'Effects',
       ledColors: 'LED colors', ledOne: 'LED 1 · blink(1)', ledTwo: 'LED 2 · ThingM', separateSolid: 'Set a steady color for each LED in one operation.', color: 'Color', target: 'Target color', flash: 'Flash color', peak: 'Peak color', a: 'Color A', b: 'Color B',
       apply: 'Apply to', assignment: 'Color assignment', after: 'After playback', off: 'Turn off', hold: 'Keep final state',
-      playDevice: 'Play on device', preview: 'Screen preview', previewLabel: 'Screen preview: play on screen without controlling the light.', executionNote: 'Screen preview plays here. Play on device controls the light. Saving does not play.', format: 'format', picker: 'picker',
+      playDevice: 'Play', playLabel: 'Play on device: validate and play the current draft.', preview: 'Preview', previewLabel: 'Screen preview: play on screen without controlling the light.', executionNote: 'Preview stays on screen.', format: 'format', picker: 'picker',
       colorHelp: 'Use a color name or hex code.', textFormat: 'Text', textFormatHelp: 'Color name, hex code or @saved color', custom: 'Custom JSON', customHelp: 'Edit the request below. Playback uses this JSON.',
       advanced: 'Advanced tools',
       actions: { set: 'Solid', off: 'Off', fade: 'Fade', blink: 'Blink', breathe: 'Breathe', pulse: 'Pulse', alternate: 'Alternate', orbit: 'Orbit', rainbow: 'Rainbow' },
@@ -22,10 +22,10 @@
       pair: (first, second, orbit) => `Start A → LED ${first} · B → LED ${second}; then ${orbit ? 'crossfade' : 'swap'} the two colors.`,
     },
     'zh-CN': {
-      controls: '灯光设置', effects: '效果', sequence: '序列', patterns: '已存图案', choose: '选择效果',
-      ledColors: '灯光颜色', ledOne: 'LED 1 · blink(1)', ledTwo: 'LED 2 · ThingM', separateSolid: '一次操作，分别设置两路灯的常亮颜色。', color: '颜色', target: '目标颜色', flash: '亮灯颜色', peak: '最亮时的颜色', a: '颜色 A', b: '颜色 B',
+      controls: '灯光设置', effects: '效果', sequence: '序列', patterns: '图案', choose: '效果',
+      ledColors: '灯色', ledOne: 'LED 1 · blink(1)', ledTwo: 'LED 2 · ThingM', separateSolid: '一次操作，分别设置两路灯的常亮颜色。', color: '颜色', target: '目标颜色', flash: '亮灯颜色', peak: '最亮时的颜色', a: '颜色 A', b: '颜色 B',
       apply: '作用于', assignment: '颜色分配', after: '播放结束后', off: '熄灯', hold: '保留最后状态',
-      playDevice: '设备播放', preview: '屏幕预览', previewLabel: '屏幕预览：仅在屏幕播放，不控制实体灯。', executionNote: '屏幕预览在这里播放；设备播放会控制实体灯。保存不会播放。', format: '格式', picker: '取色器',
+      playDevice: '播放', playLabel: '设备播放：校验并播放当前草稿。', preview: '预览', previewLabel: '屏幕预览：仅在屏幕播放，不控制实体灯。', executionNote: '预览仅在屏幕播放。', format: '格式', picker: '取色器',
       colorHelp: '可输入颜色名称或十六进制色值。', textFormat: '文本', textFormatHelp: '颜色名称、十六进制或 @已存颜色', custom: '自定义 JSON', customHelp: '在下方编辑请求，播放时使用这份 JSON。',
       advanced: '高级工具',
       actions: { set: '常亮', off: '熄灭', fade: '渐变', blink: '闪烁', breathe: '呼吸', pulse: '脉冲', alternate: '交替', orbit: '环绕', rainbow: '彩虹' },
@@ -90,6 +90,7 @@
     text(title, actionMode ? words.actions[kind] : browser ? words.custom : words.actions[kind]);
     const order = browser ? document.querySelector('#param-leds input:checked')?.value : $('param-order')?.value;
     const [first, second] = order === '2,1' ? [2, 1] : [1, 2];
+    if ($('action-description')) $('action-description').hidden = actionMode && ['set', 'off'].includes(kind);
     text($('action-description'), !actionMode && browser ? words.customHelp : separate ? words.separateSolid : pair ? words.pair(first, second, kind === 'orbit') : words.descriptions[kind]);
     const primary = separate ? words.ledOne : pair ? words.a : kind === 'fade' ? words.target : kind === 'blink' ? words.flash : ['breathe', 'pulse'].includes(kind) ? words.peak : words.color;
     if (browser) {
@@ -97,7 +98,7 @@
         const input = $('color-input-' + index), picker = $('color-picker-' + index);
         text(labelFor(input), label); namedInput(input, label, true); namedInput(picker, `${label} ${words.picker}`, true);
       }
-      text(document.querySelector('.color-help'), words.colorHelp);
+      text(document.querySelector('.color-help'), words.colorHelp); if (document.querySelector('.color-help')) document.querySelector('.color-help').hidden = true;
       text(labelFor($('param-led')), kind === 'set' ? words.ledColors : words.apply); text(labelFor($('param-leds')), words.assignment); text(labelFor($('param-on_finish')), words.after);
       for (const option of document.querySelectorAll('#param-leds .choice')) {
         const value = option.querySelector('input')?.value;
@@ -116,7 +117,7 @@
       text(labelFor($('param-led')), kind === 'set' ? words.ledColors : words.apply); text(labelFor($('param-order')), words.assignment); text(labelFor($('param-finish')), words.after);
       for (const option of $('param-order')?.options || []) text(option, option.value === '2,1' ? 'A → LED 2 · B → LED 1' : 'A → LED 1 · B → LED 2');
     }
-    text($('play'), words.playDevice);
+    text($('play'), words.playDevice); namedInput($('play'), words.playLabel);
     text($('preview'), words.preview); namedInput($('preview'), words.previewLabel); $('preview')?.removeAttribute('title');
     if (!browser) text($('execution-note'), words.executionNote);
     for (const node of document.querySelectorAll('[data-composer-copy="advanced"]')) text(node, words.advanced);

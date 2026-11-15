@@ -8,7 +8,7 @@
   const serial = /^[A-Za-z0-9_-]{1,128}$/;
   const terminal = status => ["succeeded", "cancelled", "failed"].includes(status);
   const taskKey = "nb1.web.job.v1";
-  const states = {queued: "Queued", running: "Running", cancelling: "Cancelling", succeeded: "Succeeded", cancelled: "Cancelled", failed: "Failed"};
+  const states = {queued: "Queued", running: "Playing", cancelling: "Stopping…", succeeded: "Done", cancelled: "Stopped", failed: "Failed"};
   const actions = {
     set: ["Set", "Hold one color."], off: ["Off", "Turn the selected output black."],
     fade: ["Fade", "Move smoothly from the current color to your target."], blink: ["Blink", "A clear rhythm of light and dark."],
@@ -26,11 +26,12 @@
   const patternSave = {pending: false, unknown: false, capture: null};
 
   function notice(text, error = false, detail = "") {
+    $("notice").hidden = !error;
     $("notice").textContent = text;
     $("notice").classList.toggle("error", error);
     if (detail) $("error-detail").textContent = detail;
   }
-  function report(error) { notice("Request failed. Check Details below.", true, error.message); }
+  function report(error) { notice(error.message, true, error.message); }
   function integer(id, min, max) {
     const value = $(id).value;
     if (!/^(0|[1-9][0-9]*)$/.test(value)) throw Error("Use an integer for " + id);
@@ -292,7 +293,7 @@
       element.value = String(value); wrap.append(element); $("action-fields").append(wrap);
     }
     if (pairs(kind)) field("order", "LED order", [["1,2", "LED 1 → LED 2"], ["2,1", "LED 2 → LED 1"]], "1,2");
-    else field("led", "Output", kind === "set" ? [["0", "Both LEDs · same color"], ["1", "LED 1"], ["2", "LED 2"], ["separate", "Separate LED colors"]] : [["0", "Both LEDs"], ["1", "LED 1"], ["2", "LED 2"]], outputs.get(kind) || "0");
+    else field("led", "Output", kind === "set" ? [["0", "Both · same color"], ["separate", "Separate colors"], ["1", "LED 1 · blink(1)"], ["2", "LED 2 · ThingM"]] : [["0", "Both LEDs"], ["1", "LED 1 · blink(1)"], ["2", "LED 2 · ThingM"]], outputs.get(kind) || "0");
     $("color-card-b").hidden = !pairs(kind) && !separateSolid();
     for (const [name, label, value] of ({fade: [["duration_ms", "Fade duration · ms", 600]], blink: [["on_ms", "On duration · ms", 250], ["off_ms", "Off duration · ms", 250]], breathe: [["period_ms", "Cycle duration · ms", 2000]], pulse: [["attack_ms", "Rise · ms", 60], ["decay_ms", "Fall · ms", 240], ["rest_ms", "Rest · ms", 700]], alternate: [["period_ms", "Cycle duration · ms", 2000]], orbit: [["period_ms", "Cycle duration · ms", 3000]], rainbow: [["period_ms", "Cycle duration · ms", 3000]]}[kind] || [])) field(name, label, null, value);
     if (loops(kind)) { field("cycles", "Cycles", null, 1); field("finish", "On finish", [["off", "Off"], ["hold", "Hold final state"]], "off"); }
@@ -336,12 +337,13 @@
   }
   async function previewDraft() {
     if (submitting || previewing) return;
+    playFeedback("");
     const capture = captureDraft();
     if (mode === "sequence") sequenceEditor.refreshColors?.();
     previewing = true; updateButtons();
     try {
       const {value, body} = await compileDraft(capture);
-      if (!currentDraft(capture)) { notice("Draft changed. Preview again."); return; }
+      if (!currentDraft(capture)) { playFeedback("Draft changed. Preview again."); return; }
       preview = {version, key: capture.key, check: value.device_check.status, sequence: value.sequence};
       $("input-detail").textContent = body;
       $("compiled").textContent = JSON.stringify(value.sequence, null, 2);
@@ -353,22 +355,29 @@
   }
   function playFeedback(message, error = false) {
     $("play-feedback").hidden = !message;
-    $("play-feedback").textContent = message;
+    text("play-feedback", message);
     $("play-feedback").classList.toggle("error", error);
   }
-  function reportDraft(error) { playFeedback("Could not validate this draft: " + error.message, true); notice("Check the current draft and try again.", true, error.message); }
+  function reportDraft(error) { playFeedback("Check the draft: " + error.message, true); $("error-detail").textContent = error.message; }
   function rememberTask() {
     if (!task) return;
     try { const history = JSON.parse(sessionStorage.getItem(taskKey + ".history") || "[]"); sessionStorage.setItem(taskKey + ".history", JSON.stringify([...history.slice(-7), task])); } catch (_) { /* Keep the visible ID if storage is unavailable. */ }
   }
   function saveTask() { try { sessionStorage.setItem(taskKey, JSON.stringify(task)); } catch (_) { /* The in-page ID remains available. */ } }
   function showTask() {
+    const starting = submitting && task?.unknown && !task.job && !task.rejected;
+    const state = starting ? "submitting" : task?.unknown ? "unknown" : task?.rejected ? "failed" : task?.job?.status || "idle";
+    const label = starting ? "Starting…" : task?.unknown ? "Result unknown" : task?.rejected ? "Not started" : states[task?.job?.status] || "No active Job";
     $("job-id").textContent = task?.id || "—";
-    $("job-status").textContent = task?.unknown ? "Outcome unknown" : task?.rejected ? "Submission rejected" : states[task?.job?.status] || "Not submitted";
-    $("job-status").dataset.state = task?.unknown ? "unknown" : task?.rejected ? "failed" : task?.job?.status || "idle";
+    $("job-status").textContent = label; $("job-status").dataset.state = state;
+    $("job-status").closest(".playback-card").dataset.jobState = state;
     $("job-progress").textContent = task?.job ? task.job.completed_steps + " / " + task.job.total_steps : "—";
     $("job-progress-bar").max = task?.job?.total_steps || 1; $("job-progress-bar").value = task?.job?.completed_steps || 0;
-    $("job-message").textContent = task?.unknown ? "Keep this Job ID and query it. Decide any new run explicitly." : "A Job is complete when device cleanup is confirmed.";
+    const reason = typeof task?.job?.error === "string" ? task.job.error : "";
+    $("job-message").textContent = reason; $("job-message").hidden = !reason;
+    if (reason) $("error-detail").textContent = reason;
+    if (task && !submitting) playFeedback(label, task.unknown || task.rejected || task.job?.status === "failed");
+    else if (!task && !submitting) playFeedback("");
     updateButtons();
   }
   function validateJob(value) {
@@ -379,7 +388,7 @@
   }
   function scheduleQuery() { clearTimeout(polling); if (task?.job && !task.unknown && !terminal(task.job.status)) polling = setTimeout(() => queryJob().catch(uncertainJob), 500); }
   function acceptJob(value) { task.job = validateJob(value); task.unknown = false; task.rejected = false; saveTask(); showTask(); scheduleQuery(); }
-  function uncertainJob(error) { clearTimeout(polling); if (task?.job && terminal(task.job.status)) { notice("Stored terminal result retained. Query failed.", true, error.message); return; } if (task) { task.unknown = true; saveTask(); showTask(); } notice("Outcome unknown. Keep the Job ID and query it.", true, error.message); }
+  function uncertainJob(error) { clearTimeout(polling); $("error-detail").textContent = error.message; if (task?.job && terminal(task.job.status)) { playFeedback(states[task.job.status] + " · Refresh failed", true); return; } if (task) { task.unknown = true; saveTask(); showTask(); } playFeedback("Result unknown. Check status.", true); }
   async function queryJob() { if (!task) return; const id = task.id; const reply = await request("/v1/jobs/" + encodeURIComponent(id)); if (task?.id !== id) return; acceptJob(reply.value); readDevice().catch(report); }
   async function play() {
     if (submitting || previewing || task && (task.unknown || !task.rejected && !terminal(task.job?.status))) return;
@@ -388,7 +397,7 @@
     try {
       const capture = captureDraft();
       if (!serial.test(capture.device)) throw Error("Choose a device before playing.");
-      playFeedback("Checking this draft before playback…");
+      playFeedback("Checking…");
       const {value} = await compileDraft(capture);
       if (intent !== playIntent || document.hidden || !currentDraft(capture)) {
         playFeedback("Draft changed. Play again to use the current settings."); return;
@@ -397,7 +406,7 @@
       const alphabet = "0123456789ABCDEFGHJKMNPQRSTVWXYZ", random = crypto.getRandomValues(new Uint8Array(10));
       rememberTask();
       task = submitted = {id: "j_" + [...random].map(v => alphabet[v & 31]).join(""), serial: capture.device, unknown: true, job: null};
-      saveTask(); showTask(); playFeedback("Starting the captured draft…");
+      saveTask(); showTask(); playFeedback("Starting…");
       // Freeze resolved aliases and saved Patterns at the validation boundary.
       // Only this canonical Sequence is submitted; never re-read the form here.
       const input = {key: "sequence", raw: JSON.stringify(value.sequence)};
@@ -413,19 +422,19 @@
       const reply = await request("/v1/jobs", "POST", body);
       if (task !== submitted) return;
       if (![200, 202].includes(reply.status) || reply.location !== "/v1/jobs/" + submitted.id) throw Error("Job acceptance response was not bound to the submitted ID");
-      acceptJob(reply.value); readDevice().catch(report); notice("Job accepted. Follow its progress here."); playFeedback("Playback started. Follow this Job below.");
+      acceptJob(reply.value); readDevice().catch(report); notice("Job accepted. Follow its progress here."); playFeedback(states[reply.value.status]);
     } catch (error) {
-      if (!submitted) playFeedback("Playback was not started: " + error.message, true);
+      if (!submitted) playFeedback("Not started: " + error.message, true);
       else if (task === submitted) {
-        if (error.rejected) { task.unknown = false; task.rejected = true; saveTask(); showTask(); playFeedback("Playback was rejected. Check the current draft and try again.", true); report(error); }
-        else { uncertainJob(error); playFeedback("Outcome unknown. Keep this Job ID and query it before any new run.", true); }
+        if (error.rejected) { task.unknown = false; task.rejected = true; saveTask(); showTask(); playFeedback("Not started: " + error.message, true); $("error-detail").textContent = error.message; }
+        else { uncertainJob(error); playFeedback("Result unknown. Check status.", true); }
       }
-    } finally { submitting = false; updateButtons(); }
+    } finally { submitting = false; if (submitted && task === submitted && task.unknown) showTask(); updateButtons(); }
   }
   async function stopJob() {
     if (!task?.job || task.unknown || terminal(task.job.status)) return;
-    clearTimeout(polling); submitting = true; updateButtons();
-    try { const reply = await request("/v1/jobs/" + encodeURIComponent(task.id) + "/cancel", "POST"); if (![200, 202].includes(reply.status)) throw Error("Invalid cancellation response"); acceptJob(reply.value); }
+    clearTimeout(polling); submitting = true; playFeedback("Stopping…"); updateButtons();
+    try { const reply = await request("/v1/jobs/" + encodeURIComponent(task.id) + "/cancel", "POST"); if (![200, 202].includes(reply.status)) throw Error("Invalid cancellation response"); acceptJob(reply.value); playFeedback(states[reply.value.status], reply.value.status === "failed"); }
     catch (error) { uncertainJob(error); }
     finally { submitting = false; updateButtons(); }
   }
@@ -604,6 +613,7 @@
         $("led-" + suffix).style.backgroundColor = "#e4e7d5"; $("led-" + suffix).dataset.available = "false"; $("rgb-" + suffix).textContent = "—";
       }
       $("sample-time").textContent = "—";
+      $("device-message").hidden = false; $("device-message").textContent = "Choose a device.";
       return;
     }
     const {value} = await request("/v1/devices/" + id);
@@ -613,6 +623,8 @@
     $("connection").dataset.state = value.connection === "online" ? "online" : "offline";
     for (const [suffix, key] of [["one", "led1"], ["two", "led2"]]) { const color = value.observed?.[key]; $("led-" + suffix).style.backgroundColor = color || "#e4e7d5"; $("led-" + suffix).dataset.available = String(Boolean(color)); $("rgb-" + suffix).textContent = color || "—"; }
     $("sample-time").textContent = value.observed?.sampled_at || "—";
+    $("device-message").hidden = value.connection === "online";
+    if (value.connection !== "online") $("device-message").textContent = "Device is offline.";
   }
   async function refreshColors() {
     const generation = ++colorLibraryGeneration;
@@ -664,6 +676,7 @@
       $("verify-save").hidden = false;
       try { await refreshPatterns(); } catch (_) { text("save-message", "Pattern saved. Refresh the Pattern list to see it."); }
     } catch (error) {
+      $("patterns-library").open = true;
       const rejected = error.rejected || [400, 401, 403, 404, 405, 409, 413, 415, 422, 429].includes(error.httpStatus);
       patternSave.unknown = !rejected; $("verify-save").hidden = !patternSave.unknown;
       text("save-message", rejected ? "Pattern was not saved. Check Details." : "Save outcome unknown. Check the saved Pattern before saving again."); throw error;

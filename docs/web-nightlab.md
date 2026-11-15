@@ -6,6 +6,8 @@ The production controller retains the current API v1, Pattern/color library, JSO
 
 Play resolves and checks the current draft on click, then submits the returned canonical Sequence as one captured Job; a separate Screen preview is optional. Solid can apply one color or independent LED 1/LED 2 colors. The pair uses two zero-fade serial Steps in one Job with finish hold, preserving both colors without introducing a new Action or API.
 
+The compact mobile view orders output choices as both/same, separate colors, LED 1 and LED 2. Saving, help and request details use disclosures, while actionable playback status, Stop and uncertain-result recovery remain visible. Confirmed completion does not mean Off, and a failed status refresh does not replace an established terminal result.
+
 ## Closed profiles and provenance
 
 The legacy schema-1 `static-editor/v1` profile retains 26 assets plus its manifest and a 640 KiB total limit. The schema-2 `static-nightlab/v1` profile has 64 assets plus its manifest. Its limits, including the manifest, are:

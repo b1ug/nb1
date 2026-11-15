@@ -180,7 +180,7 @@ function init() {
   document.addEventListener('input', draftInput, true);
   document.addEventListener('change', draftInput, true);
   new MutationObserver(compiled).observe(compiledNode, {childList: true, subtree: true});
-  const notice = document.getElementById('notice') || document.getElementById('status');
+  const notice = document.getElementById('play-feedback') || document.getElementById('notice') || document.getElementById('status');
   if (notice) new MutationObserver(() => {
     if (pending && notice.classList.contains('error')) fail(new Error(notice.textContent), pending.id);
   }).observe(notice, {childList: true, subtree: true, attributes: true, attributeFilter: ['class']});

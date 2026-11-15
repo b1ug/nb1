@@ -4,9 +4,9 @@
   "asset_base": "./",
   "source": {
     "repository": "local:nb1-web",
-    "commit": "7d2581e9a51ff8d29bdf79953ebeebb501576b3a",
+    "commit": "ab463f7356b9c5a508581a1638498939274672ef",
     "dirty": false,
-    "tree_sha256": "0b34af053b16b502e620748154b9ddae4db323a1818ae2c261e3edea07d11dfc"
+    "tree_sha256": "7a270da85497b09f2459a7d4dd73a19c2f87e92ee27296dba8c3319df31b7149"
   },
   "build": {
     "tool": "static-nightlab/v1",
@@ -243,11 +243,11 @@
     },
     {
       "path": "nightlab/composer-ui.js",
-      "bytes": 20593,
-      "sha256": "95279273555e85637ad1713a34cb6fa86ee9d8e811ad78e7a88a4a3e9461507e",
+      "bytes": 20566,
+      "sha256": "7945001bd81966178aed0f48a9211a6e39f0e2f160be9522be24b9195ba6447e",
       "encoding": "identity",
-      "decoded_bytes": 20593,
-      "decoded_sha256": "95279273555e85637ad1713a34cb6fa86ee9d8e811ad78e7a88a4a3e9461507e"
+      "decoded_bytes": 20566,
+      "decoded_sha256": "7945001bd81966178aed0f48a9211a6e39f0e2f160be9522be24b9195ba6447e"
     },
     {
       "path": "nightlab/docs/INTEGRATION.md",

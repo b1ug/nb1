@@ -401,8 +401,16 @@
       // Freeze resolved aliases and saved Patterns at the validation boundary.
       // Only this canonical Sequence is submitted; never re-read the form here.
       const input = {key: "sequence", raw: JSON.stringify(value.sequence)};
+      const body = envelope(input, {id: submitted.id, serial: submitted.serial});
       window.dispatchEvent(new CustomEvent("nb1-playback-requested", {detail: {serial: submitted.serial}}));
-      const reply = await request("/v1/jobs", "POST", envelope(input, {id: submitted.id, serial: submitted.serial}));
+      // The inspector records this exact request, not command acceptance.
+      // Pending screen state was cleared above; this cannot start a preview.
+      preview = {version: capture.version, key: capture.key, check: value.device_check.status, sequence: value.sequence};
+      $("input-detail").textContent = body;
+      $("compiled").textContent = JSON.stringify(value.sequence, null, 2);
+      $("preview-summary").textContent = "Playback request"; $("preview-summary").dataset.draftChanged = "false";
+      $("preview-check").textContent = "Steps: " + value.total_steps + " · " + value.nominal_duration_ms + " ms · " + value.device_check.status;
+      const reply = await request("/v1/jobs", "POST", body);
       if (task !== submitted) return;
       if (![200, 202].includes(reply.status) || reply.location !== "/v1/jobs/" + submitted.id) throw Error("Job acceptance response was not bound to the submitted ID");
       acceptJob(reply.value); readDevice().catch(report); notice("Job accepted. Follow its progress here."); playFeedback("Playback started. Follow this Job below.");

@@ -4,9 +4,9 @@
   "asset_base": "./",
   "source": {
     "repository": "local:nb1-web",
-    "commit": "2118601e9a23b993d58a0fbd115938d367c8f313",
+    "commit": "cde53d879ceb70176e1f706baf8d1c76460626c5",
     "dirty": false,
-    "tree_sha256": "67c329994f087a5b7acdd2dda2cc3c353478b6c3e9cb8e2eb0eafe5c132d1cb3"
+    "tree_sha256": "0e6b85824888ab8063d153dbc9fd4d12feefbaf8da9b5bf6abd1f64658d199da"
   },
   "build": {
     "tool": "static-nightlab/v1",
@@ -59,11 +59,11 @@
     },
     {
       "path": "demo.js",
-      "bytes": 56118,
-      "sha256": "8b422af2958c01f85f08d23d4ffe2866bdc13498a500daf9bda5676795f7251c",
+      "bytes": 56798,
+      "sha256": "35a34c8b7fd0104954009e98293c16d276fe03fd35a55eac478320324ec76ddb",
       "encoding": "identity",
-      "decoded_bytes": 56118,
-      "decoded_sha256": "8b422af2958c01f85f08d23d4ffe2866bdc13498a500daf9bda5676795f7251c"
+      "decoded_bytes": 56798,
+      "decoded_sha256": "35a34c8b7fd0104954009e98293c16d276fe03fd35a55eac478320324ec76ddb"
     },
     {
       "path": "editor-LICENSES.txt",
@@ -163,11 +163,11 @@
     },
     {
       "path": "locales.js",
-      "bytes": 10602,
-      "sha256": "a25932b155ca7cd67876801b5a341c628c4e89cca58680acff879da09824897f",
+      "bytes": 10631,
+      "sha256": "be2dbefb9c1652dde25f4b0429309eda959d603f9b490f93aa5fc489c842c5bc",
       "encoding": "identity",
-      "decoded_bytes": 10602,
-      "decoded_sha256": "a25932b155ca7cd67876801b5a341c628c4e89cca58680acff879da09824897f"
+      "decoded_bytes": 10631,
+      "decoded_sha256": "be2dbefb9c1652dde25f4b0429309eda959d603f9b490f93aa5fc489c842c5bc"
     },
     {
       "path": "nightlab/THREE-LICENSE.txt",

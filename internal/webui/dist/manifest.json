@@ -4,9 +4,9 @@
   "asset_base": "./",
   "source": {
     "repository": "local:nb1-web",
-    "commit": "ab463f7356b9c5a508581a1638498939274672ef",
+    "commit": "87561df163f4ab13590f4b5658c6952c56b053df",
     "dirty": false,
-    "tree_sha256": "7a270da85497b09f2459a7d4dd73a19c2f87e92ee27296dba8c3319df31b7149"
+    "tree_sha256": "f493713fda6b22dea619ba55561056bc6a7774ad597f5b1fedc9f8084ee7c987"
   },
   "build": {
     "tool": "static-nightlab/v1",
@@ -59,11 +59,11 @@
     },
     {
       "path": "demo.js",
-      "bytes": 64764,
-      "sha256": "f617ca57d7e4a02624992b62360b86d79bb0429982777e1713bc7f2d838b5be5",
+      "bytes": 64788,
+      "sha256": "0ab0432a098a9f6b5070202e2e491229d4a0682a4124520d20174ff6a0da6574",
       "encoding": "identity",
-      "decoded_bytes": 64764,
-      "decoded_sha256": "f617ca57d7e4a02624992b62360b86d79bb0429982777e1713bc7f2d838b5be5"
+      "decoded_bytes": 64788,
+      "decoded_sha256": "0ab0432a098a9f6b5070202e2e491229d4a0682a4124520d20174ff6a0da6574"
     },
     {
       "path": "editor-LICENSES.txt",
@@ -243,11 +243,11 @@
     },
     {
       "path": "nightlab/composer-ui.js",
-      "bytes": 20566,
-      "sha256": "7945001bd81966178aed0f48a9211a6e39f0e2f160be9522be24b9195ba6447e",
+      "bytes": 22340,
+      "sha256": "bcef17d758fcf6260c4310ae6bfe935277440e6d4b5c29c65943f1bac300973a",
       "encoding": "identity",
-      "decoded_bytes": 20566,
-      "decoded_sha256": "7945001bd81966178aed0f48a9211a6e39f0e2f160be9522be24b9195ba6447e"
+      "decoded_bytes": 22340,
+      "decoded_sha256": "bcef17d758fcf6260c4310ae6bfe935277440e6d4b5c29c65943f1bac300973a"
     },
     {
       "path": "nightlab/docs/INTEGRATION.md",

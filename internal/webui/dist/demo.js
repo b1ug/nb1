@@ -814,7 +814,7 @@
   });
   document.addEventListener("nb1-color-set-sequence", event => {
     const api = window.NB1ColorSets;
-    if (!api?.get(event.detail?.id) || mode !== "action" || ["off", "rainbow"].includes(kind)) return;
+    if (!api?.sets.some(set => set.id === event.detail?.id) || mode !== "action" || ["off", "rainbow"].includes(kind)) return;
     sequenceEditor.setValue(JSON.stringify(api.sequence(event.detail.id), null, 2), false);
     $("mode-sequence").click(); $("mode-sequence").focus({preventScroll: true});
   });

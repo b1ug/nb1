@@ -5,23 +5,27 @@
   const composer = document.querySelector('.composer');
   if (!composer) return;
   // UI-local lamp recipes; no compiler, saved Pattern or execution behavior.
-  const sets = [{"id":"essentials","label":{"en":"Essentials","zh-CN":"基础"},"character":{"en":"Common colors","zh-CN":"常用颜色"},"colors":["#ff0000","#ffa500","#ffff00","#00ff00","#00a060","#00ffff","#0000ff","#8f00ff","#ffffff"],"pair":["#ff0000","#0000ff"]},{"id":"candlelight","label":{"en":"Afterglow","zh-CN":"晚霞余晖"},"character":{"en":"Warm last light, indigo and rose","zh-CN":"暖色余晖、靛蓝与玫红"},"colors":["#c04800","#c0a008","#2438a0","#ac286c"],"pair":["#c04800","#2438a0"]},{"id":"tide","label":{"en":"Sea Breeze","zh-CN":"海风轻拂"},"character":{"en":"Sea greens, deep blue and sand","zh-CN":"海绿、深蓝与暖沙色"},"colors":["#b87408","#00a000","#006868","#2438a0"],"pair":["#006868","#b87408"]},{"id":"petals","label":{"en":"Garden Song","zh-CN":"花间小调"},"character":{"en":"Rose and orchid among leaves","zh-CN":"玫红、兰紫与叶间暖光"},"colors":["#c0a008","#30a050","#644c98","#ac286c"],"pair":["#ac286c","#30a050"]},{"id":"neon","label":{"en":"City Lights","zh-CN":"霓虹夜色"},"character":{"en":"Six bright city lights","zh-CN":"六种鲜明的城市灯色"},"colors":["#c04800","#80b000","#00a0b0","#2050bc","#6000c0","#c00068"],"pair":["#c00068","#00a0b0"]},{"id":"forest","label":{"en":"Woodland Glow","zh-CN":"林间微光"},"character":{"en":"Leaf, stream, clay and berries","zh-CN":"叶绿、溪水青、陶土与莓果"},"colors":["#a44418","#b87408","#387c18","#006868","#88385c"],"pair":["#387c18","#b87408"]},{"id":"dusk","label":{"en":"Blue Hour","zh-CN":"蓝调时分"},"character":{"en":"Blue shadows and one warm light","zh-CN":"蓝紫暮色与一盏暖光"},"colors":["#b87408","#006868","#2438a0","#644c98"],"pair":["#2438a0","#b87408"]},{"id":"citrus","label":{"en":"Summer Orchard","zh-CN":"夏日果园"},"character":{"en":"Fruit reds, orange and fresh greens","zh-CN":"果实红橙与鲜嫩绿意"},"colors":["#c00000","#c04800","#80b000","#00a000"],"pair":["#c04800","#00a000"]},{"id":"aurora","label":{"en":"Aurora","zh-CN":"极光流转"},"character":{"en":"Green, cyan, violet and pink","zh-CN":"翠绿、亮青、电紫与桃红"},"colors":["#00a000","#00a0b0","#6000c0","#c00068"],"pair":["#00a000","#c00068"]}];
+  const essentials = {"id":"essentials","label":{"en":"Common colors","zh-CN":"常用颜色"},"character":{"en":"Common colors","zh-CN":"常用颜色"},"colors":["#ff0000","#ffa500","#ffff00","#00ff00","#00a060","#00ffff","#0000ff","#8f00ff","#ffffff"],"pair":["#ff0000","#0000ff"]};
+  const sets = [{"id":"candlelight","label":{"en":"Afterglow","zh-CN":"晚霞余晖"},"character":{"en":"Warm sunset, leaves and violet dusk","zh-CN":"暖色夕照、叶影与紫色暮光"},"colors":["#c00000","#c04800","#b87408","#c0a008","#387c18","#2438a0","#644c98","#ac286c"],"pair":["#c04800","#2438a0"]},{"id":"tide","label":{"en":"Sea Breeze","zh-CN":"海风轻拂"},"character":{"en":"Sea water, warm sand and shore accents","zh-CN":"海水、暖沙与岸边点色"},"colors":["#c00000","#b87408","#80b000","#00a000","#006868","#2438a0","#6000c0","#ac286c"],"pair":["#006868","#b87408"]},{"id":"petals","label":{"en":"Mist Garden","zh-CN":"雾色花园"},"character":{"en":"Morandi-inspired clay, leaves and quiet flowers","zh-CN":"莫兰迪风格的雾陶、叶色与克制花色"},"colors":["#8c3c40","#985c48","#8c783c","#527458","#3c7474","#485c8c","#684c80","#80506c"],"pair":["#80506c","#527458"]},{"id":"neon","label":{"en":"City Lights","zh-CN":"霓虹夜色"},"character":{"en":"Eight bright city lights","zh-CN":"八种鲜明的城市灯色"},"colors":["#c00000","#c04800","#80b000","#00a000","#00a0b0","#2050bc","#6000c0","#c00068"],"pair":["#c00068","#00a0b0"]},{"id":"forest","label":{"en":"Woodland Glow","zh-CN":"林间微光"},"character":{"en":"Earth, leaves, water and autumn fruit","zh-CN":"泥土、叶片、溪流与秋日果实"},"colors":["#c00000","#a44418","#b87408","#c0a008","#387c18","#006868","#2438a0","#88385c"],"pair":["#387c18","#b87408"]},{"id":"dusk","label":{"en":"Midnight Drift","zh-CN":"午夜漫游"},"character":{"en":"Inky streets and distant light","zh-CN":"墨色街景与远处光点"},"colors":["#600818","#b87408","#80b000","#144830","#004c58","#141c70","#482068","#88385c"],"pair":["#141c70","#b87408"]},{"id":"citrus","label":{"en":"Summer Orchard","zh-CN":"夏日果园"},"character":{"en":"Fruit reds, warm skins and fresh greens","zh-CN":"果实红、暖色果皮与鲜绿"},"colors":["#600818","#c00000","#985c48","#c04800","#c0a008","#80b000","#00a000","#ac286c"],"pair":["#c04800","#00a000"]},{"id":"aurora","label":{"en":"Aurora","zh-CN":"极光流转"},"character":{"en":"Layered greens, blues and upper red glow","zh-CN":"层叠绿蓝与上缘红光"},"colors":["#c00000","#387c18","#00a000","#00a0b0","#2050bc","#644c98","#6000c0","#c00068"],"pair":["#00a000","#c00068"]}];
   const hueColumns = ['red', 'orange', 'gold', 'green', 'cyan', 'blue', 'violet', 'rose'];
   const hueNames = {en: ['Red', 'Orange', 'Yellow', 'Green', 'Cyan', 'Blue', 'Violet', 'Rose'], 'zh-CN': ['红', '橙', '黄', '绿', '青', '蓝', '紫', '玫红']};
   // Editorial categories and names, not color conversion or measured appearance.
-  const colorBank = {"#c00000":["red","Red","正红"],"#a44418":["orange","Clay","陶土橙"],"#c04800":["orange","Orange","鲜橙"],"#b87408":["orange","Amber","琥珀"],"#c0a008":["gold","Gold","金黄"],"#80b000":["gold","Lime","青柠"],"#387c18":["green","Leaf","叶绿"],"#00a000":["green","Green","翠绿"],"#30a050":["green","Jade","青玉"],"#006868":["cyan","Teal","溪水青"],"#00a0b0":["cyan","Cyan","亮青"],"#2050bc":["blue","Blue","湛蓝"],"#2438a0":["blue","Indigo","靛蓝"],"#644c98":["violet","Orchid","兰紫"],"#6000c0":["violet","Violet","电紫"],"#c00068":["rose","Pink","桃红"],"#ac286c":["rose","Rose","玫红"],"#88385c":["rose","Berry","莓红"]};
-  for (const set of sets) { Object.freeze(set.label); Object.freeze(set.character); Object.freeze(set.colors); Object.freeze(set.pair); Object.freeze(set); }
+  const colorBank = {"#600818":["red","Ember","余烬红"],"#8c3c40":["red","Dusty brick","灰砖红"],"#c00000":["red","Red","正红"],"#985c48":["orange","Mist clay","雾陶色"],"#a44418":["orange","Clay","陶土橙"],"#c04800":["orange","Orange","鲜橙"],"#b87408":["orange","Amber","琥珀"],"#8c783c":["gold","Soft ochre","柔赭色"],"#c0a008":["gold","Gold","金黄"],"#80b000":["gold","Lime","青柠"],"#387c18":["green","Leaf","叶绿"],"#00a000":["green","Green","翠绿"],"#527458":["green","Sage","鼠尾草绿"],"#144830":["green","Night pine","夜杉绿"],"#006868":["cyan","Teal","溪水青"],"#3c7474":["cyan","Dusty teal","雾青"],"#00a0b0":["cyan","Cyan","亮青"],"#004c58":["cyan","Night teal","夜青"],"#2050bc":["blue","Blue","湛蓝"],"#485c8c":["blue","Slate blue","灰蓝"],"#2438a0":["blue","Indigo","靛蓝"],"#141c70":["blue","Ink blue","墨蓝"],"#644c98":["violet","Orchid","兰紫"],"#6000c0":["violet","Violet","电紫"],"#684c80":["violet","Heather","石楠紫"],"#482068":["violet","Night violet","夜紫"],"#80506c":["rose","Dusty rose","灰玫红"],"#c00068":["rose","Pink","桃红"],"#ac286c":["rose","Rose","玫红"],"#88385c":["rose","Berry","莓红"]};
+  for (const set of [essentials, ...sets]) { Object.freeze(set.label); Object.freeze(set.character); Object.freeze(set.colors); Object.freeze(set.pair); Object.freeze(set); }
   Object.freeze(sets);
   let selectedId = 'essentials';
-  const getSet = id => sets.find(set => set.id === id);
+  const getSet = id => id === 'essentials' ? essentials : sets.find(set => set.id === id);
   const chooser = document.createElement('details'); chooser.id = 'color-sets'; chooser.className = 'color-sets'; chooser.setAttribute('data-i18n-skip', '');
   const summary = document.createElement('summary'), heading = document.createElement('span'), selectedName = document.createElement('span'); selectedName.id = 'color-set-name'; summary.append(heading, selectedName);
+  function browse(id) { selectedId = id; paint(); document.dispatchEvent(new CustomEvent('nb1-color-set-browse', {detail: {id}})); }
+  const commonActions = document.createElement('div'); commonActions.className = 'color-set-actions';
+  const commonButton = document.createElement('button'); commonButton.id = 'color-set-common'; commonButton.type = 'button'; commonButton.className = 'secondary'; commonButton.addEventListener('click', () => browse('essentials')); commonActions.append(commonButton);
   const grid = document.createElement('div'); grid.className = 'color-set-grid';
   const cards = sets.map(set => {
     const button = document.createElement('button'); button.type = 'button'; button.className = 'color-set-card'; button.dataset.colorSet = set.id;
     const label = document.createElement('span'), strip = document.createElement('span'); label.className = 'color-set-label'; strip.className = 'color-set-strip'; strip.setAttribute('aria-hidden', 'true');
     for (const color of set.colors) { const swatch = document.createElement('span'); swatch.style.backgroundColor = color; strip.append(swatch); }
-    button.append(label, strip); button.addEventListener('click', () => { selectedId = set.id; paint(); document.dispatchEvent(new CustomEvent('nb1-color-set-browse', {detail: {id: set.id}})); }); grid.append(button);
+    button.append(label, strip); button.addEventListener('click', () => browse(set.id)); grid.append(button);
     return {set, button, label};
   });
   const setActions = document.createElement('div'); setActions.className = 'color-set-actions';
@@ -34,7 +38,7 @@
   const tableHead = table.createTHead().insertRow(), groupHead = document.createElement('th'); groupHead.scope = 'col'; tableHead.append(groupHead);
   const columnHeads = hueColumns.map(() => { const th = document.createElement('th'); th.scope = 'col'; tableHead.append(th); return th; });
   const body = table.createTBody(), compareColors = [];
-  const compareRows = sets.slice(1).map(set => {
+  const compareRows = sets.map(set => {
     const row = body.insertRow(); row.dataset.colorSetRow = set.id;
     const label = document.createElement('th'); label.scope = 'row'; row.append(label);
     const cells = hueColumns.map(() => row.insertCell());
@@ -47,9 +51,9 @@
     return {set, label};
   });
   compareScroll.append(table); comparison.append(compareSummary, compareNote, compareScroll);
-  setActions.append(pairButton, sequenceButton); chooser.append(summary, grid, setActions, comparison);
+  setActions.append(pairButton, sequenceButton); chooser.append(summary, commonActions, grid, setActions, comparison);
   window.NB1ColorSets = Object.freeze({sets, get: getSet, get selectedId() { return selectedId; }, refresh: schedule,
-    sequence(id) { const set = getSet(id); if (!set) throw Error('Unknown color set'); return {timing: 'serial', steps: set.colors.map(color => ({targets: [{led: 0, color}], fade_ms: 600, hold_ms: 400})), repeat: 3, on_finish: 'off'}; }
+    sequence(id) { const set = sets.find(set => set.id === id); if (!set) throw Error('Choose a theme to create a Sequence'); return {timing: 'serial', steps: set.colors.map(color => ({targets: [{led: 0, color}], fade_ms: 600, hold_ms: 400})), repeat: 3, on_finish: 'off'}; }
   });
   function colorSetsPaint(locale, count) {
     const target = browser ? document.querySelector('#action-fields > .color-field') : composer.querySelector('.color-pair');
@@ -57,6 +61,9 @@
     if (host && (chooser.parentElement !== host || target && chooser.nextSibling !== target)) host.insertBefore(chooser, target || null);
     const hidden = count === 0; if (chooser.hidden !== hidden) chooser.hidden = hidden;
     if (pairButton.hidden !== (count !== 2)) pairButton.hidden = count !== 2;
+    const common = selectedId === 'essentials'; if (sequenceButton.hidden !== common) sequenceButton.hidden = common;
+    if (setActions.hidden !== (common && count !== 2)) setActions.hidden = common && count !== 2;
+    text(commonButton, locale === 'zh-CN' ? '常用颜色 · 9' : 'Common colors · 9'); attr(commonButton, 'aria-pressed', String(common));
     text(heading, locale === 'zh-CN' ? '配色组' : 'Color sets'); text(selectedName, getSet(selectedId).label[locale]);
     text(pairButton, locale === 'zh-CN' ? '应用双色' : 'Use pair'); text(sequenceButton, locale === 'zh-CN' ? '创建序列' : 'Create Sequence');
     attr(pairButton, 'title', `A: ${getSet(selectedId).pair[0]} · B: ${getSet(selectedId).pair[1]}`);

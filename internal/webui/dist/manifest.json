@@ -4,9 +4,9 @@
   "asset_base": "./",
   "source": {
     "repository": "local:nb1-web",
-    "commit": "fadf0fee12a301e4c237642f19f5004fc44dbf11",
+    "commit": "8269a641812e13125231eca96973ea9cb8557db1",
     "dirty": false,
-    "tree_sha256": "df48295f7ef755bfdea5afcd57db37f180036d35b6cc3f6372f9a9ff017b9de3"
+    "tree_sha256": "9ef73c4b667fb41c8039ef7401da2a1dc495dd197cb90f4c5c6a630fd14044da"
   },
   "build": {
     "tool": "static-nightlab/v1",
@@ -60,10 +60,10 @@
     {
       "path": "demo.js",
       "bytes": 62496,
-      "sha256": "fdc8f810714bc290a7506da9808f4ae53ab906584535e5af1b39eb7616cacde6",
+      "sha256": "675ec5839dddee58a45e7dbe4324e348c3e9da04646888c8938ba5198670a8e3",
       "encoding": "identity",
       "decoded_bytes": 62496,
-      "decoded_sha256": "fdc8f810714bc290a7506da9808f4ae53ab906584535e5af1b39eb7616cacde6"
+      "decoded_sha256": "675ec5839dddee58a45e7dbe4324e348c3e9da04646888c8938ba5198670a8e3"
     },
     {
       "path": "editor-LICENSES.txt",

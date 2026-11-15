@@ -314,7 +314,7 @@
     else field("led", "Output", kind === "set" ? [["0", "Both · same color"], ["separate", "Separate colors"], ["1", "LED 1 · blink(1)"], ["2", "LED 2 · ThingM"]] : [["0", "Both LEDs"], ["1", "LED 1 · blink(1)"], ["2", "LED 2 · ThingM"]], outputs.get(kind) || "0");
     $("color-card-b").hidden = !pairs(kind) && !separateSolid();
     for (const [name, label, value] of ({fade: [["duration_ms", "Fade duration · ms", 600]], blink: [["on_ms", "On duration · ms", 250], ["off_ms", "Off duration · ms", 250]], breathe: [["period_ms", "Cycle duration · ms", 2000]], pulse: [["attack_ms", "Rise · ms", 60], ["decay_ms", "Fall · ms", 240], ["rest_ms", "Rest · ms", 700]], alternate: [["period_ms", "Cycle duration · ms", 2000]], orbit: [["period_ms", "Cycle duration · ms", 3000]], rainbow: [["period_ms", "Cycle duration · ms", 3000]]}[kind] || [])) field(name, label, null, value);
-    if (loops(kind)) { field("cycles", "Cycles", null, 1); field("finish", "On finish", [["off", "Off"], ["hold", "Hold final state"]], "off"); }
+    if (loops(kind)) { field("cycles", "Cycles", null, 3); field("finish", "On finish", [["off", "Off"], ["hold", "Hold final state"]], "off"); }
     const saved = actionDrafts.get(kind);
     if (saved) {
       for (const [id, value] of saved.fields) if ($(id)) $(id).value = value;

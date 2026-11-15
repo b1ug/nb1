@@ -182,8 +182,8 @@ function init() {
   new MutationObserver(compiled).observe(compiledNode, {childList: true, subtree: true});
   const notice = document.getElementById('play-feedback') || document.getElementById('notice') || document.getElementById('status');
   if (notice) new MutationObserver(() => {
-    if (pending && notice.classList.contains('error')) fail(new Error(notice.textContent), pending.id);
-  }).observe(notice, {childList: true, subtree: true, attributes: true, attributeFilter: ['class']});
+    if (pending && notice.dataset.previewError === 'true' && notice.classList.contains('error')) fail(new Error(notice.textContent), pending.id);
+  }).observe(notice, {childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'data-preview-error']});
   new MutationObserver(controls).observe(document.documentElement, {attributes: true, attributeFilter: ['lang']});
   window.addEventListener('nb1-playback-requested', () => stop('idle', true));
   window.addEventListener('nb1-cached-readback', event => {

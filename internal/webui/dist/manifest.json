@@ -4,9 +4,9 @@
   "asset_base": "./",
   "source": {
     "repository": "local:nb1-web",
-    "commit": "0167ee85855d4b336925deedce94323017f02faa",
+    "commit": "7481687e99755aeead0fdf7c8c0e8b4ab31cff6a",
     "dirty": false,
-    "tree_sha256": "efaa94b21492e615a73242117d41656c479b7721a1e447520766bc15d8ba87d6"
+    "tree_sha256": "af10ef152eb617df0865bd55a3981f784de6a77b014d209556530e3a208f1761"
   },
   "build": {
     "tool": "static-nightlab/v1",
@@ -59,11 +59,11 @@
     },
     {
       "path": "demo.js",
-      "bytes": 57629,
-      "sha256": "6a4e797c0bbdd77bed9dc86a341ca02b4119b54b4f0a05703b47e8520a63cf88",
+      "bytes": 59378,
+      "sha256": "d050e871ae13255a121f7aab1445c9455e28535374e799372c946ae5adabb353",
       "encoding": "identity",
-      "decoded_bytes": 57629,
-      "decoded_sha256": "6a4e797c0bbdd77bed9dc86a341ca02b4119b54b4f0a05703b47e8520a63cf88"
+      "decoded_bytes": 59378,
+      "decoded_sha256": "d050e871ae13255a121f7aab1445c9455e28535374e799372c946ae5adabb353"
     },
     {
       "path": "editor-LICENSES.txt",
@@ -131,11 +131,11 @@
     },
     {
       "path": "index.html",
-      "bytes": 15887,
-      "sha256": "57fb864a35bedcf84291e08b9f2c426b84a1d07f3f7d87b7ed5ac7de421399a0",
+      "bytes": 16207,
+      "sha256": "11a220093ebedee0b768a706f183e9feedf7fd132e456ac04585f8ad22e5d52e",
       "encoding": "identity",
-      "decoded_bytes": 15887,
-      "decoded_sha256": "57fb864a35bedcf84291e08b9f2c426b84a1d07f3f7d87b7ed5ac7de421399a0"
+      "decoded_bytes": 16207,
+      "decoded_sha256": "11a220093ebedee0b768a706f183e9feedf7fd132e456ac04585f8ad22e5d52e"
     },
     {
       "path": "json-editor.css",
@@ -163,11 +163,11 @@
     },
     {
       "path": "locales.js",
-      "bytes": 11860,
-      "sha256": "23399ed2db272c5ac2c7b61f45c76970af59e2dc45dd05a43f04b07a05a51a67",
+      "bytes": 12009,
+      "sha256": "68a39ef1464149cf031126026745e7713127a24e2fbc2dbb2c820233fe04a791",
       "encoding": "identity",
-      "decoded_bytes": 11860,
-      "decoded_sha256": "23399ed2db272c5ac2c7b61f45c76970af59e2dc45dd05a43f04b07a05a51a67"
+      "decoded_bytes": 12009,
+      "decoded_sha256": "68a39ef1464149cf031126026745e7713127a24e2fbc2dbb2c820233fe04a791"
     },
     {
       "path": "nightlab/THREE-LICENSE.txt",
@@ -259,11 +259,11 @@
     },
     {
       "path": "nightlab/embedded-studio.css",
-      "bytes": 21466,
-      "sha256": "7efbde88b1c5211bb8a1d96197d6ce91d96d15acc486a8cf9eddf40b22c72324",
+      "bytes": 21744,
+      "sha256": "45b2948aefc52f2a60a40543adb2cd447c3d96b6ad62dfc7a9ac11574a1a6ec9",
       "encoding": "identity",
-      "decoded_bytes": 21466,
-      "decoded_sha256": "7efbde88b1c5211bb8a1d96197d6ce91d96d15acc486a8cf9eddf40b22c72324"
+      "decoded_bytes": 21744,
+      "decoded_sha256": "45b2948aefc52f2a60a40543adb2cd447c3d96b6ad62dfc7a9ac11574a1a6ec9"
     },
     {
       "path": "nightlab/enclosure-fit.js",
@@ -435,11 +435,11 @@
     },
     {
       "path": "nightlab/studio-preview.js",
-      "bytes": 12085,
-      "sha256": "20573a174228f552af4647b03d46cfe93bb813dfd4fe53ee48804f9a60e68ef5",
+      "bytes": 12149,
+      "sha256": "f4773ce99c23c349df1656769a29603800dcc1e5f23a793a58fbd19fbd80c683",
       "encoding": "identity",
-      "decoded_bytes": 12085,
-      "decoded_sha256": "20573a174228f552af4647b03d46cfe93bb813dfd4fe53ee48804f9a60e68ef5"
+      "decoded_bytes": 12149,
+      "decoded_sha256": "f4773ce99c23c349df1656769a29603800dcc1e5f23a793a58fbd19fbd80c683"
     },
     {
       "path": "nightlab/studio-skins.css",
@@ -483,11 +483,11 @@
     },
     {
       "path": "orbit.html",
-      "bytes": 15969,
-      "sha256": "b5126ec0eac8106bb2f755089df3f13eaae4ecc99eb6bc23564ff55d9fe36810",
+      "bytes": 16289,
+      "sha256": "3d637e197acca1f32de4cd0a0f1261cb2af00c6a577b4e6c0a43277a35c7736f",
       "encoding": "identity",
-      "decoded_bytes": 15969,
-      "decoded_sha256": "b5126ec0eac8106bb2f755089df3f13eaae4ecc99eb6bc23564ff55d9fe36810"
+      "decoded_bytes": 16289,
+      "decoded_sha256": "3d637e197acca1f32de4cd0a0f1261cb2af00c6a577b4e6c0a43277a35c7736f"
     },
     {
       "path": "orbit.js",
@@ -507,11 +507,11 @@
     },
     {
       "path": "patterns.html",
-      "bytes": 15975,
-      "sha256": "62bb7cc09c38c00244281221f5764b246bb3dd0e189248e6c52804aa39644e99",
+      "bytes": 16295,
+      "sha256": "9f8334606587922814109b3158f81ffcb4911625a732c4ac03d0058b0cb9c84e",
       "encoding": "identity",
-      "decoded_bytes": 15975,
-      "decoded_sha256": "62bb7cc09c38c00244281221f5764b246bb3dd0e189248e6c52804aa39644e99"
+      "decoded_bytes": 16295,
+      "decoded_sha256": "9f8334606587922814109b3158f81ffcb4911625a732c4ac03d0058b0cb9c84e"
     },
     {
       "path": "patterns.js",

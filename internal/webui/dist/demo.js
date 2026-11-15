@@ -18,7 +18,7 @@
   };
   const pairs = kind => ["alternate", "orbit"].includes(kind);
   const loops = kind => !["set", "off", "fade"].includes(kind);
-  let mode = page.mode, kind = page.action, version = 0, preview = null, task = null, loaded = null, polling = null, submitting = false, previewing = false, playIntent = 0;
+  let mode = page.mode, kind = page.action, version = 0, preview = null, task = null, loaded = null, polling = null, queryingTask = null, submitting = false, previewing = false, playIntent = 0;
   let deviceGeneration = 0, colorLibraryGeneration = 0;
   let localColors = [];
   const outputs = new Map(), actionDrafts = new Map();
@@ -248,12 +248,23 @@
     $("play").setAttribute("aria-busy", String(submitting));
     $("preview").disabled = submitting || previewing;
     $("new-run").disabled = submitting || previewing;
-    $("query").disabled = !task || submitting;
+    $("query").disabled = !task || submitting || queryingTask === task;
+    $("play-query").disabled = $("query").disabled;
+    $("play-new-run").disabled = $("new-run").disabled;
+    $("play-recovery").hidden = !task?.unknown || submitting;
+    text("play-recovery-id", task?.id || "");
     $("stop").disabled = !task || !task.job || task.unknown || terminal(task.job.status) || task.job.status === "cancelling" || submitting;
     $("new-run").hidden = !task || !(task.unknown || terminal(task.job?.status) || task.rejected);
     $("save-pattern").disabled = mode === "pattern" || patternSave.pending || patternSave.unknown;
     $("use-sequence").disabled = !preview || preview.version !== version;
-    if (!serial.test($("device-select").value) && !submitting && !$("play-feedback").textContent) playFeedback("Choose a device before playing.");
+    if (!submitting && waiting) playFeedback(task.unknown ? "Result unknown. Check status." : states[task.job?.status] + ". Wait for this Job before playing again.", Boolean(task.unknown));
+    else if (!submitting) {
+      if (previewing) playFeedback("Preparing preview…");
+      else {
+        if (textSources.get($("play-feedback")) === "Preparing preview…") playFeedback("");
+        if (!serial.test($("device-select").value)) playFeedback("Choose a device before playing.");
+      }
+    }
   }
   function changeMode(next) {
     mode = next;
@@ -337,6 +348,7 @@
   }
   async function previewDraft() {
     if (submitting || previewing) return;
+    $("play-feedback").dataset.previewError = "false";
     playFeedback("");
     const capture = captureDraft();
     if (mode === "sequence") sequenceEditor.refreshColors?.();
@@ -354,11 +366,14 @@
     } finally { previewing = false; updateButtons(); }
   }
   function playFeedback(message, error = false) {
+    if (!message && !submitting && task && (task.unknown || !task.rejected && !terminal(task.job?.status))) {
+      message = task.unknown ? "Result unknown. Check status." : states[task.job?.status] + ". Wait for this Job before playing again."; error = Boolean(task.unknown);
+    }
     $("play-feedback").hidden = !message;
     text("play-feedback", message);
     $("play-feedback").classList.toggle("error", error);
   }
-  function reportDraft(error) { playFeedback("Check the draft: " + error.message, true); $("error-detail").textContent = error.message; }
+  function reportDraft(error) { $("play-feedback").dataset.previewError = "true"; playFeedback("Check the draft: " + error.message, true); $("error-detail").textContent = error.message; }
   function rememberTask() {
     if (!task) return;
     try { const history = JSON.parse(sessionStorage.getItem(taskKey + ".history") || "[]"); sessionStorage.setItem(taskKey + ".history", JSON.stringify([...history.slice(-7), task])); } catch (_) { /* Keep the visible ID if storage is unavailable. */ }
@@ -386,10 +401,19 @@
     if (terminal(value.status) !== (typeof value.finished_at === "string" && Number.isFinite(Date.parse(value.finished_at))) || value.status === "succeeded" && value.completed_steps !== value.total_steps) throw Error("Job terminal state is inconsistent");
     return value;
   }
-  function scheduleQuery() { clearTimeout(polling); if (task?.job && !task.unknown && !terminal(task.job.status)) polling = setTimeout(() => queryJob().catch(uncertainJob), 500); }
+  function scheduleQuery() { clearTimeout(polling); if (task?.job && !task.unknown && !terminal(task.job.status)) polling = setTimeout(queryJob, 500); }
   function acceptJob(value) { task.job = validateJob(value); task.unknown = false; task.rejected = false; saveTask(); showTask(); scheduleQuery(); }
   function uncertainJob(error) { clearTimeout(polling); $("error-detail").textContent = error.message; if (task?.job && terminal(task.job.status)) { playFeedback(states[task.job.status] + " · Refresh failed", true); return; } if (task) { task.unknown = true; saveTask(); showTask(); } playFeedback("Result unknown. Check status.", true); }
-  async function queryJob() { if (!task) return; const id = task.id; const reply = await request("/v1/jobs/" + encodeURIComponent(id)); if (task?.id !== id) return; acceptJob(reply.value); readDevice().catch(report); }
+  async function queryJob() {
+    const captured = task; if (!captured || queryingTask === captured) return;
+    queryingTask = captured; updateButtons();
+    try {
+      const reply = await request("/v1/jobs/" + encodeURIComponent(captured.id));
+      if (task !== captured || task.id !== captured.id) return;
+      acceptJob(reply.value); readDevice().catch(report);
+    } catch (error) { if (task === captured && task.id === captured.id) uncertainJob(error); }
+    finally { if (queryingTask === captured) queryingTask = null; updateButtons(); }
+  }
   async function play() {
     if (submitting || previewing || task && (task.unknown || !task.rejected && !terminal(task.job?.status))) return;
     submitting = true; const intent = ++playIntent; updateButtons();
@@ -743,14 +767,25 @@
   $("device-select").addEventListener("change", () => { invalidate(); readDevice().catch(report); });
   $("pattern-select").addEventListener("change", () => { loaded = null; $("edit-sequence").disabled = true; invalidate(); });
   bind("use-sequence", () => { if (preview) { sequenceEditor.setValue(JSON.stringify(preview.sequence, null, 2)); changeMode("sequence"); } });
-  bind("preview", previewDraft, reportDraft); bind("play", play); bind("query", queryJob, uncertainJob); bind("stop", stopJob);
+  bind("preview", previewDraft, reportDraft); bind("play", play); bind("query", queryJob); bind("play-query", queryJob); bind("stop", stopJob);
   bind("refresh", refreshDevices); bind("sequence-colors-refresh", refreshColors); bind("patterns-refresh", refreshPatterns); bind("load-pattern", () => readPattern());
   bind("copy-color-reference", copyColorReference); $("sequence-local-color").addEventListener("change", updateSequenceReference);
   bind("edit-sequence", () => { if (loaded) { sequenceEditor.setValue(JSON.stringify(loaded.sequence, null, 2)); changeMode("sequence"); } });
   bind("save-pattern", savePattern); bind("verify-save", checkSavedPattern);
-  bind("new-run", () => { if (submitting || previewing) return; clearTimeout(polling); rememberTask(); task = null; saveTask(); showTask(); notice("Ready for a separate run. Previous IDs stay in this tab's history."); });
+  function newRun() { if (submitting || previewing) return; clearTimeout(polling); rememberTask(); task = null; saveTask(); showTask(); notice("Ready for a separate run. Previous IDs stay in this tab's history."); }
+  bind("new-run", newRun); bind("play-new-run", newRun);
   selectKind(kind); changeMode(mode);
-  try { const saved = JSON.parse(sessionStorage.getItem(taskKey) || "null"); if (saved && identifier.test(saved.id) && serial.test(saved.serial)) { task = {id: saved.id, serial: saved.serial, unknown: true, job: null}; showTask(); } } catch (_) { /* Ignore invalid browser data. */ }
+  try {
+    const saved = JSON.parse(sessionStorage.getItem(taskKey) || "null");
+    if (saved && identifier.test(saved.id) && serial.test(saved.serial)) {
+      task = {id: saved.id, serial: saved.serial, unknown: true, job: null};
+      if (!saved.unknown && !saved.rejected && terminal(saved.job?.status)) {
+        try { task.job = validateJob(saved.job); task.unknown = false; } catch (_) { /* Malformed storage remains unresolved. */ }
+      }
+      showTask();
+    }
+  } catch (_) { /* Ignore invalid browser data. */ }
+  if (task?.unknown) queryJob(); // Read-only reconciliation; preserve validated terminal facts without a noisy startup refresh.
   Promise.allSettled([refreshDevices(), refreshColors(), refreshPatterns()]).then(results => { const failed = results.find(result => result.status === "rejected"); if (failed) report(failed.reason); });
   document.addEventListener("visibilitychange", () => { if (document.hidden) playIntent++; });
   window.addEventListener("pagehide", () => { playIntent++; clearTimeout(polling); for (const state of Object.values(colorSaves)) { clearTimeout(state.timer); state.controller?.abort(); } });

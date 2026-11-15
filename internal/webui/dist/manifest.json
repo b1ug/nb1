@@ -4,9 +4,9 @@
   "asset_base": "./",
   "source": {
     "repository": "local:nb1-web",
-    "commit": "8269a641812e13125231eca96973ea9cb8557db1",
+    "commit": "f3b651418c038a727f9f14c59581b1dea4d3a4eb",
     "dirty": false,
-    "tree_sha256": "9ef73c4b667fb41c8039ef7401da2a1dc495dd197cb90f4c5c6a630fd14044da"
+    "tree_sha256": "ca411695387302bc1c2a86a0975de89d34691f4a1b9901c414c3bf2d39c7f7b2"
   },
   "build": {
     "tool": "static-nightlab/v1",
@@ -59,11 +59,11 @@
     },
     {
       "path": "demo.js",
-      "bytes": 62496,
-      "sha256": "675ec5839dddee58a45e7dbe4324e348c3e9da04646888c8938ba5198670a8e3",
+      "bytes": 64768,
+      "sha256": "7d9a9f48dcbbfb52aea36dbd29ff6674ba2875b4855d92b43c29da3b8ae08c05",
       "encoding": "identity",
-      "decoded_bytes": 62496,
-      "decoded_sha256": "675ec5839dddee58a45e7dbe4324e348c3e9da04646888c8938ba5198670a8e3"
+      "decoded_bytes": 64768,
+      "decoded_sha256": "7d9a9f48dcbbfb52aea36dbd29ff6674ba2875b4855d92b43c29da3b8ae08c05"
     },
     {
       "path": "editor-LICENSES.txt",
@@ -243,11 +243,11 @@
     },
     {
       "path": "nightlab/composer-ui.js",
-      "bytes": 10716,
-      "sha256": "f07ee1ce67870da57c87af605a9073953f441ba61e8bc5d7adfa2324aba2beb0",
+      "bytes": 16462,
+      "sha256": "99d1d8ce28ad5cad3ca03bc99b9a19421b96c38bdb7710cc39490bc3f9314789",
       "encoding": "identity",
-      "decoded_bytes": 10716,
-      "decoded_sha256": "f07ee1ce67870da57c87af605a9073953f441ba61e8bc5d7adfa2324aba2beb0"
+      "decoded_bytes": 16462,
+      "decoded_sha256": "99d1d8ce28ad5cad3ca03bc99b9a19421b96c38bdb7710cc39490bc3f9314789"
     },
     {
       "path": "nightlab/docs/INTEGRATION.md",
@@ -259,11 +259,11 @@
     },
     {
       "path": "nightlab/embedded-studio.css",
-      "bytes": 21773,
-      "sha256": "3849f2292e125a06180d236445c1690c5d60d8fcc8887978548e2fc66596bbd2",
+      "bytes": 23598,
+      "sha256": "372499fa9802b2980c2b42614115b1d6b8581760dc5f1fe0c3034de102363529",
       "encoding": "identity",
-      "decoded_bytes": 21773,
-      "decoded_sha256": "3849f2292e125a06180d236445c1690c5d60d8fcc8887978548e2fc66596bbd2"
+      "decoded_bytes": 23598,
+      "decoded_sha256": "372499fa9802b2980c2b42614115b1d6b8581760dc5f1fe0c3034de102363529"
     },
     {
       "path": "nightlab/enclosure-fit.js",

@@ -4,12 +4,45 @@
   const browser = document.documentElement.dataset.nb1App === 'browser';
   const composer = document.querySelector('.composer');
   if (!composer) return;
+  // UI-local lamp recipes; no compiler, saved Pattern or execution behavior.
+  const sets = [{"id":"essentials","label":{"en":"Essentials","zh-CN":"基础"},"character":{"en":"Common colors","zh-CN":"常用颜色"},"colors":["#ff0000","#ffa500","#ffff00","#00ff00","#00a060","#00ffff","#0000ff","#8f00ff","#ffffff"]},{"id":"candlelight","label":{"en":"Candlelight","zh-CN":"烛火"},"character":{"en":"Warm amber and coral","zh-CN":"暖琥珀与珊瑚"},"colors":["#ffb15c","#e76f51","#ffd28a","#f28f78","#c66b3d","#ffe5bb"]},{"id":"tide","label":{"en":"Tide","zh-CN":"潮汐"},"character":{"en":"Cool turquoise and blue","zh-CN":"清冷青绿与蓝"},"colors":["#36b7c9","#567bd8","#78d9d4","#7ea8e8","#3f8496","#b3e5df"]},{"id":"petals","label":{"en":"Petals","zh-CN":"花瓣"},"character":{"en":"Soft rose and lavender","zh-CN":"柔和粉玫瑰与淡紫"},"colors":["#e9a4bb","#b8a5df","#f1c1ad","#b7d6cc","#e8d2a8","#d4bed8"]},{"id":"neon","label":{"en":"Neon","zh-CN":"霓虹"},"character":{"en":"Vivid pink and cyan","zh-CN":"鲜明桃红与青"},"colors":["#ff3988","#1fd6e5","#a8e63b","#9a5cff","#ff8b32","#f4dc3b"]},{"id":"forest","label":{"en":"Forest","zh-CN":"林间"},"character":{"en":"Natural leaf green and gold","zh-CN":"自然叶绿与沙金"},"colors":["#72a36a","#d1ae68","#a6ba79","#4a9680","#bccc9a","#a48560"]},{"id":"dusk","label":{"en":"Dusk","zh-CN":"暮色"},"character":{"en":"Muted indigo and rose","zh-CN":"沉静靛蓝与玫瑰"},"colors":["#6877c9","#d58da6","#9d79bb","#cda576","#5a8da5","#9e9cbd"]},{"id":"citrus","label":{"en":"Citrus","zh-CN":"柑橘"},"character":{"en":"Fresh golden yellow and mint","zh-CN":"明快金黄与薄荷"},"colors":["#f4be45","#5bb98d","#ef8557","#bfd65b","#edaaa0","#e4d879"]},{"id":"whites","label":{"en":"Whites","zh-CN":"白光"},"character":{"en":"Warm and cool neutral recipes","zh-CN":"偏暖与偏冷的中性色配方"},"colors":["#ffd9ae","#b7d8f2","#fff2d5","#e7eef5","#cfd6ce","#aebbc8"]}];
+  for (const set of sets) { Object.freeze(set.label); Object.freeze(set.character); Object.freeze(set.colors); Object.freeze(set); }
+  Object.freeze(sets);
+  let selectedId = 'essentials';
+  const getSet = id => sets.find(set => set.id === id);
+  const chooser = document.createElement('details'); chooser.id = 'color-sets'; chooser.className = 'color-sets'; chooser.setAttribute('data-i18n-skip', '');
+  const summary = document.createElement('summary'), heading = document.createElement('span'), selectedName = document.createElement('span'); selectedName.id = 'color-set-name'; summary.append(heading, selectedName);
+  const grid = document.createElement('div'); grid.className = 'color-set-grid';
+  const cards = sets.map(set => {
+    const button = document.createElement('button'); button.type = 'button'; button.className = 'color-set-card'; button.dataset.colorSet = set.id;
+    const label = document.createElement('span'), strip = document.createElement('span'); label.className = 'color-set-label'; strip.className = 'color-set-strip'; strip.setAttribute('aria-hidden', 'true');
+    for (const color of set.colors) { const swatch = document.createElement('span'); swatch.style.backgroundColor = color; strip.append(swatch); }
+    button.append(label, strip); button.addEventListener('click', () => { selectedId = set.id; paint(); document.dispatchEvent(new CustomEvent('nb1-color-set-browse', {detail: {id: set.id}})); }); grid.append(button);
+    return {set, button, label};
+  });
+  const setActions = document.createElement('div'); setActions.className = 'color-set-actions';
+  const pairButton = document.createElement('button'), sequenceButton = document.createElement('button'); pairButton.id = 'color-set-pair'; sequenceButton.id = 'color-set-sequence';
+  for (const [button, event] of [[pairButton, 'nb1-color-set-pair'], [sequenceButton, 'nb1-color-set-sequence']]) { button.type = 'button'; button.className = 'secondary'; button.addEventListener('click', () => document.dispatchEvent(new CustomEvent(event, {detail: {id: selectedId}}))); }
+  setActions.append(pairButton, sequenceButton); chooser.append(summary, grid, setActions);
+  window.NB1ColorSets = Object.freeze({sets, get: getSet, get selectedId() { return selectedId; }, refresh: schedule,
+    sequence(id) { const set = getSet(id); if (!set) throw Error('Unknown color set'); return {timing: 'serial', steps: set.colors.map(color => ({targets: [{led: 0, color}], fade_ms: 600, hold_ms: 400})), repeat: 3, on_finish: 'off'}; }
+  });
+  function colorSetsPaint(locale, count) {
+    const target = browser ? document.querySelector('#action-fields > .color-field') : composer.querySelector('.color-pair');
+    const host = browser ? document.getElementById('action-fields') : target?.parentElement;
+    if (host && (chooser.parentElement !== host || target && chooser.nextSibling !== target)) host.insertBefore(chooser, target || null);
+    const hidden = count === 0; if (chooser.hidden !== hidden) chooser.hidden = hidden;
+    if (pairButton.hidden !== (count !== 2)) pairButton.hidden = count !== 2;
+    text(heading, locale === 'zh-CN' ? '配色组' : 'Color sets'); text(selectedName, getSet(selectedId).label[locale]);
+    text(pairButton, locale === 'zh-CN' ? '应用双色' : 'Use pair'); text(sequenceButton, locale === 'zh-CN' ? '创建序列' : 'Create Sequence');
+    for (const {set, button, label} of cards) { text(label, set.label[locale]); attr(button, 'title', set.character[locale]); attr(button, 'aria-pressed', String(set.id === selectedId)); }
+  }
   const copy = {
     en: {
       controls: 'Light controls', effects: 'Effects', sequence: 'Sequence', patterns: 'Patterns', choose: 'Effects',
       ledColors: 'LED colors', ledOne: 'LED 1 · blink(1)', ledTwo: 'LED 2 · ThingM', separateSolid: 'Set a steady color for each LED in one operation.', color: 'Color', target: 'Target color', flash: 'Flash color', peak: 'Peak color', a: 'Color A', b: 'Color B',
       apply: 'Apply to', assignment: 'Color assignment', after: 'After playback', off: 'Turn off', hold: 'Keep final state',
-      playDevice: 'Play', playLabel: 'Play on device: validate and play the current draft.', preview: 'Preview', previewLabel: 'Screen preview: play on screen without controlling the light.', executionNote: 'Preview stays on screen.', format: 'format', picker: 'picker',
+      stopDevice: 'Stop device playback', playDevice: 'Play', playLabel: 'Play on device: validate and play the current draft.', preview: 'Preview', previewLabel: 'Screen preview: play on screen without controlling the light.', executionNote: 'Preview stays on screen.', format: 'format', picker: 'picker',
       colorHelp: 'Use a color name or hex code.', textFormat: 'Text', textFormatHelp: 'Color name, hex code or @saved color', custom: 'Custom JSON', customHelp: 'Edit the request below. Playback uses this JSON.',
       advanced: 'Advanced tools',
       actions: { set: 'Solid', off: 'Off', fade: 'Fade', blink: 'Blink', breathe: 'Breathe', pulse: 'Pulse', alternate: 'Alternate', orbit: 'Orbit', rainbow: 'Rainbow' },
@@ -25,7 +58,7 @@
       controls: '灯光设置', effects: '效果', sequence: '序列', patterns: '图案', choose: '效果',
       ledColors: '灯色', ledOne: 'LED 1 · blink(1)', ledTwo: 'LED 2 · ThingM', separateSolid: '一次操作，分别设置两路灯的常亮颜色。', color: '颜色', target: '目标颜色', flash: '亮灯颜色', peak: '最亮时的颜色', a: '颜色 A', b: '颜色 B',
       apply: '作用于', assignment: '颜色分配', after: '播放结束后', off: '熄灯', hold: '保留最后状态',
-      playDevice: '播放', playLabel: '设备播放：校验并播放当前草稿。', preview: '预览', previewLabel: '屏幕预览：仅在屏幕播放，不控制实体灯。', executionNote: '预览仅在屏幕播放。', format: '格式', picker: '取色器',
+      stopDevice: '停止设备播放', playDevice: '播放', playLabel: '设备播放：校验并播放当前草稿。', preview: '预览', previewLabel: '屏幕预览：仅在屏幕播放，不控制实体灯。', executionNote: '预览仅在屏幕播放。', format: '格式', picker: '取色器',
       colorHelp: '可输入颜色名称或十六进制色值。', textFormat: '文本', textFormatHelp: '颜色名称、十六进制或 @已存颜色', custom: '自定义 JSON', customHelp: '在下方编辑请求，播放时使用这份 JSON。',
       advanced: '高级工具',
       actions: { set: '常亮', off: '熄灭', fade: '渐变', blink: '闪烁', breathe: '呼吸', pulse: '脉冲', alternate: '交替', orbit: '环绕', rainbow: '彩虹' },
@@ -83,6 +116,7 @@
     const noColor = kind === 'off' || kind === 'rainbow';
     const count = actionMode ? noColor ? 0 : pair || separate ? 2 : 1 : 0;
     if (composer.dataset.colorCount !== String(count)) composer.dataset.colorCount = String(count);
+    colorSetsPaint(locale, count);
     text(composer.querySelector(':scope > .section-title h2'), words.controls);
     text($('create-title') || document.querySelector('.effect-bank-heading'), words.choose);
     for (const [id, value] of [['mode-action', words.effects], ['mode-sequence', words.sequence], ['mode-pattern', words.patterns]]) text($(id), value);
@@ -118,6 +152,7 @@
       for (const option of $('param-order')?.options || []) text(option, option.value === '2,1' ? 'A → LED 2 · B → LED 1' : 'A → LED 1 · B → LED 2');
     }
     text($('play'), words.playDevice); namedInput($('play'), words.playLabel);
+    if (browser) namedInput($('stop'), words.stopDevice);
     text($('preview'), words.preview); namedInput($('preview'), words.previewLabel); $('preview')?.removeAttribute('title');
     if (!browser) text($('execution-note'), words.executionNote);
     for (const node of document.querySelectorAll('[data-composer-copy="advanced"]')) text(node, words.advanced);
@@ -128,4 +163,5 @@
   document.addEventListener('input', event => { if (event.target.closest('.composer')) schedule(); }, true);
   document.addEventListener('change', event => { if (event.target.closest('.composer')) schedule(); }, true);
   paint();
+  document.dispatchEvent(new CustomEvent('nb1-color-sets-ready'));
 })();

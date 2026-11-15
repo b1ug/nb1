@@ -8,6 +8,8 @@ Play resolves and checks the current draft on click, then submits the returned c
 
 The compact mobile view orders output choices as both/same, separate colors, LED 1 and LED 2. Saving, help and request details use disclosures, while actionable playback status, Stop and uncertain-result recovery remain visible. Confirmed completion does not mean Off, and a failed status refresh does not replace an established terminal result.
 
+The color-set chooser retains nine common swatches and eight curated families with 48 additional colors. Browsing a family changes the available swatches; choosing a swatch edits one color, Use pair fills both slots, and Create Sequence drafts serial color transitions. These controls do not start preview or playback, submit a Job or save a Pattern automatically. Editable inputs and the normal Preview/Play actions remain authoritative.
+
 ## Closed profiles and provenance
 
 The legacy schema-1 `static-editor/v1` profile retains 26 assets plus its manifest and a 640 KiB total limit. The schema-2 `static-nightlab/v1` profile has 64 assets plus its manifest. Its limits, including the manifest, are:

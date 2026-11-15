@@ -787,14 +787,42 @@
     $("mode-" + name).addEventListener("click", () => changeMode(name));
     $("mode-" + name).addEventListener("keydown", event => { if (!["ArrowLeft", "ArrowRight"].includes(event.key)) return; event.preventDefault(); const names = ["action", "sequence", "pattern"], index = (names.indexOf(mode) + (event.key === "ArrowRight" ? 1 : 2)) % 3; changeMode(names[index]); $("mode-" + mode).focus(); });
   }
+  const commonColors = ["#ff0000", "#ffa500", "#ffff00", "#00ff00", "#00a060", "#00ffff", "#0000ff", "#8f00ff", "#ffffff"];
+  function colorSetPalette(suffix, id = window.NB1ColorSets?.selectedId) {
+    const parent = $("palette-" + suffix), colors = window.NB1ColorSets?.get(id)?.colors || commonColors;
+    const old = [...parent.querySelectorAll(":scope > button[data-color-set-swatch]")], focused = old.indexOf(document.activeElement), focusedColor = document.activeElement?.title;
+    const fragment = document.createDocumentFragment(), buttons = [];
+    for (const color of colors) {
+      const button = document.createElement("button"); button.type = "button"; button.dataset.colorSetSwatch = ""; button.style.backgroundColor = color; button.title = color; button.setAttribute("aria-label", color);
+      const selected = $("color-mode-" + suffix).value === "text" && $("color-" + suffix).value.toLowerCase().trim() === color;
+      button.setAttribute("aria-pressed", String(selected));
+      button.addEventListener("click", () => { $("color-mode-" + suffix).value = "text"; renderChannels(suffix); $("color-" + suffix).value = color; $("picker-" + suffix).value = color; invalidate(); });
+      fragment.append(button); buttons.push(button);
+    }
+    parent.insertBefore(fragment, old[0] || null); for (const button of old) button.remove();
+    if (focused >= 0) (buttons.find(button => button.title === focusedColor) || buttons[Math.min(focused, buttons.length - 1)]).focus({preventScroll: true});
+  }
+  function refreshColorSetPalettes() { for (const suffix of ["a", "b"]) colorSetPalette(suffix); }
+  document.addEventListener("nb1-color-sets-ready", refreshColorSetPalettes);
+  document.addEventListener("nb1-color-set-browse", event => { if (window.NB1ColorSets?.get(event.detail?.id)) for (const suffix of ["a", "b"]) colorSetPalette(suffix, event.detail.id); });
+  document.addEventListener("nb1-color-set-pair", event => {
+    const set = window.NB1ColorSets?.get(event.detail?.id);
+    if (!set || mode !== "action" || !(pairs(kind) || separateSolid())) return;
+    for (const [index, suffix] of ["a", "b"].entries()) { $("color-mode-" + suffix).value = "text"; renderChannels(suffix); $("color-" + suffix).value = set.colors[index]; $("picker-" + suffix).value = set.colors[index]; }
+    // Both slots are ready before one ordinary draft event invalidates preview.
+    $("color-a").dispatchEvent(new Event("input", {bubbles: true}));
+  });
+  document.addEventListener("nb1-color-set-sequence", event => {
+    const api = window.NB1ColorSets;
+    if (!api?.get(event.detail?.id) || mode !== "action" || ["off", "rainbow"].includes(kind)) return;
+    sequenceEditor.setValue(JSON.stringify(api.sequence(event.detail.id), null, 2), false);
+    $("mode-sequence").click(); $("mode-sequence").focus({preventScroll: true});
+  });
   for (const suffix of ["a", "b"]) {
     renderChannels(suffix);
     $("color-mode-" + suffix).addEventListener("change", () => { renderChannels(suffix); invalidate(); });
     $("picker-" + suffix).addEventListener("input", () => { $("color-mode-" + suffix).value = "text"; renderChannels(suffix); $("color-" + suffix).value = $("picker-" + suffix).value; invalidate(); });
-    for (const color of ["#ff0000", "#ffa500", "#ffff00", "#00ff00", "#00a060", "#00ffff", "#0000ff", "#8f00ff", "#ffffff"]) {
-      const button = document.createElement("button"); button.type = "button"; button.style.backgroundColor = color; button.title = color; button.setAttribute("aria-label", color); button.setAttribute("aria-pressed", "false");
-      button.addEventListener("click", () => { $("color-mode-" + suffix).value = "text"; renderChannels(suffix); $("color-" + suffix).value = color; $("picker-" + suffix).value = color; invalidate(); }); $("palette-" + suffix).append(button);
-    }
+    colorSetPalette(suffix);
     bind("resolve-" + suffix, () => scheduleColorSource(suffix, true));
     bind("colors-refresh-" + suffix, refreshColors);
     bind("save-color-" + suffix, () => saveColor(suffix));

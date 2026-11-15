@@ -237,3 +237,20 @@ main.workbench { width: min(1320px, calc(100% - 48px)); }
 .play-recovery:not([hidden]) { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 .play-recovery code { flex-basis: 100%; overflow-wrap: anywhere; font-size: var(--type-caption); }
 .play-recovery button { min-height: 44px; }
+
+/* nb1-color-sets:start — shared authoring chooser; Nightlab chrome unchanged. */
+.composer .color-sets { grid-column: 1 / -1; min-width: 0; margin: 12px 0; padding: 0; border: 1px solid var(--ui-line); border-radius: 6px; background: var(--ui-panel); }
+.composer .color-sets > summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; margin: 0; padding: 10px 12px; color: var(--ui-ink); font: 500 var(--type-body)/1.5 var(--font-ui); cursor: pointer; }
+.composer #color-set-name { margin-inline-start: auto; color: var(--ui-muted); }
+.composer .color-sets > summary::after { content: '+'; color: var(--ui-blue); }
+.composer .color-sets[open] > summary::after { content: '−'; }
+.composer .color-set-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 8px; padding: 0 12px 12px; }
+.composer .color-set-card { display: grid; gap: 8px; min-width: 0; min-height: 64px; padding: 8px; border: 1px solid var(--ui-control-line); border-radius: 6px; background: var(--ui-panel); color: var(--ui-ink); font: 400 var(--type-body)/1.5 var(--font-ui); text-align: left; }
+.composer .color-set-card[aria-pressed=true] { color: var(--ui-blue); border-color: var(--ui-blue); background: var(--ui-blue-soft); }
+.composer .color-set-label { overflow-wrap: anywhere; }
+.composer .color-set-strip { display: flex; height: 12px; overflow: hidden; border-radius: 3px; }
+.composer .color-set-strip > span { flex: 1; min-width: 0; }
+.composer .color-set-actions { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 12px 12px; }
+.composer .color-set-actions button, .composer [data-color-set-swatch] { min-width: 44px; min-height: 44px; }
+@media(max-width:620px) { .composer .color-set-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+/* nb1-color-sets:end */

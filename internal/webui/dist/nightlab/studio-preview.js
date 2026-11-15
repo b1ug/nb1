@@ -170,7 +170,9 @@ function init() {
   document.addEventListener('click', event => {
     const preview = event.target.closest('#preview');
     if (preview && !preview.disabled) { prepare(); return; }
-    if (event.target.closest('[data-kind], [data-action], .palette button, .editor-tabs button, #use-sequence, #edit-sequence, #sequence-example, #import, #disconnect, #play, #off, #stop, #load-pattern')) stop('idle', true);
+    const selectedEffect = event.target.closest('[data-kind], [data-action]');
+    if (selectedEffect?.getAttribute('aria-pressed') === 'true') return;
+    if (event.target.closest('[data-kind], [data-action], .palette button, .editor-tabs button, #use-sequence, #edit-sequence, #sequence-example, #import, #disconnect, #off, #stop, #load-pattern')) stop('idle', true);
   }, true);
   const draftInput = event => {
     if (event.target.closest('#author, #action-fields, .color-card, #sequence-pane, #advanced, #request, #sequence-json, #pattern-select, #device-select')) stop('idle', true);
@@ -183,6 +185,7 @@ function init() {
     if (pending && notice.classList.contains('error')) fail(new Error(notice.textContent), pending.id);
   }).observe(notice, {childList: true, subtree: true, attributes: true, attributeFilter: ['class']});
   new MutationObserver(controls).observe(document.documentElement, {attributes: true, attributeFilter: ['lang']});
+  window.addEventListener('nb1-playback-requested', () => stop('idle', true));
   window.addEventListener('nb1-cached-readback', event => {
     // A cached service observation is never a per-command acknowledgment and
     // never interrupts an active screen animation.

@@ -24,9 +24,11 @@ if (time) {
   const observer = new MutationObserver(publish);
   for(const id of ['rgb-one','rgb-two','sample-time'])observer.observe(document.getElementById(id),{childList:true,subtree:true});
   document.addEventListener('click',event=>{
-    if(event.target.closest('#play:not(:disabled)')) {armed=true;serial=document.getElementById('device-select')?.value||'';previous='';return;}
+    if(event.target.closest('[data-action]')?.getAttribute('aria-pressed')==='true')return;
+
     if(event.target.closest('[data-action], .palette, .editor-tabs, #use-sequence, #edit-sequence, #load-pattern'))armed=false;
   },true);
+  window.addEventListener('nb1-playback-requested',event=>{armed=true;serial=event.detail?.serial||'';previous='';});
   const draft=event=>{if(event.target.closest('#author, #sequence-json, #device-select'))armed=false;};
   document.addEventListener('input',draft,true);document.addEventListener('change',draft,true);
 }

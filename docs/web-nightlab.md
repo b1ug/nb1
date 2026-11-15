@@ -4,6 +4,8 @@ The workbench at `/demo/` defaults to Nightlab and English, with explicit langua
 
 The production controller retains the current API v1, Pattern/color library, JSON editor and Job recovery behavior. Screen playback, editing, language, appearance and camera changes create no Job and write no hardware. Draft targets, screen frames, accepted Job targets and cached observations remain distinct.
 
+Play resolves and checks the current draft on click, then submits the returned canonical Sequence as one captured Job; a separate Screen preview is optional. Solid can apply one color or independent LED 1/LED 2 colors. The pair uses two zero-fade serial Steps in one Job with finish hold, preserving both colors without introducing a new Action or API.
+
 ## Closed profiles and provenance
 
 The legacy schema-1 `static-editor/v1` profile retains 26 assets plus its manifest and a 640 KiB total limit. The schema-2 `static-nightlab/v1` profile has 64 assets plus its manifest. Its limits, including the manifest, are:

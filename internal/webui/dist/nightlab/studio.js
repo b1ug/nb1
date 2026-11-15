@@ -96,7 +96,7 @@
   const draftChanged = event => { if (event.target.closest('#action-fields, .color-card, #sequence-pane, #advanced, #device-select')) { showReadback = false; schedule(); } };
   document.addEventListener('input', draftChanged, true);
   document.addEventListener('change', draftChanged, true);
-  document.addEventListener('click', event => { if (event.target.closest('[data-kind], [data-action], .palette, .editor-tabs')) { showReadback = false; schedule(); } }, true);
+  document.addEventListener('click', event => { const effect = event.target.closest('[data-kind], [data-action]'); if (effect?.getAttribute('aria-pressed') === 'true') return; if (event.target.closest('[data-kind], [data-action], .palette, .editor-tabs')) { showReadback = false; schedule(); } }, true);
   // Screen frames have their own lifetime. They never become device acceptance
   // reports, authored inputs or the cached device observation.
   window.addEventListener('nb1-screen-preview', event => {

@@ -7,7 +7,7 @@
   const copy = {
     en: {
       controls: 'Light controls', effects: 'Effects', sequence: 'Sequence', patterns: 'Saved patterns', choose: 'Choose effect',
-      color: 'Color', target: 'Target color', flash: 'Flash color', peak: 'Peak color', a: 'Color A', b: 'Color B',
+      ledColors: 'LED colors', ledOne: 'LED 1 · blink(1)', ledTwo: 'LED 2 · ThingM', separateSolid: 'Set a steady color for each LED in one operation.', color: 'Color', target: 'Target color', flash: 'Flash color', peak: 'Peak color', a: 'Color A', b: 'Color B',
       apply: 'Apply to', assignment: 'Color assignment', after: 'After playback', off: 'Turn off', hold: 'Keep final state',
       playDevice: 'Play on device', preview: 'Screen preview', previewLabel: 'Screen preview: play on screen without controlling the light.', executionNote: 'Screen preview plays here. Play on device controls the light. Saving does not play.', format: 'format', picker: 'picker',
       colorHelp: 'Use a color name or hex code.', textFormat: 'Text', textFormatHelp: 'Color name, hex code or @saved color', custom: 'Custom JSON', customHelp: 'Edit the request below. Playback uses this JSON.',
@@ -23,7 +23,7 @@
     },
     'zh-CN': {
       controls: '灯光设置', effects: '效果', sequence: '序列', patterns: '已存图案', choose: '选择效果',
-      color: '颜色', target: '目标颜色', flash: '亮灯颜色', peak: '最亮时的颜色', a: '颜色 A', b: '颜色 B',
+      ledColors: '灯光颜色', ledOne: 'LED 1 · blink(1)', ledTwo: 'LED 2 · ThingM', separateSolid: '一次操作，分别设置两路灯的常亮颜色。', color: '颜色', target: '目标颜色', flash: '亮灯颜色', peak: '最亮时的颜色', a: '颜色 A', b: '颜色 B',
       apply: '作用于', assignment: '颜色分配', after: '播放结束后', off: '熄灯', hold: '保留最后状态',
       playDevice: '设备播放', preview: '屏幕预览', previewLabel: '屏幕预览：仅在屏幕播放，不控制实体灯。', executionNote: '屏幕预览在这里播放；设备播放会控制实体灯。保存不会播放。', format: '格式', picker: '取色器',
       colorHelp: '可输入颜色名称或十六进制色值。', textFormat: '文本', textFormatHelp: '颜色名称、十六进制或 @已存颜色', custom: '自定义 JSON', customHelp: '在下方编辑请求，播放时使用这份 JSON。',
@@ -78,9 +78,10 @@
     }
     if (composer.dataset.activeAction !== kind) composer.dataset.activeAction = kind;
     const actionMode = browser ? !$('action-fields')?.hidden : !$('action-pane')?.hidden;
+    const separate = kind === 'set' && (browser ? document.querySelector('#param-led input:checked')?.value : $('param-led')?.value) === 'separate';
     const pair = kind === 'alternate' || kind === 'orbit';
     const noColor = kind === 'off' || kind === 'rainbow';
-    const count = actionMode ? noColor ? 0 : pair ? 2 : 1 : 0;
+    const count = actionMode ? noColor ? 0 : pair || separate ? 2 : 1 : 0;
     if (composer.dataset.colorCount !== String(count)) composer.dataset.colorCount = String(count);
     text(composer.querySelector(':scope > .section-title h2'), words.controls);
     text($('create-title') || document.querySelector('.effect-bank-heading'), words.choose);
@@ -89,21 +90,21 @@
     text(title, actionMode ? words.actions[kind] : browser ? words.custom : words.actions[kind]);
     const order = browser ? document.querySelector('#param-leds input:checked')?.value : $('param-order')?.value;
     const [first, second] = order === '2,1' ? [2, 1] : [1, 2];
-    text($('action-description'), !actionMode && browser ? words.customHelp : pair ? words.pair(first, second, kind === 'orbit') : words.descriptions[kind]);
-    const primary = pair ? words.a : kind === 'fade' ? words.target : kind === 'blink' ? words.flash : ['breathe', 'pulse'].includes(kind) ? words.peak : words.color;
+    text($('action-description'), !actionMode && browser ? words.customHelp : separate ? words.separateSolid : pair ? words.pair(first, second, kind === 'orbit') : words.descriptions[kind]);
+    const primary = separate ? words.ledOne : pair ? words.a : kind === 'fade' ? words.target : kind === 'blink' ? words.flash : ['breathe', 'pulse'].includes(kind) ? words.peak : words.color;
     if (browser) {
-      for (const [index, label] of [primary, words.b].entries()) {
+      for (const [index, label] of [primary, separate ? words.ledTwo : words.b].entries()) {
         const input = $('color-input-' + index), picker = $('color-picker-' + index);
         text(labelFor(input), label); namedInput(input, label, true); namedInput(picker, `${label} ${words.picker}`, true);
       }
       text(document.querySelector('.color-help'), words.colorHelp);
-      text(labelFor($('param-led')), words.apply); text(labelFor($('param-leds')), words.assignment); text(labelFor($('param-on_finish')), words.after);
+      text(labelFor($('param-led')), kind === 'set' ? words.ledColors : words.apply); text(labelFor($('param-leds')), words.assignment); text(labelFor($('param-on_finish')), words.after);
       for (const option of document.querySelectorAll('#param-leds .choice')) {
         const value = option.querySelector('input')?.value;
         text(option.querySelector('span'), value === '2,1' ? 'A → LED 2 · B → LED 1' : 'A → LED 1 · B → LED 2');
       }
     } else {
-      for (const [suffix, label] of [['a', primary], ['b', words.b]]) {
+      for (const [suffix, label] of [['a', primary], ['b', separate ? words.ledTwo : words.b]]) {
         text($('color-card-' + suffix)?.querySelector('legend'), label);
         text(document.querySelector(`label[for="color-${suffix}"]`), label);
         namedInput($('color-' + suffix), label, true); namedInput($('picker-' + suffix), `${label} ${words.picker}`, true);
@@ -112,11 +113,11 @@
         text(format?.querySelector('option[value="text"]'), words.textFormat);
         attr($('color-mode-' + suffix + '-trigger'), 'title', format?.value === 'text' ? words.textFormatHelp : `${label} ${words.format}`);
       }
-      text(labelFor($('param-led')), words.apply); text(labelFor($('param-order')), words.assignment); text(labelFor($('param-finish')), words.after);
+      text(labelFor($('param-led')), kind === 'set' ? words.ledColors : words.apply); text(labelFor($('param-order')), words.assignment); text(labelFor($('param-finish')), words.after);
       for (const option of $('param-order')?.options || []) text(option, option.value === '2,1' ? 'A → LED 2 · B → LED 1' : 'A → LED 1 · B → LED 2');
     }
     text($('play'), words.playDevice);
-    text($('preview'), words.preview); namedInput($('preview'), words.previewLabel); attr($('preview'), 'title', words.previewLabel);
+    text($('preview'), words.preview); namedInput($('preview'), words.previewLabel); $('preview')?.removeAttribute('title');
     if (!browser) text($('execution-note'), words.executionNote);
     for (const node of document.querySelectorAll('[data-composer-copy="advanced"]')) text(node, words.advanced);
   }

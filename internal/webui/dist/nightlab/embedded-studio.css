@@ -123,6 +123,8 @@ main.workbench { width: min(1320px, calc(100% - 48px)); }
 .studio-editor .fields input { padding-inline: 8px; }
 .studio-editor .fields .select-trigger { min-width: 0; gap: 6px; padding-inline: 8px; }
 .studio-editor .execution-area { margin-top: 12px; padding-top: 12px; }
+.execution-area #play-feedback { color: var(--ui-muted); overflow-wrap: anywhere; }
+.execution-area #play-feedback.error { color: var(--ui-danger); }
 .studio-editor .execution-controls { position: static; grid-template-columns: 1fr 1.2fr; gap: 10px; padding: 0; border: 0; background: transparent; box-shadow: none; }
 .studio-editor .execution-controls button { min-height: 44px; }
 .studio-editor .execution-note { margin: 8px 0 0; line-height: 1.5; }

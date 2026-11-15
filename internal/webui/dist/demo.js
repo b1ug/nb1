@@ -18,9 +18,10 @@
   };
   const pairs = kind => ["alternate", "orbit"].includes(kind);
   const loops = kind => !["set", "off", "fade"].includes(kind);
-  let mode = page.mode, kind = page.action, version = 0, preview = null, task = null, loaded = null, polling = null, submitting = false;
+  let mode = page.mode, kind = page.action, version = 0, preview = null, task = null, loaded = null, polling = null, submitting = false, previewing = false, playIntent = 0;
   let deviceGeneration = 0, colorLibraryGeneration = 0;
   let localColors = [];
+  const outputs = new Map(), actionDrafts = new Map();
   const colorSaves = Object.fromEntries(["a", "b"].map(suffix => [suffix, {key: null, color: null, pending: false, saving: false, unknown: null, generation: 0, timer: null, controller: null}]));
   const patternSave = {pending: false, unknown: false, capture: null};
 
@@ -106,6 +107,10 @@
       if (!identifier.test(id)) throw Error("Choose a saved Pattern first");
       return {key: "pattern_id", raw: JSON.stringify(id)};
     }
+    if (kind === "set" && $("param-led").value === "separate") {
+      const steps = ["a", "b"].map((suffix, index) => ({targets: [{led: index + 1, color: colorInput(suffix)}], fade_ms: 0, hold_ms: 0}));
+      return {key: "sequence", raw: JSON.stringify({timing: "serial", steps, repeat: 1, on_finish: "hold"})};
+    }
     const action = {kind};
     if (pairs(kind)) { action.colors = [colorInput("a"), colorInput("b")]; action.leds = $("param-order").value.split(",").map(Number); }
     else action.led = Number($("param-led").value);
@@ -118,10 +123,11 @@
   function draftKey() { return envelope(authorInput(), {serial: $("device-select").value}); }
   const textSources = new WeakMap();
   const text = (id, value) => { const element = $(id); if (textSources.get(element) !== value) { element.textContent = value; textSources.set(element, value); } };
-  const sourceLabel = () => mode === "action" ? "Action · " + actions[kind][0] : mode === "sequence" ? "Sequence JSON" : "Saved Pattern";
+  const separateSolid = () => mode === "action" && kind === "set" && $("param-led")?.value === "separate";
+  const sourceLabel = () => separateSolid() ? "Solid · separate LED colors" : mode === "action" ? "Action · " + actions[kind][0] : mode === "sequence" ? "Sequence JSON" : "Saved Pattern";
   function updatePatternSource() {
     text("pattern-source", sourceLabel());
-    text("pattern-source-detail", mode === "pattern" ? "Read this Pattern, or edit it as a Sequence to save a new draft." : mode === "sequence" ? "Save the JSON currently in the editor." : "Save all settings in this Action.");
+    text("pattern-source-detail", separateSolid() ? "Save both LED colors as one Sequence." : mode === "pattern" ? "Read this Pattern, or edit it as a Sequence to save a new draft." : mode === "sequence" ? "Save the JSON currently in the editor." : "Save all settings in this Action.");
   }
   function swatch(element, color) {
     element.style.backgroundColor = color || "transparent"; element.dataset.available = String(Boolean(color));
@@ -222,6 +228,7 @@
   }
   function invalidate() {
     version++; preview = null;
+    if (!submitting) playFeedback("");
     const summary = $("preview-summary");
     if (summary.dataset.draftChanged !== "true") {
       summary.textContent = "Draft changed"; summary.dataset.draftChanged = "true";
@@ -235,13 +242,17 @@
     updateButtons();
   }
   function updateButtons() {
-    const waiting = task && (task.unknown || !terminal(task.job?.status));
-    $("play").disabled = submitting || waiting || !preview || preview.version !== version || preview.check !== "supported";
+    const waiting = task && (task.unknown || !task.rejected && !terminal(task.job?.status));
+    $("play").disabled = submitting || previewing || waiting || !serial.test($("device-select").value);
+    $("play").setAttribute("aria-busy", String(submitting));
+    $("preview").disabled = submitting || previewing;
+    $("new-run").disabled = submitting || previewing;
     $("query").disabled = !task || submitting;
     $("stop").disabled = !task || !task.job || task.unknown || terminal(task.job.status) || task.job.status === "cancelling" || submitting;
     $("new-run").hidden = !task || !(task.unknown || terminal(task.job?.status) || task.rejected);
     $("save-pattern").disabled = mode === "pattern" || patternSave.pending || patternSave.unknown;
     $("use-sequence").disabled = !preview || preview.version !== version;
+    if (!serial.test($("device-select").value) && !submitting && !$("play-feedback").textContent) playFeedback("Choose a device before playing.");
   }
   function changeMode(next) {
     mode = next;
@@ -254,7 +265,18 @@
     invalidate();
   }
   function selectKind(next) {
+    if (next === kind && $("action-fields").children.length) return;
+    if ($("action-fields").children.length) actionDrafts.set(kind, {
+      fields: [...$("action-fields").querySelectorAll("input,select")].map(node => [node.id, node.value]),
+      colors: ["a", "b"].map(suffix => ({suffix, format: $("color-mode-" + suffix).value,
+        text: $("color-" + suffix).value, picker: $("picker-" + suffix).value,
+        channels: [...$("channels-" + suffix).querySelectorAll("input")].map(node => [node.id, node.value])}))
+    });
+    const previousOutput = $("param-led")?.value;
+    if (previousOutput) outputs.set(kind, previousOutput);
     kind = next;
+    if (kind === "set") document.querySelector(".composer-action-heading").after($("action-fields"));
+    else document.querySelector(".color-pair").after($("action-fields"));
     for (const button of document.querySelectorAll("[data-action]")) {
       const selected = button.dataset.action === kind; button.classList.toggle("selected", selected); button.setAttribute("aria-pressed", String(selected));
     }
@@ -270,9 +292,20 @@
       element.value = String(value); wrap.append(element); $("action-fields").append(wrap);
     }
     if (pairs(kind)) field("order", "LED order", [["1,2", "LED 1 → LED 2"], ["2,1", "LED 2 → LED 1"]], "1,2");
-    else field("led", "Output", [["0", "Both LEDs"], ["1", "LED 1"], ["2", "LED 2"]], "0");
+    else field("led", "Output", kind === "set" ? [["0", "Both LEDs · same color"], ["1", "LED 1"], ["2", "LED 2"], ["separate", "Separate LED colors"]] : [["0", "Both LEDs"], ["1", "LED 1"], ["2", "LED 2"]], outputs.get(kind) || "0");
+    $("color-card-b").hidden = !pairs(kind) && !separateSolid();
     for (const [name, label, value] of ({fade: [["duration_ms", "Fade duration · ms", 600]], blink: [["on_ms", "On duration · ms", 250], ["off_ms", "Off duration · ms", 250]], breathe: [["period_ms", "Cycle duration · ms", 2000]], pulse: [["attack_ms", "Rise · ms", 60], ["decay_ms", "Fall · ms", 240], ["rest_ms", "Rest · ms", 700]], alternate: [["period_ms", "Cycle duration · ms", 2000]], orbit: [["period_ms", "Cycle duration · ms", 3000]], rainbow: [["period_ms", "Cycle duration · ms", 3000]]}[kind] || [])) field(name, label, null, value);
     if (loops(kind)) { field("cycles", "Cycles", null, 1); field("finish", "On finish", [["off", "Off"], ["hold", "Hold final state"]], "off"); }
+    const saved = actionDrafts.get(kind);
+    if (saved) {
+      for (const [id, value] of saved.fields) if ($(id)) $(id).value = value;
+      for (const color of saved.colors) {
+        $("color-mode-" + color.suffix).value = color.format; renderChannels(color.suffix);
+        $("color-" + color.suffix).value = color.text; $("picker-" + color.suffix).value = color.picker;
+        for (const [id, value] of color.channels) if ($(id)) $(id).value = value;
+      }
+    }
+    $("color-card-b").hidden = !pairs(kind) && !separateSolid();
     syncSelectPickers();
     invalidate();
   }
@@ -286,21 +319,47 @@
       const input = document.createElement("input"); input.id = name + "-" + suffix; input.type = "number"; input.min = "0"; input.max = String(max); input.step = format === "rgb8" ? "1" : "0.000001"; input.value = String(value); wrap.append(input); parent.append(wrap);
     }
   }
-  async function previewDraft() {
-    if (mode === "sequence") sequenceEditor.refreshColors?.();
-    const input = authorInput(), draftVersion = version, device = $("device-select").value;
-    const body = envelope(input, device ? {serial: device} : {});
-    $("input-detail").textContent = body;
+  function captureDraft() {
+    const input = authorInput(), device = $("device-select").value;
+    return {input, device, version, key: envelope(input, {serial: device})};
+  }
+  function currentDraft(capture) {
+    try { return capture.version === version && capture.device === $("device-select").value && capture.key === draftKey(); }
+    catch (_) { return false; }
+  }
+  async function compileDraft(capture) {
+    const body = envelope(capture.input, capture.device ? {serial: capture.device} : {});
     const {value} = await request("/v1/preview", "POST", body);
     assertSequence(value.sequence);
     if (!Number.isInteger(value.total_steps) || value.total_steps < 1 || value.total_steps > 1024 || !Number.isInteger(value.nominal_duration_ms) || value.nominal_duration_ms < 0 || value.nominal_duration_ms > 86400000 || !Array.isArray(value.required_capabilities) || value.required_capabilities.some(v => typeof v !== "string") || !["not_requested", "supported", "unsupported", "unknown"].includes(value.device_check?.status)) throw Error("Invalid preview response");
-    if (draftVersion !== version) { notice("Draft changed. Preview again."); return; }
-    preview = {version, key: draftKey(), check: value.device_check.status, sequence: value.sequence};
-    $("compiled").textContent = JSON.stringify(value.sequence, null, 2);
-    $("preview-summary").textContent = "Preview ready"; $("preview-summary").dataset.draftChanged = "false";
-    $("preview-check").textContent = "Steps: " + value.total_steps + " · " + value.nominal_duration_ms + " ms · " + value.device_check.status;
-    $("request-details").open = true;
-    notice("Preview ready. The light is unchanged."); updateButtons();
+    return {value, body};
+  }
+  async function previewDraft() {
+    if (submitting || previewing) return;
+    const capture = captureDraft();
+    if (mode === "sequence") sequenceEditor.refreshColors?.();
+    previewing = true; updateButtons();
+    try {
+      const {value, body} = await compileDraft(capture);
+      if (!currentDraft(capture)) { notice("Draft changed. Preview again."); return; }
+      preview = {version, key: capture.key, check: value.device_check.status, sequence: value.sequence};
+      $("input-detail").textContent = body;
+      $("compiled").textContent = JSON.stringify(value.sequence, null, 2);
+      $("preview-summary").textContent = "Preview ready"; $("preview-summary").dataset.draftChanged = "false";
+      $("preview-check").textContent = "Steps: " + value.total_steps + " · " + value.nominal_duration_ms + " ms · " + value.device_check.status;
+      $("request-details").open = true;
+      notice("Preview ready. The light is unchanged.");
+    } finally { previewing = false; updateButtons(); }
+  }
+  function playFeedback(message, error = false) {
+    $("play-feedback").hidden = !message;
+    $("play-feedback").textContent = message;
+    $("play-feedback").classList.toggle("error", error);
+  }
+  function reportDraft(error) { playFeedback("Could not validate this draft: " + error.message, true); notice("Check the current draft and try again.", true, error.message); }
+  function rememberTask() {
+    if (!task) return;
+    try { const history = JSON.parse(sessionStorage.getItem(taskKey + ".history") || "[]"); sessionStorage.setItem(taskKey + ".history", JSON.stringify([...history.slice(-7), task])); } catch (_) { /* Keep the visible ID if storage is unavailable. */ }
   }
   function saveTask() { try { sessionStorage.setItem(taskKey, JSON.stringify(task)); } catch (_) { /* The in-page ID remains available. */ } }
   function showTask() {
@@ -323,18 +382,36 @@
   function uncertainJob(error) { clearTimeout(polling); if (task?.job && terminal(task.job.status)) { notice("Stored terminal result retained. Query failed.", true, error.message); return; } if (task) { task.unknown = true; saveTask(); showTask(); } notice("Outcome unknown. Keep the Job ID and query it.", true, error.message); }
   async function queryJob() { if (!task) return; const id = task.id; const reply = await request("/v1/jobs/" + encodeURIComponent(id)); if (task?.id !== id) return; acceptJob(reply.value); readDevice().catch(report); }
   async function play() {
-    if (!preview || preview.version !== version || preview.key !== draftKey() || preview.check !== "supported") throw Error("Preview the current draft for this device first");
-    const input = authorInput(), device = $("device-select").value;
-    const alphabet = "0123456789ABCDEFGHJKMNPQRSTVWXYZ", random = crypto.getRandomValues(new Uint8Array(10));
-    task = {id: "j_" + [...random].map(v => alphabet[v & 31]).join(""), serial: device, unknown: true, job: null};
-    saveTask(); showTask(); submitting = true; updateButtons();
+    if (submitting || previewing || task && (task.unknown || !task.rejected && !terminal(task.job?.status))) return;
+    submitting = true; const intent = ++playIntent; updateButtons();
+    let submitted = null;
     try {
-      const reply = await request("/v1/jobs", "POST", envelope(input, {id: task.id, serial: device}));
-      if (![200, 202].includes(reply.status) || reply.location !== "/v1/jobs/" + task.id) throw Error("Job acceptance response was not bound to the submitted ID");
-      acceptJob(reply.value); notice("Job accepted. Follow its progress here.");
+      const capture = captureDraft();
+      if (!serial.test(capture.device)) throw Error("Choose a device before playing.");
+      playFeedback("Checking this draft before playback…");
+      const {value} = await compileDraft(capture);
+      if (intent !== playIntent || document.hidden || !currentDraft(capture)) {
+        playFeedback("Draft changed. Play again to use the current settings."); return;
+      }
+      if (value.device_check.status !== "supported") throw Error("This device cannot play the current draft. Check its connection and supported effects.");
+      const alphabet = "0123456789ABCDEFGHJKMNPQRSTVWXYZ", random = crypto.getRandomValues(new Uint8Array(10));
+      rememberTask();
+      task = submitted = {id: "j_" + [...random].map(v => alphabet[v & 31]).join(""), serial: capture.device, unknown: true, job: null};
+      saveTask(); showTask(); playFeedback("Starting the captured draft…");
+      // Freeze resolved aliases and saved Patterns at the validation boundary.
+      // Only this canonical Sequence is submitted; never re-read the form here.
+      const input = {key: "sequence", raw: JSON.stringify(value.sequence)};
+      window.dispatchEvent(new CustomEvent("nb1-playback-requested", {detail: {serial: submitted.serial}}));
+      const reply = await request("/v1/jobs", "POST", envelope(input, {id: submitted.id, serial: submitted.serial}));
+      if (task !== submitted) return;
+      if (![200, 202].includes(reply.status) || reply.location !== "/v1/jobs/" + submitted.id) throw Error("Job acceptance response was not bound to the submitted ID");
+      acceptJob(reply.value); readDevice().catch(report); notice("Job accepted. Follow its progress here."); playFeedback("Playback started. Follow this Job below.");
     } catch (error) {
-      if (error.rejected) { task.unknown = false; task.rejected = true; saveTask(); showTask(); report(error); }
-      else uncertainJob(error);
+      if (!submitted) playFeedback("Playback was not started: " + error.message, true);
+      else if (task === submitted) {
+        if (error.rejected) { task.unknown = false; task.rejected = true; saveTask(); showTask(); playFeedback("Playback was rejected. Check the current draft and try again.", true); report(error); }
+        else { uncertainJob(error); playFeedback("Outcome unknown. Keep this Job ID and query it before any new run.", true); }
+      }
     } finally { submitting = false; updateButtons(); }
   }
   async function stopJob() {
@@ -638,18 +715,22 @@
     });
   }
   $("author").addEventListener("input", event => { if (!event.target.closest("[data-local-library]")) invalidate(); });
-  $("author").addEventListener("change", event => { if (event.target.matches("input,select,textarea") && !event.target.closest("[data-local-library]")) invalidate(); });
+  $("author").addEventListener("change", event => {
+    if (event.target.id === "param-led" && kind === "set") { $("color-card-b").hidden = !separateSolid(); outputs.set(kind, event.target.value); }
+    if (event.target.matches("input,select,textarea") && !event.target.closest("[data-local-library]")) invalidate();
+  });
   $("device-select").addEventListener("change", () => { invalidate(); readDevice().catch(report); });
-  $("pattern-select").addEventListener("change", () => { loaded = null; $("edit-sequence").disabled = true; });
+  $("pattern-select").addEventListener("change", () => { loaded = null; $("edit-sequence").disabled = true; invalidate(); });
   bind("use-sequence", () => { if (preview) { sequenceEditor.setValue(JSON.stringify(preview.sequence, null, 2)); changeMode("sequence"); } });
-  bind("preview", previewDraft); bind("play", play); bind("query", queryJob, uncertainJob); bind("stop", stopJob);
+  bind("preview", previewDraft, reportDraft); bind("play", play); bind("query", queryJob, uncertainJob); bind("stop", stopJob);
   bind("refresh", refreshDevices); bind("sequence-colors-refresh", refreshColors); bind("patterns-refresh", refreshPatterns); bind("load-pattern", () => readPattern());
   bind("copy-color-reference", copyColorReference); $("sequence-local-color").addEventListener("change", updateSequenceReference);
   bind("edit-sequence", () => { if (loaded) { sequenceEditor.setValue(JSON.stringify(loaded.sequence, null, 2)); changeMode("sequence"); } });
   bind("save-pattern", savePattern); bind("verify-save", checkSavedPattern);
-  bind("new-run", () => { clearTimeout(polling); try { const history = JSON.parse(sessionStorage.getItem(taskKey + ".history") || "[]"); sessionStorage.setItem(taskKey + ".history", JSON.stringify([...history.slice(-7), task])); } catch (_) { /* Keep the ID visible until explicit new-run selection. */ } task = null; saveTask(); showTask(); notice("Ready for a separate run. Previous IDs stay in this tab's history."); });
+  bind("new-run", () => { if (submitting || previewing) return; clearTimeout(polling); rememberTask(); task = null; saveTask(); showTask(); notice("Ready for a separate run. Previous IDs stay in this tab's history."); });
   selectKind(kind); changeMode(mode);
   try { const saved = JSON.parse(sessionStorage.getItem(taskKey) || "null"); if (saved && identifier.test(saved.id) && serial.test(saved.serial)) { task = {id: saved.id, serial: saved.serial, unknown: true, job: null}; showTask(); } } catch (_) { /* Ignore invalid browser data. */ }
   Promise.allSettled([refreshDevices(), refreshColors(), refreshPatterns()]).then(results => { const failed = results.find(result => result.status === "rejected"); if (failed) report(failed.reason); });
-  window.addEventListener("pagehide", () => { clearTimeout(polling); for (const state of Object.values(colorSaves)) { clearTimeout(state.timer); state.controller?.abort(); } });
+  document.addEventListener("visibilitychange", () => { if (document.hidden) playIntent++; });
+  window.addEventListener("pagehide", () => { playIntent++; clearTimeout(polling); for (const state of Object.values(colorSaves)) { clearTimeout(state.timer); state.controller?.abort(); } });
 })();

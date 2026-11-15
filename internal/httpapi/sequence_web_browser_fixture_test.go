@@ -26,6 +26,8 @@ type browserFixtureBackend struct {
 	one, two              string
 	jobPosts, sets, reads int
 	stops                 int
+	targets               []control.Step
+	stopModes             []string
 }
 
 func (*browserFixtureBackend) Info() control.DeviceInfo {
@@ -36,6 +38,12 @@ func (b *browserFixtureBackend) Set(step control.Step) error {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	b.sets++
+	if len(b.targets) == 128 {
+		copy(b.targets, b.targets[1:])
+		b.targets[len(b.targets)-1] = step
+	} else {
+		b.targets = append(b.targets, step)
+	}
 	if step.LED == 0 || step.LED == 1 {
 		b.one = step.Color
 	}
@@ -54,6 +62,12 @@ func (b *browserFixtureBackend) Stop(mode string) error {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	b.stops++
+	if len(b.stopModes) == 128 {
+		copy(b.stopModes, b.stopModes[1:])
+		b.stopModes[len(b.stopModes)-1] = mode
+	} else {
+		b.stopModes = append(b.stopModes, mode)
+	}
 	if mode == "off" {
 		b.one, b.two = "#000000", "#000000"
 	}
@@ -123,7 +137,8 @@ func TestSequenceWebBrowserFixture(t *testing.T) {
 		}
 		if r.URL.Path == "/__fixture/stats" && r.Method == "GET" && r.URL.RawQuery == "" {
 			backend.mu.Lock()
-			stats := map[string]interface{}{"software_fixture": true, "job_posts": backend.jobPosts, "set_calls": backend.sets, "read_calls": backend.reads, "stop_calls": backend.stops}
+			stats := map[string]interface{}{"software_fixture": true, "job_posts": backend.jobPosts, "set_calls": backend.sets, "read_calls": backend.reads, "stop_calls": backend.stops,
+				"target_writes": append([]control.Step{}, backend.targets...), "stop_modes": append([]string{}, backend.stopModes...), "audit_log_limit": 128}
 			backend.mu.Unlock()
 			writeJSON(w, stats)
 			return

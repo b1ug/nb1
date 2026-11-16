@@ -182,6 +182,34 @@ Do not quote the temporary programs' module counts or binary sizes as an nb1
 increment: the programs and toolchains differ, and no production integration
 has been built. Keep the negative build evidence when choosing a version set.
 
+### Follow-up: real PTY presentation captures
+
+A separate compiled demo using Fang v2.0.1, Charm Log v2.0.1, and Go 1.25.9
+was executed in six real PTYs, rendered by xterm.js, and captured in Chromium.
+The terminal output bytes were relayed unchanged; terminal query responses
+came from the emulator. These are actual demo runs, not nb1 runtime acceptance.
+
+| Scenario | Observed result |
+| --- | --- |
+| Default Fang help | Colored help, exit 0; background query and terminal response observed. |
+| Default Fang error | Colored synthetic error, exit 1; background query and terminal response observed. |
+| Charm logs | Four styled levels and a separate JSON result; no terminal query observed. |
+| JSON status | Parseable undecorated output; no SGR or terminal query observed. |
+| `NO_COLOR=1` logs | No color-setting SGR; bold/faint SGR remained in this TTY. |
+| `TERM=dumb` logs | No SGR or terminal query observed. |
+
+`NO_COLOR` removes chromatic colors, not all ANSI decoration. On a real TTY,
+the pinned Charm Log/colorprofile stack retains bold/faint styles; its capture
+is monochrome, not ANSI-free. If nb1 promises fully unstyled output, explicitly
+select a plain/NoTTY rendering path and validate it separately. The log-only
+`NO_COLOR` run does not establish that this setting suppresses Fang's background
+query. Successful emulator responses also do not resolve the no-probe gate for
+production.
+
+The six captures do not validate nb1 integration, individual stdout/stderr
+separation in a PTY, rotation, services, MCP, native terminals, or USB. Keep the
+earlier pipe-based stream checks separate from this visual evidence.
+
 ## Validation required for the runtime PR
 
 Reuse existing tests grouped by responsibility. Extend the existing root JSON,
@@ -193,7 +221,8 @@ small test file per formatting fix.
 | Help and argument error | Readable output, one error, correct exit status, no device access. |
 | Existing JSON commands with debug on | Exactly the expected JSON on stdout; diagnostics only on stderr. |
 | Invalid/unreadable profile | Version JSON and recovery commands preserve their current behavior. |
-| JSON/file logs, pipes, `NO_COLOR`, `TERM=dumb` | No ANSI bytes; no terminal queries or stdin reads on excluded paths. |
+| JSON/file logs, pipes, explicitly unstyled output, `TERM=dumb` | No ANSI bytes; no terminal queries or stdin reads on excluded paths. |
+| `NO_COLOR` in a TTY | No color-setting SGR; test and document whether text attributes are retained. This setting alone is not a no-probe guarantee. |
 | Application error plus cleanup | Cleanup runs before final rendering/exit; no `Fatal` short circuit. |
 | Unknown accepted Job outcome | Original Job ID and endpoint survive unchanged; no automatic resubmission. |
 | File rotation | JSON fields/types, size threshold, compression, retention, and close/flush are explicitly verified. |

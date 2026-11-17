@@ -80,8 +80,6 @@ jobs:
     env:
       NB1_RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
       NB1_RELEASE_SOURCE: ${{ needs.prepare.outputs.source }}
-      NB1_RELEASE_BUILD: ${{ runner.temp }}/nb1-release-build
-      NB1_RELEASE_OUT: ${{ runner.temp }}/nb1-release-platform
       CGO_ENABLED: "1"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -100,6 +98,8 @@ jobs:
           go mod verify
           python3 -B ci/release-suite.py context --root "$GITHUB_WORKSPACE" --output "$RUNNER_TEMP/release-context.json"
       - name: Build native versioned CLI
+        env:
+          NB1_RELEASE_BUILD: ${{ runner.temp }}/nb1-release-build
         run: |
           mkdir -p "$NB1_RELEASE_BUILD"
           go build -mod=readonly -trimpath -buildvcs=true \
@@ -109,11 +109,15 @@ jobs:
         working-directory: adapters/mcp
         env:
           CGO_ENABLED: "0"
+          NB1_RELEASE_BUILD: ${{ runner.temp }}/nb1-release-build
         run: |
           go mod verify
           go build -mod=readonly -trimpath -buildvcs=true -ldflags "-X main.buildVersion=$NB1_RELEASE_VERSION" \
             -o "$NB1_RELEASE_BUILD/nb1-mcp${{ matrix.extension }}" .
       - name: Inspect native dependencies and verify actual extracted archives
+        env:
+          NB1_RELEASE_BUILD: ${{ runner.temp }}/nb1-release-build
+          NB1_RELEASE_OUT: ${{ runner.temp }}/nb1-release-platform
         run: |
           python3 -B ci/release-suite.py stage --root "$GITHUB_WORKSPACE" \
             --cli "$NB1_RELEASE_BUILD/nb1${{ matrix.extension }}" --mcp "$NB1_RELEASE_BUILD/nb1-mcp${{ matrix.extension }}" \
@@ -122,6 +126,7 @@ jobs:
       - name: Check actual offline daemon, CLI and embedded HTTP assets
         env:
           NB1_DAEMON_EVIDENCE: ${{ runner.temp }}/nb1-release-daemon
+          NB1_RELEASE_BUILD: ${{ runner.temp }}/nb1-release-build
         run: |
           python3 -B ci/daemon-process-smoke.py --binary "$NB1_RELEASE_BUILD/nb1${{ matrix.extension }}" \
             --output "$NB1_DAEMON_EVIDENCE" --require-no-devices

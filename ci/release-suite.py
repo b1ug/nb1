@@ -376,7 +376,9 @@ def restricted_environment(goos, config_root):
         if key.upper() in {"LD_LIBRARY_PATH", "LD_PRELOAD", "DYLD_LIBRARY_PATH", "DYLD_INSERT_LIBRARIES", "DYLD_FRAMEWORK_PATH"}:
             env.pop(key)
     if goos == "windows":
-        system = Path(env["SystemRoot"])
+        system_root = next((value for key, value in env.items() if key.casefold() == "systemroot"), None)
+        require(system_root, "missing Windows SystemRoot environment")
+        system = Path(system_root)
         env["PATH"] = os.pathsep.join(map(str, [system / "System32", system, system / "System32/Wbem"]))
     else:
         env["PATH"] = "/usr/bin:/bin:/usr/sbin:/sbin"

@@ -608,6 +608,10 @@ class ReleaseSuiteTests(unittest.TestCase):
             with self.subTest(goos=goos), self.assertRaises(ValueError): RELEASE.check_native_dependencies(value, goos)
         with tempfile.TemporaryDirectory() as temporary:
             system = Path(temporary) / "System32"; system.mkdir(); (system / "HID.DLL").write_bytes(b"system fixture")
+            for key in ("SystemRoot", "SYSTEMROOT"):
+                with self.subTest(environment_key=key), patch.dict(RELEASE.os.environ, {key: temporary}, clear=True):
+                    env = RELEASE.restricted_environment("windows", Path(temporary))
+                    self.assertEqual(env["PATH"], RELEASE.os.pathsep.join(map(str, [system, Path(temporary), system / "Wbem"])))
             (system / "kernel32.dll").write_bytes(b"system fixture")
             with patch.dict(RELEASE.os.environ, {"SystemRoot": temporary}), patch.object(RELEASE.BASE, "regular_bytes", return_value=bytes(pe_import_fixture())):
                 self.assertTrue(RELEASE.runtime_dependencies(Path("nb1.exe"), "windows")["system_DLLs_only"])

@@ -50,12 +50,12 @@ github.com/BurntSushi/toml v1.1.0/go.mod h1:CxXYINrC8qIiEnFrOxCa7Jy5BFHlXnUU2pbi
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
 github.com/aymanbagabas/go-osc52 v1.0.3 h1:DTwqENW7X9arYimJrPeGZcV0ln14sGMt3pHZspWD+Mg=
 github.com/aymanbagabas/go-osc52 v1.0.3/go.mod h1:zT8H+Rk4VSabYN90pWyugflM3ZhpTZNC7cASDfUCdT4=
-github.com/b1ug/blink1-go v0.0.2-0.20261114170043-5d1242238643 h1:bbQ2DZY7PP+lZX7/pPo+WF7VuG/Z4VCPJDCXPkzmQr8=
-github.com/b1ug/blink1-go v0.0.2-0.20261114170043-5d1242238643/go.mod h1:lTS3nTFJlWf+cXaaOW+eYgghfXGyg/1LMJiT8wO2vGs=
+github.com/b1ug/blink1-go v0.0.2 h1:VizQqDHPYTvvlqo4reKpIhMRaGbMzptvtdHG2ljCbb4=
+github.com/b1ug/blink1-go v0.0.2/go.mod h1:WtEwMgAmJF3bVxFOzIB4NJOWyfcgiw1oIxHhWYnf+Tk=
 github.com/b1ug/colorkit v0.1.0 h1:rNKZBdsv6UdYCdg+x8c4Nav6WqpWDDYjEcMVH66n1z4=
 github.com/b1ug/colorkit v0.1.0/go.mod h1:NUCqQtVQ4gCs0lxrL51Eb7t5fivSdeDB89nTL82jY5E=
-github.com/b1ug/gid v0.0.3-0.20261114052003-a0632df0af37 h1:pAAzWMZV2woD7yNiajiUotJ1PuWkkX9aV1/n/7POJvc=
-github.com/b1ug/gid v0.0.3-0.20261114052003-a0632df0af37/go.mod h1:b9pd+IB3F4qVXRRUOWgux7TWqxceIEGo/mhoBcOp9RM=
+github.com/b1ug/gid v0.0.3 h1:mZe/rkvVEatz1246mZ5stE2xREDSSTqZLTMrSHtYO78=
+github.com/b1ug/gid v0.0.3/go.mod h1:b9pd+IB3F4qVXRRUOWgux7TWqxceIEGo/mhoBcOp9RM=
 github.com/benbjohnson/clock v1.1.0 h1:Q92kusRqC1XV2MjkWETPvjJVqKetz1OzxZB7mHJLju8=
 github.com/benbjohnson/clock v1.1.0/go.mod h1:J11/hYXuz8f4ySSvYwY0FKfm+ezbsZBKZxNJlLklBHA=
 github.com/census-instrumentation/opencensus-proto v0.2.1/go.mod h1:f6KPmirojxKA12rnyqOA5BBL4O983OfeGPqjHWSTneU=

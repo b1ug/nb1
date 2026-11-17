@@ -25,6 +25,11 @@ linked public modules and checksums, inspected native dependencies, and
 extracted-archive CLI/MCP smoke results. The separate no-device process check
 also checks the embedded HTTP assets and foreground daemon lifecycle.
 
+Go may omit `-ldflags` from `go version -m` when `-trimpath` is used. The release
+version is therefore also checked by executing the exact extracted CLI's
+`version --json` and the MCP binary's real stdio `initialize` response. A version
+string in the manifest alone does not satisfy the native smoke gate.
+
 Both `pull_request` and `workflow_dispatch` are always rehearsals. Requesting
 manual `publish=true` is an error. Their `build_context` records publication as
 ineligible; the publish job cannot run and has no branch/dry-run publication

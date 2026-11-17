@@ -471,6 +471,17 @@ class ReleaseSuiteTests(unittest.TestCase):
             changed = copy.deepcopy(original); changed["dependencies"] = modules
             with self.assertRaises(ValueError): RELEASE.check_binary(changed, modules, RELEASE_VERSION, SOURCE, fixture.target)
 
+    def test_trimpath_without_ldflags_still_requires_real_native_version_evidence(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            fixture = ReleaseFixture(Path(temporary))
+            for info in fixture.info.values(): info["settings"].pop("-ldflags")
+            value = fixture.stage()
+            self.assertEqual(value["runtime"]["CLI_version"]["version"], RELEASE_VERSION)
+            self.assertEqual(value["runtime"]["MCP_version"], RELEASE_VERSION)
+            value["runtime"]["MCP_version"] = "dev"
+            refresh_release_platform(fixture.out, value)
+            with self.assertRaises(ValueError): RELEASE.verify_platform(fixture.out, RELEASE_VERSION, SOURCE)
+
     def test_candidate_flags_missing_files_wrong_runtime_and_extra_assets_rejected(self):
         with tempfile.TemporaryDirectory() as temporary:
             fixture = ReleaseFixture(Path(temporary)); value = fixture.stage()

@@ -130,7 +130,11 @@ def check_binary(info, modules, version, source, target, mcp=False):
     require(info["go_version"] == TOOLCHAIN, "unexpected release toolchain")
     require(info["settings"]["CGO_ENABLED"] == ("0" if mcp else "1"), "unexpected native backend selection")
     key = "main.buildVersion" if mcp else BASE.CORE + "/config.GitSummary"
-    require(linker_value(info, key) == version, "linked release version differs")
+    # Go may omit -ldflags from build info under -trimpath. The mandatory
+    # extracted native CLI JSON and MCP initialization below verify the actual
+    # version in those exact hashed bytes, rather than assuming flag retention.
+    if "-ldflags" in info["settings"]:
+        require(linker_value(info, key) == version, "linked release version differs")
     if mcp:
         BASE.check_mcp(info, modules, source, target)
     else:

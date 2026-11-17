@@ -14,7 +14,9 @@ Download the matching executable from [nb1 v0.1.0](https://github.com/b1ug/nb1/r
 | Linux amd64 | `nb1-v0.1.0-linux-amd64.tar.gz` |
 | Windows amd64 | `nb1-v0.1.0-windows-amd64.zip` |
 
-The OS/architecture labels identify the build target. See the release's build and platform evidence before using it on a different or older operating system. Physical USB evidence for the recorded macOS arm64 / blink(1) MK2 / FW204 combinations is separate from the native build and software checks on other targets. Windows automatic service management is not included.
+The prebuilt CLI/server binaries declare a minimum of macOS 15.0 on both Mac architectures and require glibc 2.38 or later on Linux. The optional MCP binaries declare a minimum of macOS 13.0 and are statically linked on Linux; they still require a compatible nb1 server. The macOS downloads are not Developer ID notarized.
+
+These binary requirements are separate from source compatibility and do not guarantee every operating system or physical USB combination. See the release's build and platform evidence before using an older system. Physical USB evidence for the recorded macOS arm64 / blink(1) MK2 / FW204 combinations is separate from software checks on other targets. Windows supports foreground operation; automatic service management is not included.
 
 Download the selected archive, `release.json` and the global `SHA256SUMS` from the same release. Compare the archive's complete SHA-256 and exact filename with that manifest. For example, on an Apple Silicon Mac:
 

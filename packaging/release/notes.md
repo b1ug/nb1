@@ -15,8 +15,8 @@ part of the executable; no Node server or separate Web installation is needed.
   query/cancel/progress and configurable bounded terminal history.
 - Explicit foreground server and direct CLI modes. Installing the executable
   does not silently install or start a service.
-- macOS LaunchAgent and Linux systemd-user management. Windows foreground use
-  is separate from Windows automatic service management.
+- macOS LaunchAgent and Linux systemd-user management. Windows supports
+  foreground operation; automatic service management is not included.
 - A matching optional stdio MCP executable using the official Go SDK and a
   standalone Agent Skill. MCP calls the existing daemon over HTTP.
 - Released foundation dependencies: blink1-go v0.0.2, GID v0.0.3 and
@@ -43,6 +43,13 @@ The source commit, native target, embedded Web manifest, dependency selection,
 archive and executable hashes, and platform qualification are recorded in
 `release.json`. Check the support matrix before treating software CI as
 physical-device qualification.
+
+The prebuilt CLI/server binaries declare macOS 15.0 as their minimum on both
+Mac architectures and require glibc 2.38 or later on Linux. The optional MCP
+binaries declare a minimum of macOS 13.0 and are statically linked on Linux;
+they still require a compatible nb1 server. The macOS downloads are not
+Developer ID notarized. These binary requirements do not guarantee every
+operating system or physical USB combination.
 
 The current public API rejects a new Job while a device is busy. New editable
 source libraries, semantic Trigger routing, composition and queue/preemption

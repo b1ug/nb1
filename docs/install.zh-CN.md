@@ -14,7 +14,9 @@
 | Linux amd64 | `nb1-v0.1.0-linux-amd64.tar.gz` |
 | Windows amd64 | `nb1-v0.1.0-windows-amd64.zip` |
 
-这些标签表示构建目标，不保证任意更老的系统都能运行。发布记录中的平台构建／软件检查与实际 USB 验收分开；已有 macOS arm64／MK2／FW204 的有限实物证据不扩大为所有平台、MK3、重启或持久化保证。Windows 自动服务管理不在此版本内。
+本次预编译 CLI／server 在两种 Mac 架构上的二进制最低版本均为 macOS 15.0；Linux CLI 需要 glibc 2.38 或更新版本。可选 MCP 程序的 macOS 二进制最低版本为 13.0，Linux MCP 为静态链接；它仍需要兼容的 nb1 server，因此不会降低本机 server 的要求。macOS 下载包未经过 Developer ID 公证。
+
+这些二进制要求与源码兼容性分开，不保证所有操作系统或实体 USB 组合。使用较旧系统前，请查看对应 Release 的构建和平台记录。已有 macOS arm64／MK2／FW204 的有限实物证据不扩大为所有平台、MK3、重启或持久化保证。Windows 支持前台运行，不包含自动服务管理。
 
 从同一 Release 下载所选包、`release.json` 和全局 `SHA256SUMS`，核对完整 SHA-256 与准确文件名。Apple Silicon Mac 示例：
 

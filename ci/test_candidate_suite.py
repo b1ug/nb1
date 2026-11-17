@@ -343,5 +343,171 @@ class HostileArchiveTests(unittest.TestCase):
             SUITE.read_archive(stream.getvalue(), {"good"})
 
 
+RELEASE_SPEC = importlib.util.spec_from_file_location("release_suite", Path(__file__).with_name("release-suite.py"))
+RELEASE = importlib.util.module_from_spec(RELEASE_SPEC)
+RELEASE_SPEC.loader.exec_module(RELEASE)
+RELEASE_VERSION = "v0.1.0"
+
+
+class ReleaseFixture:
+    """Structured release fixtures; bytes deliberately are not executable."""
+    def __init__(self, directory, goos="darwin", arch="arm64", tagged=False):
+        self.old = Fixture(directory, goos)
+        self.old.target["GOARCH"] = arch
+        self.target, self.root, self.out = self.old.target, self.old.root, self.old.output
+        self.context = {"event": "push" if tagged else "workflow_dispatch", "version": RELEASE_VERSION,
+                        "source": SOURCE, "ref": "refs/tags/" + RELEASE_VERSION if tagged else "refs/heads/release-test",
+                        "publication_eligible": tagged, "mode": "tag-build" if tagged else "rehearsal"}
+        for name in RELEASE.LICENSES:
+            path = self.root / "internal/webui/dist" / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes((name + "\n").encode())
+        self.cli_input = directory / "release-cli-input"
+        self.cli_input.write_bytes(b"non-executable CLI fixture")
+        self.modules = {
+            "cli": [{"Path": path, "Version": version, "Sum": "h1:fixture"} for path, version in RELEASE.FOUNDATION.items()],
+            "mcp": copy.deepcopy(MCP_MODULES)}
+        self.info = {}
+        for key, module in [("cli", SUITE.CORE), ("mcp", SUITE.MCP)]:
+            info = SUITE.build_info(build_text(module, self.target, self.modules[key]))
+            info["go_version"] = RELEASE.TOOLCHAIN
+            info["settings"]["CGO_ENABLED"] = "0" if key == "mcp" else "1"
+            flag = "main.buildVersion" if key == "mcp" else SUITE.CORE + "/config.GitSummary"
+            info["settings"]["-ldflags"] = "-X " + flag + "=" + RELEASE_VERSION
+            self.info[key] = info
+
+    def dependencies(self, _binary, goos):
+        if goos == "darwin":
+            return {"kind": "mach-o", "libraries": ["/usr/lib/libSystem.B.dylib"], "minimum_os_from_binary": "15.0",
+                    "notarization_claimed": False, "signature_details": "fixture only", "signature_inspection_exit": 0}
+        if goos == "linux":
+            return {"kind": "elf", "linkage": "dynamic", "ldd": "libc.so.6 => /lib/libc.so.6",
+                    "glibc_versions": ["2.34", "2.39"], "required_glibc_from_binary": "2.39", "all_dependencies_resolved": True}
+        return {"kind": "pe", "DLLs": ["KERNEL32.dll"], "system_DLLs_only": True}
+
+    def smoke(self, *_):
+        return {"status": "PASS", "system_PATH_only": True, "MCP_version": RELEASE_VERSION,
+                "MCP_tools": 12, "MCP_protocol_only": True, "USB_access": False, "daemon_started": False,
+                "CLI_version": {"version": RELEASE_VERSION, "build": {"revision": SOURCE, "modified": "false",
+                    "os": self.target["GOOS"], "arch": self.target["GOARCH"], "cgo_enabled": True}}}
+
+    def stage(self):
+        def info(_bytes, name, _root):
+            return self.info["mcp" if name.startswith("nb1-mcp") else "cli"]
+        with patch.object(RELEASE.BASE, "source_identity", return_value=SOURCE), \
+                patch.object(RELEASE.BASE, "binary_build_text", side_effect=lambda data, name, root: info(data, name, root)), \
+                patch.object(RELEASE.BASE, "build_info", side_effect=lambda value: value), \
+                patch.object(RELEASE, "selected_modules", side_effect=lambda root, value, mcp=False: self.modules["mcp" if mcp else "cli"]), \
+                patch.object(RELEASE, "web_inventory", return_value=self.old.web), \
+                patch.object(RELEASE, "runtime_dependencies", side_effect=self.dependencies), \
+                patch.object(RELEASE, "native_smoke", side_effect=self.smoke):
+            return RELEASE.stage(self.root, self.cli_input, self.old.mcp, self.out, RELEASE_VERSION, SOURCE, self.context)
+
+
+def refresh_release_platform(directory, value):
+    (directory / "platform.json").write_bytes(SUITE.json_bytes(value))
+    files = {p.name: p.read_bytes() for p in directory.iterdir() if p.name != "SHA256SUMS"}
+    (directory / "SHA256SUMS").write_bytes(SUITE.checksums(files))
+
+
+class ReleaseSuiteTests(unittest.TestCase):
+    def test_five_native_versioned_platforms_assemble_and_rehearsal_cannot_publish(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary); platforms = root / "platforms"; platforms.mkdir()
+            for goos, arch in sorted(RELEASE.TARGETS):
+                parent = root / (goos + arch); parent.mkdir()
+                fixture = ReleaseFixture(parent, goos, arch)
+                fixture.out = platforms / (goos + "-" + arch)
+                fixture.stage()
+            output = root / "release"
+            manifest = RELEASE.assemble(platforms, output, RELEASE_VERSION, SOURCE)
+            self.assertEqual(len(manifest["platforms"]), 5)
+            self.assertEqual(len(manifest["assets"]), 11)
+            self.assertEqual(len(list(output.iterdir())), 13)
+            self.assertTrue(RELEASE.verify_release(output, RELEASE_VERSION, SOURCE)["release"])
+            with self.assertRaisesRegex(ValueError, "rehearsal cannot publish"):
+                RELEASE.verify_release(output, RELEASE_VERSION, SOURCE, publish=True)
+            downloaded = root / "downloaded"
+            import shutil
+            shutil.copytree(output, downloaded)
+            RELEASE.verify_download(output, downloaded)
+            (downloaded / "SHA256SUMS").write_bytes(b"wrong\n")
+            with self.assertRaises(ValueError): RELEASE.verify_download(output, downloaded)
+
+    def test_tag_context_requires_official_version_tag_source_and_master(self):
+        def fake_git(_root, *args):
+            return "" if args[0] == "status" else SOURCE
+        env = {"GITHUB_EVENT_NAME": "push", "GITHUB_REF": "refs/tags/" + RELEASE_VERSION,
+               "GITHUB_REPOSITORY": "b1ug/nb1"}
+        with patch.object(RELEASE, "git", side_effect=fake_git), patch.object(RELEASE, "run") as process:
+            self.assertTrue(RELEASE.context(Path("."), env)["publication_eligible"])
+            self.assertIn("--is-ancestor", process.call_args.args[0])
+            for change in [{"GITHUB_REPOSITORY": "someone/fork"}, {"GITHUB_REF": "refs/heads/master"},
+                           {"GITHUB_REF": "refs/tags/v0.1.0\npublish=true"}]:
+                with self.subTest(change=change), self.assertRaises(ValueError):
+                    RELEASE.context(Path("."), {**env, **change})
+            with patch.object(RELEASE, "git", side_effect=lambda root, *args: "2" * 40 if args[1:2] == ("refs/tags/" + RELEASE_VERSION + "^{commit}",) else fake_git(root, *args)), self.assertRaises(ValueError):
+                RELEASE.context(Path("."), env)
+
+    def test_dispatch_and_pull_request_are_readonly_rehearsals(self):
+        with patch.object(RELEASE, "git", side_effect=lambda root, *args: "" if args[0] == "status" else SOURCE):
+            for event in ("workflow_dispatch", "pull_request"):
+                env = {"GITHUB_EVENT_NAME": event, "GITHUB_REF": "refs/heads/test", "INPUT_VERSION": RELEASE_VERSION, "INPUT_PUBLISH": "false"}
+                self.assertFalse(RELEASE.context(Path("."), env)["publication_eligible"])
+                with self.assertRaises(ValueError): RELEASE.context(Path("."), {**env, "INPUT_PUBLISH": "true"})
+
+    def test_dev_wrong_source_cgo_toolchain_and_foundation_are_rejected(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            fixture = ReleaseFixture(Path(temporary))
+            original = fixture.info["cli"]
+            for field, value in [("-ldflags", "-X github.com/b1ug/nb1/config.GitSummary=dev"),
+                                 ("vcs.modified", "true"), ("vcs.revision", "2" * 40), ("CGO_ENABLED", "0")]:
+                changed = copy.deepcopy(original); changed["settings"][field] = value
+                with self.subTest(field=field), self.assertRaises(ValueError):
+                    RELEASE.check_binary(changed, fixture.modules["cli"], RELEASE_VERSION, SOURCE, fixture.target)
+            changed = copy.deepcopy(original); changed["go_version"] = "go1.27.3"
+            with self.assertRaises(ValueError): RELEASE.check_binary(changed, fixture.modules["cli"], RELEASE_VERSION, SOURCE, fixture.target)
+            modules = copy.deepcopy(fixture.modules["cli"]); modules[0]["Version"] = "v0.0.0-local"
+            changed = copy.deepcopy(original); changed["dependencies"] = modules
+            with self.assertRaises(ValueError): RELEASE.check_binary(changed, modules, RELEASE_VERSION, SOURCE, fixture.target)
+
+    def test_candidate_flags_missing_files_wrong_runtime_and_extra_assets_rejected(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            fixture = ReleaseFixture(Path(temporary)); value = fixture.stage()
+            for mutate in [lambda v: v.update(release=False),
+                           lambda v: v["runtime"].update(system_PATH_only=False),
+                           lambda v: v["runtime"].update(MCP_version="1.0.0-dev"),
+                           lambda v: v["runtime"].update(extracted_archives=False),
+                           lambda v: v["runtime"]["CLI_version"]["build"].update(revision="2" * 40)]:
+                changed = copy.deepcopy(value); mutate(changed); refresh_release_platform(fixture.out, changed)
+                with self.assertRaises(ValueError): RELEASE.verify_platform(fixture.out, RELEASE_VERSION, SOURCE)
+            refresh_release_platform(fixture.out, value)
+            (fixture.out / "unexpected.txt").write_bytes(b"extra")
+            with self.assertRaises(ValueError): RELEASE.verify_platform(fixture.out, RELEASE_VERSION, SOURCE)
+
+    def test_native_dependencies_distinguish_system_runtime_and_static_elf(self):
+        valid = {"kind": "elf", "linkage": "static", "glibc_versions": [], "required_glibc_from_binary": None,
+                 "all_dependencies_resolved": True}
+        RELEASE.check_native_dependencies(valid, "linux")
+        for goos, value in [("linux", {**valid, "required_glibc_from_binary": "2.39"}),
+                            ("windows", {"kind": "pe", "DLLs": ["libwinpthread-1.dll"], "system_DLLs_only": True}),
+                            ("darwin", {"kind": "mach-o", "libraries": ["@rpath/bad.dylib"], "minimum_os_from_binary": "15.0", "notarization_claimed": False})]:
+            with self.subTest(goos=goos), self.assertRaises(ValueError): RELEASE.check_native_dependencies(value, goos)
+
+    def test_assembly_refuses_missing_or_mixed_platform_contexts(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary); platforms = root / "platforms"; platforms.mkdir()
+            for index, (goos, arch) in enumerate(sorted(RELEASE.TARGETS)):
+                parent = root / (goos + arch); parent.mkdir()
+                fixture = ReleaseFixture(parent, goos, arch, tagged=index == 0)
+                fixture.out = platforms / (goos + "-" + arch); fixture.stage()
+            with self.assertRaisesRegex(ValueError, "contexts differ"):
+                RELEASE.assemble(platforms, root / "mixed", RELEASE_VERSION, SOURCE)
+            import shutil
+            shutil.rmtree(next(platforms.iterdir()))
+            with self.assertRaisesRegex(ValueError, "five platform"):
+                RELEASE.assemble(platforms, root / "missing", RELEASE_VERSION, SOURCE)
+
+
 if __name__ == "__main__":
     unittest.main()

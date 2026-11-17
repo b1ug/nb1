@@ -85,7 +85,9 @@ Use `./nb1 control preview action.json` only when you want a plan without playba
 
 CLI help and application-generated diagnostics remain English under English, Chinese and other locale settings. The Web workbench has its own language switch. Terminal colors follow the destination stream: nonempty `NO_COLOR` wins, `CLICOLOR=0` disables ordinary color, and `CLICOLOR_FORCE=1` can explicitly force color when `NO_COLOR` is unset. A pipe or `TERM=dumb` otherwise uses plain text. JSON output stays unstyled.
 
-Application diagnostics on stderr use Charm Log. `--debug` includes caller and PID details. `--log-file PATH` retains the existing JSON file format, 10 MiB rotation, compressed backups and retention policy. Command JSON, the daemon's JSON event stream and MCP JSON-RPC remain separate. This release keeps Cobra help; it does not include Fang or CLI translation. The Go source minimum remains 1.25.0, separate from the download and Homebrew build requirements above.
+Fang presents human-facing help and errors; application diagnostics on stderr use Charm Log. `--debug` includes caller and PID details. `--log-file PATH` retains the existing JSON file format, 10 MiB rotation, compressed backups and retention policy. Command JSON, the daemon's JSON event stream and MCP JSON-RPC remain separate. CLI translation remains separate work. Building nb1 or its standalone MCP adapter from source requires Go 1.25.8 or newer, separate from the download and Homebrew build requirements above.
+
+Fang is supplied through a temporary fixed fork of upstream v2.0.1, with the exact public module version and checksum recorded in the release manifests. Its explicit background option is proposed in [official Fang PR #111](https://github.com/charmbracelet/fang/pull/111).
 
 For one foreground run without a daemon, first release the lamp from the other controller, then explicitly choose direct mode:
 

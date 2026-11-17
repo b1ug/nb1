@@ -67,4 +67,4 @@ Web 位于 `/demo/`，默认英文，可切中文。其源码在独立的 nb1-we
 
 九个动作分别为 `set`、`off`、`fade`、`blink`、`breathe`、`pulse`、`alternate`、`orbit`、`rainbow`。颜色接受名字、Hex、RGB8、HSV/HSB 和 `@本机名字`。Pattern 存在电脑上；设备原生序列 API 仍为独立规划，当前 HTTP v1／MCP 不把主机 Pattern 部署到设备存储。
 
-从源码构建 CLI 与独立 MCP 模块要求 Go 1.25 或更新版本；发布产物记录实际构建工具链及固定依赖。预编译程序不需要安装 Go。源码下限来自依赖安全修复，设备协议不变。软件、实机 USB、安装和相机光学结果分开记录。Mac/MK2 的有限结果不代表 MK3、Linux/Windows USB 或非易失存储已通过。开发提交不等于 tag 或 Release。
+从源码构建 CLI 与独立 MCP 模块要求 Go 1.25.8 或更新版本；发布产物记录实际构建工具链及固定依赖。预编译程序不需要安装 Go。源码下限反映所选依赖的要求，设备协议与基础库自身的 Go 要求不变。软件、实机 USB、安装和相机光学结果分开记录。Mac/MK2 的有限结果不代表 MK3、Linux/Windows USB 或非易失存储已通过。开发提交不等于 tag 或 Release。

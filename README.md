@@ -68,7 +68,7 @@ Device locks follow the established native OS coordination policy. On macOS they
 
 Actions are `set`, `off`, `fade`, `blink`, `breathe`, `pulse`, `alternate`, `orbit` and `rainbow`. Colors accept names, Hex, RGB8, HSV/HSB and local `@name` references. Patterns are saved on the computer. Device-native sequence APIs remain separate planned work; the current HTTP v1 and MCP adapter do not deploy host Patterns to device storage. [Device-native draft](docs/device-native-sequence.md)
 
-MCP provides 12 tools for this contract. The bilingual Web workbench is embedded at `/demo/`; opening or previewing does not play a Job. Building the CLI or separate MCP module from source requires Go 1.25 or newer; release artifacts record the actual build toolchain and fixed dependencies. Prebuilt executables need no Go installation. The source floor comes from patched dependencies, not a change to the device protocol. Independently maintained [nb1-web](https://github.com/b1ug/nb1-web) source becomes a pinned bundle embedded in nb1. The public [nb1-docs](https://github.com/b1ug/nb1-docs) repository supplies the [bilingual documentation website](https://b1ug.github.io/nb1-docs/). The independent [nb1-browser](https://github.com/b1ug/nb1-browser) workbench and Chrome extension use WebHID directly and require explicit device ownership handoff. The separate Web source and browser-tool repositories remain private during development.
+MCP provides 12 tools for this contract. The bilingual Web workbench is embedded at `/demo/`; opening or previewing does not play a Job. Building the CLI or separate MCP module from source requires Go 1.25.8 or newer; release artifacts record the actual build toolchain and fixed dependencies. Prebuilt executables need no Go installation. The source floor reflects the selected dependencies; the device protocol and foundation libraries' own Go requirements are unchanged. Independently maintained [nb1-web](https://github.com/b1ug/nb1-web) source becomes a pinned bundle embedded in nb1. The public [nb1-docs](https://github.com/b1ug/nb1-docs) repository supplies the [bilingual documentation website](https://b1ug.github.io/nb1-docs/). The independent [nb1-browser](https://github.com/b1ug/nb1-browser) workbench and Chrome extension use WebHID directly and require explicit device ownership handoff. The separate Web source and browser-tool repositories remain private during development.
 
 Software, physical USB and optical checks are distinct. Local MK2 results do not establish MK3, Linux/Windows USB or nonvolatile storage. A development commit does not imply a tag or Release.
 
@@ -76,8 +76,8 @@ Software, physical USB and optical checks are distinct. Local MK2 results do not
 
 The native CI matrix builds the CLI, runs software tests with the race detector,
 and runs `go vet` on Ubuntu 24.04 (amd64/arm64), macOS 15 (arm64/Intel), and
-Windows Server 2022 (amd64), using Go 1.26.x and 1.27.x. The Go 1.25 source floor
-is checked separately with CGO disabled on Ubuntu 22.04. Locked module versions
+Windows Server 2022 (amd64), using Go 1.26.x and 1.27.x. Separate Go 1.25.x CI
+checks source with CGO disabled on Ubuntu 22.04. Locked module versions
 are used with `GOWORK=off` and `-mod=readonly`.
 
 The separate candidate workflow builds matching CLI and MCP binaries, verifies

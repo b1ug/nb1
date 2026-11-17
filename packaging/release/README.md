@@ -3,14 +3,27 @@
 The release workflow builds the same source into five native targets:
 `darwin/arm64`, `darwin/amd64`, `linux/arm64`, `linux/amd64` and
 `windows/amd64`. The CLI uses CGO; the matching standalone MCP executable does
-not. Both use the fixed Go 1.27.4 build toolchain. The source floor remains
-Go 1.25.0; it is a different contract from the release-build toolchain.
+not. Both use the fixed Go 1.27.4 build toolchain. The source floor is
+Go 1.25.8 for both the root and standalone MCP modules; it is a different
+contract from the release-build toolchain.
 
-Application console diagnostics use Charm Log v1.0.0 on stderr. This version
-was selected to preserve the Go 1.25.0 source floor; Fang is not included.
-Cobra help, English CLI messages, command JSON, MCP JSON-RPC and the daemon's
+Human CLI help and errors use a temporary fixed Fang fork based on upstream
+v2.0.1; application console diagnostics use Charm Log v2.0.1 on stderr. This
+pair avoids mixing incompatible ANSI and Lip Gloss APIs. Log requires
+Go 1.25.8; this nb1 choice does not change the foundation libraries' own Go
+requirements. English CLI messages, command JSON, MCP JSON-RPC and the daemon's
 JSON event writer keep their existing boundaries. Application file logs retain
 their JSON encoder, metadata, 10 MiB rotation, compression and backup policy.
+
+The Fang dependency is the ordinary public module `github.com/vt128/fang/v2`
+at `v2.0.2-0.20261117143650-281a83bf0c12`, whose commit is
+[281a83bf0c123e785ad878d3842d9db7f9a88820](https://github.com/vt128/fang/commit/281a83bf0c123e785ad878d3842d9db7f9a88820).
+It backports `WithDarkBackground(bool)` to official v2.0.1; the separate
+upstream-main proposal is [Fang PR #111](https://github.com/charmbracelet/fang/pull/111).
+The opt-in option permits a known background without automatic detection;
+its default remains upstream's behavior. No Fang replacement or release
+provenance exception is used. Keep the exact public version, sum and original
+license notices in the normal module and archive records.
 
 The CLI already contains the complete Web bundle. There is no Node dependency,
 separate Web extraction, CDN fetch or post-install asset download.

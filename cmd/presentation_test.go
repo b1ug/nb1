@@ -13,6 +13,7 @@ import (
 
 	"github.com/b1ug/nb1/internal/appconfig"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/charmbracelet/x/term"
 	"github.com/spf13/cobra"
 )
 
@@ -199,4 +200,41 @@ func TestPresentationOutputFiltersOnlyPresentationAndDoesNotBlockActivation(t *t
 	}
 	close(blocked.release)
 	<-done
+}
+
+func TestPresentationRetainsRealCapabilitiesOnlyForColoredDestinations(t *testing.T) {
+	for _, key := range []string{"NO_COLOR", "CLICOLOR", "CLICOLOR_FORCE", "CI"} {
+		t.Setenv(key, "")
+	}
+	file, err := os.CreateTemp(t.TempDir(), "borrowed-output-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer file.Close()
+	t.Setenv("CLICOLOR_FORCE", "1")
+	_, writer := newPresentationOutput(file)
+	terminal, ok := writer.(term.File)
+	if writer != file || !ok || terminal.Fd() != file.Fd() {
+		t.Fatal("colored output lost the original file's real capabilities")
+	}
+	t.Setenv("NO_COLOR", "1")
+	_, writer = newPresentationOutput(file)
+	if writer == file {
+		t.Fatal("plain output bypassed its ANSI filter")
+	}
+	if _, ok := writer.(term.File); ok {
+		t.Fatal("plain presentation exposes terminal input or ownership")
+	}
+	if _, ok := writer.(interface{ Fd() uintptr }); ok {
+		t.Fatal("plain presentation exposes a terminal descriptor")
+	}
+	if _, ok := writer.(io.Reader); ok {
+		t.Fatal("plain presentation can read borrowed output")
+	}
+	if _, ok := writer.(io.Closer); ok {
+		t.Fatal("plain presentation can close borrowed output")
+	}
+	if _, err := file.WriteString("still owned by the caller"); err != nil {
+		t.Fatalf("presentation closed its caller's file: %v", err)
+	}
 }

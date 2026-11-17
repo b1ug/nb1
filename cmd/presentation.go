@@ -36,20 +36,16 @@ func (w *presentationOutput) Write(data []byte) (int, error) {
 
 func (w *presentationOutput) activate() { w.active.Store(true) }
 
-type presentationTerminal struct {
-	*presentationOutput
-	fd uintptr
-}
-
-func (w *presentationTerminal) Fd() uintptr { return w.fd }
-
 func newPresentationOutput(output io.Writer) (*presentationOutput, io.Writer) {
 	w := &presentationOutput{
 		output:  output,
 		profile: charmColorProfile(util.OutputColorProfile(output)),
 	}
-	if terminal, ok := output.(interface{ Fd() uintptr }); ok {
-		return w, &presentationTerminal{presentationOutput: w, fd: terminal.Fd()}
+	if w.profile != colorprofile.NoTTY {
+		// Fang's detector requires the original terminal's complete capability
+		// interface. A colored destination needs no additional style filter;
+		// preserve the real writer instead of manufacturing Read/Close methods.
+		return w, output
 	}
 	return w, w
 }

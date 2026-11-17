@@ -239,6 +239,45 @@ func TestSequenceDirectTimeoutCancelsAndCloses(t *testing.T) {
 	}
 }
 
+type sequenceDirectTerminalReader struct {
+	job control.SequenceJob
+	err error
+}
+
+func (r sequenceDirectTerminalReader) SequenceJob(string) (control.SequenceJob, error) {
+	return r.job, r.err
+}
+
+func TestSequenceDirectJobTerminalObservationPreservesCallerCause(t *testing.T) {
+	deadline, stopDeadline := context.WithDeadline(context.Background(), time.Unix(1, 0))
+	defer stopDeadline()
+	cancelled, stopCancelled := context.WithCancel(context.Background())
+	stopCancelled()
+	lookupFailure := errors.New("job lookup failed")
+	for _, test := range []struct {
+		name, status      string
+		ctx               context.Context
+		lookupError, want error
+	}{
+		{"deadline already cancelled job", "cancelled", deadline, nil, context.DeadlineExceeded},
+		{"caller already cancelled job", "cancelled", cancelled, nil, context.Canceled},
+		{"independent job cancellation", "cancelled", context.Background(), nil, nil},
+		{"committed success survives deadline", "succeeded", deadline, nil, nil},
+		{"committed success survives cancellation", "succeeded", cancelled, nil, nil},
+		{"failed job retains native outcome", "failed", deadline, nil, nil},
+		{"lookup error is not overwritten", "cancelled", deadline, lookupFailure, lookupFailure},
+		{"active job deadline", "running", deadline, nil, context.DeadlineExceeded},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			stored := control.SequenceJob{ID: "j_7K3XJNY9ZM", Status: test.status, Error: "original job diagnostic"}
+			got, err := waitSequenceDirectJob(test.ctx, sequenceDirectTerminalReader{stored, test.lookupError}, stored.ID)
+			if !errors.Is(err, test.want) || got.ID != stored.ID || got.Status != stored.Status || got.Error != stored.Error {
+				t.Fatalf("terminal observation changed outcome: job=%+v error=%v, want original job and %v", got, err, test.want)
+			}
+		})
+	}
+}
+
 func TestSequenceDirectBlockedNativeKeepsLeaseUntilActualClose(t *testing.T) {
 	sequenceDirectProfile(t)
 	lockDir := filepath.Join(t.TempDir(), "locks")

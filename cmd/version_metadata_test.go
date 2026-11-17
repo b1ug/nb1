@@ -11,11 +11,13 @@ import (
 	"os/exec"
 	"path/filepath"
 	"reflect"
+	"regexp"
 	"runtime"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/b1ug/nb1/config"
 	"github.com/b1ug/nb1/internal/doctor"
 	"github.com/spf13/cobra"
 )
@@ -132,6 +134,51 @@ func TestVersionPropagatesOutputErrors(t *testing.T) {
 		if !errors.Is(err, failure) {
 			t.Fatalf("json=%t: writer error lost: %v", asJSON, err)
 		}
+	}
+}
+
+func TestVersionHumanSelectedWriterAndJSONColorIsolation(t *testing.T) {
+	fields := versionFields{name: "nb1", gitSummary: "v0.1.0"}
+	build := doctor.Build{GoVersion: "fixture-go"}
+	strip := regexp.MustCompile("\x1b\\[[0-9;]*m")
+	var expectedJSON string
+	for _, test := range []struct {
+		name                            string
+		force, noColor, term, colorTerm string
+		colored                         bool
+	}{
+		{"plain pipe", "", "", "xterm-256color", "truecolor", false},
+		{"explicit forced pipe", "1", "", "xterm-256color", "truecolor", true},
+		{"NO_COLOR overrides force", "1", "1", "xterm-256color", "truecolor", false},
+		{"dumb ignores truecolor", "", "", "dumb", "truecolor", false},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Setenv("CLICOLOR", "")
+			t.Setenv("CI", "")
+			t.Setenv("CLICOLOR_FORCE", test.force)
+			t.Setenv("NO_COLOR", test.noColor)
+			t.Setenv("TERM", test.term)
+			t.Setenv("COLORTERM", test.colorTerm)
+			var human, machine bytes.Buffer
+			if err := writeVersion(&human, fields, build, false); err != nil {
+				t.Fatal(err)
+			}
+			if strings.ContainsRune(human.String(), '\x1b') != test.colored || !strings.HasPrefix(strip.ReplaceAllString(human.String(), ""), config.AppLogoArt+"\n") {
+				t.Fatalf("human output writer/style or logo changed: %q", human.String())
+			}
+			if err := writeVersion(&machine, fields, build, true); err != nil {
+				t.Fatal(err)
+			}
+			if !json.Valid(machine.Bytes()) || strings.ContainsRune(machine.String(), '\x1b') {
+				t.Fatalf("styled or invalid JSON: %q", machine.String())
+			}
+			if expectedJSON == "" {
+				expectedJSON = machine.String()
+			}
+			if machine.String() != expectedJSON {
+				t.Fatalf("terminal style changed machine metadata: %q", machine.String())
+			}
+		})
 	}
 }
 

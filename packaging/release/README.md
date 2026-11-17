@@ -71,6 +71,14 @@ outer hash against the global list, then verify the inner list after extraction.
 Do not run `-c` against the global list when the other platform archives were
 not downloaded.
 
+Each component includes the original top-level `LICENSE*`, `COPYING*` and
+`NOTICE*` files from its actual linked Go module selection, plus the Go
+toolchain's LICENSE. Source versions/sums and each notice's original-byte hash
+are recorded in `build.json`. This includes both GID v0.0.3 `LICENSE` and
+`LICENSE-old`, and the MCP SDK's own LICENSE. The CLI also retains the bundled
+Web/model/editor/font notices. Missing module notices are reported as an error,
+not silently skipped; the packager copies texts without assigning license terms.
+
 `ci/release-suite.py verify` is an offline, bounded, closed-inventory check. It
 uses the existing candidate suite's safe archive parser, but the release schema
 and versioned filenames are separate. Candidate evidence retains `release:false`;

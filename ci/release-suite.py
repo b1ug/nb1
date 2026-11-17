@@ -171,6 +171,84 @@ def check_native_dependencies(value, goos):
                 "invalid Windows dependency record")
 
 
+def notice_prefix(module, source):
+    version = source if module.get("Replace") else module["Version"]
+    prefix = "licenses/modules/" + module["Path"] + "@" + version + "/"
+    require(".." not in Path(prefix).parts and "\\" not in prefix, "unsafe module notice path")
+    return prefix
+
+
+def collect_notices(root, modules, web=None, mcp=False):
+    """Copy original top-level notices from the exact linked module selection."""
+    cwd = root / "adapters/mcp" if mcp else root
+    selected = {v["Path"]: v for v in BASE.documents(BASE.command(["go", "list", "-mod=readonly", "-m", "-json", "all"], cwd))}
+    source = BASE.source_identity(root)
+    files, records = {}, {}
+    def add(path, data, origin):
+        require(path not in files, "duplicate notice path")
+        files[path] = data
+        records[path] = {"source": origin, "bytes": len(data), "sha256": BASE.sha(data)}
+    goroot = Path(BASE.command(["go", "env", "GOROOT"], cwd).strip())
+    add("licenses/go/LICENSE", BASE.regular_bytes(goroot / "LICENSE", BASE.JSON_BYTES),
+        {"kind": "go-toolchain", "version": TOOLCHAIN})
+    for module in modules:
+        row = selected[module["Path"]]
+        require(row.get("Version") == module["Version"], "notice module version differs")
+        if module.get("Replace"):
+            require(module["Path"] == BASE.CORE and Path(row["Dir"]).resolve() == root, "notice replacement differs")
+            origin = {"kind": "same-checkout", "module": module["Path"], "commit": source}
+        else:
+            require(not row.get("Replace") and row.get("Sum") == module["Sum"], "notice public module differs")
+            origin = {"kind": "public-module", "module": module["Path"], "version": module["Version"], "sum": module["Sum"]}
+        directory = Path(row["Dir"])
+        notices = sorted(p for p in directory.iterdir() if p.name.upper().startswith(("LICENSE", "LICENCE", "COPYING", "NOTICE")) and not p.is_dir())
+        require(notices and len(notices) <= 64, "no bounded top-level notices found for linked module " + module["Path"])
+        for path in notices:
+            add(notice_prefix(module, source) + path.name, BASE.regular_bytes(path, BASE.JSON_BYTES), origin)
+    if web:
+        for name in LICENSES:
+            add("licenses/" + name, BASE.regular_bytes(root / "internal/webui/dist" / name, BASE.JSON_BYTES),
+                {"kind": "embedded-web", "commit": web["source_commit"], "path": name})
+    return files, records
+
+
+def check_notices(records, modules, source, web):
+    require(isinstance(records, dict) and 1 <= len(records) <= 512, "missing or excessive license inventory")
+    groups = {module["Path"]: [] for module in modules}
+    seen_go, seen_web = 0, set()
+    for path, record in records.items():
+        require(isinstance(path, str) and path.startswith("licenses/") and not Path(path).is_absolute()
+                and ".." not in Path(path).parts and "\\" not in path, "unsafe notice path")
+        require(isinstance(record, dict) and set(record) == {"source", "bytes", "sha256"}
+                and type(record["bytes"]) is int and 0 < record["bytes"] <= BASE.JSON_BYTES
+                and re.fullmatch(r"[0-9a-f]{64}", record["sha256"]), "invalid notice hash record")
+        origin = record["source"]
+        require(isinstance(origin, dict), "invalid notice source")
+        if origin == {"kind": "go-toolchain", "version": TOOLCHAIN}:
+            require(path == "licenses/go/LICENSE", "unexpected toolchain notice")
+            seen_go += 1
+        elif origin.get("kind") == "embedded-web":
+            name = origin.get("path")
+            require(web is not None and name in LICENSES and path == "licenses/" + name
+                    and origin == {"kind": "embedded-web", "commit": web["source_commit"], "path": name}, "unexpected Web notice")
+            seen_web.add(name)
+        else:
+            matching = [module for module in modules if origin.get("module") == module["Path"]]
+            require(len(matching) == 1, "notice is not from a linked module")
+            module = matching[0]
+            expected = ({"kind": "same-checkout", "module": module["Path"], "commit": source} if module.get("Replace") else
+                        {"kind": "public-module", "module": module["Path"], "version": module["Version"], "sum": module["Sum"]})
+            prefix = notice_prefix(module, source)
+            name = path.removeprefix(prefix)
+            require(origin == expected and path.startswith(prefix) and "/" not in name
+                    and name.upper().startswith(("LICENSE", "LICENCE", "COPYING", "NOTICE")), "notice source/path differs")
+            groups[module["Path"]].append(name)
+    require(seen_go == 1 and seen_web == (LICENSES if web is not None else set())
+            and all(groups.values()), "incomplete linked-module, Go or Web notices")
+    if any(m["Path"] == "github.com/b1ug/gid" and m["Version"] == "v0.0.3" for m in modules):
+        require({"LICENSE", "LICENSE-old"}.issubset(groups["github.com/b1ug/gid"]), "GID original notices are incomplete")
+
+
 def web_inventory(root):
     directory = root / "internal/webui/dist"
     lock = BASE.read_json(BASE.regular_bytes(root / "internal/webui/manifest.lock.json", 4096))
@@ -302,7 +380,6 @@ def stage(root, cli, mcp, output, version, source, build_context):
     for key in infos:
         check_binary(infos[key], modules[key], version, source, target, key == "mcp")
     web = web_inventory(root)
-    licenses = {"licenses/" + name: BASE.regular_bytes(root / "internal/webui/dist" / name) for name in LICENSES}
     license_text = BASE.regular_bytes(root / "LICENSE")
     archive_names = names(version, target); files = {}; components = {}
     windows = target["GOOS"] == "windows"
@@ -317,13 +394,15 @@ def stage(root, cli, mcp, output, version, source, build_context):
         deps = {key: runtime_dependencies(path, target["GOOS"]) for key, path in binaries.items()}
     for key in data:
         binary = ("nb1" if key == "cli" else "nb1-mcp") + (".exe" if windows else "")
+        licenses, license_records = collect_notices(root, modules[key], web if key == "cli" else None, key == "mcp")
+        check_notices(license_records, modules[key], source, web if key == "cli" else None)
         build = {"schema_version": 1, "artifact_kind": "nb1-release-component", "release": True,
                  "version": version, "source": source, "target": target, "build_info": infos[key],
                  "modules": modules[key], "embedded_web": web if key == "cli" else None,
-                 "native_dependencies": deps[key], "build_context": build_context, "scope": SCOPE}
+                 "native_dependencies": deps[key], "licenses": license_records, "build_context": build_context, "scope": SCOPE}
         content = {binary: data[key], "LICENSE": license_text, "README.md": readme(key, version),
                    "build.json": BASE.json_bytes(build)}
-        if key == "cli": content.update(licenses)
+        content.update(licenses)
         content["SHA256SUMS"] = BASE.checksums(content)
         archive = BASE.archive_bytes(content, binary, windows)
         files[archive_names[key]] = archive
@@ -399,13 +478,13 @@ def verify_platform(directory, version, source):
             require(set(record) == {"archive", "sha256", "binary", "binary_sha256", "build", "files"}, "component fields differ")
             binary = ("nb1" if key == "cli" else "nb1-mcp") + (".exe" if value["target"]["GOOS"] == "windows" else "")
             expected_files = {binary, "LICENSE", "README.md", "build.json", "SHA256SUMS"}
-            if key == "cli": expected_files |= {"licenses/" + name for name in LICENSES}
+            expected_files |= set(record["build"].get("licenses", {}))
             require(record["binary"] == binary and expected == expected_files, "component inventory differs")
             content = BASE.read_archive(outer[name], expected, binary, value["target"]["GOOS"] == "windows")
             require(BASE.sha(content[binary]) == record["binary_sha256"], "binary hash differs")
             build = BASE.read_json(content["build.json"])
             require(set(build) == {"schema_version", "artifact_kind", "release", "version", "source", "target", "build_info",
-                                  "modules", "embedded_web", "native_dependencies", "build_context", "scope"}
+                                  "modules", "embedded_web", "native_dependencies", "licenses", "build_context", "scope"}
                     and type(build["schema_version"]) is int and build["schema_version"] == 1 and build["artifact_kind"] == "nb1-release-component"
                     and build["scope"] == SCOPE and build == record["build"] and build["version"] == version and build["source"] == source
                     and build["release"] is True and build["target"] == value["target"]
@@ -413,6 +492,9 @@ def verify_platform(directory, version, source):
                     and build["embedded_web"] == (value["embedded_web"] if key == "cli" else None), "component provenance differs")
             check_binary(build["build_info"], build["modules"], version, source, value["target"], key == "mcp")
             check_native_dependencies(build["native_dependencies"], value["target"]["GOOS"])
+            check_notices(build["licenses"], build["modules"], source, value["embedded_web"] if key == "cli" else None)
+            require(all(record == {"source": record["source"], "bytes": len(content[name]), "sha256": BASE.sha(content[name])}
+                        for name, record in build["licenses"].items()), "notice content differs from original hash record")
             require(content["README.md"] == readme(key, version), "component instructions differ")
             component_licenses.append(content["LICENSE"])
             require(content["SHA256SUMS"] == BASE.checksums({n: b for n, b in content.items() if n != "SHA256SUMS"}),

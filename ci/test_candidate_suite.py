@@ -391,6 +391,24 @@ class ReleaseFixture:
                 "CLI_version": {"version": RELEASE_VERSION, "build": {"revision": SOURCE, "modified": "false",
                     "os": self.target["GOOS"], "arch": self.target["GOARCH"], "cgo_enabled": True}}}
 
+    def notices(self, root, modules, web=None, mcp=False):
+        files = {"licenses/go/LICENSE": b"Go fixture license\n"}
+        records = {"licenses/go/LICENSE": {"source": {"kind": "go-toolchain", "version": RELEASE.TOOLCHAIN},
+                    "bytes": len(files["licenses/go/LICENSE"]), "sha256": SUITE.sha(files["licenses/go/LICENSE"])}}
+        for module in modules:
+            origin = ({"kind": "same-checkout", "module": module["Path"], "commit": SOURCE} if module.get("Replace") else
+                      {"kind": "public-module", "module": module["Path"], "version": module["Version"], "sum": module["Sum"]})
+            for name in (["LICENSE", "LICENSE-old"] if module["Path"] == "github.com/b1ug/gid" else ["LICENSE"]):
+                path = RELEASE.notice_prefix(module, SOURCE) + name
+                files[path] = (module["Path"] + name + "\n").encode()
+                records[path] = {"source": origin, "bytes": len(files[path]), "sha256": SUITE.sha(files[path])}
+        if web:
+            for name in RELEASE.LICENSES:
+                path = "licenses/" + name; files[path] = (name + "\n").encode()
+                records[path] = {"source": {"kind": "embedded-web", "commit": web["source_commit"], "path": name},
+                                 "bytes": len(files[path]), "sha256": SUITE.sha(files[path])}
+        return files, records
+
     def stage(self):
         def info(_bytes, name, _root):
             return self.info["mcp" if name.startswith("nb1-mcp") else "cli"]
@@ -399,6 +417,7 @@ class ReleaseFixture:
                 patch.object(RELEASE.BASE, "build_info", side_effect=lambda value: value), \
                 patch.object(RELEASE, "selected_modules", side_effect=lambda root, value, mcp=False: self.modules["mcp" if mcp else "cli"]), \
                 patch.object(RELEASE, "web_inventory", return_value=self.old.web), \
+                patch.object(RELEASE, "collect_notices", side_effect=self.notices), \
                 patch.object(RELEASE, "runtime_dependencies", side_effect=self.dependencies), \
                 patch.object(RELEASE, "native_smoke", side_effect=self.smoke):
             return RELEASE.stage(self.root, self.cli_input, self.old.mcp, self.out, RELEASE_VERSION, SOURCE, self.context)
@@ -504,6 +523,29 @@ class ReleaseSuiteTests(unittest.TestCase):
                             ("windows", {"kind": "pe", "DLLs": ["libwinpthread-1.dll"], "system_DLLs_only": True}),
                             ("darwin", {"kind": "mach-o", "libraries": ["@rpath/bad.dylib"], "minimum_os_from_binary": "15.0", "notarization_claimed": False})]:
             with self.subTest(goos=goos), self.assertRaises(ValueError): RELEASE.check_native_dependencies(value, goos)
+
+    def test_original_linked_module_and_toolchain_notices_are_collected_and_bound(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary); directory = root / "gid"; directory.mkdir()
+            goroot = root / "go"; goroot.mkdir(); (goroot / "LICENSE").write_bytes(b"Go license\n")
+            (directory / "LICENSE").write_bytes(b"GID license\n")
+            (directory / "LICENSE-old").write_bytes(b"Original native license\n")
+            module = {"Path": "github.com/b1ug/gid", "Version": "v0.0.3", "Sum": "h1:public"}
+            row = {**module, "Dir": str(directory)}
+            def command(argv, cwd):
+                return str(goroot) if argv[1:3] == ["env", "GOROOT"] else json.dumps(row)
+            with patch.object(RELEASE.BASE, "command", side_effect=command), patch.object(RELEASE.BASE, "source_identity", return_value=SOURCE):
+                files, records = RELEASE.collect_notices(root, [module])
+            prefix = RELEASE.notice_prefix(module, SOURCE)
+            self.assertEqual(files[prefix + "LICENSE-old"], b"Original native license\n")
+            self.assertEqual(records[prefix + "LICENSE-old"]["source"]["sum"], module["Sum"])
+            RELEASE.check_notices(records, [module], SOURCE, None)
+            records.pop(prefix + "LICENSE-old")
+            with self.assertRaisesRegex(ValueError, "GID original notices"):
+                RELEASE.check_notices(records, [module], SOURCE, None)
+            (directory / "LICENSE").unlink(); (directory / "LICENSE-old").unlink()
+            with patch.object(RELEASE.BASE, "command", side_effect=command), patch.object(RELEASE.BASE, "source_identity", return_value=SOURCE), self.assertRaisesRegex(ValueError, "no bounded top-level notices"):
+                RELEASE.collect_notices(root, [module])
 
     def test_assembly_refuses_missing_or_mixed_platform_contexts(self):
         with tempfile.TemporaryDirectory() as temporary:

@@ -2,6 +2,8 @@
 
 [简体中文](candidate-install.zh-CN.md)
 
+For tagged downloads, use the [release installation guide](install.md). This page preserves the separate development-candidate contract below.
+
 This guide covers development candidates, not a tagged release or a published
 package channel. Each suite records `release: false`. The first physical-device
 delivery target is the tested macOS / Apple Silicon / MK2 / FW204 combination.

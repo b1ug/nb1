@@ -7,8 +7,9 @@ existing nb1 CLI, HTTP API or MCP connection. It supplies no driver, daemon,
 MCP registration or extra permissions. Use matching Skill and nb1 interfaces;
 the installed help and MCP schemas describe what is available.
 
-The [matching candidate guide](candidate-install.md#add-mcp-or-the-skill-independently)
-covers verification and unpacking of the independent MCP and Skill artifacts.
+The [release installation guide](install.md) covers verification and unpacking
+of the independent CLI, MCP and Skill artifacts. For development artifacts,
+use the separate [matching candidate guide](candidate-install.md#add-mcp-or-the-skill-independently).
 
 ## Add it to one project
 
@@ -56,8 +57,9 @@ blocked call is not a successful save or run. Approve only the intended server
 and tools; loading this Skill is not a reason to relax the shell sandbox. See
 [Codex MCP tool policy](https://learn.chatgpt.com/docs/extend/mcp?surface=cli).
 
-Inspect available tools or `nb1 control --help`, preview, then execute the
-requested task. HTTP202 is acceptance; terminal Job status is completion.
+Inspect available tools or `nb1 control --help`, then execute the requested
+task. Preview is optional and does not play. HTTP202 is acceptance; terminal
+Job status is completion.
 Keep the original endpoint, input and Job ID when a response is lost. A missing
 record cannot prove that playback never ran.
 Choose and record an explicit Job ID before submission when recovery matters.

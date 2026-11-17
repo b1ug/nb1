@@ -8,11 +8,13 @@ Discover actual CLI help or MCP tools/list before use; source support does not p
 - Low-level Sequence: timing serial or interval, ordered steps[], ColorInput target colors resolved to lowercase Hex6 by the core, integer millisecond durations, repeat and on_finish. The nb1 core compiles and schedules playback.
 - ColorInput: names, Hex3/6, RGB8, HSV (HSB in the UI) and explicit local @name references. No implicit gamma.
 - Pattern: a computer-side saved normalized Sequence, independent of device storage generation.
-- DeviceSequence: native RAM/Flash semantics with separate capabilities and deployment. Saving a host Pattern does not deploy it to hardware.
+- DeviceSequence: an independent draft for native RAM/Flash semantics. Current API v1 and MCP do not expose its deployment APIs. Saving a host Pattern does not deploy it to hardware.
 
 ## Execution
 
 HTTP POST /v1/preview compiles action, sequence or pattern_id without playing. POST /v1/jobs accepts the same expression plus serial and optional id. GET /v1/jobs/{id} tracks it; POST /v1/jobs/{id}/cancel requests cancellation.
+
+Preview is optional, not a prerequisite for playback or Pattern saving. When playback is requested, run the validated expression directly and track its Job.
 
 MCP is real stdio to local HTTP, without a CLI subprocess or USB ownership. HTTP CLI calls and the embedded Web use the running daemon. MCP selects its endpoint with --endpoint, defaults to http://127.0.0.1:8931 and does not read nb1 YAML; the HTTP CLI can derive its endpoint from profile server.listen. Point all clients at the intended daemon. An unavailable daemon never triggers an automatic start or USB fallback.
 

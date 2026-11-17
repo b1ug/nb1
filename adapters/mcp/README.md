@@ -2,7 +2,7 @@
 
 The adapter exposes the nb1 API v1 through the official [Go MCP SDK](https://github.com/modelcontextprotocol/go-sdk), using JSON-RPC over stdio. It connects to a running local nb1 daemon over HTTP. The daemon selects devices, compiles Actions, executes Sequences, and stores local colors and Patterns.
 
-For a prebuilt development candidate, follow the [matching suite guide](../../docs/candidate-install.md#add-mcp-or-the-skill-independently). The MCP executable is a separate artifact; it does not launch the CLI or daemon.
+For a prebuilt release, follow the [installation guide](../../docs/install.md). Development artifacts use the separate [matching candidate guide](../../docs/candidate-install.md#add-mcp-or-the-skill-independently). The MCP executable is a separate artifact; it does not launch the CLI or daemon.
 
 ## Build and run
 
@@ -17,6 +17,8 @@ GOWORK=off go build -o nb1-mcp .
 Configure an MCP host to launch that executable with those arguments. Stdout carries MCP protocol messages. Diagnostics go to stderr. The default endpoint is `http://127.0.0.1:8931`; endpoint validation accepts loopback HTTP origins.
 
 The SDK is pinned to `github.com/modelcontextprotocol/go-sdk v1.8.0`. This nested module has its own Go 1.25 baseline. Its `github.com/b1ug/nb1 v0.0.0` requirement is replaced by `../..`, allowing the adapter to share the exact core client, strict input validation, and Job ID generator in the same checkout. Building the nested module in isolation requires that root source directory. A standalone module publication will need a published matching core dependency and removal of the relative replacement. Release binaries can be built from a complete, versioned checkout.
+
+The MCP initialize response reports the adapter's build version. Ordinary source builds report `dev`; release packaging injects the matching tag, such as `v0.1.0`, through `-X main.buildVersion`. The version describes this adapter, not an independently running daemon.
 
 ## Tools
 
@@ -38,6 +40,8 @@ The SDK is pinned to `github.com/modelcontextprotocol/go-sdk v1.8.0`. This neste
 Tool schemas describe the same Action kinds, Sequence timing rules, and color forms as the [API reference](../../docs/api-v1.md). Both Action colors and authored Sequence target colors accept Hex3/Hex6, names, RGB8/HSV objects and `@local-name`; normalized Sequences and saved Patterns contain resolved lowercase Hex6 values. Input validation rejects unknown fields, duplicate keys and explicit null values. Raw color numbers and source objects retain their original JSON meaning through HTTP. The daemon owns palette resolution and authoritative compilation.
 
 Examples below show the arguments supplied to `tools/call`.
+
+Preview is optional. `run_light` validates and submits the expression directly; it does not require a prior `preview_light` call. Use preview when you want to inspect the plan without playback.
 
 ```json
 {"name":"preview_light","arguments":{"action":{"kind":"blink","color":"lime","cycles":2}}}

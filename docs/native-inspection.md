@@ -1,5 +1,11 @@
 # Native RAM and playback reads
 
+> Historical experimental integration: the current API v1 server, `control`
+> command and MCP adapter do not expose the routes and tools below. Use the
+> [current API reference](api-v1.md) and installed help for available operations.
+> Device-native sequence APIs remain separate planned work. Older standalone
+> direct `read/write/play` commands and SDK primitives are different interfaces.
+
 Native reads use the existing daemon-owned device worker. They inspect RAM rows
 and playback registers; they do not install a service, write Flash, or establish
 physical qualification for a device generation. The selected executable and its

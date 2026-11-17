@@ -12,6 +12,10 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
+// Release builds set this through -ldflags "-X main.buildVersion=vX.Y.Z".
+// An ordinary source build must not claim to be a tagged release.
+var buildVersion = "dev"
+
 func main() {
 	flags := flag.NewFlagSet("nb1-mcp", flag.ContinueOnError)
 	flags.SetOutput(os.Stderr)

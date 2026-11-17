@@ -4,7 +4,7 @@
 
 [Skill](../skills/blink1-control/SKILL.md)告诉 Agent 如何使用已有的 nb1 CLI、HTTP API 或 MCP 连接。它不自带驱动，不自动启动 daemon、注册 MCP 或增加权限。Skill 应与 nb1 版本匹配；实际帮助和 MCP schema 才能说明当前可用的接口。
 
-[同版候选指南](candidate-install.zh-CN.md#独立接入-mcp-或-skill)说明独立 MCP 与 Skill 产物的核验和解压方式。
+[正式版本安装指南](install.zh-CN.md)说明独立 CLI、MCP 与 Skill 产物的核验和解压方式。开发产物仍使用独立的[同版候选指南](candidate-install.zh-CN.md#独立接入-mcp-或-skill)。
 
 ## 安装到一个项目
 
@@ -36,7 +36,7 @@ HTTP CLI 可以用 `--endpoint` 或 profile 的 `server.listen` 选择地址；[
 
 MCP 宿主可能另行要求保存或播放工具的审批。被拦截不等于保存或执行成功；只授权所需服务和工具，不应为了加载 Skill 放宽 shell 沙盒。配置说明见 [Codex MCP 工具策略](https://learn.chatgpt.com/docs/extend/mcp?surface=cli)。
 
-Agent 应先核对工具或 `nb1 control --help`，预览表达式，再执行用户请求的任务。HTTP202 只代表接受，Job 终态才代表执行结束。丢失回执时保留原地址、输入和 Job ID；记录不存在不等于从未播放。
+Agent 应先核对工具或 `nb1 control --help`，再执行用户请求的任务。预览可选，不会播放，也不是执行的前置步骤。HTTP202 只代表接受，Job 终态才代表执行结束。丢失回执时保留原地址、输入和 Job ID；记录不存在不等于从未播放。
 需要可靠恢复时，在提交前显式选择并记录 Job ID。若自动生成的 ID 随工具响应一起丢失，应报告结果未知，不能猜测 ID 或重新提交播放。
 
 需要选择回合结束灯光时，见 [Codex notify 指南](../examples/command-notify/CODEX.zh-CN.md)：它区分外部 notify JSON 参数与 stdin Stop hook，默认预览，并提供无需全局安装的单次调用配置。蓝色表示回合结束，播放结果应检查 Job 报告。

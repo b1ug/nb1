@@ -6,15 +6,17 @@
 
 通过 CLI、本机 HTTP、MCP 或内嵌 Web 控制 blink(1)。高级 Action 在 nb1 内编译为低级 Sequence，并交给同一设备 worker 执行。
 
-[试用同版候选](docs/candidate-install.zh-CN.md)：核验并解压 CLI、MCP 与 Skill，选择设备，再显式选择前台或服务模式。
+[安装 nb1 v0.1.0](docs/install.zh-CN.md)：下载并核验程序，启动本机 server，再打开它内嵌的调试器。MCP 与 Skill 是可选的同版下载。[开发候选](docs/candidate-install.zh-CN.md)保留独立的安装约定。
 
-本分支是 API v1 开发候选，源码验证与机器当前安装版本分别记录。同一个可执行文件可以作为 CLI，也可以前台运行 daemon：
+nb1 实现 API v1，源码验证与机器当前安装版本分别记录。同一个可执行文件可以作为 CLI，也可以前台运行 daemon：
 
 ```sh
 nb1 server --devices DEVICE_SERIAL
 ```
 
-将请求保存在 `action.json`：
+打开 `http://127.0.0.1:8931/demo/` 使用双语 Nightlab 调试器。页面已内嵌，无需 Node 服务、单独安装 Web 或浏览器 WebHID 授权。Play 直接校验并播放当前草稿，Preview 可选；打开页面不会自动播放。若修改过监听端口，请使用实际地址。
+
+通过 CLI 播放时，将请求保存在 `action.json`：
 
 ```json
 {"action":{"kind":"pulse","color":"lime","cycles":2}}
@@ -24,9 +26,10 @@ nb1 server --devices DEVICE_SERIAL
 
 ```sh
 nb1 control devices
-nb1 control preview action.json
 nb1 control run DEVICE_SERIAL action.json --wait
 ```
+
+需要只看编译计划而不播放时，单独运行 `nb1 control preview action.json`。
 
 `control` 默认连接 `http://127.0.0.1:8931`，可通过 `--endpoint` 指定其他本机端口。daemon 持有 USB，其他入口通过 HTTP 与它交互。一台设备由一个进程拥有。独立的 `on`、`off`、`blink`、`fade`、`play`、`read`、`write` 命令直接访问硬件，需要设备可用。
 
@@ -40,7 +43,7 @@ direct 在打开 USB 前校验输入并解析本机引用，始终等待，并�
 
 `server` 只是启动进程，不自动安装开机服务。可以前台运行、作为普通后台进程管理，也可显式选择相应平台的用户服务模式，操作见 `nb1 service --help`。控制灯不需要键盘或输入监控权限。
 
-macOS/Linux 候选支持用 `nb1 service install --devices DEVICE_SERIAL --start` 显式安装登录服务，默认使用正在运行的 nb1；需要选择另一份程序时提供 `--binary /absolute/path/to/nb1`。[Daemon 平台验收](docs/daemon-validation.md)列出实际安装、升级与重启证据。Windows 自动服务管理仍未实现。
+macOS/Linux 支持用 `nb1 service install --devices DEVICE_SERIAL --start` 显式安装登录服务，默认使用正在运行的 nb1；需要选择另一份程序时提供 `--binary /absolute/path/to/nb1`。[Daemon 平台验收](docs/daemon-validation.md)说明安装、升级与重启证据的范围。Windows 自动服务管理仍未实现。
 
 用 `nb1 version --json` 查看这份程序的构建身份、Go 工具链及硬件依赖版本；该操作不连接 daemon 或 USB。普通源码构建会报告实际提交，无法确认版本时明确显示 development。
 
@@ -62,6 +65,6 @@ macOS/Linux 的配置与本机颜色／Pattern 作品库使用 `$XDG_CONFIG_HOME
 
 Web 位于 `/demo/`，默认英文，可切中文。其源码在独立的 nb1-web 私有仓库维护，固定构建结果内嵌到 nb1。双语文档站位于 nb1-site 私有仓库；独立 nb1-browser 网页与 Chrome 扩展通过 WebHID 直连，需明确交接同一只灯的控制权。仅打开网页或预览不会播放。
 
-九个动作分别为 `set`、`off`、`fade`、`blink`、`breathe`、`pulse`、`alternate`、`orbit`、`rainbow`。颜色接受名字、Hex、RGB8、HSV/HSB 和 `@本机名字`。Pattern 存在电脑上；原生 DeviceSequence 的容量与部署另有能力要求。
+九个动作分别为 `set`、`off`、`fade`、`blink`、`breathe`、`pulse`、`alternate`、`orbit`、`rainbow`。颜色接受名字、Hex、RGB8、HSV/HSB 和 `@本机名字`。Pattern 存在电脑上；设备原生序列 API 仍为独立规划，当前 HTTP v1／MCP 不把主机 Pattern 部署到设备存储。
 
-CLI 与独立 MCP 模块源码要求 Go 1.25 或更新版本，发布候选使用 Go 1.27.4 构建。新的源码下限来自依赖安全修复，设备协议不变。软件、实机 USB、安装和相机光学结果分开记录。Mac/MK2 的有限结果不代表 MK3、Linux/Windows USB 或非易失存储已通过。开发提交不等于 tag 或 Release。
+从源码构建 CLI 与独立 MCP 模块要求 Go 1.25 或更新版本；发布产物记录实际构建工具链及固定依赖。预编译程序不需要安装 Go。源码下限来自依赖安全修复，设备协议不变。软件、实机 USB、安装和相机光学结果分开记录。Mac/MK2 的有限结果不代表 MK3、Linux/Windows USB 或非易失存储已通过。开发提交不等于 tag 或 Release。

@@ -1,0 +1,221 @@
+name: Versioned native release
+
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - .github/workflows/release.yml
+      - ci/release-suite.py
+      - ci/test_candidate_suite.py
+      - packaging/release/**
+      - adapters/mcp/main.go
+      - adapters/mcp/server.go
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Stable version to rehearse (vMAJOR.MINOR.PATCH)
+        required: true
+        default: v0.1.0
+        type: string
+      publish:
+        description: Must remain false; only a real version-tag push may publish
+        required: true
+        default: false
+        type: boolean
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  GOWORK: "off"
+  GOTOOLCHAIN: local
+  PYTHONDONTWRITEBYTECODE: "1"
+  GID_TEST_ENUMERATE: "0"
+  GID_TEST_DEVICE_PATH: ""
+  INPUT_VERSION: ${{ inputs.version || 'v0.1.0' }}
+  INPUT_PUBLISH: ${{ inputs.publish || false }}
+
+jobs:
+  prepare:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      version: ${{ steps.context.outputs.version }}
+      source: ${{ steps.context.outputs.source }}
+      publish: ${{ steps.context.outputs.publish }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Validate version, event and exact source
+        id: context
+        run: python3 -B ci/release-suite.py context --root "$GITHUB_WORKSPACE" --output "$RUNNER_TEMP/release-context.json"
+
+  native:
+    needs: prepare
+    name: Release package / ${{ matrix.goos }} / ${{ matrix.goarch }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {os: ubuntu-24.04, goos: linux, goarch: amd64, extension: ""}
+          - {os: ubuntu-24.04-arm, goos: linux, goarch: arm64, extension: ""}
+          - {os: macos-15, goos: darwin, goarch: arm64, extension: ""}
+          - {os: macos-15-intel, goos: darwin, goarch: amd64, extension: ""}
+          - {os: windows-2022, goos: windows, goarch: amd64, extension: .exe}
+    env:
+      NB1_RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
+      NB1_RELEASE_SOURCE: ${{ needs.prepare.outputs.source }}
+      CGO_ENABLED: "1"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.prepare.outputs.source }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: "1.27.4"
+          cache: false
+      - name: Check packaging boundaries and locked embedded Web
+        run: |
+          python3 -B -m unittest discover -s ci -p test_candidate_suite.py -v
+          go test -mod=readonly ./internal/webui
+          go mod verify
+          python3 -B ci/release-suite.py context --root "$GITHUB_WORKSPACE" --output "$RUNNER_TEMP/release-context.json"
+      - name: Build native versioned CLI
+        env:
+          NB1_RELEASE_BUILD: ${{ runner.temp }}/nb1-release-build
+        run: |
+          mkdir -p "$NB1_RELEASE_BUILD"
+          go build -mod=readonly -trimpath -buildvcs=true \
+            -ldflags "-X github.com/b1ug/nb1/config.GitSummary=$NB1_RELEASE_VERSION -X github.com/b1ug/nb1/config.GitCommit=$NB1_RELEASE_SOURCE -X github.com/b1ug/nb1/config.CIBuildNum=gh$GITHUB_RUN_NUMBER" \
+            -o "$NB1_RELEASE_BUILD/nb1${{ matrix.extension }}" .
+      - name: Build matching versioned MCP adapter
+        working-directory: adapters/mcp
+        env:
+          CGO_ENABLED: "0"
+          NB1_RELEASE_BUILD: ${{ runner.temp }}/nb1-release-build
+        run: |
+          go mod verify
+          go build -mod=readonly -trimpath -buildvcs=true -ldflags "-X main.buildVersion=$NB1_RELEASE_VERSION" \
+            -o "$NB1_RELEASE_BUILD/nb1-mcp${{ matrix.extension }}" .
+      - name: Inspect native dependencies and verify actual extracted archives
+        env:
+          NB1_RELEASE_BUILD: ${{ runner.temp }}/nb1-release-build
+          NB1_RELEASE_OUT: ${{ runner.temp }}/nb1-release-platform
+        run: |
+          python3 -B ci/release-suite.py stage --root "$GITHUB_WORKSPACE" \
+            --cli "$NB1_RELEASE_BUILD/nb1${{ matrix.extension }}" --mcp "$NB1_RELEASE_BUILD/nb1-mcp${{ matrix.extension }}" \
+            --version "$NB1_RELEASE_VERSION" --source "$NB1_RELEASE_SOURCE" \
+            --context "$RUNNER_TEMP/release-context.json" --output "$NB1_RELEASE_OUT"
+      - name: Check actual offline daemon, CLI and embedded HTTP assets
+        env:
+          NB1_DAEMON_EVIDENCE: ${{ runner.temp }}/nb1-release-daemon
+          NB1_RELEASE_BUILD: ${{ runner.temp }}/nb1-release-build
+        run: |
+          python3 -B ci/daemon-process-smoke.py --binary "$NB1_RELEASE_BUILD/nb1${{ matrix.extension }}" \
+            --output "$NB1_DAEMON_EVIDENCE" --require-no-devices
+      - name: Preserve platform and runtime evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: nb1-release-evidence-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: |
+            ${{ runner.temp }}/nb1-release-daemon
+            ${{ runner.temp }}/nb1-release-platform/platform.json
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Preserve qualified versioned platform packages
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: nb1-release-platform-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: ${{ runner.temp }}/nb1-release-platform
+          if-no-files-found: error
+          retention-days: 14
+
+  assemble:
+    needs: [prepare, native]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+      NB1_RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
+      NB1_RELEASE_SOURCE: ${{ needs.prepare.outputs.source }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.prepare.outputs.source }}
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: "1.27.4"
+          cache: false
+      - name: Download only this run's five qualified platforms
+        run: gh run download "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY" --pattern 'nb1-release-platform-*' --dir "$RUNNER_TEMP/platforms"
+      - name: Assemble and fully verify the closed release inventory
+        run: |
+          python3 -B ci/release-suite.py assemble --platform-root "$RUNNER_TEMP/platforms" \
+            --version "$NB1_RELEASE_VERSION" --source "$NB1_RELEASE_SOURCE" --output "$RUNNER_TEMP/release"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: nb1-versioned-release-suite
+          path: ${{ runner.temp }}/release
+          if-no-files-found: error
+          retention-days: 14
+
+  publish:
+    needs: [prepare, assemble]
+    if: needs.prepare.outputs.publish == 'true' && github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') && github.repository == 'b1ug/nb1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      actions: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+      NB1_RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
+      NB1_RELEASE_SOURCE: ${{ needs.prepare.outputs.source }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.prepare.outputs.source }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: "1.27.4"
+          cache: false
+      - name: Recheck real tag and master ancestry, then download qualified assets
+        run: |
+          python3 -B ci/release-suite.py context --root "$GITHUB_WORKSPACE" --output "$RUNNER_TEMP/publish-context.json"
+          gh run download "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY" --name nb1-versioned-release-suite --dir "$RUNNER_TEMP/release"
+          python3 -B ci/release-suite.py verify --directory "$RUNNER_TEMP/release" \
+            --version "$NB1_RELEASE_VERSION" --source "$NB1_RELEASE_SOURCE" --for-publication
+      - name: Create a new draft with the complete verified asset set
+        run: |
+          gh release create "$NB1_RELEASE_VERSION" --repo "$GITHUB_REPOSITORY" --verify-tag \
+            --target "$NB1_RELEASE_SOURCE" --title "nb1 $NB1_RELEASE_VERSION" \
+            --notes-file packaging/release/notes.md --draft "$RUNNER_TEMP/release/"*
+      - name: Verify uploaded bytes before making the release public
+        run: |
+          gh release download "$NB1_RELEASE_VERSION" --repo "$GITHUB_REPOSITORY" --dir "$RUNNER_TEMP/downloaded"
+          python3 -B ci/release-suite.py verify-download --expected "$RUNNER_TEMP/release" --downloaded "$RUNNER_TEMP/downloaded"
+          gh release edit "$NB1_RELEASE_VERSION" --repo "$GITHUB_REPOSITORY" --draft=false --latest

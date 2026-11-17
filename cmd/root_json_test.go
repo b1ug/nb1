@@ -13,6 +13,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -269,6 +270,113 @@ func TestLoggerInitializationGuardRestoresExistingHooks(t *testing.T) {
 	}
 	if err := root.PersistentPreRunE(root, nil); err != nil || calls != 2 {
 		t.Fatalf("original error hook not restored: %v calls=%d", err, calls)
+	}
+}
+
+func TestRootLogFileFailureCannotRunCommandsOrChangeDirectory(t *testing.T) {
+	t.Setenv("NO_COLOR", "1")
+	for _, args := range [][]string{
+		{"config", "show"},
+		{"server", "--devices", "00000000"},
+		{"fade", "red"},
+		{"convert", "text2json", "unused.txt"},
+	} {
+		t.Run(strings.Join(args, " "), func(t *testing.T) {
+			directory := t.TempDir()
+			target := filepath.Join(directory, "log-target")
+			if err := os.Mkdir(target, 0700); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(filepath.Join(target, "keep.txt"), []byte("keep these contents"), 0600); err != nil {
+				t.Fatal(err)
+			}
+			before := applicationLogFileSnapshot(t, target)
+			arguments := append([]string{"--debug", "--log-file", target}, args...)
+			// Replacing Run/the nearest pre-run with spies keeps even a
+			// regression in a hardware/server command safe on a developer Mac.
+			stdout, stderr, err := executeRootDiagnosticProcess(t, directory, arguments, "NB1_JSON_ROOT_TEST_BOOTSTRAP_SPY=1")
+			var exit *exec.ExitError
+			if !errors.As(err, &exit) || exit.ExitCode() != 1 || stdout != "" || strings.Count(stderr, "log file") != 1 || strings.Contains(stderr, "bootstrap spy") {
+				t.Fatalf("sink failure did not stop initialization exactly once: err=%v stdout=%q stderr=%q", err, stdout, stderr)
+			}
+			if after := applicationLogFileSnapshot(t, target); !reflect.DeepEqual(after, before) {
+				t.Fatalf("rejected directory changed: before=%v after=%v", before, after)
+			}
+			backups, err := filepath.Glob(target + "-*")
+			if err != nil || len(backups) != 0 {
+				t.Fatalf("directory was rotated: %v %v", backups, err)
+			}
+		})
+	}
+}
+
+func TestRootLogFileRejectsLeafSymlinkAndFIFOWithoutWriting(t *testing.T) {
+	t.Setenv("NO_COLOR", "1")
+	for _, kind := range []string{"symlink", "fifo"} {
+		t.Run(kind, func(t *testing.T) {
+			directory := t.TempDir()
+			target := filepath.Join(directory, "application.log")
+			if kind == "symlink" {
+				actual := filepath.Join(directory, "actual.log")
+				if err := os.WriteFile(actual, []byte("keep this file"), 0600); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.Symlink(actual, target); err != nil {
+					t.Skipf("symlink fixture unavailable: %v", err)
+				}
+			} else {
+				applicationLogFIFO(t, target)
+			}
+			// The helper creates this profile too; seed it before the snapshot.
+			if err := os.WriteFile(filepath.Join(directory, "config.yaml"), appconfig.Template(), 0600); err != nil {
+				t.Fatal(err)
+			}
+			before := applicationLogFileSnapshot(t, directory)
+			stdout, stderr, err := executeRootDiagnosticProcess(t, directory,
+				[]string{"--debug", "--log-file", target, "config", "show"}, "NB1_JSON_ROOT_TEST_BOOTSTRAP_SPY=1")
+			var exit *exec.ExitError
+			if !errors.As(err, &exit) || exit.ExitCode() != 1 || stdout != "" || strings.Count(stderr, "log file") != 1 || strings.Contains(stderr, "bootstrap spy") {
+				t.Fatalf("special sink failure escaped initialization: err=%v stdout=%q stderr=%q", err, stdout, stderr)
+			}
+			if after := applicationLogFileSnapshot(t, directory); !reflect.DeepEqual(after, before) {
+				t.Fatalf("special sink changed: before=%v after=%v", before, after)
+			}
+		})
+	}
+}
+
+func TestRootHelpAndVersionDoNotInitializeLogFiles(t *testing.T) {
+	t.Setenv("NO_COLOR", "1")
+	for _, kind := range []string{"directory", "missing"} {
+		for _, args := range [][]string{{"--help"}, {"control", "run", "--help"}, {"version", "--json"}} {
+			t.Run(kind+"/"+strings.Join(args, " "), func(t *testing.T) {
+				directory := t.TempDir()
+				target := filepath.Join(directory, "log-target")
+				if kind == "directory" {
+					if err := os.Mkdir(target, 0700); err != nil {
+						t.Fatal(err)
+					}
+					if err := os.WriteFile(filepath.Join(target, "keep.txt"), []byte("keep these contents"), 0600); err != nil {
+						t.Fatal(err)
+					}
+				}
+				if err := os.WriteFile(filepath.Join(directory, "config.yaml"), appconfig.Template(), 0600); err != nil {
+					t.Fatal(err)
+				}
+				before := applicationLogFileSnapshot(t, directory)
+				arguments := append([]string{"--debug", "--log-file", target}, args...)
+				stdout, stderr, err := executeRootDiagnosticProcess(t, directory, arguments)
+				if err != nil || stdout == "" || stderr != "" {
+					t.Fatalf("inspection initialized runtime logging: err=%v stdout=%q stderr=%q", err, stdout, stderr)
+				}
+				if args[0] == "version" && !json.Valid([]byte(stdout)) {
+					t.Fatalf("version stdout is not JSON: %q", stdout)
+				}
+				if after := applicationLogFileSnapshot(t, directory); !reflect.DeepEqual(after, before) {
+					t.Fatalf("help/version changed log target: before=%v after=%v", before, after)
+				}
+			})
+		}
 	}
 }
 

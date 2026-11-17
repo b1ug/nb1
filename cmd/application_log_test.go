@@ -11,12 +11,15 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"reflect"
+	"runtime"
 	"strings"
 	"sync"
 	"testing"
 	"time"
 
 	charmlog "charm.land/log/v2"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/muesli/termenv"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -157,6 +160,99 @@ func TestCharmConsoleBridgeWriterAndLevelBoundaries(t *testing.T) {
 	}
 }
 
+type applicationFailingCore struct{ err error }
+
+func (c *applicationFailingCore) Enabled(zapcore.Level) bool        { return true }
+func (c *applicationFailingCore) With([]zapcore.Field) zapcore.Core { return c }
+func (c *applicationFailingCore) Check(entry zapcore.Entry, checked *zapcore.CheckedEntry) *zapcore.CheckedEntry {
+	return checked.AddCore(entry, c)
+}
+func (c *applicationFailingCore) Write(zapcore.Entry, []zapcore.Field) error { return c.err }
+func (c *applicationFailingCore) Sync() error                                { return nil }
+
+func TestApplicationLoggerInternalWriteErrorsUseCharm(t *testing.T) {
+	for _, policy := range []string{"plain", "force", "NO_COLOR overrides force"} {
+		t.Run(policy, func(t *testing.T) {
+			t.Setenv("NO_COLOR", "")
+			t.Setenv("CLICOLOR_FORCE", "")
+			t.Setenv("TERM", "xterm-256color")
+			if policy != "plain" {
+				t.Setenv("CLICOLOR_FORCE", "1")
+			}
+			if policy != "force" {
+				t.Setenv("NO_COLOR", "1")
+			}
+			var console bytes.Buffer
+			logger, err := newApplicationLogger(&console, "", false)
+			if err != nil {
+				t.Fatal(err)
+			}
+			cause := errors.New("synthetic sink failure: 用户/path with spaces.log")
+			// This adds an actual failing Zap core to the constructed logger;
+			// its CheckedEntry must use our installed ErrorOutput, not the test's
+			// own renderer or a fake filesystem failure.
+			logger.Desugar().WithOptions(zap.WrapCore(func(core zapcore.Core) zapcore.Core {
+				return zapcore.NewTee(core, &applicationFailingCore{err: cause})
+			})).Info("business operation completed")
+			plain := ansi.Strip(console.String())
+			if strings.Count(plain, "business operation completed") != 1 || strings.Count(plain, "application log output failed") != 1 || !strings.Contains(plain, "ERROR") || !strings.Contains(plain, "details=") || !strings.Contains(plain, cause.Error()) {
+				t.Fatalf("internal sink error did not use the separate Charm diagnostic: %q", plain)
+			}
+			if strings.ContainsRune(console.String(), '\x1b') != (policy == "force") {
+				t.Fatalf("internal diagnostic ignored destination color policy: %q", console.String())
+			}
+		})
+	}
+}
+
+func TestApplicationLoggerSerializesInternalDiagnosticsWithApplicationRecords(t *testing.T) {
+	t.Setenv("NO_COLOR", "1")
+	var console bytes.Buffer
+	logger, err := newApplicationLogger(&console, "", false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	checked := logger.Desugar().WithOptions(zap.WrapCore(func(core zapcore.Core) zapcore.Core {
+		return zapcore.NewTee(core, &applicationFailingCore{err: errors.New("synthetic sink failure")})
+	}))
+	var done sync.WaitGroup
+	for worker := 0; worker < 4; worker++ {
+		done.Add(1)
+		go func() {
+			defer done.Done()
+			for record := 0; record < 8; record++ {
+				checked.Info("business operation completed")
+			}
+		}()
+	}
+	done.Wait()
+	if strings.Count(console.String(), "business operation completed") != 32 || strings.Count(console.String(), "application log output failed") != 32 {
+		t.Fatalf("application and internal diagnostic records were lost: %q", console.String())
+	}
+}
+
+type applicationClosedOutput struct{ calls int }
+
+func (w *applicationClosedOutput) Write([]byte) (int, error) {
+	w.calls++
+	return 0, io.ErrClosedPipe
+}
+
+func TestApplicationLoggerBrokenDiagnosticOutputDoesNotRecurseOrAbort(t *testing.T) {
+	t.Setenv("NO_COLOR", "1")
+	output := &applicationClosedOutput{}
+	logger, err := newApplicationLogger(output, "", false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	logger.Desugar().WithOptions(zap.WrapCore(func(core zapcore.Core) zapcore.Core {
+		return zapcore.NewTee(core, &applicationFailingCore{err: errors.New("synthetic sink failure")})
+	})).Info("business operation completed")
+	if output.calls != 2 {
+		t.Fatalf("expected one business write and one best-effort diagnostic, got %d", output.calls)
+	}
+}
+
 // hlog owns a private lumberjack file writer without a Close API. Keep real
 // file tests in a child process so process exit closes that writer on every OS.
 // The parent owns the directory and verifies it can remove all files after Wait.
@@ -185,6 +281,178 @@ func applicationLogProcessDirectory(t *testing.T) (string, bool) {
 	return "", false
 }
 
+func applicationLogFileSnapshot(t *testing.T, directory string) map[string]string {
+	t.Helper()
+	result := map[string]string{}
+	err := filepath.WalkDir(directory, func(path string, entry os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		info, err := entry.Info()
+		if err != nil {
+			return err
+		}
+		value := info.Mode().String()
+		if info.Mode()&os.ModeSymlink != 0 {
+			target, err := os.Readlink(path)
+			if err != nil {
+				return err
+			}
+			value += ":" + target
+		} else if info.Mode().IsRegular() {
+			data, err := os.ReadFile(path)
+			if err != nil {
+				return err
+			}
+			value += ":" + string(data)
+		}
+		result[path] = value
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return result
+}
+
+func applicationLogFIFO(t *testing.T, path string) {
+	t.Helper()
+	if runtime.GOOS == "windows" {
+		t.Skip("POSIX FIFO fixture is not available on Windows")
+	}
+	executable, err := exec.LookPath("mkfifo")
+	if err != nil {
+		t.Skip("mkfifo is not installed")
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	if output, err := exec.CommandContext(ctx, executable, path).CombinedOutput(); err != nil {
+		t.Fatalf("create private FIFO fixture: %v: %s", err, output)
+	}
+}
+
+func TestApplicationLoggerRejectsInvalidFileTargetsWithoutMutation(t *testing.T) {
+	for _, kind := range []string{"directory", "symlink", "dangling-symlink", "fifo", "file-parent", "read-only-file", "read-only-parent"} {
+		t.Run(kind, func(t *testing.T) {
+			directory := t.TempDir()
+			target := filepath.Join(directory, "application.log")
+			switch kind {
+			case "directory":
+				if err := os.Mkdir(target, 0700); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(target, "keep.txt"), []byte("keep directory contents"), 0600); err != nil {
+					t.Fatal(err)
+				}
+			case "symlink", "dangling-symlink":
+				actual := filepath.Join(directory, "actual.log")
+				if kind == "symlink" {
+					if err := os.WriteFile(actual, []byte("keep existing file"), 0600); err != nil {
+						t.Fatal(err)
+					}
+				}
+				if err := os.Symlink(actual, target); err != nil {
+					t.Skipf("symlink fixture unavailable: %v", err)
+				}
+			case "fifo":
+				applicationLogFIFO(t, target)
+			case "file-parent":
+				parent := filepath.Join(directory, "not-a-directory")
+				if err := os.WriteFile(parent, []byte("keep parent contents"), 0600); err != nil {
+					t.Fatal(err)
+				}
+				target = filepath.Join(parent, "application.log")
+			case "read-only-file", "read-only-parent":
+				if runtime.GOOS == "windows" || os.Geteuid() == 0 {
+					t.Skip("permission fixture requires a non-root POSIX user")
+				}
+				if kind == "read-only-file" {
+					if err := os.WriteFile(target, []byte("keep read-only file"), 0400); err != nil {
+						t.Fatal(err)
+					}
+					t.Cleanup(func() { _ = os.Chmod(target, 0600) })
+				} else {
+					parent := filepath.Join(directory, "read-only")
+					if err := os.Mkdir(parent, 0500); err != nil {
+						t.Fatal(err)
+					}
+					t.Cleanup(func() { _ = os.Chmod(parent, 0700) })
+					target = filepath.Join(parent, "application.log")
+				}
+			}
+			before := applicationLogFileSnapshot(t, directory)
+			var console bytes.Buffer
+			logger, err := newApplicationLogger(&console, target, true)
+			if err == nil || logger != nil || !strings.Contains(err.Error(), "log file") || console.Len() != 0 {
+				t.Fatalf("invalid sink reached logger construction: logger=%v error=%v console=%q", logger != nil, err, console.String())
+			}
+			if after := applicationLogFileSnapshot(t, directory); !reflect.DeepEqual(after, before) {
+				t.Fatalf("invalid sink changed files, contents or permissions: before=%v after=%v", before, after)
+			}
+		})
+	}
+}
+
+func TestApplicationLoggerPreflightPreservesAppendAndCreatesPrivateFiles(t *testing.T) {
+	directory, child := applicationLogProcessDirectory(t)
+	if !child {
+		return
+	}
+	for _, kind := range []string{"append", "new-parent"} {
+		t.Run(kind, func(t *testing.T) {
+			filename := filepath.Join(directory, kind, "application.jsonl")
+			var before os.FileInfo
+			prefix := []byte("{\"earlier\":true}\n")
+			if kind == "append" {
+				if err := os.MkdirAll(filepath.Dir(filename), 0700); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filename, prefix, 0640); err != nil {
+					t.Fatal(err)
+				}
+				var err error
+				before, err = os.Stat(filename)
+				if err != nil {
+					t.Fatal(err)
+				}
+			}
+			var console bytes.Buffer
+			logger, err := newApplicationLogger(&console, filename, false)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if data, err := os.ReadFile(filename); err != nil || kind == "append" && !bytes.Equal(data, prefix) || kind != "append" && len(data) != 0 {
+				t.Fatalf("preflight wrote or truncated content: %q %v", data, err)
+			}
+			logger.Infow("after preflight", "count", 1)
+			data, err := os.ReadFile(filename)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if kind == "append" {
+				if !bytes.HasPrefix(data, prefix) {
+					t.Fatal("existing log content was replaced")
+				}
+				data = data[len(prefix):]
+			}
+			var record map[string]any
+			if err := json.Unmarshal(data, &record); err != nil || record["msg"] != "after preflight" || record["count"] != float64(1) {
+				t.Fatalf("new JSON record differs: %s %v", data, err)
+			}
+			after, err := os.Stat(filename)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if before != nil && (!os.SameFile(before, after) || before.Mode() != after.Mode()) {
+				t.Fatal("append target was renamed, replaced or chmodded")
+			}
+			if before == nil && runtime.GOOS != "windows" && after.Mode().Perm() != 0600 {
+				t.Fatalf("new file is not private: %v", after.Mode())
+			}
+		})
+	}
+}
+
 func TestApplicationLoggerPreservesFileJSONAndLevelBehavior(t *testing.T) {
 	directory, child := applicationLogProcessDirectory(t)
 	if !child {
@@ -195,7 +463,10 @@ func TestApplicationLoggerPreservesFileJSONAndLevelBehavior(t *testing.T) {
 		t.Run(fmt.Sprint(debug), func(t *testing.T) {
 			var console bytes.Buffer
 			filename := filepath.Join(directory, fmt.Sprintf("application-%t.jsonl", debug))
-			logger := newApplicationLogger(&console, filename, debug)
+			logger, err := newApplicationLogger(&console, filename, debug)
+			if err != nil {
+				t.Fatal(err)
+			}
 			if err := logger.SetLevelString("debug"); err != nil {
 				t.Fatal(err)
 			}
@@ -252,7 +523,10 @@ func TestApplicationLoggerConcurrentRecordsAndFileRotation(t *testing.T) {
 	t.Setenv("NO_COLOR", "1")
 	var console bytes.Buffer
 	filename := filepath.Join(directory, "application.jsonl")
-	logger := newApplicationLogger(&console, filename, false)
+	logger, err := newApplicationLogger(&console, filename, false)
+	if err != nil {
+		t.Fatal(err)
+	}
 	var done sync.WaitGroup
 	for worker := 0; worker < 8; worker++ {
 		done.Add(1)
@@ -279,7 +553,10 @@ func TestApplicationLoggerConcurrentRecordsAndFileRotation(t *testing.T) {
 	// Exercise the retained 10 MiB limit and compression rather than merely
 	// inspecting option literals. More than one backup survives (retention=0).
 	filename = filepath.Join(directory, "rotating.jsonl")
-	logger = newApplicationLogger(io.Discard, filename, false)
+	logger, err = newApplicationLogger(io.Discard, filename, false)
+	if err != nil {
+		t.Fatal(err)
+	}
 	large := strings.Repeat("x", 1024*1024)
 	for record := 0; record < 25; record++ {
 		logger.Infow(large, "record", record)

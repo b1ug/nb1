@@ -1,0 +1,91 @@
+name: Exact-source macOS 26 validation probe
+
+on:
+  push:
+    branches: [ci/macos26-probe-20261118]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: macos26-probe-${{ github.ref }}
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  native:
+    name: macOS 26 ARM / exact master source / Go 1.27.4
+    runs-on: macos-26
+    timeout-minutes: 15
+    env:
+      GOWORK: "off"
+      GOTOOLCHAIN: local
+      CGO_ENABLED: "1"
+      GID_TEST_ENUMERATE: "0"
+      GID_TEST_DEVICE_PATH: ""
+      MACOSX_DEPLOYMENT_TARGET: "15.0"
+      PROBE_SOURCE: 3daefaed4beab05307162aec5adb48919fbfd8dc
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: 3daefaed4beab05307162aec5adb48919fbfd8dc
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: "1.27.4"
+          cache: false
+      - name: Record the actual source, operating system and toolchain
+        run: |
+          test "$(git rev-parse HEAD)" = "$PROBE_SOURCE"
+          sw_vers
+          uname -m
+          xcrun --show-sdk-version
+          go version
+          go env GOOS GOARCH CGO_ENABLED CC
+          go mod verify
+      - name: Build the exact source without producing a release
+        run: |
+          mkdir -p build
+          go build -mod=readonly -trimpath -buildvcs=true \
+            -ldflags "-X github.com/b1ug/nb1/config.GitSummary=probe-macos26-3daefaed -X github.com/b1ug/nb1/config.GitCommit=$PROBE_SOURCE" \
+            -o build/nb1 .
+          go version -m build/nb1 > build/build-info.txt
+      - name: Run the complete software tests and race detector without USB
+        run: go test -mod=readonly -race -count=1 -timeout=3m -v ./...
+      - name: Vet the exact source
+        run: go vet -mod=readonly ./...
+      - name: Verify the actual binary deployment declaration
+        run: |
+          python3 - <<'PY'
+          import importlib.util, json, os, pathlib, platform, subprocess
+          spec = importlib.util.spec_from_file_location("release", "ci/release-suite.py")
+          release = importlib.util.module_from_spec(spec)
+          spec.loader.exec_module(release)
+          dependencies = release.runtime_dependencies(pathlib.Path("build/nb1"), "darwin")
+          release.check_native_dependencies(dependencies, "darwin")
+          assert dependencies["minimum_os_from_binary"] in ("15.0", "15.0.0")
+          source = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
+          assert source == os.environ["PROBE_SOURCE"]
+          assert platform.machine() == "arm64"
+          assert platform.mac_ver()[0].split(".")[0] == "26"
+          value = {"status": "PASS", "source": source,
+                   "workflow_definition_source": os.environ["GITHUB_SHA"],
+                   "actual_macOS": platform.mac_ver()[0], "architecture": platform.machine(),
+                   "SDK": subprocess.check_output(["xcrun", "--show-sdk-version"], text=True).strip(),
+                   "native_dependencies": dependencies,
+                   "scope": "Supplemental macOS 26 software validation only. Not a release or a macOS 15 runtime result. No USB or services."}
+          pathlib.Path("build/probe.json").write_text(json.dumps(value, indent=2) + "\n")
+          print(json.dumps(value))
+          PY
+      - name: Preserve only validation receipts, never a downloadable CLI
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: macos26-exact-source-validation
+          path: |
+            build/probe.json
+            build/build-info.txt
+          if-no-files-found: error
+          retention-days: 3

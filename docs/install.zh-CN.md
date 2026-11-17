@@ -91,6 +91,8 @@ Homebrew 从已发布源码编译，并安装所需构建依赖。Formula 要求
 
 CLI 的帮助与程序诊断在英文、中文和其他 locale 下均保留英文；Web 工作台有独立语言切换。终端颜色按实际输出流判断：非空 `NO_COLOR` 优先禁色，`CLICOLOR=0` 禁用普通着色；没有设置 `NO_COLOR` 时，可用 `CLICOLOR_FORCE=1` 显式强制颜色。管道或 `TERM=dumb` 默认使用纯文本。JSON 始终不着色。
 
+stderr 上的程序诊断使用 Charm Log，`--debug` 还会显示调用位置和 PID。`--log-file PATH` 保留原有 JSON 文件格式、10 MiB 轮转、备份压缩和保留规则。命令结果 JSON、daemon 的 JSON 事件流及 MCP JSON-RPC 各自保持独立。本版沿用 Cobra 帮助，不包含 Fang 或 CLI 翻译框架。Go 源码最低版本仍为 1.25.0，与上文下载包及 Homebrew 构建要求分开。
+
 ## 可选用户服务
 
 下载／解压不会安装或启动服务。macOS 或有用户级 systemd manager 的 Linux 上，先停掉前台 server，再从选定的稳定目录显式安装：

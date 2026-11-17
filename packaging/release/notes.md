@@ -1,13 +1,18 @@
 ## nb1 v0.1.1
 
-This patch corrects terminal styling found during Linux Homebrew acceptance
-and preserves timeout and cancellation causes during direct Sequence playback.
+This patch adds Charm Log terminal diagnostics, corrects terminal styling found
+during Linux Homebrew acceptance, and preserves timeout and cancellation causes
+during direct Sequence playback.
 CLI help and human-readable version output now select colors for their actual
-output stream. Console diagnostics independently select colors for stderr.
-The existing RoseWater palette is retained.
+output stream. Console diagnostics use Charm Log's renderer on stderr and select
+colors independently. The Logo retains its RoseWater palette.
 
 ### Fixed
 
+- Application diagnostics use the actual Charm Log v1.0.0 terminal renderer.
+  Normal console output is concise; `--debug` also includes caller and PID
+  details. File logs retain their existing JSON fields, timestamps, PID,
+  caller and error encoding, 10 MiB rotation, compression and backup policy.
 - A nonempty `NO_COLOR` suppresses Logo and console-log color, including when
   `CLICOLOR_FORCE` is also set.
 - Pipes and `TERM=dumb` use plain text by default, including a dumb terminal
@@ -28,6 +33,9 @@ CLI help and application-generated diagnostics remain English under English,
 Chinese, Japanese, French and other locale settings. This patch adjusts output
 styling; the bilingual embedded Web workbench has its own language switch.
 HTTP, MCP and Go identifiers retain their existing English contract.
+The source minimum remains Go 1.25.0. This release retains Cobra help and does
+not include Fang or a new CLI localization framework. Command JSON, MCP
+JSON-RPC and the daemon's separate JSON event stream remain unstyled.
 
 ### Install and start
 

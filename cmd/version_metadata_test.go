@@ -17,6 +17,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/1set/gut/ystring"
 	"github.com/b1ug/nb1/config"
 	"github.com/b1ug/nb1/internal/doctor"
 	"github.com/spf13/cobra"
@@ -163,7 +164,7 @@ func TestVersionHumanSelectedWriterAndJSONColorIsolation(t *testing.T) {
 			if err := writeVersion(&human, fields, build, false); err != nil {
 				t.Fatal(err)
 			}
-			if strings.ContainsRune(human.String(), '\x1b') != test.colored || !strings.HasPrefix(strip.ReplaceAllString(human.String(), ""), config.AppLogoArt+"\n") {
+			if strings.ContainsRune(human.String(), '\x1b') != test.colored || !strings.HasPrefix(strip.ReplaceAllString(human.String(), ""), config.AppLogoArt+ystring.NewLine) {
 				t.Fatalf("human output writer/style or logo changed: %q", human.String())
 			}
 			if err := writeVersion(&machine, fields, build, true); err != nil {

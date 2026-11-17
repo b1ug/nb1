@@ -93,7 +93,7 @@ CLI 的帮助与程序诊断在英文、中文和其他 locale 下均保留英�
 
 面向人的帮助与错误由 Fang 呈现，stderr 上的程序诊断使用 Charm Log；`--debug` 还会显示调用位置和 PID。`--log-file PATH` 保留原有 JSON 文件格式、10 MiB 轮转、备份压缩和保留规则。命令结果 JSON、daemon 的 JSON 事件流及 MCP JSON-RPC 各自保持独立。CLI 翻译仍为独立工作。从源码构建 nb1 或独立 MCP 适配器要求 Go 1.25.8 或更新版本，与上文下载包及 Homebrew 构建要求分开。
 
-Fang 暂时使用基于官方 v2.0.1 的修复分支，准确的公开模块版本与校验和记录在发行清单中。显式选择背景的选项已作为 [官方 Fang PR #111](https://github.com/charmbracelet/fang/pull/111) 提出。
+Fang 暂时使用基于官方 v2.0.1 的修复分支，准确的公开模块版本与校验和记录在发行清单中。显式选择背景的选项已作为 [官方 Fang PR #111](https://github.com/charmbracelet/fang/pull/111) 提出。 可选参数显示顺序的修正已独立提交为 [官方 Fang PR #112](https://github.com/charmbracelet/fang/pull/112)；帮助中的 `[SERIAL] FILE` 与实际执行顺序一致。
 
 ## 可选用户服务
 

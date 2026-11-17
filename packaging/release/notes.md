@@ -44,15 +44,19 @@ Charm Log release. Foundation-library requirements are unchanged. CLI
 localization remains separate work. Command JSON, MCP JSON-RPC and the daemon's
 separate JSON event stream remain unstyled.
 
-### Fang dependency and upstream fix
+### Fang dependency and upstream fixes
 
 The public dependency is `github.com/vt128/fang/v2` at
-`v2.0.2-0.20261117143650-281a83bf0c12`, fixed to
-[commit 281a83bf0c123e785ad878d3842d9db7f9a88820](https://github.com/vt128/fang/commit/281a83bf0c123e785ad878d3842d9db7f9a88820).
+`v2.0.2-0.20261117154700-ea7a74892849`, fixed to
+[commit ea7a7489284927655a069bd4da792c25a0259450](https://github.com/vt128/fang/commit/ea7a7489284927655a069bd4da792c25a0259450).
 This temporary fork backports an explicit `WithDarkBackground(bool)` option
 onto official v2.0.1. The option lets callers select a known background without
 automatic terminal detection; leaving it unset preserves upstream behavior.
 The separate proposal for official Fang is [upstream PR #111](https://github.com/charmbracelet/fang/pull/111).
+The fork also keeps custom optional arguments in their authored positions:
+`control run [SERIAL] FILE` is displayed in the same order that the CLI executes.
+This presentation correction is proposed separately in [upstream PR #112](https://github.com/charmbracelet/fang/pull/112);
+command definitions and argument parsing are unchanged.
 nb1 consumes the fork as a normal public module with an exact version and
 checksum, without a Fang `replace` directive. Its source and license notices
 are included in the release manifests.

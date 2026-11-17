@@ -16,13 +16,16 @@ JSON event writer keep their existing boundaries. Application file logs retain
 their JSON encoder, metadata, 10 MiB rotation, compression and backup policy.
 
 The Fang dependency is the ordinary public module `github.com/vt128/fang/v2`
-at `v2.0.2-0.20261117143650-281a83bf0c12`, whose commit is
-[281a83bf0c123e785ad878d3842d9db7f9a88820](https://github.com/vt128/fang/commit/281a83bf0c123e785ad878d3842d9db7f9a88820).
+at `v2.0.2-0.20261117154700-ea7a74892849`, whose commit is
+[ea7a7489284927655a069bd4da792c25a0259450](https://github.com/vt128/fang/commit/ea7a7489284927655a069bd4da792c25a0259450).
 It backports `WithDarkBackground(bool)` to official v2.0.1; the separate
 upstream-main proposal is [Fang PR #111](https://github.com/charmbracelet/fang/pull/111).
 The opt-in option permits a known background without automatic detection;
-its default remains upstream's behavior. No Fang replacement or release
-provenance exception is used. Keep the exact public version, sum and original
+its default remains upstream's behavior. The fork also preserves custom optional
+argument positions, so `run [SERIAL] FILE` matches the actual command order;
+that correction is proposed independently in [Fang PR #112](https://github.com/charmbracelet/fang/pull/112).
+Command definitions, argument parsing and the reserved usage conventions remain
+unchanged. No Fang replacement or release provenance exception is used. Keep the exact public version, sum and original
 license notices in the normal module and archive records.
 
 The CLI already contains the complete Web bundle. There is no Node dependency,

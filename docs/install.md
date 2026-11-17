@@ -87,7 +87,7 @@ CLI help and application-generated diagnostics remain English under English, Chi
 
 Fang presents human-facing help and errors; application diagnostics on stderr use Charm Log. `--debug` includes caller and PID details. `--log-file PATH` retains the existing JSON file format, 10 MiB rotation, compressed backups and retention policy. Command JSON, the daemon's JSON event stream and MCP JSON-RPC remain separate. CLI translation remains separate work. Building nb1 or its standalone MCP adapter from source requires Go 1.25.8 or newer, separate from the download and Homebrew build requirements above.
 
-Fang is supplied through a temporary fixed fork of upstream v2.0.1, with the exact public module version and checksum recorded in the release manifests. Its explicit background option is proposed in [official Fang PR #111](https://github.com/charmbracelet/fang/pull/111).
+Fang is supplied through a temporary fixed fork of upstream v2.0.1, with the exact public module version and checksum recorded in the release manifests. Its explicit background option is proposed in [official Fang PR #111](https://github.com/charmbracelet/fang/pull/111). The optional-argument ordering correction is proposed separately in [official Fang PR #112](https://github.com/charmbracelet/fang/pull/112); the help keeps `[SERIAL] FILE` in the same order as actual execution.
 
 For one foreground run without a daemon, first release the lamp from the other controller, then explicitly choose direct mode:
 

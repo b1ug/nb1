@@ -20,7 +20,7 @@ require (
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/viper v1.16.0
-	github.com/vt128/fang/v2 v2.0.2-0.20261117143650-281a83bf0c12
+	github.com/vt128/fang/v2 v2.0.2-0.20261117154700-ea7a74892849
 	go.uber.org/zap v1.24.0
 	golang.org/x/sys v0.47.0
 	gopkg.in/yaml.v3 v3.0.1

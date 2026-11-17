@@ -11,6 +11,28 @@ from check_upgrade_service import Acceptance, CheckError
 
 
 class UpgradeGuardTests(unittest.TestCase):
+    def test_local_stage_keeps_candidate_versions_distinct_for_one_archive(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            args = SimpleNamespace(output=root/'evidence', brew=root/'brew', baseline_cli=None,
+                                   source_commit='a'*40, service_mode='unavailable',
+                                   template=Path(__file__).with_name('nb1.rb.in'))
+            candidate = Acceptance(args)
+            candidate.tap_source = root/'tap'
+            (candidate.tap_source/'Formula').mkdir(parents=True)
+            source = root/'source-without-version.tar.gz'
+            candidate.archive = mock.Mock(return_value=(source, 'b'*64))
+            candidate.run = mock.Mock()
+            for version in (candidate.version1, candidate.version2):
+                candidate.stage_formula(version)
+                text = (candidate.tap_source/'Formula/nb1.rb').read_text()
+                self.assertIn('  version "'+version+'"\n', text)
+                self.assertEqual(text.count('  version '), 1)
+                self.assertIn('  url "'+source.as_uri()+'"', text)
+                self.assertIn('depends_on macos: :sequoia', text)
+                self.assertIn('"-buildvcs=false"', text)
+                self.assertNotIn('@@', text)
+
     def test_linux_available_retains_manager_root_with_private_profile_and_library(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

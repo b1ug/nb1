@@ -183,7 +183,11 @@ func waitSequenceDirectDevice(ctx context.Context, engine *control.Engine, seria
 	}
 }
 
-func waitSequenceDirectJob(ctx context.Context, engine *control.Engine, id string) (control.SequenceJob, error) {
+type sequenceDirectJobReader interface {
+	SequenceJob(string) (control.SequenceJob, error)
+}
+
+func waitSequenceDirectJob(ctx context.Context, engine sequenceDirectJobReader, id string) (control.SequenceJob, error) {
 	ticker := time.NewTicker(10 * time.Millisecond)
 	defer ticker.Stop()
 	for {
@@ -192,7 +196,11 @@ func waitSequenceDirectJob(ctx context.Context, engine *control.Engine, id strin
 			return job, err
 		}
 		switch job.Status {
-		case "succeeded", "cancelled", "failed":
+		case "cancelled":
+			// The engine may publish cancellation before this waiter selects the
+			// caller's deadline or cancellation. Retain that caller outcome.
+			return job, ctx.Err()
+		case "succeeded", "failed":
 			return job, nil
 		}
 		select {

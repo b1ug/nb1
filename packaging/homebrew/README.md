@@ -12,19 +12,26 @@ satisfy this check. An older, prerelease, development or unidentifiable toolchai
 is refused before those operations. Update the Homebrew Go dependency, then
 retry; the Formula does not download another toolchain automatically.
 
-There is no published tap or new release yet. The production renderer still
+The published tap is [b1ug/homebrew-tap](https://github.com/b1ug/homebrew-tap).
+For each new release, the production renderer still
 requires an actual versioned upstream tag archive, SHA-256, source commit and
 explicit minimum macOS version. `release-input.required.json` intentionally
 leaves these release inputs empty. Candidate installation tests use a separate,
 local-only tap generated from a real Git archive and its measured checksum;
 they do not create a release or fill the release inputs with synthetic values.
 
+Source archives do not carry a Git checkout. Builds use `-buildvcs=false` so
+an enclosing Homebrew repository cannot be mistaken for nb1's revision; the
+verified nb1 source commit remains explicitly linked into the executable.
+The template includes the archive-build and strict-style corrections that the
+v0.1.0 tap applied separately, so subsequent releases need no v0.1.0 adapter.
+
 ## Installation and services are separate
 
 Installing the Formula installs the executable and documentation. It does not
 register or start a service, change USB permissions, or select a device.
 
-With an installed candidate and a known device serial, the ordinary user can
+With nb1 installed and a known device serial, the ordinary user can
 run:
 
 ```sh
@@ -48,7 +55,8 @@ uses the validated stable package entry in Homebrew builds and the running
 executable in ordinary source builds. macOS uses the current user's
 LaunchAgent; Linux requires the current user's running systemd manager.
 Registration, an active process, HTTP readiness and USB readiness are separate
-states. These examples describe the development candidate, not the old release.
+states. These commands are available in v0.1.0 and later; the historical v0.0.1
+prerelease does not provide them.
 
 The Formula has no Homebrew `service do` block: service management is through
 `nb1 service`, and `brew services start nb1` is not provided.
@@ -122,7 +130,7 @@ with a real systemd user manager. The standalone daemon checks are described in
 [the native acceptance guide](../../ci/README.daemon-service.md). Neither test
 qualifies Linux USB or login/reboot behavior.
 
-Before publication, choose real release inputs and a tap repository, and retain
+Before each new publication, choose real release inputs and retain
 platform-specific acceptance evidence. No tag, release or public tap is created
 by the renderer or local candidate checks.
 

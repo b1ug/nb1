@@ -18,7 +18,7 @@ Configure an MCP host to launch that executable with those arguments. Stdout car
 
 The SDK is pinned to `github.com/modelcontextprotocol/go-sdk v1.8.0`. This nested module has its own Go 1.25 baseline. Its `github.com/b1ug/nb1 v0.0.0` requirement is replaced by `../..`, allowing the adapter to share the exact core client, strict input validation, and Job ID generator in the same checkout. Building the nested module in isolation requires that root source directory. A standalone module publication will need a published matching core dependency and removal of the relative replacement. Release binaries can be built from a complete, versioned checkout.
 
-The MCP initialize response reports the adapter's build version. Ordinary source builds report `dev`; release packaging injects the matching tag, such as `v0.1.0`, through `-X main.buildVersion`. The version describes this adapter, not an independently running daemon.
+The MCP initialize response reports the adapter's build version. Ordinary source builds report `dev`; release packaging injects the matching tag, such as `v0.1.1`, through `-X main.buildVersion`. The version describes this adapter, not an independently running daemon.
 
 ## Tools
 

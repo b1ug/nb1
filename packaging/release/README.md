@@ -16,7 +16,7 @@ rehearsal. After the workflow has landed on the default branch, run a manual
 rehearsal of that exact source:
 
 ```sh
-gh workflow run release.yml --ref master -f version=v0.1.0 -f publish=false
+gh workflow run release.yml --ref master -f version=v0.1.1 -f publish=false
 ```
 
 Inspect the run, five native package jobs, assembly and attached evidence.
@@ -39,7 +39,7 @@ uses the intended version for the version/installation checks.
 ## Publish only a real tag
 
 After reviewing the final source, test evidence and release notes, push its
-stable SemVer tag, such as `v0.1.0`. The official `b1ug/nb1` tag must peel to the
+stable SemVer tag, such as `v0.1.1`. The official `b1ug/nb1` tag must peel to the
 checked source and that commit must already be an ancestor of `origin/master`.
 Branch pushes, fork tags and malformed tags cannot pass the context gate.
 
@@ -110,7 +110,9 @@ login/reboot or optical qualification. Physical evidence stays separately
 identified. No package installation, service registration or device selection
 is performed automatically.
 
-Homebrew uses a real versioned source archive only after this Release exists.
-See [Homebrew packaging](../homebrew/README.md); the tap and source Formula are
-separate from these executable downloads and do not block the first download
-release.
+The public [Homebrew tap](https://github.com/b1ug/homebrew-tap) uses a real
+versioned source archive after its Release exists. Prepare and verify that
+version separately before updating the tap; publishing executable downloads
+does not silently advance its Formula. See [Homebrew packaging](../homebrew/README.md).
+The [English and Chinese documentation site](https://b1ug.github.io/nb1-docs/)
+also has a separate, source-bound publishing workflow.

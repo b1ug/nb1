@@ -1,10 +1,12 @@
 # Homebrew 配方与 Linux 容器验证
 
-内部中文说明，2026-11-12。对外说明以 [English README](README.md) 为准。
+中文说明，2026-11-17。默认说明为 [English README](README.md)，历史验证保持原收据日期。
 
 ## 当前交付状态
 
-源码 Formula 模板已覆盖 macOS 与 Linux；最低 macOS 要求只在 macOS 生效。当前没有已发布的新 Release 或远程 tap。正式渲染器仍要求真实 tag 归档、SHA-256、commit、最低 macOS 与 nb1-only 组件范围，缺项继续拒绝，不用测试值伪装正式发布。
+源码 Formula 模板已覆盖 macOS 与 Linux；最低 macOS 要求只在 macOS 生效。正式渠道为 [b1ug/homebrew-tap](https://github.com/b1ug/homebrew-tap)。每个新版本的正式渲染器仍要求真实 tag 归档、SHA-256、commit、最低 macOS 与 nb1-only 组件范围，缺项继续拒绝，不用测试值伪装正式发布。
+
+源码归档没有自身 Git checkout，因此构建使用 `-buildvcs=false`，避免把外层 Homebrew 仓库的提交号误记为 nb1 来源；已核验的 nb1 source commit 仍通过链接字段明确写入。当前模板已包含 v0.1.0 tap 单独适配的归档构建与严格格式修正，后续版本不再需要 v0.1.0 专用适配器。
 
 构建要求稳定版 Go 1.27.4 或更新版本。配方在模块下载前和编译前分别读取实际的 `go env GOVERSION`，并使用 `GOTOOLCHAIN=local`；仅检测到已经安装 Go 依赖还不够。旧版本、预发布版、开发版或无法识别的版本会在这些操作前明确拒绝。用户更新 Homebrew 的 Go 依赖后再重试，配方不会自动下载另一套工具链。
 
@@ -36,7 +38,7 @@ Homebrew 构建在链接时绑定 `opt/nb1/bin/nb1` 和 canonical `Cellar/nb1`�
 
 `check_upgrade_service.py` 用真实Git归档和本地候选tap依次验证安装、升级、删除旧keg、重启、回滚与清理。available模式要求普通用户和可信独立CLI，拒绝覆盖现有包及用户服务；核对实际进程可执行文件及未被重写的服务定义。unavailable模式只验普通Linux容器的受控失败与前台daemon，不能替代真实systemd验收。专门Actions工作流另跑真实用户manager。
 
-正式发版仍需选择真实tag/归档与包布局、建立远程tap；MCP是独立module，当前配方不捆绑。Windows分发和服务管理、Linux USB与登录/重启均有独立边界。源码说明不代替平台验收收据。
+每次新发版仍需选择真实tag/归档与包布局，并在远程tap发布前保留平台验收；MCP是独立module，当前配方不捆绑。Windows分发和服务管理、Linux USB与登录/重启均有独立边界。源码说明不代替平台验收收据。
 
 ## 本地离线检查
 

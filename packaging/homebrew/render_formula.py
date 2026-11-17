@@ -69,11 +69,14 @@ def render(value, allow_fixture=False):
     if value["fixture_only"] and not allow_fixture:
         raise ValueError("synthetic fixture inputs can be checked in memory, never written as a Formula")
     template = (DIRECTORY / "nb1.rb.in").read_text(encoding="utf-8")
-    for name in ("source_url", "version", "source_sha256", "source_commit", "min_macos"):
+    for name in ("source_url", "source_sha256", "source_commit", "min_macos"):
         token = "@@" + name.upper() + "@@"
         if token not in template:
             raise ValueError("template token missing: " + name)
-        template = template.replace(token, json.dumps(value[name], ensure_ascii=True))
+        # validate() permits only known macOS symbols; all other inputs remain
+        # quoted Ruby strings. Version is bound by the validated tag URL.
+        replacement = ":" + value[name] if name == "min_macos" else json.dumps(value[name], ensure_ascii=True)
+        template = template.replace(token, replacement)
     if "@@" in template:
         raise ValueError("unresolved template token")
     return template

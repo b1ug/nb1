@@ -3,13 +3,13 @@ module github.com/b1ug/nb1
 go 1.25.0
 
 require (
-	bitbucket.org/ai69/colorlogo v0.1.1
 	bitbucket.org/neiku/hlog v0.1.2
 	bitbucket.org/neiku/winornot v0.0.3
 	github.com/1set/gut v0.0.0-20201117175203-a82363231997
 	github.com/b1ug/blink1-go v0.0.2
 	github.com/b1ug/colorkit v0.1.0
 	github.com/b1ug/gid v0.0.3
+	github.com/lucasb-eyer/go-colorful v1.2.0
 	github.com/muesli/termenv v0.13.0
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/spf13/cobra v1.7.0
@@ -27,7 +27,6 @@ require (
 	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
-	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mattn/go-isatty v0.0.17 // indirect
 	github.com/mattn/go-runewidth v0.0.14 // indirect

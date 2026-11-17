@@ -15,7 +15,7 @@ on:
       version:
         description: Stable version to rehearse (vMAJOR.MINOR.PATCH)
         required: true
-        default: v0.1.0
+        default: v0.1.1
         type: string
       publish:
         description: Must remain false; only a real version-tag push may publish
@@ -42,7 +42,7 @@ env:
   PYTHONDONTWRITEBYTECODE: "1"
   GID_TEST_ENUMERATE: "0"
   GID_TEST_DEVICE_PATH: ""
-  INPUT_VERSION: ${{ inputs.version || 'v0.1.0' }}
+  INPUT_VERSION: ${{ inputs.version || 'v0.1.1' }}
   INPUT_PUBLISH: ${{ inputs.publish || false }}
 
 jobs:

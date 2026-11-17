@@ -7,16 +7,14 @@ import (
 	"runtime"
 	"strings"
 
-	cl "bitbucket.org/ai69/colorlogo"
 	"github.com/1set/gut/yos"
 	"github.com/1set/gut/ystring"
 	"github.com/b1ug/gid"
 	"github.com/b1ug/nb1/config"
 	"github.com/b1ug/nb1/internal/doctor"
+	"github.com/b1ug/nb1/util"
 	"github.com/spf13/cobra"
 )
-
-var colorLogo = cl.RoseWaterByLine(config.AppLogoArt)
 
 // versionFields retains the established human fields, including explicitly
 // supplied linker values. The JSON envelope uses only the checked doctor.Build.
@@ -78,7 +76,7 @@ func writeVersion(output io.Writer, fields versionFields, build doctor.Build, as
 	}
 
 	var text strings.Builder
-	text.WriteString(colorLogo)
+	text.WriteString(util.FormatLogo(config.AppLogoArt, output))
 	text.WriteString(ystring.NewLine)
 	arrow := "➣ "
 	if yos.IsOnWindows() {

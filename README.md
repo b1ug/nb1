@@ -6,7 +6,7 @@
 
 Control blink(1) from a CLI, local HTTP, MCP or an embedded Web workbench. High-level Actions compile into low-level Sequences and use the same per-device worker.
 
-[Install nb1 v0.1.0](docs/install.md): download and verify the executable, start the local server, and open its embedded workbench. MCP and the Skill are optional matching downloads. [Development candidates](docs/candidate-install.md) have a separate installation contract.
+[Install nb1 v0.1.1](docs/install.md): download and verify the executable, start the local server, and open its embedded workbench. MCP and the Skill are optional matching downloads. [Development candidates](docs/candidate-install.md) have a separate installation contract. The public [Homebrew tap](https://github.com/b1ug/homebrew-tap) builds the currently published Formula with `brew install b1ug/tap/nb1`; check `nb1 version` for its actual version. Read the [bilingual documentation](https://b1ug.github.io/nb1-docs/) for setup and examples.
 
 nb1 implements API v1. Source validation and the version installed on a machine are tracked separately. Start an ordinary foreground daemon using the same executable as the CLI:
 
@@ -47,7 +47,7 @@ On macOS/Linux, use `nb1 service install --devices DEVICE_SERIAL --start` for ex
 
 Use `nb1 version --json` for the executable's build identity, Go toolchain and pinned hardware dependencies without contacting a daemon or USB device. Plain source builds report their commit; unknown identity is reported as development.
 
-CLI diagnostics use English by default. Command results go to stdout; diagnostic logging, including `--debug`, goes to stderr so JSON results remain readable by other tools. The Web workbench provides English and Chinese.
+CLI help and diagnostics use English across language environments. Terminal colors follow each output stream; a nonempty `NO_COLOR` disables them. Pipes and `TERM=dumb` use plain text unless `CLICOLOR_FORCE` explicitly requests color. Command results go to stdout; diagnostic logging, including `--debug`, goes to stderr so JSON results remain readable by other tools. JSON output remains unstyled. The Web workbench provides English and Chinese.
 
 ## Configuration and storage
 
@@ -68,7 +68,7 @@ Device locks follow the established native OS coordination policy. On macOS they
 
 Actions are `set`, `off`, `fade`, `blink`, `breathe`, `pulse`, `alternate`, `orbit` and `rainbow`. Colors accept names, Hex, RGB8, HSV/HSB and local `@name` references. Patterns are saved on the computer. Device-native sequence APIs remain separate planned work; the current HTTP v1 and MCP adapter do not deploy host Patterns to device storage. [Device-native draft](docs/device-native-sequence.md)
 
-MCP provides 12 tools for this contract. The bilingual Web workbench is embedded at `/demo/`; opening or previewing does not play a Job. Building the CLI or separate MCP module from source requires Go 1.25 or newer; release artifacts record the actual build toolchain and fixed dependencies. Prebuilt executables need no Go installation. The source floor comes from patched dependencies, not a change to the device protocol. Independently maintained [nb1-web](https://github.com/b1ug/nb1-web) source becomes a pinned bundle embedded in nb1. The [nb1-site](https://github.com/b1ug/nb1-site) repository contains the bilingual documentation website. The independent [nb1-browser](https://github.com/b1ug/nb1-browser) workbench and Chrome extension use WebHID directly and require explicit device ownership handoff. These companion repositories remain private during development.
+MCP provides 12 tools for this contract. The bilingual Web workbench is embedded at `/demo/`; opening or previewing does not play a Job. Building the CLI or separate MCP module from source requires Go 1.25 or newer; release artifacts record the actual build toolchain and fixed dependencies. Prebuilt executables need no Go installation. The source floor comes from patched dependencies, not a change to the device protocol. Independently maintained [nb1-web](https://github.com/b1ug/nb1-web) source becomes a pinned bundle embedded in nb1. The public [nb1-docs](https://github.com/b1ug/nb1-docs) repository supplies the [bilingual documentation website](https://b1ug.github.io/nb1-docs/). The independent [nb1-browser](https://github.com/b1ug/nb1-browser) workbench and Chrome extension use WebHID directly and require explicit device ownership handoff. The separate Web source and browser-tool repositories remain private during development.
 
 Software, physical USB and optical checks are distinct. Local MK2 results do not establish MK3, Linux/Windows USB or nonvolatile storage. A development commit does not imply a tag or Release.
 

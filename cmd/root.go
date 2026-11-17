@@ -16,6 +16,7 @@ import (
 	"github.com/b1ug/nb1/internal/appconfig"
 	"github.com/b1ug/nb1/internal/textfmt"
 	"github.com/b1ug/nb1/util"
+	"github.com/muesli/termenv"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
@@ -33,7 +34,7 @@ var (
 var rootCmd = &cobra.Command{
 	Use:   config.AppName,
 	Short: "Control blink(1) lights and share a local device API",
-	Long: colorLogo + ystring.NewLine + hdoc(`
+	Long: hdoc(`
 		nb1 controls blink(1) lights and can run a local daemon that shares
 		configured devices with the CLI and other clients through versioned HTTP APIs.
 
@@ -99,6 +100,14 @@ var (
 
 func init() {
 	cobra.OnInitialize(initConfig)
+	defaultHelp := rootCmd.HelpFunc()
+	rootCmd.SetHelpFunc(func(command *cobra.Command, args []string) {
+		if command == rootCmd {
+			output := command.OutOrStdout()
+			fmt.Fprint(output, util.FormatLogo(config.AppLogoArt, output), ystring.NewLine)
+		}
+		defaultHelp(command, args)
+	})
 
 	// Set root command options
 	rootCmd.DisableAutoGenTag = true
@@ -137,6 +146,7 @@ func initConfig() {
 	// persistent logger's existing file format, size and retention policy.
 	loggerOptions := []hlog.Option{
 		hlog.WithNormalLogOutput(os.Stderr),
+		hlog.WithMonochrome(util.OutputColorProfile(os.Stderr) == termenv.Ascii),
 		hlog.WithOutputFile(logFile),
 		hlog.WithOutputFileLogFormat(hlog.LogFormatJSON),
 		hlog.WithOutputFileMaxSizeInMB(10),

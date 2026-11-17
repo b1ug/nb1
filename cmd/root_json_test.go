@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -32,12 +33,24 @@ func TestRootDoctorJSONKeepsDiagnosticsOnStderr(t *testing.T) {
 		name    string
 		debug   bool
 		logFile bool
+		env     map[string]string
+		colored bool
 	}{
 		{name: "normal"},
 		{name: "debug", debug: true},
 		{name: "debug with persistent file", debug: true, logFile: true},
+		{name: "NO_COLOR overrides force", debug: true, logFile: true, env: map[string]string{"NO_COLOR": "1", "CLICOLOR_FORCE": "1"}},
+		{name: "dumb with stale truecolor", debug: true, env: map[string]string{"TERM": "dumb", "COLORTERM": "truecolor"}},
+		{name: "explicit force on stderr pipe", debug: true, env: map[string]string{"CLICOLOR_FORCE": "1"}, colored: true},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			for _, key := range []string{"NO_COLOR", "CLICOLOR", "CLICOLOR_FORCE", "CI", "COLORTERM"} {
+				t.Setenv(key, "")
+			}
+			t.Setenv("TERM", "xterm-256color")
+			for key, value := range test.env {
+				t.Setenv(key, value)
+			}
 			directory := t.TempDir()
 			args := []string{}
 			if test.debug {
@@ -64,6 +77,11 @@ func TestRootDoctorJSONKeepsDiagnosticsOnStderr(t *testing.T) {
 			if !strings.Contains(stderr, "diagnostics need attention") || strings.Contains(stderr, "using config file") != test.debug {
 				t.Fatalf("diagnostics or debug-level behavior lost: %q", stderr)
 			}
+			// hlog deliberately retains its established monochrome Windows path.
+			wantColor := test.colored && runtime.GOOS != "windows"
+			if strings.ContainsRune(stderr, '\x1b') != wantColor {
+				t.Fatalf("stderr color policy differs (want color=%t): %q", wantColor, stderr)
+			}
 			if test.logFile {
 				data, err := os.ReadFile(logPath)
 				if err != nil {
@@ -84,6 +102,8 @@ func TestRootDoctorJSONKeepsDiagnosticsOnStderr(t *testing.T) {
 }
 
 func TestRootControlJSONWithDebugUsesOnlyOwnedHTTPFixture(t *testing.T) {
+	t.Setenv("NO_COLOR", "1")
+	t.Setenv("CLICOLOR_FORCE", "1")
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
 		if request.Method != http.MethodGet || request.URL.Path != "/v1/devices" {
 			t.Errorf("unexpected control request: %s %s", request.Method, request.URL.Path)
@@ -101,6 +121,39 @@ func TestRootControlJSONWithDebugUsesOnlyOwnedHTTPFixture(t *testing.T) {
 	}
 	if !strings.Contains(stderr, "using config file") {
 		t.Fatalf("debug diagnostics were lost instead of redirected: %q", stderr)
+	}
+	if strings.ContainsRune(stderr, '\x1b') {
+		t.Fatalf("NO_COLOR debug diagnostics contain styling: %q", stderr)
+	}
+}
+
+func TestActualRootHelpUsesSelectedPipeAndColorPolicy(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		env     map[string]string
+		colored bool
+	}{
+		{"default pipe", nil, false},
+		{"forced pipe", map[string]string{"CLICOLOR_FORCE": "1"}, true},
+		{"NO_COLOR wins", map[string]string{"CLICOLOR_FORCE": "1", "NO_COLOR": "1"}, false},
+		{"dumb ignores truecolor", map[string]string{"TERM": "dumb", "COLORTERM": "truecolor"}, false},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			for _, key := range []string{"NO_COLOR", "CLICOLOR", "CLICOLOR_FORCE", "CI", "COLORTERM"} {
+				t.Setenv(key, "")
+			}
+			t.Setenv("TERM", "xterm-256color")
+			for key, value := range test.env {
+				t.Setenv(key, value)
+			}
+			stdout, stderr, err := executeRootDiagnosticProcess(t, t.TempDir(), []string{"--help"})
+			if err != nil || stderr != "" || !strings.Contains(stdout, "nb1 controls blink(1)") || !strings.Contains(stdout, "nb1 [command]") {
+				t.Fatalf("root help failed: %v; stdout=%q stderr=%q", err, stdout, stderr)
+			}
+			if strings.ContainsRune(stdout, '\x1b') != test.colored {
+				t.Fatalf("root help color differs (want color=%t): %q", test.colored, stdout)
+			}
+		})
 	}
 }
 

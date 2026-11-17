@@ -17,6 +17,11 @@ colors independently.
   Normal console output is concise; `--debug` also includes caller and PID
   details. File logs retain their existing JSON fields, timestamps, PID,
   caller and error encoding, 10 MiB rotation, compression and backup policy.
+- Invalid `--log-file` directories, leaf symlinks, special files and initially
+  inaccessible or uncreatable targets are rejected before command execution,
+  keeping existing directory contents untouched. Internally reported writer
+  failures use Charm diagnostics on stderr; the JSON file schema and rotation
+  policy remain unchanged.
 - A nonempty `NO_COLOR` makes human help, errors, the Logo and console logs
   fully unstyled, including when `CLICOLOR_FORCE` is also set.
 - Pipes and `TERM=dumb` use plain text by default, including a dumb terminal

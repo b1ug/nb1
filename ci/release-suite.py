@@ -293,12 +293,17 @@ def pe_imports(data):
     require(2 <= directories <= 16 and optional_size >= 112 + directories * 8, "invalid PE data directories")
     if directories > 13:
         require(struct.unpack_from("<II", data, optional + 112 + 13 * 8) == (0, 0), "delay-import PE dependencies are unsupported")
-    ranges = []
+    ranges, virtual_ranges = [], []
     for index in range(sections):
         virtual_size, virtual, raw_size, raw = struct.unpack_from("<IIII", data, section_table + index * 40 + 8)
         require(raw <= len(data) and raw_size <= len(data) - raw, "PE section exceeds file bounds")
+        if virtual_size or raw_size:
+            virtual_ranges.append((virtual, virtual + max(virtual_size, raw_size)))
         if raw_size:
             ranges.append((virtual, min(raw_size, virtual_size or raw_size), raw))
+    virtual_ranges.sort()
+    require(all(end <= start for (_, end), (start, _) in zip(virtual_ranges, virtual_ranges[1:])),
+            "ambiguous overlapping PE virtual sections")
 
     def mapped(rva, size):
         found = [(raw + rva - virtual, raw + raw_size) for virtual, raw_size, raw in ranges

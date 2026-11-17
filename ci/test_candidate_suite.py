@@ -646,6 +646,8 @@ class ReleaseSuiteTests(unittest.TestCase):
         ambiguous = bytearray(original); struct.pack_into("<H", ambiguous, 0x86, 2)
         ambiguous[0x188 + 40:0x188 + 80] = ambiguous[0x188:0x188 + 40]
         with self.assertRaisesRegex(ValueError, "ambiguous"): RELEASE.pe_imports(ambiguous)
+        struct.pack_into("<IIII", ambiguous, 0x188 + 40 + 8, 20, 0x1000, 20, 0x500)
+        with self.assertRaisesRegex(ValueError, "ambiguous"): RELEASE.pe_imports(ambiguous)
         with self.assertRaises(ValueError): RELEASE.pe_imports(original[:0x550])
 
     def test_original_linked_module_and_toolchain_notices_are_collected_and_bound(self):

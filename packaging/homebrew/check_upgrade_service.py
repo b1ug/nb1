@@ -131,7 +131,15 @@ class Acceptance:
         text = self.args.template.read_text()
         for key, value in dict(source_url=source.as_uri(), version=version, source_sha256=digest,
                                source_commit=self.args.source_commit, min_macos='sequoia').items():
-            text = text.replace('@@'+key.upper()+'@@', json.dumps(value))
+            replacement = ':'+value if key == 'min_macos' else json.dumps(value)
+            text = text.replace('@@'+key.upper()+'@@', replacement)
+        # This local acceptance reuses one file URL for both candidate versions.
+        # Only this test recipe needs an explicit version; production infers it
+        # from the validated published tag URL in render_formula.py.
+        anchor = '  sha256 '
+        require(text.count(anchor) == 1 and not re.search(r'^  version ', text, re.M),
+                'candidate template must infer its production version from the tag URL')
+        text = text.replace(anchor, '  version '+json.dumps(version)+'\n'+anchor, 1)
         require('@@' not in text and 'config.ServiceBinaryRoot=' in text, 'candidate template binding is incomplete')
         (self.tap_source/'Formula/nb1.rb').write_text('# LOCAL ACCEPTANCE CANDIDATE; NOT A PUBLISHED RELEASE.\n'+text)
         self.run('stage-tap', ['git', '-C', self.tap_source, 'add', 'Formula/nb1.rb'])

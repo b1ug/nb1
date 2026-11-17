@@ -28,6 +28,12 @@ func TestOutputColorProfileForPlainWriters(t *testing.T) {
 	}{
 		{"pipe stays plain", map[string]string{"TERM": "xterm-256color", "COLORTERM": "truecolor"}, termenv.Ascii},
 		{"explicit force", map[string]string{"CLICOLOR_FORCE": "1"}, termenv.ANSI},
+		{"boolean true force", map[string]string{"CLICOLOR_FORCE": "true"}, termenv.ANSI},
+		{"boolean TRUE force", map[string]string{"CLICOLOR_FORCE": "TRUE"}, termenv.ANSI},
+		{"boolean false is not forced", map[string]string{"CLICOLOR_FORCE": "false"}, termenv.Ascii},
+		{"nonboolean two is not forced", map[string]string{"CLICOLOR_FORCE": "2"}, termenv.Ascii},
+		{"nonboolean text is not forced", map[string]string{"CLICOLOR_FORCE": "yes"}, termenv.Ascii},
+		{"nonboolean force cannot override dumb", map[string]string{"TERM": "dumb", "COLORTERM": "truecolor", "CLICOLOR_FORCE": "2"}, termenv.Ascii},
 		{"force zero is not forced", map[string]string{"CLICOLOR_FORCE": "0"}, termenv.Ascii},
 		{"empty no color does not cancel force", map[string]string{"NO_COLOR": "", "CLICOLOR_FORCE": "1"}, termenv.ANSI},
 		{"no color overrides force", map[string]string{"NO_COLOR": "1", "CLICOLOR_FORCE": "1"}, termenv.Ascii},

@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"bitbucket.org/neiku/winornot"
-	"github.com/1set/gut/ystring"
 	"github.com/b1ug/nb1/config"
 	"github.com/b1ug/nb1/exchange"
 	"github.com/b1ug/nb1/hdwr"
@@ -74,12 +73,7 @@ func Execute() {
 	// fix for Windows terminal output
 	winornot.EnableANSIControl()
 
-	err := rootCmd.Execute()
-	if closeErr := hdwr.CloseBlink1Device(); err == nil {
-		err = closeErr
-	}
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "🚨Error:", err)
+	if err := executePresentedCommand(rootCmd, os.Args[1:], hdwr.CloseBlink1Device); err != nil {
 		os.Exit(1)
 	}
 }
@@ -97,14 +91,6 @@ var (
 
 func init() {
 	cobra.OnInitialize(initConfig)
-	defaultHelp := rootCmd.HelpFunc()
-	rootCmd.SetHelpFunc(func(command *cobra.Command, args []string) {
-		if command == rootCmd {
-			output := command.OutOrStdout()
-			fmt.Fprint(output, util.FormatLogo(config.AppLogoArt, output), ystring.NewLine)
-		}
-		defaultHelp(command, args)
-	})
 
 	// Set root command options
 	rootCmd.DisableAutoGenTag = true

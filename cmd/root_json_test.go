@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/b1ug/nb1/internal/appconfig"
+	"github.com/charmbracelet/x/ansi"
 )
 
 func TestRootDoctorJSONKeepsDiagnosticsOnStderr(t *testing.T) {
@@ -147,7 +148,7 @@ func TestActualRootHelpUsesSelectedPipeAndColorPolicy(t *testing.T) {
 				t.Setenv(key, value)
 			}
 			stdout, stderr, err := executeRootDiagnosticProcess(t, t.TempDir(), []string{"--help"})
-			if err != nil || stderr != "" || !strings.Contains(stdout, "nb1 controls blink(1)") || !strings.Contains(stdout, "nb1 [command]") {
+			if err != nil || stderr != "" || !strings.Contains(ansi.Strip(stdout), "nb1 controls blink(1)") || !strings.Contains(ansi.Strip(stdout), "nb1 [command]") {
 				t.Fatalf("root help failed: %v; stdout=%q stderr=%q", err, stdout, stderr)
 			}
 			if strings.ContainsRune(stdout, '\x1b') != test.colored {

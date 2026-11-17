@@ -17,11 +17,13 @@ colors independently.
   Normal console output is concise; `--debug` also includes caller and PID
   details. File logs retain their existing JSON fields, timestamps, PID,
   caller and error encoding, 10 MiB rotation, compression and backup policy.
-- A nonempty `NO_COLOR` suppresses Logo and console-log color, including when
-  `CLICOLOR_FORCE` is also set.
+- A nonempty `NO_COLOR` makes human help, errors, the Logo and console logs
+  fully unstyled, including when `CLICOLOR_FORCE` is also set.
 - Pipes and `TERM=dumb` use plain text by default, including a dumb terminal
   with a leftover `COLORTERM=truecolor`. `CLICOLOR=0` disables ordinary color;
-  an explicit nonzero `CLICOLOR_FORCE` can request it when `NO_COLOR` is unset.
+  use `CLICOLOR_FORCE=1` or `true` to request it when `NO_COLOR` is unset.
+  Force values follow Go's boolean parsing: `false`, `0` and invalid values
+  such as `2` use the ordinary terminal rules rather than forcing color.
 - Human output respects the selected writer rather than a Logo cached at
   process initialization. JSON command results keep their existing unstyled
   stdout contract; diagnostics remain on stderr.

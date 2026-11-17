@@ -10,6 +10,7 @@ import (
 
 	"github.com/b1ug/blink1-go"
 	"github.com/lucasb-eyer/go-colorful"
+	"github.com/mattn/go-isatty"
 	"github.com/muesli/termenv"
 )
 
@@ -18,14 +19,27 @@ var (
 )
 
 // OutputColorProfile selects color for the actual destination without querying
-// terminal input or its background. NO_COLOR and CLICOLOR follow termenv's
-// precedence; an explicit CLICOLOR_FORCE may override a plain destination.
+// terminal input or its background. Any nonempty NO_COLOR wins; CLICOLOR_FORCE
+// uses Go boolean values such as 1/true, consistently with Fang's profile policy.
 func OutputColorProfile(output io.Writer) termenv.Profile {
-	force := os.Getenv("CLICOLOR_FORCE")
-	if os.Getenv("TERM") == "dumb" && (force == "" || force == "0") {
+	forced, _ := strconv.ParseBool(os.Getenv("CLICOLOR_FORCE"))
+	if os.Getenv("NO_COLOR") != "" || (os.Getenv("CLICOLOR") == "0" && !forced) {
 		return termenv.Ascii
 	}
-	return termenv.NewOutput(output).EnvColorProfile()
+	if !forced && (os.Getenv("TERM") == "dumb" || os.Getenv("CI") != "") {
+		return termenv.Ascii
+	}
+	var options []termenv.OutputOption
+	if terminal, ok := output.(interface{ Fd() uintptr }); ok && isatty.IsTerminal(terminal.Fd()) {
+		// termenv only recognizes *os.File itself. Preserve the capability of
+		// wrappers around a real terminal, without claiming a pipe is a TTY.
+		options = append(options, termenv.WithTTY(true))
+	}
+	profile := termenv.NewOutput(output, options...).ColorProfile()
+	if forced && profile == termenv.Ascii {
+		return termenv.ANSI
+	}
+	return profile
 }
 
 // FormatLogo retains the established RoseWater palette and line spacing while

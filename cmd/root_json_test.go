@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net"
 	"net/http"
@@ -17,6 +18,8 @@ import (
 	"time"
 
 	"github.com/b1ug/nb1/internal/appconfig"
+	"github.com/charmbracelet/x/ansi"
+	"github.com/spf13/cobra"
 )
 
 func TestRootDoctorJSONKeepsDiagnosticsOnStderr(t *testing.T) {
@@ -147,7 +150,7 @@ func TestActualRootHelpUsesSelectedPipeAndColorPolicy(t *testing.T) {
 				t.Setenv(key, value)
 			}
 			stdout, stderr, err := executeRootDiagnosticProcess(t, t.TempDir(), []string{"--help"})
-			if err != nil || stderr != "" || !strings.Contains(stdout, "nb1 controls blink(1)") || !strings.Contains(stdout, "nb1 [command]") {
+			if err != nil || stderr != "" || !strings.Contains(ansi.Strip(stdout), "nb1 controls blink(1)") || !strings.Contains(ansi.Strip(stdout), "nb1 [command]") {
 				t.Fatalf("root help failed: %v; stdout=%q stderr=%q", err, stdout, stderr)
 			}
 			if strings.ContainsRune(stdout, '\x1b') != test.colored {
@@ -157,7 +160,119 @@ func TestActualRootHelpUsesSelectedPipeAndColorPolicy(t *testing.T) {
 	}
 }
 
-func executeRootDiagnosticProcess(t *testing.T, directory string, args []string) (string, string, error) {
+func TestRootInvalidLogLevelReturnsOnePresentedErrorBeforeRun(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		args []string
+		spy  bool
+	}{
+		{"ordinary", []string{"config", "get", "nb1_bootstrap_missing"}, false},
+		{"profile recovery", []string{"config", "path"}, false},
+		{"profile creation", []string{"config", "init"}, false},
+		{"service recovery", []string{"service", "render", "--platform", "linux", "--binary", "/not-executed/nb1"}, false},
+		{"hardware hook", []string{"on"}, true},
+		{"conversion hook", []string{"convert", "text2json", "not-read.txt"}, true},
+		{"control hook", []string{"control", "devices"}, true},
+	} {
+		for _, color := range []bool{false, true} {
+			t.Run(fmt.Sprintf("%s/color=%t", test.name, color), func(t *testing.T) {
+				t.Setenv("NO_COLOR", "")
+				t.Setenv("CLICOLOR_FORCE", "1")
+				if !color {
+					t.Setenv("NO_COLOR", "yes")
+				}
+				args := append([]string{"--log-level", "not-a-level"}, test.args...)
+				var environment []string
+				if test.spy {
+					environment = []string{"NB1_JSON_ROOT_TEST_BOOTSTRAP_SPY=1"}
+				}
+				stdout, stderr, err := executeRootDiagnosticProcess(t, t.TempDir(), args, environment...)
+				var exit *exec.ExitError
+				text := ansi.Strip(stderr)
+				if !errors.As(err, &exit) || exit.ExitCode() != 1 || stdout != "" ||
+					strings.Count(text, "unrecognized level") != 1 || strings.Contains(text, "bootstrap spy") ||
+					strings.ContainsRune(stderr, '\x1b') != color {
+					t.Fatalf("bootstrap must return one presented error before hooks/Run: err=%v stdout=%q stderr=%q", err, stdout, stderr)
+				}
+			})
+		}
+	}
+}
+
+func TestRootDebugOverridesInvalidLogLevelAndVersionBypassesIt(t *testing.T) {
+	t.Setenv("NO_COLOR", "yes")
+	for _, args := range [][]string{
+		{"--debug", "--log-level", "not-a-level", "config", "get", "nb1_bootstrap_missing"},
+		{"--debug", "--log-level", "not-a-level", "config", "path"},
+		{"--log-level", "not-a-level", "version", "--json"},
+	} {
+		t.Run(strings.Join(args, " "), func(t *testing.T) {
+			stdout, stderr, err := executeRootDiagnosticProcess(t, t.TempDir(), args)
+			if err != nil || strings.Contains(stderr, "unrecognized level") || strings.ContainsRune(stdout+stderr, '\x1b') {
+				t.Fatalf("debug/version initialization behavior changed: err=%v stdout=%q stderr=%q", err, stdout, stderr)
+			}
+			if args[len(args)-1] == "--json" && (!json.Valid([]byte(stdout)) || stderr != "") {
+				t.Fatalf("version JSON initialized runtime or changed stdout: stdout=%q stderr=%q", stdout, stderr)
+			}
+		})
+	}
+}
+
+func TestRootProfileRecoveryStillIgnoresOnlyConfigurationFailure(t *testing.T) {
+	t.Setenv("NO_COLOR", "yes")
+	directory := t.TempDir()
+	broken := filepath.Join(directory, "broken.yaml")
+	content := []byte("jobs:\n  terminal_limit: 0\n")
+	if err := os.WriteFile(broken, content, 0600); err != nil {
+		t.Fatal(err)
+	}
+	stdout, stderr, err := executeRootDiagnosticProcess(t, directory,
+		[]string{"--config", broken, "--log-level", "info", "config", "path"})
+	if err != nil || strings.TrimSpace(stdout) != broken || stderr != "" {
+		t.Fatalf("valid logger blocked profile recovery: err=%v stdout=%q stderr=%q", err, stdout, stderr)
+	}
+	stdout, stderr, err = executeRootDiagnosticProcess(t, directory,
+		[]string{"--config", broken, "--log-level", "not-a-level", "config", "path"})
+	if err == nil || stdout != "" || strings.Count(stderr, "unrecognized level") != 1 {
+		t.Fatalf("profile recovery hid logger failure: err=%v stdout=%q stderr=%q", err, stdout, stderr)
+	}
+	if data, err := os.ReadFile(broken); err != nil || !bytes.Equal(data, content) {
+		t.Fatalf("recovery modified the broken profile: %v %q", err, data)
+	}
+}
+
+func TestLoggerInitializationGuardRestoresExistingHooks(t *testing.T) {
+	previous := loggerInitError
+	t.Cleanup(func() { loggerInitError = previous })
+	want := errors.New("logger initialization failed")
+	calls := 0
+	root := &cobra.Command{Use: "fixture", PersistentPreRunE: func(*cobra.Command, []string) error { calls++; return nil }}
+	child := &cobra.Command{Use: "child", PersistentPreRun: func(*cobra.Command, []string) { calls++ }}
+	root.AddCommand(child)
+	restore := guardLoggerInitialization(root)
+	loggerInitError = want
+	for _, command := range []*cobra.Command{root, child} {
+		if err := command.PersistentPreRunE(command, nil); !errors.Is(err, want) {
+			t.Fatalf("override bypassed initialization failure: %v", err)
+		}
+	}
+	if calls != 0 {
+		t.Fatal("failed initialization entered an existing hook")
+	}
+	loggerInitError = nil
+	if err := child.PersistentPreRunE(child, nil); err != nil || calls != 1 {
+		t.Fatalf("successful void hook changed: %v calls=%d", err, calls)
+	}
+	restore()
+	if child.PersistentPreRunE != nil || child.PersistentPreRun == nil {
+		t.Fatal("original void hook not restored")
+	}
+	if err := root.PersistentPreRunE(root, nil); err != nil || calls != 2 {
+		t.Fatalf("original error hook not restored: %v calls=%d", err, calls)
+	}
+}
+
+func executeRootDiagnosticProcess(t *testing.T, directory string, args []string, helperEnvironment ...string) (string, string, error) {
 	t.Helper()
 	binary, err := os.Executable()
 	if err != nil {
@@ -179,6 +294,7 @@ func executeRootDiagnosticProcess(t *testing.T, directory string, args []string)
 		process.Env = append(process.Env, value)
 	}
 	process.Env = append(process.Env, "NB1_JSON_ROOT_TEST_HELPER=1", "XDG_CONFIG_HOME="+directory, "XDG_STATE_HOME="+directory)
+	process.Env = append(process.Env, helperEnvironment...)
 	process.Dir = directory
 	var stdout, stderr bytes.Buffer
 	process.Stdout, process.Stderr = &stdout, &stderr
@@ -196,6 +312,27 @@ func TestRootDiagnosticProcessHelper(t *testing.T) {
 	for index, argument := range os.Args {
 		if argument == "--" {
 			os.Args = append([]string{"nb1"}, os.Args[index+1:]...)
+			if os.Getenv("NB1_JSON_ROOT_TEST_BOOTSTRAP_SPY") == "1" {
+				command, _, err := rootCmd.Find(os.Args[1:])
+				if err != nil {
+					t.Fatal(err)
+				}
+				command.Run = nil
+				command.RunE = func(*cobra.Command, []string) error {
+					fmt.Fprintln(os.Stdout, "bootstrap spy Run executed")
+					return nil
+				}
+				for parent := command; parent != nil && parent != rootCmd; parent = parent.Parent() {
+					if parent.PersistentPreRunE != nil || parent.PersistentPreRun != nil {
+						parent.PersistentPreRun = nil
+						parent.PersistentPreRunE = func(*cobra.Command, []string) error {
+							fmt.Fprintln(os.Stderr, "bootstrap spy pre-run executed")
+							return nil
+						}
+						break
+					}
+				}
+			}
 			Execute()
 			os.Exit(0)
 		}

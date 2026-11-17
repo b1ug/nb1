@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"bitbucket.org/neiku/winornot"
-	"github.com/1set/gut/ystring"
 	"github.com/b1ug/nb1/config"
 	"github.com/b1ug/nb1/exchange"
 	"github.com/b1ug/nb1/hdwr"
@@ -59,6 +58,9 @@ var rootCmd = &cobra.Command{
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
+		if loggerInitError != nil {
+			return loggerInitError
+		}
 		// Recovery and service stop/status must remain available even if a
 		// configuration file was removed or edited incorrectly after install.
 		if cmd.Parent() != nil && ((cmd.Parent().Name() == "config" && (cmd.Name() == "path" || cmd.Name() == "init")) || (cmd.Parent().Name() == "service" && cmd.Name() != "install")) {
@@ -73,14 +75,46 @@ var rootCmd = &cobra.Command{
 func Execute() {
 	// fix for Windows terminal output
 	winornot.EnableANSIControl()
+	restore := guardLoggerInitialization(rootCmd)
+	defer restore()
 
-	err := rootCmd.Execute()
-	if closeErr := hdwr.CloseBlink1Device(); err == nil {
-		err = closeErr
-	}
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "🚨Error:", err)
+	if err := executePresentedCommand(rootCmd, os.Args[1:], hdwr.CloseBlink1Device); err != nil {
 		os.Exit(1)
+	}
+}
+
+// Guard existing overrides too: Cobra runs only the nearest persistent hook.
+// Restoring both hooks leaves successful and subsequent executions unchanged.
+func guardLoggerInitialization(root *cobra.Command) func() {
+	var restore []func()
+	var visit func(*cobra.Command)
+	visit = func(command *cobra.Command) {
+		beforeE, before := command.PersistentPreRunE, command.PersistentPreRun
+		if beforeE != nil || before != nil {
+			command.PersistentPreRun = nil
+			command.PersistentPreRunE = func(current *cobra.Command, args []string) error {
+				if loggerInitError != nil {
+					return loggerInitError
+				}
+				if beforeE != nil {
+					return beforeE(current, args)
+				}
+				before(current, args)
+				return nil
+			}
+			restore = append(restore, func() {
+				command.PersistentPreRunE, command.PersistentPreRun = beforeE, before
+			})
+		}
+		for _, child := range command.Commands() {
+			visit(child)
+		}
+	}
+	visit(root)
+	return func() {
+		for _, undo := range restore {
+			undo()
+		}
 	}
 }
 
@@ -93,18 +127,11 @@ var (
 	waitComplete           bool
 	allowAbsent            bool
 	configurationInitError error
+	loggerInitError        error
 )
 
 func init() {
 	cobra.OnInitialize(initConfig)
-	defaultHelp := rootCmd.HelpFunc()
-	rootCmd.SetHelpFunc(func(command *cobra.Command, args []string) {
-		if command == rootCmd {
-			output := command.OutOrStdout()
-			fmt.Fprint(output, util.FormatLogo(config.AppLogoArt, output), ystring.NewLine)
-		}
-		defaultHelp(command, args)
-	})
 
 	// Set root command options
 	rootCmd.DisableAutoGenTag = true
@@ -130,6 +157,7 @@ func init() {
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
+	loggerInitError = nil
 	// version inspects only the executable. Cobra runs initializers before
 	// PersistentPreRunE, so its pre-run override alone cannot prevent runtime
 	// configuration logs from contaminating --json output. Resolve the command
@@ -145,8 +173,10 @@ func initConfig() {
 	if debugMode {
 		logLevel = "debug"
 	}
-	err := lg.SetLevelString(logLevel)
-	cobra.CheckErr(err)
+	if err := lg.SetLevelString(logLevel); err != nil {
+		loggerInitError = err
+		return
+	}
 	log = lg.SugaredLogger
 
 	// pass logger to packages

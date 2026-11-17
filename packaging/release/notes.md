@@ -1,23 +1,29 @@
 ## nb1 v0.1.1
 
-This patch adds Charm Log terminal diagnostics, corrects terminal styling found
-during Linux Homebrew acceptance, and preserves timeout and cancellation causes
-during direct Sequence playback.
+This patch adds Fang presentation for human CLI help and errors, uses Charm Log
+for terminal diagnostics, and preserves timeout and cancellation causes during
+direct Sequence playback.
 CLI help and human-readable version output now select colors for their actual
 output stream. Console diagnostics use Charm Log's renderer on stderr and select
-colors independently. The Logo retains its RoseWater palette.
+colors independently.
 
 ### Fixed
 
-- Application diagnostics use the actual Charm Log v1.0.0 terminal renderer.
+- Human CLI help and errors use Fang through a temporary fixed fork based on
+  upstream v2.0.1, while Cobra retains command routing and argument handling.
+  Existing version metadata and machine-output contracts remain separate from
+  presentation.
+- Application diagnostics use the actual Charm Log v2.0.1 terminal renderer.
   Normal console output is concise; `--debug` also includes caller and PID
   details. File logs retain their existing JSON fields, timestamps, PID,
   caller and error encoding, 10 MiB rotation, compression and backup policy.
-- A nonempty `NO_COLOR` suppresses Logo and console-log color, including when
-  `CLICOLOR_FORCE` is also set.
+- A nonempty `NO_COLOR` makes human help, errors, the Logo and console logs
+  fully unstyled, including when `CLICOLOR_FORCE` is also set.
 - Pipes and `TERM=dumb` use plain text by default, including a dumb terminal
   with a leftover `COLORTERM=truecolor`. `CLICOLOR=0` disables ordinary color;
-  an explicit nonzero `CLICOLOR_FORCE` can request it when `NO_COLOR` is unset.
+  use `CLICOLOR_FORCE=1` or `true` to request it when `NO_COLOR` is unset.
+  Force values follow Go's boolean parsing: `false`, `0` and invalid values
+  such as `2` use the ordinary terminal rules rather than forcing color.
 - Human output respects the selected writer rather than a Logo cached at
   process initialization. JSON command results keep their existing unstyled
   stdout contract; diagnostics remain on stderr.
@@ -33,9 +39,27 @@ CLI help and application-generated diagnostics remain English under English,
 Chinese, Japanese, French and other locale settings. This patch adjusts output
 styling; the bilingual embedded Web workbench has its own language switch.
 HTTP, MCP and Go identifiers retain their existing English contract.
-The source minimum remains Go 1.25.0. This release retains Cobra help and does
-not include Fang or a new CLI localization framework. Command JSON, MCP
-JSON-RPC and the daemon's separate JSON event stream remain unstyled.
+The nb1 and standalone MCP source minimum is Go 1.25.8, required by the selected
+Charm Log release. Foundation-library requirements are unchanged. CLI
+localization remains separate work. Command JSON, MCP JSON-RPC and the daemon's
+separate JSON event stream remain unstyled.
+
+### Fang dependency and upstream fixes
+
+The public dependency is `github.com/vt128/fang/v2` at
+`v2.0.2-0.20261117154700-ea7a74892849`, fixed to
+[commit ea7a7489284927655a069bd4da792c25a0259450](https://github.com/vt128/fang/commit/ea7a7489284927655a069bd4da792c25a0259450).
+This temporary fork backports an explicit `WithDarkBackground(bool)` option
+onto official v2.0.1. The option lets callers select a known background without
+automatic terminal detection; leaving it unset preserves upstream behavior.
+The separate proposal for official Fang is [upstream PR #111](https://github.com/charmbracelet/fang/pull/111).
+The fork also keeps custom optional arguments in their authored positions:
+`control run [SERIAL] FILE` is displayed in the same order that the CLI executes.
+This presentation correction is proposed separately in [upstream PR #112](https://github.com/charmbracelet/fang/pull/112);
+command definitions and argument parsing are unchanged.
+nb1 consumes the fork as a normal public module with an exact version and
+checksum, without a Fang `replace` directive. Its source and license notices
+are included in the release manifests.
 
 ### Install and start
 

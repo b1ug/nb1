@@ -89,9 +89,11 @@ Homebrew 从已发布源码编译，并安装所需构建依赖。Formula 要求
 
 直连始终等待，Job 只属于本次进程。HTTP 不可达不会自动切 USB。成功的 hold 可以保留灯色；需要熄灭时明确执行 Off。
 
-CLI 的帮助与程序诊断在英文、中文和其他 locale 下均保留英文；Web 工作台有独立语言切换。终端颜色按实际输出流判断：非空 `NO_COLOR` 优先禁色，`CLICOLOR=0` 禁用普通着色；没有设置 `NO_COLOR` 时，可用 `CLICOLOR_FORCE=1` 显式强制颜色。管道或 `TERM=dumb` 默认使用纯文本。JSON 始终不着色。
+CLI 的帮助与程序诊断在英文、中文和其他 locale 下均保留英文；Web 工作台有独立语言切换。终端颜色按实际输出流判断：任意非空 `NO_COLOR`（包括 `yes`）优先禁用全部 ANSI；`CLICOLOR=0` 禁用普通着色。没有设置 `NO_COLOR` 时，可用 `CLICOLOR_FORCE=1` 或 `true` 强制颜色。Force 值按 Go 的布尔规则解析：`false`、`0`，以及 `2` 等非布尔值，都回到普通终端规则。管道或 `TERM=dumb` 默认使用纯文本。JSON 始终不着色。
 
-stderr 上的程序诊断使用 Charm Log，`--debug` 还会显示调用位置和 PID。`--log-file PATH` 保留原有 JSON 文件格式、10 MiB 轮转、备份压缩和保留规则。命令结果 JSON、daemon 的 JSON 事件流及 MCP JSON-RPC 各自保持独立。本版沿用 Cobra 帮助，不包含 Fang 或 CLI 翻译框架。Go 源码最低版本仍为 1.25.0，与上文下载包及 Homebrew 构建要求分开。
+面向人的帮助与错误由 Fang 呈现，stderr 上的程序诊断使用 Charm Log；`--debug` 还会显示调用位置和 PID。`--log-file PATH` 保留原有 JSON 文件格式、10 MiB 轮转、备份压缩和保留规则。命令结果 JSON、daemon 的 JSON 事件流及 MCP JSON-RPC 各自保持独立。CLI 翻译仍为独立工作。从源码构建 nb1 或独立 MCP 适配器要求 Go 1.25.8 或更新版本，与上文下载包及 Homebrew 构建要求分开。
+
+Fang 暂时使用基于官方 v2.0.1 的修复分支，准确的公开模块版本与校验和记录在发行清单中。显式选择背景的选项已作为 [官方 Fang PR #111](https://github.com/charmbracelet/fang/pull/111) 提出。 可选参数显示顺序的修正已独立提交为 [官方 Fang PR #112](https://github.com/charmbracelet/fang/pull/112)；帮助中的 `[SERIAL] FILE` 与实际执行顺序一致。
 
 ## 可选用户服务
 

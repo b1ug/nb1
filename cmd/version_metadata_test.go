@@ -351,10 +351,7 @@ func TestVersionActualRootHelper(t *testing.T) {
 		// Replace the testing runner arguments with the actual CLI invocation;
 		// both Cobra Execute and the initializer now see the real process args.
 		os.Args = append([]string{"nb1"}, os.Args[i+1:]...)
-		if err := rootCmd.Execute(); err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			os.Exit(2)
-		}
+		Execute()
 		command, _, err := rootCmd.Find(os.Args[1:])
 		if err == nil && command == versionCmd && log != nil {
 			fmt.Fprintln(os.Stderr, "version initialized the runtime logger")

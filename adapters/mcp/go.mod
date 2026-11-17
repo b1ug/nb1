@@ -1,6 +1,6 @@
 module github.com/b1ug/nb1/adapters/mcp
 
-go 1.25.0
+go 1.25.8
 
 require (
 	github.com/b1ug/nb1 v0.0.0

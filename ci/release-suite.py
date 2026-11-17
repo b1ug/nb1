@@ -24,6 +24,7 @@ TARGETS = BASE.CLI.NATIVE_TARGETS
 FOUNDATION = {"github.com/b1ug/blink1-go": "v0.0.2", "github.com/b1ug/gid": "v0.0.3",
               "github.com/b1ug/colorkit": "v0.1.0"}
 TOOLCHAIN = "go1.27.4"
+SOURCE_GO_FLOOR = "1.25.8"
 SCOPE = "Versioned native software package; physical USB, minimum-OS qualification and managed-service acceptance are separate."
 VERSION = re.compile(r"v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\Z")
 LICENSES = {"LICENSE.txt", "editor-LICENSES.txt", "fonts/MPLUSRounded1c-OFL.txt", "fonts/Fredoka-OFL.txt",
@@ -95,7 +96,7 @@ def selected_modules(root, info, mcp=False):
     values = BASE.documents(BASE.command(["go", "list", "-mod=readonly", "-m", "-json", "all"], cwd))
     selected = {v["Path"]: v for v in values}
     main = selected.get(BASE.MCP if mcp else BASE.CORE, {})
-    require(main.get("Main") and main.get("GoVersion") == "1.25.0", "release source Go floor differs")
+    require(main.get("Main") and main.get("GoVersion") == SOURCE_GO_FLOOR, "release source Go floor differs")
     for path, version in FOUNDATION.items():
         require(selected.get(path, {}).get("Version") == version and not selected[path].get("Replace"),
                 "release requires the fixed public foundation versions")

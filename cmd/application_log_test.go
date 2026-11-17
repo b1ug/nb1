@@ -16,7 +16,7 @@ import (
 	"testing"
 	"time"
 
-	charmlog "github.com/charmbracelet/log"
+	charmlog "charm.land/log/v2"
 	"github.com/muesli/termenv"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -38,7 +38,7 @@ func TestCharmConsoleBridgeUsesTheActualRenderer(t *testing.T) {
 				Level: charmlog.DebugLevel, ReportTimestamp: true, TimeFormat: "15:04:05",
 				TimeFunction: func(time.Time) time.Time { return when }, Prefix: "device",
 			})
-			renderer.SetColorProfile(profile)
+			renderer.SetColorProfile(charmColorProfile(profile))
 			renderer.Log(charmlog.WarnLevel, entry.Message, "count", int64(2), "serial", "lamp-a")
 			if actual.String() != expected.String() {
 				t.Fatalf("console differs from Charm renderer:\nactual %q\nexpect %q", actual.String(), expected.String())

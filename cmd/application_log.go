@@ -8,8 +8,9 @@ import (
 	"time"
 
 	"bitbucket.org/neiku/hlog"
+	charmlog "charm.land/log/v2"
 	"github.com/b1ug/nb1/util"
-	charmlog "github.com/charmbracelet/log"
+	"github.com/charmbracelet/colorprofile"
 	"github.com/muesli/termenv"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -46,10 +47,9 @@ func newApplicationLogger(output io.Writer, file string, debug bool) *hlog.Logge
 	return hlog.NewLogger(options...)
 }
 
-// charmOutput intentionally exposes Write only, not Fd or Read. Charm v1's
-// renderer eagerly caches terminal colors during construction; hiding the file
-// descriptor prevents that constructor from querying terminal input/background.
-// Its profile is explicitly selected from the real output before wrapping it.
+// charmOutput intentionally exposes Write only, not Fd or Read. The renderer
+// receives an explicit profile selected from the actual destination, without
+// needing terminal input or background detection.
 type charmOutput struct {
 	output io.Writer
 	err    error
@@ -61,7 +61,7 @@ func (w *charmOutput) Write(data []byte) (int, error) {
 		err = io.ErrShortWrite
 	}
 	w.err = err
-	// Charm v1 discards writer errors and retains unwritten buffer bytes.
+	// Charm does not return writer errors and may retain unwritten buffer bytes.
 	// Consume its buffer once; Core.Write returns the actual error to Zap.
 	return len(data), nil
 }
@@ -88,7 +88,7 @@ func newCharmConsoleCore(enabled zapcore.LevelEnabler, output io.Writer, profile
 		TimeFormat:      "15:04:05",
 		TimeFunction:    func(time.Time) time.Time { return sink.time },
 	})
-	sink.logger.SetColorProfile(profile)
+	sink.logger.SetColorProfile(charmColorProfile(profile))
 	return &charmConsoleCore{enabled: enabled, sink: sink, debug: debug}
 }
 
@@ -164,5 +164,20 @@ func charmLevel(level zapcore.Level) charmlog.Level {
 		return charmlog.FatalLevel
 	default:
 		return charmlog.ErrorLevel
+	}
+}
+
+// NoTTY removes all ANSI, including bold/faint attributes. colorprofile.ASCII
+// only removes colors, which would violate nb1's established plain-output path.
+func charmColorProfile(profile termenv.Profile) colorprofile.Profile {
+	switch profile {
+	case termenv.TrueColor:
+		return colorprofile.TrueColor
+	case termenv.ANSI256:
+		return colorprofile.ANSI256
+	case termenv.ANSI:
+		return colorprofile.ANSI
+	default:
+		return colorprofile.NoTTY
 	}
 }

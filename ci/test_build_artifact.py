@@ -1,5 +1,6 @@
 import importlib.util
 import json
+import os
 import sys
 import tempfile
 import unittest
@@ -73,17 +74,23 @@ class CandidateTests(unittest.TestCase):
     def test_smoke_runs_only_help_with_isolated_config(self):
         scratch_paths = []
         calls = []
-        def fake_command(args, cwd):
+        def fake_command(args, cwd, env):
             self.assertEqual(args[2], cwd / "setting.yaml")
             self.assertEqual(args[-1], "--help")
             arguments, markers = ARTIFACT.HELP_CHECKS[len(calls)]
             self.assertEqual(args[3:], arguments)
             self.assertEqual((cwd / "setting.yaml").read_text(), "{}\n")
+            self.assertEqual({key: env[key] for key in ("NO_COLOR", "CLICOLOR", "CLICOLOR_FORCE", "TERM")},
+                             {"NO_COLOR": "1", "CLICOLOR": "0", "CLICOLOR_FORCE": "0", "TERM": "dumb"})
+            self.assertIsNot(env, os.environ)
             scratch_paths.append(cwd)
             calls.append(arguments)
             return "\n".join(markers)
-        with patch.object(ARTIFACT, "command", fake_command):
-            ARTIFACT.smoke(Path("/not-executed/nb1"))
+        with patch.dict(os.environ, {"CLICOLOR_FORCE": "true", "TERM": "xterm-256color"}):
+            original = dict(os.environ)
+            with patch.object(ARTIFACT, "command", fake_command):
+                ARTIFACT.smoke(Path("/not-executed/nb1"))
+            self.assertEqual(dict(os.environ), original)
         self.assertEqual(len(calls), 3)
         self.assertFalse(scratch_paths[0].exists())
 

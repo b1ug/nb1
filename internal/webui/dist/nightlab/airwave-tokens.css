@@ -1,0 +1,50 @@
+/* Shared UI roles. These never change LED target colors or the approved artwork. */
+:root {
+  color-scheme: light;
+  --ui-canvas: #f7fcff;
+  --ui-panel: #ffffff;
+  --ui-panel-soft: #edf6fb;
+  --ui-ink: #173746;
+  --ui-muted: #516b79;
+  --ui-line: #d5e6ed;
+  --ui-control-line: #7899aa;
+  --ui-blue: #076f99;
+  --ui-blue-soft: #e3f3fb;
+  --ui-rose: #f3b8c5;
+  --ui-rose-ink: #55313c;
+  --ui-rose-soft: #fff1f4;
+  --ui-danger: #a33e4e;
+  --ui-danger-soft: #fff0f2;
+  --ui-success: #26735c;
+  --ui-success-soft: #e9f6ef;
+  --ui-focus: #007ca5;
+  --ui-shadow: 0 10px 35px #1a50600a;
+  --type-title: clamp(1.65rem, 3vw, 2.2rem);
+  --type-heading: 1.125rem;
+  --type-body: .875rem;
+  --type-caption: .75rem;
+  --font-ui: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+}
+/* Visual type roles are independent of document heading depth. */
+:root [data-type-role="title"] { font-size: var(--type-title); }
+:root [data-type-role="heading"] { font-size: var(--type-heading); }
+:root [data-type-role="body"] { font-size: var(--type-body); }
+:root [data-type-role="caption"] { font-size: var(--type-caption); }
+.design-preview-banner {
+  position: relative;
+  z-index: 90;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 20px;
+  margin: 0;
+  padding: 10px 20px;
+  border-bottom: 1px solid var(--ui-line);
+  background: var(--ui-blue-soft);
+  color: var(--ui-ink);
+  font: 500 var(--type-caption)/1.5 var(--font-ui);
+}
+.design-preview-banner a { color: var(--ui-blue); text-underline-offset: 3px; }
+.design-preview-banner a:focus-visible { outline: 2px solid var(--ui-focus); outline-offset: 3px; }

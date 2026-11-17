@@ -50,6 +50,9 @@ func assertSequenceWebHeaders(t *testing.T, header http.Header, contentType stri
 	policy := header.Get("Content-Security-Policy")
 	wantPolicy, nonce := sequenceWebCSP, ""
 	if contentType == "text/html; charset=utf-8" {
+		if webui.IsNightlab() {
+			wantPolicy = strings.Replace(wantPolicy, "script-src 'self'", "script-src 'self' 'wasm-unsafe-eval'", 1)
+		}
 		match := regexp.MustCompile(`style-src 'self' 'nonce-([A-Za-z0-9+/]{32})'`).FindStringSubmatch(policy)
 		if len(match) != 2 {
 			t.Fatalf("HTML response lacks a protected style nonce: %s", policy)
@@ -59,7 +62,7 @@ func assertSequenceWebHeaders(t *testing.T, header http.Header, contentType stri
 		if err != nil || len(decoded) != 24 {
 			t.Fatalf("invalid style nonce: %q", nonce)
 		}
-		wantPolicy = strings.Replace(sequenceWebCSP, "style-src 'self'", "style-src 'self' 'nonce-"+nonce+"'", 1)
+		wantPolicy = strings.Replace(wantPolicy, "style-src 'self'", "style-src 'self' 'nonce-"+nonce+"'", 1)
 	}
 	if header.Get("Content-Type") != contentType || policy != wantPolicy || header.Get("Cache-Control") != "no-store" || header.Get("Referrer-Policy") != "no-referrer" || header.Get("X-Content-Type-Options") != "nosniff" {
 		t.Fatalf("static response headers: %v", header)
@@ -150,6 +153,33 @@ func TestSequenceWebSecurityBoundaries(t *testing.T) {
 		if response := previewRequest(handler, "GET", path, ""); response.Code != http.StatusNotFound {
 			t.Fatalf("unlisted route %s: HTTP %d", path, response.Code)
 		}
+	}
+}
+
+func TestSequenceWebPresentationQueries(t *testing.T) {
+	handler := httpapi.New(noPreviewIO{}, httpapi.WithSequenceAPI())
+	for _, path := range []string{"/demo/", "/demo/orbit.html", "/demo/patterns.html"} {
+		for _, query := range []string{"skin=nightlab", "skin=airwave", "skin=instrument", "view=faces", "skin=nightlab&view=faces"} {
+			response := previewRequest(handler, http.MethodGet, path+"?"+query, "")
+			if response.Code != http.StatusOK {
+				t.Fatalf("valid presentation query %s?%s: HTTP %d", path, query, response.Code)
+			}
+		}
+		for _, query := range []string{"", "skin=", "skin=other", "view=", "view=three", "skin=nightlab&skin=airwave", "view=faces&view=faces", "skin=nightlab&other=1", "skin=nightlab;view=faces", "skin=%zz"} {
+			response := previewRequest(handler, http.MethodGet, path+"?"+query, "")
+			if response.Code != http.StatusBadRequest {
+				t.Fatalf("invalid presentation query %s?%s: HTTP %d", path, query, response.Code)
+			}
+		}
+	}
+	for _, path := range []string{"/demo/demo.js", "/demo/demo.css", "/demo/assets/nb1-icon.png"} {
+		if response := previewRequest(handler, http.MethodGet, path+"?view=faces", ""); response.Code != http.StatusBadRequest {
+			t.Fatalf("asset presentation query accepted: %s HTTP %d", path, response.Code)
+		}
+	}
+	response := previewRequest(handler, http.MethodGet, "/demo?skin=nightlab&view=faces", "")
+	if response.Code != http.StatusTemporaryRedirect || response.Header().Get("Location") != "/demo/?skin=nightlab&view=faces" {
+		t.Fatalf("redirect dropped presentation query: %d %v", response.Code, response.Header())
 	}
 }
 

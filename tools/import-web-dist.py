@@ -10,9 +10,14 @@ import re
 import stat
 import sys
 import tempfile
+import zlib
 
 MAX_BYTES = 640 * 1024
 MAX_MANIFEST_BYTES = 16 * 1024
+MAX_NIGHTLAB_STORED_BYTES = 6 * 1024 * 1024
+MAX_NIGHTLAB_DECODED_BYTES = 16 * 1024 * 1024
+MAX_NIGHTLAB_BASE_BYTES = 768 * 1024
+MAX_NIGHTLAB_MANIFEST_BYTES = 32 * 1024
 ASSETS = frozenset((
     "index.html", "demo.css", "demo.js", "orbit.html", "orbit.css", "orbit.js", "LICENSE.txt",
     "patterns.html", "patterns.js", "patterns.css", "i18n.js", "locales.js",
@@ -28,6 +33,25 @@ ASSETS = frozenset((
     "fonts/mplusround-700-latin.woff2",
     "fonts/Fredoka-OFL.txt",
     "fonts/MPLUSRounded1c-OFL.txt",
+))
+NIGHTLAB_ASSETS = ASSETS | frozenset((
+    "nightlab/airwave-tokens.css", "nightlab/airwave.css",
+    "nightlab/studio.css", "nightlab/embedded-studio.css", "nightlab/studio-skins.css",
+    "nightlab/studio.js", "nightlab/composer-ui.js", "nightlab/studio-appearance.js",
+    "nightlab/studio-preview.js", "nightlab/preview-timeline.js", "nightlab/compiler-loader.js",
+    "nightlab/readback.js", "nightlab/time-format.js",
+    "nightlab/studio-3d.js", "nightlab/light-model.js", "nightlab/enclosure-fit.js", "nightlab/THREE-LICENSE.txt",
+    "nightlab/compiler/nb1.wasm", "nightlab/compiler/wasm_exec.js",
+    "nightlab/compiler/compiler-source.json", "nightlab/compiler/GO-LICENSE.txt", "nightlab/compiler/NB1-LICENSE.txt",
+    "nightlab/model-assets/blink1mk2_enclosure_diffuser_v3k.stl",
+    "nightlab/model-assets/blink1mk2_enclosure_frame_v3k.stl",
+    "nightlab/model-assets/source.json", "nightlab/model-assets/seating-fit.json",
+    "nightlab/model-assets/LICENSE.txt", "nightlab/model-assets/project-led-faces.txt",
+    "nightlab/model.html", "nightlab/model-notes.js", "nightlab/home.css", "nightlab/docs/INTEGRATION.md",
+    "nightlab/screenshots/physical-joint-reference.png", "nightlab/screenshots/joint-usb-quarter-unlit.png",
+    "nightlab/screenshots/joint-front-on-lit.png", "nightlab/screenshots/model-two-faces.jpg",
+    "nightlab/screenshots/joint-capture.json",
+    "nightlab/hardware-checks/led-face-20261114T143506Z.json",
 ))
 CONTRACTS = frozenset(("nb1-api/v1",))
 PENDING = b"Waiting for verified nb1-web dist.\n"
@@ -57,6 +81,28 @@ def tree_digest(files):
     # part of the source tree hash. Match the frontend builder byte for byte.
     entries = "".join(name + "\0" + sha(files[name]) + "\n" for name in sorted(files) if name != "manifest.json")
     return sha(entries.encode("utf-8"))
+
+
+def nightlab_base_asset(name):
+    if name.startswith(("nightlab/compiler/", "nightlab/model-assets/", "nightlab/screenshots/", "nightlab/hardware-checks/", "nightlab/docs/")):
+        return False
+    return name not in ("nightlab/studio-3d.js", "nightlab/light-model.js", "nightlab/enclosure-fit.js", "nightlab/THREE-LICENSE.txt", "nightlab/model.html", "nightlab/model-notes.js", "nightlab/home.css")
+
+
+def decode_asset(content, encoding, decoded_size):
+    require(type(decoded_size) is int and 0 < decoded_size <= MAX_NIGHTLAB_DECODED_BYTES, "invalid decoded asset size")
+    if encoding == "identity":
+        require(len(content) == decoded_size, "identity asset size mismatch")
+        return content
+    require(encoding == "gzip", "unsupported asset encoding")
+    try:
+        decoder = zlib.decompressobj(16 + zlib.MAX_WBITS)
+        decoded = decoder.decompress(content, decoded_size + 1)
+        require(len(decoded) == decoded_size and decoder.eof and not decoder.unused_data and not decoder.unconsumed_tail,
+                "invalid, oversized or trailing compressed asset")
+        return decoded
+    except zlib.error as error:
+        raise InvalidBundle("invalid compressed asset") from error
 
 
 def hex_value(value, length):
@@ -132,14 +178,15 @@ def read_plain(path, limit):
     return data
 
 
-def names(directory):
+def names(directory, assets=None):
     plain_info(directory, directory=True)
-    parents = {str(Path(name).parent) for name in ASSETS if "/" in name}
+    known = NIGHTLAB_ASSETS | ASSETS if assets is None else assets
+    parents = {str(parent) for name in known for parent in Path(name).parents if str(parent) != "."}
     result = set()
     def walk(current, prefix=""):
         with os.scandir(str(current)) as entries:
             for entry in entries:
-                require(len(result) < len(ASSETS) + 1, "too many dist entries")
+                require(len(result) < len(known) + 1, "too many dist entries")
                 name = prefix + entry.name
                 path = current / entry.name
                 info = path.lstat()
@@ -158,38 +205,59 @@ def validate_directory(directory, expected_commit, expected_manifest_sha):
     require(hex_value(expected_commit, 40), "expected source commit must be 40 lowercase hex characters")
     require(hex_value(expected_manifest_sha, 64), "expected manifest SHA-256 must be 64 lowercase hex characters")
     directory = Path(directory)
+    plain_info(directory, directory=True)
     present = names(directory)
-    require(present == ASSETS | {"manifest.json"}, "dist must match the complete reviewed v1 asset profile")
-    assets, required_contracts = ASSETS, CONTRACTS
-    wanted = assets | {"manifest.json"}
-    data = read_plain(directory / "manifest.json", MAX_MANIFEST_BYTES)
+    data = read_plain(directory / "manifest.json", MAX_NIGHTLAB_MANIFEST_BYTES)
     require(sha(data) == expected_manifest_sha, "manifest SHA-256 differs from the explicit pin")
     value = strict_json(data)
     object_keys(value, ("schema_version", "product", "asset_base", "source", "build", "api_contracts", "files"), "manifest")
-    require(type(value["schema_version"]) is int and value["schema_version"] == 1 and value["product"] == "nb1-web" and value["asset_base"] == "./", "unsupported manifest identity or asset base")
+    version = value["schema_version"]
+    require(type(version) is int and version in (1, 2) and value["product"] == "nb1-web" and value["asset_base"] == "./", "unsupported manifest identity or asset base")
+    assets, required_contracts = (ASSETS if version == 1 else NIGHTLAB_ASSETS), CONTRACTS
+    present = names(directory, assets)
+    wanted = assets | {"manifest.json"}
+    require(present == wanted, "dist must match the complete reviewed asset profile")
+    require(len(data) <= (MAX_MANIFEST_BYTES if version == 1 else MAX_NIGHTLAB_MANIFEST_BYTES), "manifest exceeds profile limit")
     source = value["source"]
     object_keys(source, ("repository", "commit", "dirty", "tree_sha256"), "source")
     require(source["repository"] == "local:nb1-web" and source["commit"] == expected_commit and source["dirty"] is False and hex_value(source["tree_sha256"], 64), "source must be the pinned clean nb1-web commit")
     build = value["build"]
     object_keys(build, ("tool", "node", "lockfile_sha256"), "build")
     node = build["node"]
-    require(build["tool"] == "static-editor/v1" and type(node) is str and 0 < len(node) <= 128 and node.strip() == node and all(32 <= ord(ch) < 127 for ch in node) and hex_value(build["lockfile_sha256"], 64), "invalid build metadata")
+    require(build["tool"] == ("static-editor/v1" if version == 1 else "static-nightlab/v1") and type(node) is str and 0 < len(node) <= 128 and node.strip() == node and all(32 <= ord(ch) < 127 for ch in node) and hex_value(build["lockfile_sha256"], 64), "invalid build metadata")
     contracts = value["api_contracts"]
     require(type(contracts) is list and len(contracts) == len(required_contracts) and all(type(c) is str for c in contracts) and set(contracts) == required_contracts, "unsupported, incomplete or duplicate API contracts")
     require(type(value["files"]) is list and len(value["files"]) == len(assets), "invalid asset declaration count")
     result = {"manifest.json": data}
     total = len(data)
+    decoded_total = base_total = len(data)
+    max_stored = MAX_BYTES if version == 1 else MAX_NIGHTLAB_STORED_BYTES
+    max_decoded = MAX_BYTES if version == 1 else MAX_NIGHTLAB_DECODED_BYTES
+    max_base = MAX_BYTES if version == 1 else MAX_NIGHTLAB_BASE_BYTES
     for item in value["files"]:
-        object_keys(item, ("path", "bytes", "sha256"), "asset")
+        keys = ("path", "bytes", "sha256")
+        object_keys(item, keys if version == 1 else keys + ("encoding", "decoded_bytes", "decoded_sha256"), "asset")
         name, size = item["path"], item["bytes"]
         require(type(name) is str and name in assets and name not in result, "unknown, duplicate or unsafe asset path")
-        require(type(size) is int and 0 < size <= MAX_BYTES and hex_value(item["sha256"], 64), "invalid asset byte count or digest")
+        require(type(size) is int and 0 < size <= max_stored and hex_value(item["sha256"], 64), "invalid asset byte count or digest")
         total += size
-        require(total <= MAX_BYTES, "dist exceeds 640 KiB including manifest")
+        require(total <= max_stored, "dist exceeds 640 KiB including manifest" if version == 1 else "dist exceeds Nightlab stored limit")
         content = read_plain(directory / name, size)
         require(len(content) == size and sha(content) == item["sha256"], "asset differs from its manifest: " + name)
+        decoded_size = size
+        if version == 2:
+            decoded_size = item["decoded_bytes"]
+            require(hex_value(item["decoded_sha256"], 64), "invalid decoded asset digest")
+            decoded = decode_asset(content, item["encoding"], decoded_size)
+            require(sha(decoded) == item["decoded_sha256"], "asset differs from its decoded manifest: " + name)
+            if item["encoding"] == "identity":
+                require(decoded_size == size and item["decoded_sha256"] == item["sha256"], "identity declarations differ")
+        decoded_total += decoded_size
+        if version == 1 or nightlab_base_asset(name):
+            base_total += decoded_size
+        require(decoded_total <= max_decoded and base_total <= max_base, "dist exceeds decoded or base UI limit")
         result[name] = content
-    require(set(result) == wanted and names(directory) == wanted, "dist file set changed")
+    require(set(result) == wanted and names(directory, assets) == wanted, "dist file set changed")
     require(source["tree_sha256"] == tree_digest(result), "source tree SHA-256 differs from verified assets")
     return Bundle(result, value, expected_manifest_sha)
 
@@ -224,7 +292,7 @@ def write_new(path, data):
 def remove_exact(directory, contents):
     require(names(directory) == set(contents), "cleanup refused changed directory: " + directory.name)
     for name, data in contents.items():
-        require(read_plain(directory / name, MAX_BYTES) == data, "cleanup refused changed file: " + name)
+        require(read_plain(directory / name, MAX_NIGHTLAB_STORED_BYTES) == data, "cleanup refused changed file: " + name)
     for name in contents:
         (directory / name).unlink()
     parents = {directory / Path(name).parent for name in contents if "/" in name}

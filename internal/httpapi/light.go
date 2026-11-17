@@ -9,6 +9,7 @@ import (
 	"io"
 	"mime"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"unicode/utf8"
@@ -231,7 +232,7 @@ func validateLightEnvelope(data []byte, allowed []string) error {
 }
 
 func (h *handler) serveLightDemo(w http.ResponseWriter, r *http.Request) {
-	if !method(w, r, http.MethodGet) || !lightNoQuery(w, r) {
+	if !method(w, r, http.MethodGet) || !demoPresentationQuery(w, r) {
 		return
 	}
 	if r.ContentLength != 0 || len(r.TransferEncoding) != 0 {
@@ -239,7 +240,11 @@ func (h *handler) serveLightDemo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if r.URL.Path == "/demo" {
-		http.Redirect(w, r, "/demo/", http.StatusTemporaryRedirect)
+		target := "/demo/"
+		if r.URL.RawQuery != "" {
+			target += "?" + r.URL.RawQuery
+		}
+		http.Redirect(w, r, target, http.StatusTemporaryRedirect)
 		return
 	}
 	var file, contentType string
@@ -295,13 +300,75 @@ func (h *handler) serveLightDemo(w http.ResponseWriter, r *http.Request) {
 	case "/demo/fonts/MPLUSRounded1c-OFL.txt":
 		file, contentType = "fonts/MPLUSRounded1c-OFL.txt", "text/plain; charset=utf-8"
 	default:
-		writeError(w, http.StatusNotFound, "not_found", "unknown demo resource")
-		return
+		var allowed bool
+		file = strings.TrimPrefix(r.URL.Path, "/demo/")
+		contentType, allowed = nightlabDemoAssetTypes[file]
+		if !allowed || !webui.IsNightlab() {
+			writeError(w, http.StatusNotFound, "not_found", "unknown demo resource")
+			return
+		}
 	}
 	data, err := webui.ReadFile(file)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "internal_error", "embedded demo resource unavailable")
 		return
 	}
-	writeDemoAsset(w, contentType, data, rand.Reader)
+	writeDemoAsset(w, contentType, data, rand.Reader, webui.IsNightlab())
+}
+
+// This route map is intentionally independent of names supplied by a manifest.
+// Every logical path and MIME is reviewed alongside the closed embedded profile.
+var nightlabDemoAssetTypes = map[string]string{
+	"nightlab/airwave-tokens.css": "text/css; charset=utf-8", "nightlab/airwave.css": "text/css; charset=utf-8",
+	"nightlab/studio.css": "text/css; charset=utf-8", "nightlab/embedded-studio.css": "text/css; charset=utf-8", "nightlab/studio-skins.css": "text/css; charset=utf-8",
+	"nightlab/studio.js": "text/javascript; charset=utf-8", "nightlab/composer-ui.js": "text/javascript; charset=utf-8", "nightlab/studio-appearance.js": "text/javascript; charset=utf-8",
+	"nightlab/studio-preview.js": "text/javascript; charset=utf-8", "nightlab/preview-timeline.js": "text/javascript; charset=utf-8", "nightlab/compiler-loader.js": "text/javascript; charset=utf-8",
+	"nightlab/readback.js": "text/javascript; charset=utf-8", "nightlab/time-format.js": "text/javascript; charset=utf-8",
+	"nightlab/studio-3d.js": "text/javascript; charset=utf-8", "nightlab/THREE-LICENSE.txt": "text/plain; charset=utf-8",
+	"nightlab/light-model.js": "text/javascript; charset=utf-8", "nightlab/enclosure-fit.js": "text/javascript; charset=utf-8",
+	"nightlab/compiler/nb1.wasm": "application/wasm", "nightlab/compiler/wasm_exec.js": "text/javascript; charset=utf-8",
+	"nightlab/compiler/compiler-source.json": "application/json", "nightlab/compiler/GO-LICENSE.txt": "text/plain; charset=utf-8", "nightlab/compiler/NB1-LICENSE.txt": "text/plain; charset=utf-8",
+	"nightlab/model-assets/blink1mk2_enclosure_diffuser_v3k.stl": "model/stl",
+	"nightlab/model-assets/blink1mk2_enclosure_frame_v3k.stl":    "model/stl",
+	"nightlab/model-assets/source.json":                          "application/json", "nightlab/model-assets/seating-fit.json": "application/json",
+	"nightlab/model-assets/LICENSE.txt": "text/plain; charset=utf-8", "nightlab/model-assets/project-led-faces.txt": "text/plain; charset=utf-8",
+	"nightlab/model.html": "text/html; charset=utf-8", "nightlab/home.css": "text/css; charset=utf-8",
+	"nightlab/model-notes.js": "text/javascript; charset=utf-8", "nightlab/docs/INTEGRATION.md": "text/markdown; charset=utf-8",
+	"nightlab/screenshots/physical-joint-reference.png": "image/png", "nightlab/screenshots/joint-usb-quarter-unlit.png": "image/png",
+	"nightlab/screenshots/joint-front-on-lit.png": "image/png", "nightlab/screenshots/model-two-faces.jpg": "image/jpeg",
+	"nightlab/screenshots/joint-capture.json":                 "application/json",
+	"nightlab/hardware-checks/led-face-20261114T143506Z.json": "application/json",
+}
+
+// Presentation queries belong only to the workbench documents. Assets and
+// execution APIs retain their separate no-query contracts.
+func demoPresentationQuery(w http.ResponseWriter, r *http.Request) bool {
+	if r.URL.RawQuery == "" && !r.URL.ForceQuery {
+		return true
+	}
+	switch r.URL.Path {
+	case "/demo", "/demo/", "/demo/orbit.html", "/demo/patterns.html":
+	default:
+		return lightNoQuery(w, r)
+	}
+	query, err := url.ParseQuery(r.URL.RawQuery)
+	valid := err == nil && len(query) > 0
+	for key, values := range query {
+		if len(values) != 1 {
+			valid = false
+			continue
+		}
+		switch key {
+		case "skin":
+			valid = valid && (values[0] == "nightlab" || values[0] == "airwave" || values[0] == "instrument")
+		case "view":
+			valid = valid && values[0] == "faces"
+		default:
+			valid = false
+		}
+	}
+	if !valid {
+		writeError(w, http.StatusBadRequest, "invalid_request", "unknown or ambiguous workbench presentation query")
+	}
+	return valid
 }

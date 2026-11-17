@@ -9,6 +9,8 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/b1ug/nb1/internal/webui"
 )
 
 type failedDemoRandomness struct{}
@@ -68,5 +70,79 @@ func TestNonHTMLDemoAssetDoesNotUseRandomnessOrChangeBytes(t *testing.T) {
 	writeDemoAsset(response, "text/javascript; charset=utf-8", data, failedDemoRandomness{})
 	if response.Code != http.StatusOK || !bytes.Equal(response.Body.Bytes(), data) || response.Header().Get("Content-Security-Policy") != demoContentSecurityPolicy {
 		t.Fatal("non-HTML asset changed bytes or needed a nonce", response.Code, response.Header())
+	}
+}
+
+func TestNightlabWASMCapabilityOnlyAppliesToHTML(t *testing.T) {
+	for _, contentType := range []string{"text/html; charset=utf-8", "text/javascript; charset=utf-8", "application/wasm"} {
+		t.Run(contentType, func(t *testing.T) {
+			data := []byte("<!doctype html><head>" + demoStyleNonceMeta + "</head><body>local resources</body>")
+			response := httptest.NewRecorder()
+			writeDemoAsset(response, contentType, data, bytes.NewReader(make([]byte, 24)), true)
+			policy := response.Header().Get("Content-Security-Policy")
+			if response.Code != http.StatusOK || strings.Contains(policy, "'unsafe-eval'") || strings.Contains(policy, "'unsafe-inline'") {
+				t.Fatalf("unsafe or unsuccessful response: %d %s", response.Code, policy)
+			}
+			if strings.Contains(policy, "'wasm-unsafe-eval'") != (contentType == "text/html; charset=utf-8") {
+				t.Fatalf("unexpected WASM capability scope: %s", policy)
+			}
+		})
+	}
+}
+
+func TestNightlabRoutesReturnDecodedAssetsWithoutDeviceAccess(t *testing.T) {
+	if !webui.IsNightlab() {
+		t.Skip("the embedded profile is legacy")
+	}
+	// A nil Service makes any accidental API/device dependency fail immediately.
+	handler := New(nil, WithSequenceAPI())
+	for name := range nightlabDemoAssetTypes {
+		t.Run(name, func(t *testing.T) {
+			response := httptest.NewRecorder()
+			handler.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "http://127.0.0.1/demo/"+name, nil))
+			want, err := webui.ReadFile(name)
+			if err != nil || response.Code != http.StatusOK || response.Header().Get("Content-Encoding") != "" {
+				t.Fatalf("decoded asset response: %d %v %v", response.Code, response.Header(), err)
+			}
+			policy := response.Header().Get("Content-Security-Policy")
+			if strings.HasSuffix(name, ".html") {
+				prefix := "style-src 'self' 'nonce-"
+				parts := strings.SplitN(policy, prefix, 2)
+				if len(parts) != 2 {
+					t.Fatal("HTML lacks its style nonce")
+				}
+				nonce := strings.SplitN(parts[1], "'", 2)[0]
+				want = bytes.Replace(want, []byte(demoStyleNoncePlaceholder), []byte(nonce), 1)
+				if !strings.Contains(policy, "script-src 'self' 'wasm-unsafe-eval'") {
+					t.Fatal("Nightlab HTML lacks scoped WASM capability")
+				}
+			} else if policy != demoContentSecurityPolicy {
+				t.Fatal("non-HTML policy was broadened", policy)
+			}
+			if !bytes.Equal(response.Body.Bytes(), want) || response.Header().Get("Cache-Control") != "no-store" || response.Header().Get("X-Content-Type-Options") != "nosniff" {
+				t.Fatal("asset bytes or response boundaries changed")
+			}
+		})
+	}
+	for name, wantType := range map[string]string{
+		"nightlab/studio-3d.js":                                      "text/javascript; charset=utf-8",
+		"nightlab/compiler/nb1.wasm":                                 "application/wasm",
+		"nightlab/model-assets/blink1mk2_enclosure_diffuser_v3k.stl": "model/stl",
+		"nightlab/model.html":                                        "text/html; charset=utf-8",
+		"nightlab/screenshots/physical-joint-reference.png":          "image/png",
+		"nightlab/docs/INTEGRATION.md":                               "text/markdown; charset=utf-8",
+	} {
+		response := httptest.NewRecorder()
+		handler.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "http://127.0.0.1/demo/"+name, nil))
+		if response.Header().Get("Content-Type") != wantType {
+			t.Fatalf("critical MIME %s: %v", name, response.Header())
+		}
+	}
+	for _, path := range []string{"/demo/nightlab/", "/demo/nightlab/private.env", "/demo/nightlab/compiler/", "/demo/nightlab/compiler/../compiler/nb1.wasm", "/demo/nightlab/studio-3d.js.gz"} {
+		response := httptest.NewRecorder()
+		handler.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "http://127.0.0.1"+path, nil))
+		if response.Code != http.StatusNotFound {
+			t.Fatalf("unlisted Nightlab path accepted: %s HTTP %d", path, response.Code)
+		}
 	}
 }

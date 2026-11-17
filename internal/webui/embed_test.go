@@ -1,12 +1,70 @@
 package webui
 
 import (
+	"bytes"
+	"compress/gzip"
 	"encoding/json"
 	"io/fs"
 	"strings"
 	"testing"
 	"testing/fstest"
 )
+
+func setNightlabFixtureAsset(t *testing.T, files fstest.MapFS, record *manifest, name string, decoded []byte, encoding string) {
+	t.Helper()
+	stored := decoded
+	if encoding == "gzip" {
+		var output bytes.Buffer
+		writer := gzip.NewWriter(&output)
+		if _, err := writer.Write(decoded); err != nil {
+			t.Fatal(err)
+		}
+		if err := writer.Close(); err != nil {
+			t.Fatal(err)
+		}
+		stored = output.Bytes()
+	}
+	storedSize, decodedSize, decodedHash := int64(len(stored)), int64(len(decoded)), digest(decoded)
+	file := assetRecord{Path: name, Bytes: &storedSize, SHA256: digest(stored), Encoding: &encoding, DecodedBytes: &decodedSize, DecodedSHA256: &decodedHash}
+	found := false
+	for i := range record.Files {
+		if record.Files[i].Path == name {
+			record.Files[i], found = file, true
+			break
+		}
+	}
+	if !found {
+		record.Files = append(record.Files, file)
+	}
+	files["dist/"+name] = &fstest.MapFile{Data: stored}
+}
+
+func nightlabBundleFixture(t *testing.T) (fstest.MapFS, manifest) {
+	t.Helper()
+	files, record := bundleFixture(t)
+	record.SchemaVersion, record.Build.Tool, record.Files = 2, "static-nightlab/v1", nil
+	for _, name := range nightlabAssetNames {
+		encoding := "identity"
+		if name == "nightlab/compiler/nb1.wasm" {
+			encoding = "gzip"
+		}
+		setNightlabFixtureAsset(t, files, &record, name, []byte("fixture "+name), encoding)
+	}
+	refreshNightlabFixture(t, files, &record)
+	return files, record
+}
+
+func refreshNightlabFixture(t *testing.T, files fstest.MapFS, record *manifest) {
+	t.Helper()
+	contents := map[string][]byte{}
+	for _, file := range record.Files {
+		if present := files["dist/"+file.Path]; present != nil {
+			contents[file.Path] = present.Data
+		}
+	}
+	record.Source.TreeSHA256 = treeDigest(contents)
+	setFixtureManifest(t, files, record)
+}
 
 func bundleFixture(t *testing.T) (fstest.MapFS, manifest) {
 	t.Helper()
@@ -178,6 +236,99 @@ func TestBundleRequiresEveryRuntimeAsset(t *testing.T) {
 			delete(files, "dist/"+name)
 			if err := validateBundle(files); err == nil {
 				t.Fatal("missing required asset accepted")
+			}
+		})
+	}
+}
+
+func TestNightlabBundleValidationAndCompression(t *testing.T) {
+	files, _ := nightlabBundleFixture(t)
+	if err := validateBundle(files); err != nil {
+		t.Fatal(err)
+	}
+	for _, test := range []struct {
+		name   string
+		mutate func(fstest.MapFS, *manifest)
+	}{
+		{"missing-encoding", func(_ fstest.MapFS, r *manifest) { r.Files[0].Encoding = nil }},
+		{"unsupported-encoding", func(_ fstest.MapFS, r *manifest) { value := "br"; r.Files[0].Encoding = &value }},
+		{"missing-decoded-size", func(_ fstest.MapFS, r *manifest) { r.Files[0].DecodedBytes = nil }},
+		{"missing-decoded-hash", func(_ fstest.MapFS, r *manifest) { r.Files[0].DecodedSHA256 = nil }},
+		{"decoded-size-limit", func(_ fstest.MapFS, r *manifest) {
+			size := int64(maxNightlabDecodedBytes + 1)
+			r.Files[0].DecodedBytes = &size
+		}},
+		{"identity-hash-mismatch", func(_ fstest.MapFS, r *manifest) { value := strings.Repeat("4", 64); r.Files[0].DecodedSHA256 = &value }},
+		{"identity-size-mismatch", func(_ fstest.MapFS, r *manifest) { *r.Files[0].DecodedBytes++ }},
+		{"legacy-tool", func(_ fstest.MapFS, r *manifest) { r.Build.Tool = "static-editor/v1" }},
+		{"unknown-file", func(f fstest.MapFS, _ *manifest) {
+			f["dist/nightlab/private.env"] = &fstest.MapFile{Data: []byte("private")}
+		}},
+		{"missing-file", func(f fstest.MapFS, _ *manifest) { delete(f, "dist/nightlab/studio-3d.js") }},
+		{"traversal", func(_ fstest.MapFS, r *manifest) { r.Files[0].Path = "nightlab/../demo.js" }},
+		{"linked-model-directory", func(f fstest.MapFS, _ *manifest) {
+			f["dist/nightlab/model-assets"] = &fstest.MapFile{Mode: fs.ModeSymlink}
+		}},
+		{"base-limit", func(f fstest.MapFS, r *manifest) {
+			setNightlabFixtureAsset(t, f, r, "demo.js", bytes.Repeat([]byte("x"), maxNightlabBaseBytes), "gzip")
+		}},
+		{"decoded-total-limit", func(f fstest.MapFS, r *manifest) {
+			setNightlabFixtureAsset(t, f, r, "nightlab/compiler/nb1.wasm", bytes.Repeat([]byte("x"), maxNightlabDecodedBytes), "gzip")
+		}},
+		{"stored-total-limit", func(f fstest.MapFS, r *manifest) {
+			setNightlabFixtureAsset(t, f, r, "nightlab/compiler/nb1.wasm", bytes.Repeat([]byte("x"), maxNightlabStoredBytes), "identity")
+		}},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			files, record := nightlabBundleFixture(t)
+			test.mutate(files, &record)
+			refreshNightlabFixture(t, files, &record)
+			if err := validateBundle(files); err == nil {
+				t.Fatal("invalid Nightlab bundle accepted")
+			}
+		})
+	}
+	for _, name := range nightlabAssetNames {
+		t.Run("required-"+name, func(t *testing.T) {
+			files, _ := nightlabBundleFixture(t)
+			delete(files, "dist/"+name)
+			if err := validateBundle(files); err == nil {
+				t.Fatal("missing Nightlab asset accepted")
+			}
+		})
+	}
+}
+
+func TestNightlabCompressedAssetBoundaries(t *testing.T) {
+	for _, test := range []struct {
+		name   string
+		mutate func([]byte) []byte
+		size   int64
+	}{
+		{"valid", func(b []byte) []byte { return b }, 16},
+		{"truncated", func(b []byte) []byte { return b[:len(b)-1] }, 16},
+		{"checksum", func(b []byte) []byte { b[len(b)-5] ^= 1; return b }, 16},
+		{"trailing", func(b []byte) []byte { return append(b, 0) }, 16},
+		{"multiple-members", func(b []byte) []byte { return append(b, b...) }, 16},
+		{"expands-past-declaration", func(b []byte) []byte { return b }, 15},
+		{"shorter-than-declaration", func(b []byte) []byte { return b }, 17},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			files, record := nightlabBundleFixture(t)
+			setNightlabFixtureAsset(t, files, &record, "nightlab/compiler/nb1.wasm", []byte("0123456789abcdef"), "gzip")
+			for i := range record.Files {
+				file := &record.Files[i]
+				if file.Path == "nightlab/compiler/nb1.wasm" {
+					data := test.mutate(files["dist/"+file.Path].Data)
+					files["dist/"+file.Path].Data = data
+					size := int64(len(data))
+					file.Bytes, file.SHA256, file.DecodedBytes = &size, digest(data), &test.size
+				}
+			}
+			refreshNightlabFixture(t, files, &record)
+			err := validateBundle(files)
+			if (err == nil) != (test.name == "valid") {
+				t.Fatalf("compression boundary %s: %v", test.name, err)
 			}
 		})
 	}

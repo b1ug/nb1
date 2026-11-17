@@ -12,6 +12,7 @@ import (
 
 	"github.com/b1ug/nb1/internal/control"
 	"github.com/b1ug/nb1/internal/httpapi"
+	"github.com/b1ug/nb1/internal/sequence"
 )
 
 type sequenceRouteBackend struct {
@@ -86,6 +87,83 @@ func sequenceRouteDo(t *testing.T, server *httptest.Server, method, path, body s
 		t.Fatal(err)
 	}
 	return response.StatusCode, data, response.Header
+}
+
+func TestSequenceAPISolidPairIsOnePersistentHoldJob(t *testing.T) {
+	server, backend := sequenceRouteServer(t)
+	input := `{"timing":"serial","steps":[{"targets":[{"led":1,"color":"#112233"}],"fade_ms":0,"hold_ms":0},{"targets":[{"led":2,"color":"#aabbcc"}],"fade_ms":0,"hold_ms":0}],"repeat":1,"on_finish":"hold"}`
+	for _, path := range []string{"/v1/preview", "/v1/jobs"} {
+		bad := strings.Replace(input, "#aabbcc", "not-a-color", 1)
+		body := `{"serial":"20000001","sequence":` + bad + `}`
+		if path == "/v1/jobs" {
+			body = `{"id":"invalid-second-color","serial":"20000001","sequence":` + bad + `}`
+		}
+		if code, data, _ := sequenceRouteDo(t, server, "POST", path, body); code != http.StatusBadRequest {
+			t.Fatalf("malformed second color %s: %d %s", path, code, data)
+		}
+	}
+	backend.mu.Lock()
+	for _, operation := range backend.operations {
+		if operation == "set" || strings.HasPrefix(operation, "stop:") {
+			backend.mu.Unlock()
+			t.Fatal("invalid pair reached execution or cleanup")
+		}
+	}
+	backend.mu.Unlock()
+	code, data, _ := sequenceRouteDo(t, server, "POST", "/v1/preview", `{"serial":"20000001","sequence":`+input+`}`)
+	var preview struct {
+		Sequence          sequence.Sequence `json:"sequence"`
+		TotalSteps        int               `json:"total_steps"`
+		NominalDurationMS int64             `json:"nominal_duration_ms"`
+	}
+	if code != http.StatusOK || json.Unmarshal(data, &preview) != nil || preview.TotalSteps != 2 || preview.NominalDurationMS != 20 {
+		t.Fatalf("pair preview: HTTP %d %s", code, data)
+	}
+	plan, err := sequence.Plan(preview.Sequence)
+	if err != nil || plan.TotalSteps != 2 || plan.TotalTargetWrites != 2 || plan.NominalDurationMS != 20 || len(plan.Initial) != 0 || len(plan.Finish) != 0 || plan.OnFinish != "hold" {
+		t.Fatalf("pair plan changed its hold/write contract: %+v %v", plan, err)
+	}
+	encodedPlan, _ := json.Marshal(plan)
+	t.Log("NATIVE_SOLID_PAIR_PLAN " + string(encodedPlan))
+	encodedSequence, _ := json.Marshal(preview.Sequence)
+	code, data, _ = sequenceRouteDo(t, server, "POST", "/v1/jobs", `{"id":"solid-pair-one-job","serial":"20000001","sequence":`+string(encodedSequence)+`}`)
+	if code != http.StatusAccepted {
+		t.Fatalf("one-click compatible admission: %d %s", code, data)
+	}
+	deadline := time.Now().Add(time.Second)
+	for {
+		code, data, _ = sequenceRouteDo(t, server, "GET", "/v1/jobs/solid-pair-one-job", "")
+		var job control.SequenceJob
+		if code != http.StatusOK || json.Unmarshal(data, &job) != nil {
+			t.Fatalf("pair Job lookup: %d %s", code, data)
+		}
+		if job.Status == "succeeded" {
+			if job.TotalSteps != 2 || job.CompletedSteps != 2 {
+				t.Fatalf("pair Job progress: %+v", job)
+			}
+			break
+		}
+		if job.Status == "failed" || time.Now().After(deadline) {
+			t.Fatalf("pair Job did not succeed: %s", data)
+		}
+		time.Sleep(time.Millisecond)
+	}
+	backend.mu.Lock()
+	defer backend.mu.Unlock()
+	if len(backend.steps) != 2 || backend.steps[0] != (control.Step{LED: 1, Color: "#112233"}) || backend.steps[1] != (control.Step{LED: 2, Color: "#aabbcc"}) {
+		t.Fatalf("pair target writes were not exactly the ordered captured pair: %+v", backend.steps)
+	}
+	holds := 0
+	for _, operation := range backend.operations {
+		if operation == "stop:hold" {
+			holds++
+		} else if strings.HasPrefix(operation, "stop:") {
+			t.Fatalf("hold pair requested off cleanup: %v", backend.operations)
+		}
+	}
+	if holds != 2 {
+		t.Fatalf("pair requires one preflight hold and one finish hold: %v", backend.operations)
+	}
 }
 
 func TestSequenceAPIRealEngineAdmissionReplayAndCancel(t *testing.T) {

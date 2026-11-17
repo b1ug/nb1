@@ -1,5 +1,6 @@
 """Hermetic import boundary tests: temporary assets only, no frontend build."""
 import copy
+import gzip
 import importlib.util
 import json
 import os
@@ -42,6 +43,36 @@ def write_manifest(path, value):
     (path / "manifest.json").write_text(json.dumps(value, sort_keys=True, separators=(",", ":")) + "\n")
 
 
+def set_nightlab_asset(path, manifest, name, decoded, encoding="identity"):
+    data = gzip.compress(decoded, mtime=0) if encoding == "gzip" else decoded
+    (path / name).parent.mkdir(parents=True, exist_ok=True)
+    (path / name).write_bytes(data)
+    item = {"path": name, "bytes": len(data), "sha256": importer.sha(data), "encoding": encoding,
+            "decoded_bytes": len(decoded), "decoded_sha256": importer.sha(decoded)}
+    existing = next((i for i, value in enumerate(manifest["files"]) if value["path"] == name), None)
+    if existing is None:
+        manifest["files"].append(item)
+    else:
+        manifest["files"][existing] = item
+
+
+def refresh_nightlab_manifest(path, manifest):
+    manifest["source"]["tree_sha256"] = importer.tree_digest({item["path"]: (path / item["path"]).read_bytes()
+                                                            for item in manifest["files"] if (path / item["path"]).is_file()})
+    write_manifest(path, manifest)
+
+
+def nightlab_fixture(path):
+    manifest = fixture(path)
+    manifest["schema_version"] = 2
+    manifest["build"]["tool"] = "static-nightlab/v1"
+    manifest["files"] = []
+    for name in sorted(importer.NIGHTLAB_ASSETS):
+        set_nightlab_asset(path, manifest, name, ("fixture " + name).encode(), "gzip" if name.endswith("nb1.wasm") else "identity")
+    refresh_nightlab_manifest(path, manifest)
+    return manifest
+
+
 def validate(path):
     return importer.validate_directory(path, COMMIT, importer.sha((path / "manifest.json").read_bytes()))
 
@@ -58,6 +89,91 @@ def snapshot(path):
 
 
 class ImportBoundaryTests(unittest.TestCase):
+    def test_nightlab_profile_compression_and_import(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source = root / "dist"
+            nightlab_fixture(source)
+            bundle = validate(source)
+            target = root / "webui"
+            initial_destination(target)
+            self.assertEqual(importer.install(bundle, target), [])
+            self.assertEqual(snapshot(target / "dist"), bundle.files)
+            # Replacing Nightlab with the unchanged legacy profile also works.
+            legacy = root / "legacy"
+            fixture(legacy)
+            self.assertEqual(importer.install(validate(legacy), target), [])
+            self.assertEqual(snapshot(target / "dist"), validate(legacy).files)
+
+    def test_nightlab_decoded_contract_and_limits(self):
+        variants = [
+            ("missing-encoding", lambda p, m: m["files"][0].pop("encoding")),
+            ("unsupported-codec", lambda p, m: m["files"][0].update(encoding="br")),
+            ("missing-decoded-size", lambda p, m: m["files"][0].pop("decoded_bytes")),
+            ("boolean-decoded-size", lambda p, m: m["files"][0].update(decoded_bytes=True)),
+            ("decoded-size-limit", lambda p, m: m["files"][0].update(decoded_bytes=importer.MAX_NIGHTLAB_DECODED_BYTES + 1)),
+            ("decoded-hash", lambda p, m: m["files"][0].update(decoded_sha256="4" * 64)),
+            ("identity-size", lambda p, m: m["files"][0].update(decoded_bytes=m["files"][0]["bytes"] + 1)),
+            ("wrong-tool", lambda p, m: m["build"].update(tool="static-editor/v1")),
+            ("traversal", lambda p, m: m["files"][0].update(path="nightlab/../demo.js")),
+            ("base-limit", lambda p, m: set_nightlab_asset(p, m, "demo.js", b"x" * importer.MAX_NIGHTLAB_BASE_BYTES, "gzip")),
+            ("decoded-total", lambda p, m: set_nightlab_asset(p, m, "nightlab/compiler/nb1.wasm", b"x" * importer.MAX_NIGHTLAB_DECODED_BYTES, "gzip")),
+            ("stored-total", lambda p, m: set_nightlab_asset(p, m, "nightlab/compiler/nb1.wasm", b"x" * importer.MAX_NIGHTLAB_STORED_BYTES)),
+        ]
+        for name, mutate in variants:
+            with self.subTest(name=name), tempfile.TemporaryDirectory() as temporary:
+                path = Path(temporary) / "dist"
+                manifest = nightlab_fixture(path)
+                mutate(path, manifest)
+                # Traversal is intentionally invalid before any path is opened.
+                if name == "traversal":
+                    write_manifest(path, manifest)
+                else:
+                    refresh_nightlab_manifest(path, manifest)
+                with self.assertRaises(importer.InvalidBundle):
+                    validate(path)
+
+    def test_nightlab_gzip_boundaries(self):
+        for name, change, size in [
+            ("valid", lambda b: b, 16),
+            ("truncated", lambda b: b[:-1], 16),
+            ("checksum", lambda b: b[:-5] + bytes([b[-5] ^ 1]) + b[-4:], 16),
+            ("trailing", lambda b: b + b"\0", 16),
+            ("members", lambda b: b + b, 16),
+            ("expanded-past-size", lambda b: b, 15),
+            ("shorter-than-size", lambda b: b, 17),
+        ]:
+            with self.subTest(name=name), tempfile.TemporaryDirectory() as temporary:
+                path = Path(temporary) / "dist"
+                manifest = nightlab_fixture(path)
+                asset = "nightlab/compiler/nb1.wasm"
+                set_nightlab_asset(path, manifest, asset, b"0123456789abcdef", "gzip")
+                data = change((path / asset).read_bytes())
+                (path / asset).write_bytes(data)
+                item = next(value for value in manifest["files"] if value["path"] == asset)
+                item.update(bytes=len(data), sha256=importer.sha(data), decoded_bytes=size)
+                refresh_nightlab_manifest(path, manifest)
+                if name == "valid":
+                    self.assertEqual(validate(path).files[asset], data)
+                else:
+                    with self.assertRaises(importer.InvalidBundle):
+                        validate(path)
+
+    def test_nightlab_complete_closed_inventory(self):
+        for name in importer.NIGHTLAB_ASSETS:
+            with self.subTest(missing=name), tempfile.TemporaryDirectory() as temporary:
+                path = Path(temporary) / "dist"
+                nightlab_fixture(path)
+                (path / name).unlink()
+                with self.assertRaises(importer.InvalidBundle):
+                    validate(path)
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "legacy"
+            fixture(path)
+            (path / "nightlab").mkdir()
+            with self.assertRaises(importer.InvalidBundle):
+                validate(path)
+
     def test_profile_requires_all_reviewed_files(self):
         for name in importer.ASSETS:
             with self.subTest(name=name), tempfile.TemporaryDirectory() as temporary:

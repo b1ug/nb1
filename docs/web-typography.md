@@ -1,5 +1,7 @@
 # Embedded Web presentation
 
+The sections below record the historical Island / `static-editor/v1` baseline: 26 assets plus a manifest, within 640 KiB. The current selected presentation is **Nightlab**, with a complete local 3D model and screen playback. Its separate schema-2 `static-nightlab/v1` profile contains 64 assets plus a manifest, bounded at 6 MiB stored, 16 MiB decoded and 768 KiB for the decoded base UI. The legacy profile retains its original limit. See [the current Nightlab embedding contract](web-nightlab.md) for compression, source binding, routes, CSP and verification.
+
 The current API v1 workbench is served at `/demo/`, with Orbit and Pattern Book views sharing the same browser controller. Its compact Island desk presentation keeps device selection, authoring, cached observations and the current Job close together. Presentation changes preserve the Action, Sequence, Step, Job and Pattern contracts.
 
 ## Navigation and menus

@@ -1,0 +1,89 @@
+{
+  "recorded_at": "2026-11-15T01:14:13.736Z",
+  "purpose": "Derived display assembly; hidden mounting overlap is retained. Not a manufacturing file.",
+  "fit": {
+    "kind": "derived-frame-seating-fit/v2",
+    "units": "source CAD units, interpreted as mm; not engineering-certified",
+    "datum": {
+      "front": "diffuser min-Y aligned to frame min-Y",
+      "axes": "X width; Y USB-to-back; Z thickness",
+      "frameFrontY": 0,
+      "diffuserFrontY": 0,
+      "frameBackY": 19.99237060546875,
+      "diffuserInnerBackY": 20.165648760284697
+    },
+    "contactOverlap": 0.024760623289604704,
+    "exteriorInset": 0.02,
+    "frontInset": 0.025,
+    "frontSeatRecess": 0.06,
+    "frontProjectedVertices": 1617,
+    "maximumFrontProjection": 0.036332893301376123,
+    "tessellation": {
+      "sourceTriangles": 5668,
+      "triangles": 86594,
+      "splitEdges": 40463,
+      "maximumFrontCornerEdge": 0.22
+    },
+    "rearOverlap": 0.02,
+    "maximumRearProjection": 0.01940358174621437,
+    "maximumSeatCorrection": 0.7312355637550354,
+    "preRefinementMaximumFrontRetreat": 0.11548841763952433,
+    "frontDisplacementScope": "Original-vertex seating before refinement; final front surface also receives the separately recorded projection and continuous seat recess.",
+    "maximumFrontRetreatUpperBound": 0.21182131094090045,
+    "maximumBackExtension": 0.2126331329345703,
+    "preRefinementMaximumVertexDisplacement": 0.7352581221941388,
+    "maximumVertexDisplacementUpperBound": 0.8315910154955148,
+    "residual": {
+      "maximumAirGap": 0,
+      "maximumOverlap": 0.2313862386637715,
+      "samples": 904,
+      "beforeChordCorrectionAirGap": 0.014760623289604702,
+      "scope": "final returned triangles after all fits: both long-side contact rails at metal exterior inset + 0.01, rear bend and final tip down to 0.003 source units before the plastic inner tip",
+      "longitudinalSpacing": 0.075,
+      "finalTipDistances": [
+        0.08,
+        0.04,
+        0.02,
+        0.01,
+        0.005,
+        0.003
+      ]
+    },
+    "sampling": {
+      "frameSeats": 1460,
+      "diffuserSeats": 1469,
+      "missingFrameSeats": 1,
+      "missingDiffuserSeats": 0,
+      "indexedIntersections": 53371
+    },
+    "preserves": [
+      "input geometries",
+      "diffuser vertices and engraving",
+      "connector aperture inner-wall X coordinates",
+      "connector opening width"
+    ]
+  },
+  "independent_check": {
+    "script": "scripts/enclosure-fit.test.mjs",
+    "method": "Three.Raycaster against actual returned triangles, independent from the fitter lookup",
+    "source_inputs_unchanged": true,
+    "seating_checks": 1848,
+    "side_material_order_checks": 254,
+    "front_material_order_checks": 1588,
+    "usb_aperture_sections": 9,
+    "measured_minimum_side_clearance": 0.019997,
+    "measured_minimum_front_clearance": 0.054996,
+    "maximum_sampled_seating_air_gap": 0,
+    "scope": "Sampled contact and exterior material ownership, not a whole-surface or manufacturing guarantee. Hidden internal mounting overlap is intentional."
+  },
+  "visual_check": {
+    "captures": "../screenshots/joint-capture.json",
+    "poses": 6,
+    "light_states": [
+      "lit",
+      "unlit"
+    ],
+    "reference": "../screenshots/physical-joint-reference.png",
+    "scope": "Actual software WebGL workbench screenshots, same before/after camera poses. No Jobs or device reports."
+  }
+}

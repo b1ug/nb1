@@ -1,6 +1,7 @@
 ## nb1 v0.1.1
 
-This patch corrects terminal styling found during Linux Homebrew acceptance.
+This patch corrects terminal styling found during Linux Homebrew acceptance
+and preserves timeout and cancellation causes during direct Sequence playback.
 CLI help and human-readable version output now select colors for their actual
 output stream. Console diagnostics independently select colors for stderr.
 The existing RoseWater palette is retained.
@@ -15,6 +16,10 @@ The existing RoseWater palette is retained.
 - Human output respects the selected writer rather than a Logo cached at
   process initialization. JSON command results keep their existing unstyled
   stdout contract; diagnostics remain on stderr.
+- Direct Sequence playback preserves the original timeout or cancellation
+  cause when its Job becomes cancelled before the caller observes the context.
+  Submission and Job failures retain their existing behavior, and cleanup
+  errors still take precedence. This does not make native I/O cancellable.
 - Homebrew source builds disable unrelated parent-repository VCS stamping.
   The Formula renderer also emits the corrected strict Homebrew style, so new
   releases can use their own renderer without the v0.1.0-specific tap adapter.

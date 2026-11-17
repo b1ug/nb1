@@ -285,8 +285,33 @@ func TestPatternConcurrentAdmissionAllPoliciesAndKinds(t *testing.T) {
 				}
 				e.mu.Unlock()
 				awaitEngineSignal(t, native.entered)
+				status := "succeeded"
+				if kind == "frame" {
+					// Admission and deduplication do not depend on completing a
+					// 50ms wall-clock frame. Cancel behind the first initial Set;
+					// fake-clock scheduler tests cover exact frame deadlines.
+					cancelling, err := e.CancelPatternRequest(context.Background(), "a", ticket, ref, id)
+					if err != nil || patternEnvelopeStatus(cancelling) != "cancelling" {
+						t.Fatalf("cancel admitted Pattern: %#v, %v", cancelling, err)
+					}
+					_, _, _, max, closes, unsafe := b.snapshot()
+					if max != 1 || closes != 0 || unsafe {
+						t.Fatal("native ownership released before initial Set returned")
+					}
+					status = "cancelled"
+				}
 				native.open()
-				awaitPattern(t, e, ref, ticket, "succeeded")
+				terminal := awaitPattern(t, e, ref, ticket, status)
+				if patternEnvelopeID(terminal) != id || patternEnvelopeCreated(terminal) != created || terminal.PatternRef != ref || terminal.ExecutionDigest != resolved.ExecutionDigest {
+					t.Fatal("terminal lost admitted Pattern identity")
+				}
+				nativeCalls, led1, led2, max, closes, unsafe := b.snapshot()
+				if !reflect.DeepEqual(engineSetColors(nativeCalls), []string{"#123456"}) || max != 1 || closes != 0 || unsafe {
+					t.Fatalf("concurrent admission executed more than once or lost native ownership: %#v", nativeCalls)
+				}
+				if kind == "frame" && (terminal.FrameJob.CompletedFrames != 0 || terminal.FrameJob.CompletedTargetWrites != 1 || led1 != "#000000" || led2 != "#000000") {
+					t.Fatalf("admission fixture entered the timed frame schedule or skipped off cleanup: %#v", terminal.FrameJob)
+				}
 			})
 		}
 	}

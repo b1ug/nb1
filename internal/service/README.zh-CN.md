@@ -65,7 +65,7 @@ nb1 service status --json
 
 省略 `--binary` 时，通过 `os.Executable()` 取得当前进程的可执行文件绝对路径，不依据 `argv[0]` 或再次搜索PATH。显式 `--binary /absolute/path/to/nb1` 可选择另一份已存在的程序；显式传空值会报错。路径解析失败时在构造服务管理器前报错，不自动选择其他程序。实际安装仍由原生管理器检查普通文件、执行权限和路径，并解析符号链接。应从持久安装的程序运行；`go run` 的临时程序不适合作为登录服务路径。
 
-自动定位不等于升级路径迁移：当前仍会固定解析后的真实路径。Homebrew版本目录等场景的升级、清理旧版本与回退仍需独立完善和验收。
+普通手动安装会固定经过核验的真实程序路径，该路径必须保留。Homebrew构建则默认使用经核验的稳定 `opt/nb1/bin/nb1` 入口；包升级不会自动重启daemon，需要显式stop/start进入所选版本。显式 `--binary` 仍固定该路径。已有候选升级／旧keg清理／回退工具与证据见[Homebrew生命周期](../../packaging/homebrew/README.md#upgrades-and-service-paths)，新正式包的安装验证仍按其实际来源记录。
 
 `status --config-only` 完全不调用launchctl，也不创建目录或锁，只报告磁盘文件；其 `registration: not_checked` 不能表示服务已运行或已经注销。普通 `status` 只读查询固定的 `gui/<当前UID>/org.b1ug.nb1`，分别返回 `config_state` 与 `registration`。`registration: registered` 仅表示launchd注册，不承诺进程正在运行、HTTP可用或USB在线。`nb1 doctor` 可另查API版本和已有设备快照；doctor显示的是当前CLI构建，不核对daemon二进制或实例身份。
 

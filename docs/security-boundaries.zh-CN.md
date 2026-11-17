@@ -15,13 +15,13 @@
 
 - daemon只为启动时明确配置的序列号创建worker；设备枚举限定blink(1)的VID/PID，重复序列号/接口不会任选一个打开。真正Open还核对原始path。
 - Darwin枚举只读元数据，不调用全量IOHIDManagerOpen/Close。GID仍是通用HID库；显式全量枚举是元数据功能，不表示默认灯服务应打开键盘。
-- HTTP/MCP接收固定的灯动作、Program和Effect字段；不提供shell、任意命令、文件路径执行、任意USB报告或Flash写入入口。来自消息或AI的内容也是待校验的数据。
+- HTTP/MCP接收当前Action、Sequence或本机Pattern输入；不提供shell、任意命令、文件路径执行、任意USB报告或Flash写入入口。来自消息或AI的内容也是待校验的数据。
 - 任务步数、时间、队列、回执和历史有界；取消与正常退出遵循设备清理约定。同步原生I/O尚无强制取消期限，不能把等待预算说成内核调用已终止。
 - CLI的`control run`文件和命令完成通知示例只由本地调用者显式指定。通知包装器执行调用者给出的argv，不解释通知消息为命令，也不属于daemon/MCP的远程执行功能。
 
 ## 系统服务和授权
 
-macOS自动管理只操作当前普通用户的固定LaunchAgent。Linux用户服务沿相同方向实现，配置模板使用`UMask=0077`和`NoNewPrivileges=yes`。后者限制服务及其子进程通过execve/setuid等获得新权限，**不是完整沙箱**，也不撤销进程原本拥有的文件访问能力。[systemd说明](https://www.freedesktop.org/software/systemd/man/latest/systemd.exec.html#NoNewPrivileges=)
+macOS自动管理只操作当前普通用户的固定LaunchAgent。Linux已实现当前用户的固定systemd unit管理，配置使用`UMask=0077`和`NoNewPrivileges=yes`。后者限制服务及其子进程通过execve/setuid等获得新权限，**不是完整沙箱**，也不撤销进程原本拥有的文件访问能力。[systemd说明](https://www.freedesktop.org/software/systemd/man/latest/systemd.exec.html#NoNewPrivileges=)
 
 Windows模板使用当前用户、交互式登录和`RunLevel Limited`，不自动请求管理员权限。它目前是计划任务方案，不是SCM服务，也没有凭模板生成就宣称完成安装验收。
 

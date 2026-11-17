@@ -2,6 +2,8 @@
 
 [English](candidate-install.md)
 
+正式版本下载见[安装指南](install.zh-CN.md)。本页保留下面这套开发候选的独立约定。
+
 本文用于开发候选，不代表已打 tag、正式发版或已有公开安装源。每套产物均标记
 `release: false`。首批实机交付范围是已验证的 macOS／Apple Silicon／MK2／FW204
 组合。其他平台有归档，不等于其 USB 或托管服务已经验收。详见[平台证据与边界](daemon-validation.md)。

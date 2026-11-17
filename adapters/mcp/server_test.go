@@ -295,6 +295,27 @@ func TestOfficialStdioCanonicalToolsAndLocalLibrary(t *testing.T) {
 	}
 }
 
+func TestOfficialStdioBuildIdentityAndRunWithoutPreview(t *testing.T) {
+	server, backend := engineServer(t)
+	session := connectStdio(t, server.URL, 3*time.Second)
+	initialized := session.InitializeResult()
+	if initialized.ServerInfo.Name != "nb1" || initialized.ServerInfo.Version != buildVersion {
+		t.Fatalf("initialize identity=%+v, want nb1/%s", initialized.ServerInfo, buildVersion)
+	}
+	if !strings.Contains(initialized.Instructions, "Preview is optional.") || !strings.Contains(initialized.Instructions, "without a preceding preview") {
+		t.Fatalf("initialize instructions still require preview: %s", initialized.Instructions)
+	}
+	var job control.SequenceJob
+	requireSuccess(t, call(t, session, "run_light", `{"serial":"20000001","id":"direct-play","action":{"kind":"set","color":"red"}}`), &job)
+	if job.ID != "direct-play" {
+		t.Fatalf("run lost its Job identity: %+v", job)
+	}
+	completed := waitJob(t, session, job.ID, "succeeded")
+	if completed.CompletedSteps != 1 || backend.setCount() != 1 {
+		t.Fatalf("run without preview=%+v Set=%d", completed, backend.setCount())
+	}
+}
+
 func TestOfficialStdioBusyRejectionAndActiveCancellation(t *testing.T) {
 	server, backend := engineServer(t)
 	session := connectStdio(t, server.URL, 3*time.Second)

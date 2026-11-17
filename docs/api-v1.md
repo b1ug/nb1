@@ -108,15 +108,16 @@ Serial nominal duration is `repeat * sum(fade_ms + hold_ms + 10)`. Interval nomi
 
 These are host scheduling budgets, not optical deadlines. Native I/O, timer lateness, observations and cleanup can extend wall time. Interval target writes are ordered with device-update spacing, not simultaneous; a late interval does not cause a burst of catch-up writes. Host Sequences do not upload a DeviceSequence or write device Flash.
 
-Create an input file with one Action or Sequence, for example `{"action":{"kind":"pulse","color":"lime","cycles":2}}`. Preview and run it with the candidate CLI.
+Create an input file with one Action or Sequence, for example `{"action":{"kind":"pulse","color":"lime","cycles":2}}`. Run it directly with the CLI; a prior preview is optional.
 
 ```sh
-nb1 control --endpoint http://127.0.0.1:8931 preview action.json
 nb1 control --endpoint http://127.0.0.1:8931 run action.json --wait
 nb1 control --endpoint http://127.0.0.1:8931 state
 nb1 control --endpoint http://127.0.0.1:8931 job j_7K3XJNY9ZM
 nb1 control --endpoint http://127.0.0.1:8931 cancel j_7K3XJNY9ZM --wait
 ```
+
+Use `nb1 control preview action.json` separately when you want to inspect the compiled plan without playback.
 
 For `control run [SERIAL] FILE` and `control state [SERIAL]`, select the device from an explicit positional serial, root `--device`, `NB1_DEVICE`, or profile `device`, in that order. With none selected, the client reads the daemon's cached device list and uses it only when exactly one device is configured. Multiple devices require an explicit choice. This lookup does not enumerate USB, launch the daemon or switch to direct access.
 
@@ -269,7 +270,7 @@ Omitting `--binary` selects the current process's executable through the operati
 
 Service installation resolves devices and listen address from its flags and selected profile. It records the actual configuration file's absolute path when a file is selected, and stores device/listen values as explicit startup arguments. Those arguments keep the installed device selection and address stable when the profile is edited. macOS/Linux managed services also record the selected XDG root in their controlled startup environment, keeping the default library stable across login environments. Library and Job-cache settings are read from the profile on restart. Update the managed service configuration explicitly when changing its device list or listen address.
 
-Cross-platform `service render` still requires an explicit target `--binary` path. Windows service installation remains unsupported. Automatic path selection does not implement service upgrade migration: package version paths, including Homebrew Cellar targets, still need upgrade and rollback qualification.
+Cross-platform `service render` still requires an explicit target `--binary` path. Windows service installation remains unsupported. Homebrew builds select the validated stable `opt/nb1/bin/nb1` entry by default; upgrading a package does not restart the running daemon. An explicit `--binary` path remains fixed and must stay installed. See the [package lifecycle](../packaging/homebrew/README.md#upgrades-and-service-paths) for the distinct upgrade and rollback contract.
 
 ## Job IDs and deduplication
 
@@ -301,12 +302,12 @@ Pattern saving fixes the resolved Sequence. Updating a color or Pattern affects 
 
 ## Initial delivery scope
 
-The agreed first delivery targets the currently verified Mac/MK2 setup: macOS 27.2 on arm64, blink(1) MK2 with firmware 204. Other operating systems, architectures and device generations must show their actual evidence level separately: software tests, compilation, physical USB, or not yet tested. A software CI result does not establish physical-device support.
+Physical-device evidence covers the recorded macOS 27.2 on arm64 / blink(1) MK2 / firmware 204 combinations. Release artifacts for other operating systems and architectures list their actual build and software evidence separately. Neither a software CI result nor an artifact filename establishes physical USB, MK3, reboot or nonvolatile-storage qualification.
 
-This scope does not require every platform or MK3 hardware to be qualified before the first delivery. Existing recovered I/O retries remain a known limitation; confirming scope does not create a tag or publish a release. Work continues in order: hardware, daemon/CLI, Web and packaging, then the surrounding integrations.
+Existing recovered I/O retries remain a documented limitation. A tagged source or binary release does not expand the physical-device evidence. The [release installation guide](install.md) describes the actual downloads; development candidates retain their separate source and acceptance records.
 
 ## Implementation sequence
 
-The source delivery includes the core execution path, local library, HTTP operations above, CLI commands, explicit direct run, embedded Web controls and MCP adapter. Software checks cover the integrated routes, direct lifecycle and Agent workflows. Finite daemon CLI/HTTP checks on the local macOS 27.2 / MK2 FW204 candidate cover serial and interval playback, Orbit, Job replay, busy rejection, cancellation, final RGB readback and ownership. Additional same-source MK2 checks cover direct set/hold, explicit timeout and SIGINT cleanup, real stdio MCP preview/submission/Job lookup after session closure, and Web startup/preview without unintended playback. Full Web playback acceptance, broader platform/device qualification, and replacement of the daily installation remain pending. DeviceSequence routes are planned. The [terminology table](api-v1-terminology.md) governs names across those surfaces.
+The source delivery includes the core execution path, local library, HTTP operations above, CLI commands, explicit direct run, embedded Web controls and MCP adapter. Software checks cover the integrated routes, direct lifecycle and Agent workflows. Recorded finite daemon CLI/HTTP checks on macOS 27.2 / MK2 FW204 cover serial and interval playback, Orbit, Job replay, busy rejection, cancellation, final RGB readback and ownership. Other recorded checks cover direct set/hold, explicit timeout and SIGINT cleanup, real stdio MCP preview/submission/Job lookup after session closure, and embedded Web behavior. Those observations retain their exact source and binary identities; they are not automatically requalified by a new release version. DeviceSequence routes remain planned. The [terminology table](api-v1-terminology.md) governs names across those surfaces.
 
 macOS/Linux user-service installation pins `XDG_CONFIG_HOME` to the verified configuration root used for that installation. A different login-manager environment cannot redirect the selected profile or default library. Device locks continue to follow the native OS coordination policy described above. Rendering alone can set the target configuration root with `service render --user-config-root`; it does not grant filesystem access.

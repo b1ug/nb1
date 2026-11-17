@@ -21,14 +21,15 @@ An author input contains exactly one Action or Sequence:
 {"action":{"kind":"orbit","colors":["red","blue"],"period_ms":3000,"cycles":1,"on_finish":"off"}}
 ```
 
-Preview before saving to inspect the compiled Sequence. `save_pattern` fixes resolved colors and normalized Steps. `list_patterns` returns ID/title summaries; `get_pattern` returns the complete saved Sequence.
+Preview is optional when inspecting the compiled Sequence. `save_pattern` validates and fixes resolved colors and normalized Steps without requiring a prior preview. `list_patterns` returns ID/title summaries; `get_pattern` returns the complete saved Sequence.
 
 ```sh
-nb1 control preview orbit.json
 nb1 control patterns save red-blue-orbit orbit.json --title "Red and blue orbit"
 nb1 control patterns list
 nb1 control patterns get red-blue-orbit
 ```
+
+Use `nb1 control preview orbit.json` separately when a preview is wanted.
 
 To preview or run a saved Pattern, use `{"pattern_id":"red-blue-orbit"}` with the ordinary preview/run interface. Preserve the Job ID. A matching repeated Job is resolved before the library is reread, including after that Pattern is changed.
 

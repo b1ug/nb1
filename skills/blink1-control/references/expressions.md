@@ -1,6 +1,6 @@
 # Expressions and field lookup
 
-Use the running MCP tool schema or installed CLI help first. This compact reference travels with the Skill; read the public [API v1 reference](https://github.com/b1ug/nb1/blob/master/docs/api-v1.md) or [OpenAPI](https://github.com/b1ug/nb1/blob/master/docs/api-v1.openapi.json) only for exact ranges or more complex input. The [MCP adapter guide](https://github.com/b1ug/nb1/blob/master/adapters/mcp/README.md) covers setup, transport and result envelopes. These are development-candidate references, not proof of the installed version's capabilities.
+Use the running MCP tool schema or installed CLI help first. This compact reference travels with the Skill; read the matching [v0.1.0 API reference](https://github.com/b1ug/nb1/blob/v0.1.0/docs/api-v1.md) or [OpenAPI](https://github.com/b1ug/nb1/blob/v0.1.0/docs/api-v1.openapi.json) only for exact ranges or more complex input. The [MCP adapter guide](https://github.com/b1ug/nb1/blob/v0.1.0/adapters/mcp/README.md) covers setup, transport and result envelopes. These references describe v0.1.0; inspect the installed version before assuming the same support.
 
 ## Action, Sequence and request envelope
 
@@ -13,12 +13,11 @@ A CLI input file contains exactly one expression: `action`, `sequence` or `patte
 The following port is an example: use the task's actual daemon endpoint on every call.
 
 ```sh
-nb1 control --endpoint http://127.0.0.1:8931 preview action.json
 nb1 control --endpoint http://127.0.0.1:8931 run DEVICE_SERIAL action.json --id j_7K3XJNY9ZM --wait
 nb1 control --endpoint http://127.0.0.1:8931 job j_7K3XJNY9ZM
 ```
 
-Replace the example serial and use a fresh ID for a new task. Preserve that ID if the response is lost. `preview --serial SERIAL` enables a cached capability check; preview does not infer the profile's preferred device.
+Replace the example serial and use a fresh ID for a new task. Preserve that ID if the response is lost. Preview is optional: `nb1 control preview action.json` compiles without playback. `preview --serial SERIAL` enables a cached capability check; preview does not infer the profile's preferred device.
 
 MCP `run_light` adds the target and optional Job ID around the same expression:
 
@@ -66,14 +65,14 @@ Use `resolve_color` to verify an unfamiliar form without selecting a device. Act
 
 `timing` and nonempty `steps` are required. Serial Steps have one target; `fade_ms` and `hold_ms` default to 0. A target requires numeric `led` and one ColorInput as its `color`. `repeat` defaults to 1 and must be positive; `on_finish` defaults to `off`.
 
-Serial nominal time includes `fade_ms + hold_ms + 10` milliseconds per Step for the update allowance. `hold_ms` is not the whole phase duration. Prefer a matching Action for a named effect: `blink` with `on_ms:100`, `off_ms:100`, `cycles:2` compiles to a nominal 400ms; four hand-written Steps with `hold_ms:100` instead total 440ms. Check preview timing before playback. Native I/O and cleanup can add real elapsed time.
+Serial nominal time includes `fade_ms + hold_ms + 10` milliseconds per Step for the update allowance. `hold_ms` is not the whole phase duration. Prefer a matching Action for a named effect: `blink` with `on_ms:100`, `off_ms:100`, `cycles:2` compiles to a nominal 400ms; four hand-written Steps with `hold_ms:100` instead total 440ms. Use the optional preview to inspect compiled timing when needed. Native I/O and cleanup can add real elapsed time.
 
 Interval Sequences require `initial` with physical LED 1/2 targets. Every Step keeps that target count/order and supplies `interval_ms`, with `fade_ms <= interval_ms`; `hold_ms` is forbidden. Read the full schema for interval ranges instead of guessing.
 
 ## Error routing
 
 - `invalid_request`: inspect the schema/input; do not blindly retry unchanged JSON.
-- `busy`: another Job owns playback. If the user wants it stopped, cancel that active Job, wait for terminal cleanup, then perform the requested operation.
+- `device_busy`: another Job owns playback. If the user wants it stopped, cancel that active Job, wait for terminal cleanup, then perform the requested operation.
 - `job_conflict`: the retained ID belongs to different input/serial. Keep it for recovery; do not choose a new ID merely to bypass an uncertain prior execution.
 - `unavailable` or connection/transport error: preserve endpoint and ID; do not start services or switch to direct USB automatically. An uncertain submission is recovered by querying, not replaying.
 - `not_found` for a Job: its record may have expired, been evicted or belonged to an earlier process. It does not prove the operation never happened.

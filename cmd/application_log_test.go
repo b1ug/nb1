@@ -3,11 +3,13 @@ package cmd
 import (
 	"bytes"
 	"compress/gzip"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -155,12 +157,44 @@ func TestCharmConsoleBridgeWriterAndLevelBoundaries(t *testing.T) {
 	}
 }
 
+// hlog owns a private lumberjack file writer without a Close API. Keep real
+// file tests in a child process so process exit closes that writer on every OS.
+// The parent owns the directory and verifies it can remove all files after Wait.
+func applicationLogProcessDirectory(t *testing.T) (string, bool) {
+	t.Helper()
+	const key = "NB1_APPLICATION_LOG_TEST_DIRECTORY"
+	if directory := os.Getenv(key); directory != "" {
+		return directory, true
+	}
+	directory := t.TempDir()
+	binary, err := os.Executable()
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	process := exec.CommandContext(ctx, binary, "-test.run=^"+t.Name()+"$", "-test.v")
+	process.Env = append(os.Environ(), key+"="+directory)
+	output, err := process.CombinedOutput()
+	if err != nil {
+		t.Fatalf("application log child failed: %v: %s", err, output)
+	}
+	if err := os.RemoveAll(directory); err != nil {
+		t.Fatalf("application log files remain open after child exit: %v", err)
+	}
+	return "", false
+}
+
 func TestApplicationLoggerPreservesFileJSONAndLevelBehavior(t *testing.T) {
+	directory, child := applicationLogProcessDirectory(t)
+	if !child {
+		return
+	}
 	t.Setenv("NO_COLOR", "1")
 	for _, debug := range []bool{false, true} {
 		t.Run(fmt.Sprint(debug), func(t *testing.T) {
 			var console bytes.Buffer
-			filename := filepath.Join(t.TempDir(), "application.jsonl")
+			filename := filepath.Join(directory, fmt.Sprintf("application-%t.jsonl", debug))
 			logger := newApplicationLogger(&console, filename, debug)
 			if err := logger.SetLevelString("debug"); err != nil {
 				t.Fatal(err)
@@ -211,9 +245,13 @@ func TestApplicationLoggerPreservesFileJSONAndLevelBehavior(t *testing.T) {
 }
 
 func TestApplicationLoggerConcurrentRecordsAndFileRotation(t *testing.T) {
+	directory, child := applicationLogProcessDirectory(t)
+	if !child {
+		return
+	}
 	t.Setenv("NO_COLOR", "1")
 	var console bytes.Buffer
-	filename := filepath.Join(t.TempDir(), "application.jsonl")
+	filename := filepath.Join(directory, "application.jsonl")
 	logger := newApplicationLogger(&console, filename, false)
 	var done sync.WaitGroup
 	for worker := 0; worker < 8; worker++ {
@@ -240,41 +278,40 @@ func TestApplicationLoggerConcurrentRecordsAndFileRotation(t *testing.T) {
 	}
 	// Exercise the retained 10 MiB limit and compression rather than merely
 	// inspecting option literals. More than one backup survives (retention=0).
-	filename = filepath.Join(t.TempDir(), "rotating.jsonl")
+	filename = filepath.Join(directory, "rotating.jsonl")
 	logger = newApplicationLogger(io.Discard, filename, false)
 	large := strings.Repeat("x", 1024*1024)
 	for record := 0; record < 25; record++ {
 		logger.Infow(large, "record", record)
 	}
 	deadline := time.Now().Add(5 * time.Second)
+	var incomplete error
 	for {
 		backups, err := filepath.Glob(filepath.Join(filepath.Dir(filename), "rotating-*.jsonl.gz"))
 		if err != nil {
 			t.Fatal(err)
 		}
-		if len(backups) >= 2 {
-			for _, name := range backups {
-				file, err := os.Open(name)
-				if err != nil {
-					t.Fatal(err)
-				}
-				compressed, err := gzip.NewReader(file)
-				if err != nil {
-					file.Close()
-					t.Fatal(err)
-				}
-				var first map[string]any
-				err = json.NewDecoder(compressed).Decode(&first)
-				compressed.Close()
-				file.Close()
-				if err != nil || first["pid"] != float64(os.Getpid()) || first["level"] != "info" {
-					t.Fatalf("rotated file schema differs: %v", err)
-				}
+		complete := len(backups) >= 2
+		for _, name := range backups {
+			// A .gz path appears before asynchronous compression finishes.
+			// Read through EOF (including the gzip checksum) before accepting it.
+			data, err := readCompressedApplicationLog(name)
+			if err != nil {
+				incomplete = err
+				complete = false
+				break
 			}
+			var first map[string]any
+			err = json.NewDecoder(bytes.NewReader(data)).Decode(&first)
+			if err != nil || first["pid"] != float64(os.Getpid()) || first["level"] != "info" {
+				t.Fatalf("rotated file schema differs: %v", err)
+			}
+		}
+		if complete {
 			break
 		}
 		if time.Now().After(deadline) {
-			t.Fatal("two compressed backup files were not retained")
+			t.Fatalf("two complete compressed backup files were not retained: %v", incomplete)
 		}
 		time.Sleep(10 * time.Millisecond)
 	}
@@ -282,4 +319,18 @@ func TestApplicationLoggerConcurrentRecordsAndFileRotation(t *testing.T) {
 	if err != nil || stat.Size() > 10*1024*1024 {
 		t.Fatalf("rotation threshold changed: stat=%v err=%v", stat, err)
 	}
+}
+
+func readCompressedApplicationLog(filename string) ([]byte, error) {
+	file, err := os.Open(filename)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+	compressed, err := gzip.NewReader(file)
+	if err != nil {
+		return nil, err
+	}
+	defer compressed.Close()
+	return io.ReadAll(compressed)
 }

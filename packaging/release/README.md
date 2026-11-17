@@ -6,6 +6,12 @@ The release workflow builds the same source into five native targets:
 not. Both use the fixed Go 1.27.4 build toolchain. The source floor remains
 Go 1.25.0; it is a different contract from the release-build toolchain.
 
+Application console diagnostics use Charm Log v1.0.0 on stderr. This version
+was selected to preserve the Go 1.25.0 source floor; Fang is not included.
+Cobra help, English CLI messages, command JSON, MCP JSON-RPC and the daemon's
+JSON event writer keep their existing boundaries. Application file logs retain
+their JSON encoder, metadata, 10 MiB rotation, compression and backup policy.
+
 The CLI already contains the complete Web bundle. There is no Node dependency,
 separate Web extraction, CDN fetch or post-install asset download.
 

@@ -590,6 +590,13 @@ class ReleaseSuiteTests(unittest.TestCase):
                             ("windows", {"kind": "pe", "DLLs": ["libwinpthread-1.dll"], "system_DLLs_only": True}),
                             ("darwin", {"kind": "mach-o", "libraries": ["@rpath/bad.dylib"], "minimum_os_from_binary": "15.0", "notarization_claimed": False})]:
             with self.subTest(goos=goos), self.assertRaises(ValueError): RELEASE.check_native_dependencies(value, goos)
+        with tempfile.TemporaryDirectory() as temporary:
+            system = Path(temporary) / "System32"; system.mkdir(); (system / "HID.DLL").write_bytes(b"system fixture")
+            with patch.dict(RELEASE.os.environ, {"SystemRoot": temporary}), patch.object(RELEASE, "run", return_value="DLL Name: HID.DLL\nDLL Name: api-ms-win-crt-runtime-l1-1-0.dll\n"):
+                self.assertTrue(RELEASE.runtime_dependencies(Path("nb1.exe"), "windows")["system_DLLs_only"])
+                (system / "HID.DLL").unlink()
+                with self.assertRaisesRegex(ValueError, r'rejected=\["HID.DLL"\]'):
+                    RELEASE.runtime_dependencies(Path("nb1.exe"), "windows")
 
     def test_original_linked_module_and_toolchain_notices_are_collected_and_bound(self):
         with tempfile.TemporaryDirectory() as temporary:

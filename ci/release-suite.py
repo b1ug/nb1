@@ -310,8 +310,10 @@ def runtime_dependencies(binary, goos):
     text = run(["objdump", "-p", binary])
     libraries = sorted(set(re.findall(r"DLL Name:\s*(\S+)", text, re.I)))
     system = Path(os.environ["SystemRoot"]) / "System32"
-    require(libraries and all(name.lower().startswith(("api-ms-win-", "ext-ms-win-")) or
-                             (system / name).is_file() for name in libraries), "non-system Windows DLL dependency")
+    rejected = [name for name in libraries if not name.lower().startswith(("api-ms-win-", "ext-ms-win-"))
+                and not (system / name).is_file()]
+    require(libraries and not rejected, "non-system Windows DLL dependency: rejected=" + json.dumps(rejected)
+            + "; imports=" + json.dumps(libraries) + "; directory=" + str(system) + "; Python=" + sys.platform)
     return {"kind": "pe", "DLLs": libraries, "system_DLLs_only": True}
 
 

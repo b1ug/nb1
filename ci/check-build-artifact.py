@@ -4,6 +4,7 @@
 import argparse
 import hashlib
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -15,15 +16,15 @@ MODULES = ("github.com/b1ug/blink1-go", "github.com/b1ug/gid")
 NATIVE_TARGETS = {("linux", "amd64"), ("linux", "arm64"),
                   ("darwin", "amd64"), ("darwin", "arm64"), ("windows", "amd64")}
 HELP_CHECKS = [
-    (["--help"], ["Usage:", "nb1 [command]"]),
+    (["--help"], ["USAGE", "nb1 [command]"]),
     (["control", "--help"], ["nb1 control [command]", "preview", "run", "job", "cancel"]),
     (["control", "run", "--help"], ["nb1 control run [SERIAL] FILE", "--id", "--wait"]),
 ]
 
 
-def command(args, cwd=ROOT):
+def command(args, cwd=ROOT, env=None):
     return subprocess.run([str(a) for a in args], cwd=cwd, check=True,
-                          capture_output=True, text=True, encoding="utf-8", timeout=90).stdout
+                          capture_output=True, text=True, encoding="utf-8", timeout=90, env=env).stdout
 
 
 def digest(path):
@@ -50,14 +51,17 @@ def check_smoke(value):
 
 
 def smoke(binary):
-    # Every invocation ends at Cobra help. No input, endpoint, server or device
+    # Every invocation ends at Fang help. No input, endpoint, server or device
     # command is executed. The explicit private config avoids user settings.
+    # Only these child processes use plain presentation; preserve their raw
+    # stdout evidence instead of stripping ANSI or changing the caller's env.
+    environment = dict(os.environ, NO_COLOR="1", CLICOLOR="0", CLICOLOR_FORCE="0", TERM="dumb")
     with tempfile.TemporaryDirectory(prefix="nb1-build-smoke-") as temporary:
         scratch = Path(temporary)
         config = scratch / "setting.yaml"
         config.write_text("{}\n", encoding="utf-8")
         checks = [{"arguments": arguments,
-                   "stdout": command([binary, "--config", config, *arguments], scratch)}
+                   "stdout": command([binary, "--config", config, *arguments], scratch, environment)}
                   for arguments, _ in HELP_CHECKS]
         if config.read_text(encoding="utf-8") != "{}\n" or sorted(p.name for p in scratch.iterdir()) != ["setting.yaml"]:
             raise ValueError("CLI help changed the isolated configuration directory")

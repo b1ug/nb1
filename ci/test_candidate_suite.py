@@ -126,6 +126,27 @@ def rewrite_archive(fixture, suite, key, mutate):
 
 
 class CandidateSuiteTests(unittest.TestCase):
+    def test_help_evidence_requires_fang_heading_and_all_api_markers(self):
+        value = {"schema_version": 1, "validation": "cli_help_only", "checks": [
+            {"arguments": ["--help"], "stdout": "USAGE\n  nb1 [command]\n"},
+            {"arguments": ["control", "--help"],
+             "stdout": "nb1 control [command]\npreview run job cancel"},
+            {"arguments": ["control", "run", "--help"],
+             "stdout": "nb1 control run [SERIAL] FILE\n--id --wait"}]}
+        SUITE.CLI.check_smoke(value)
+        for index, marker in [(0, "USAGE"), (0, "nb1 [command]"),
+                              (1, "nb1 control [command]"), (1, "preview"), (1, "run"),
+                              (1, "job"), (1, "cancel"),
+                              (2, "nb1 control run [SERIAL] FILE"), (2, "--id"), (2, "--wait")]:
+            changed = copy.deepcopy(value)
+            changed["checks"][index]["stdout"] = changed["checks"][index]["stdout"].replace(marker, "")
+            with self.subTest(marker=marker), self.assertRaises(ValueError):
+                SUITE.CLI.check_smoke(changed)
+        changed = copy.deepcopy(value)
+        changed["checks"][0]["stdout"] = "Usage:\n  nb1 [command]\n"
+        with self.assertRaises(ValueError):
+            SUITE.CLI.check_smoke(changed)
+
     def test_round_trip_mac_and_windows_never_executes_binaries(self):
         for goos in ("darwin", "windows"):
             with self.subTest(goos=goos), tempfile.TemporaryDirectory() as temporary:

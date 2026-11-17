@@ -159,6 +159,10 @@ jobs:
         with:
           ref: ${{ needs.prepare.outputs.source }}
           persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: "1.27.4"
+          cache: false
       - name: Download only this run's five qualified platforms
         run: gh run download "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY" --pattern 'nb1-release-platform-*' --dir "$RUNNER_TEMP/platforms"
       - name: Assemble and fully verify the closed release inventory
@@ -190,6 +194,10 @@ jobs:
           ref: ${{ needs.prepare.outputs.source }}
           fetch-depth: 0
           persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: "1.27.4"
+          cache: false
       - name: Recheck real tag and master ancestry, then download qualified assets
         run: |
           python3 -B ci/release-suite.py context --root "$GITHUB_WORKSPACE" --output "$RUNNER_TEMP/publish-context.json"

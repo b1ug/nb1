@@ -28,6 +28,7 @@ VERSION = re.compile(r"v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\Z")
 LICENSES = {"LICENSE.txt", "editor-LICENSES.txt", "fonts/MPLUSRounded1c-OFL.txt", "fonts/Fredoka-OFL.txt",
             "nightlab/compiler/GO-LICENSE.txt", "nightlab/compiler/NB1-LICENSE.txt",
             "nightlab/model-assets/LICENSE.txt", "nightlab/THREE-LICENSE.txt"}
+SKILL_FILES = BASE.SKILL_FILES | {"LICENSE"}
 
 
 def require(condition, message):
@@ -142,6 +143,12 @@ def check_binary(info, modules, version, source, target, mcp=False):
         require({v["Path"]: v for v in modules} == {v["Path"]: v for v in info["dependencies"]}, "CLI modules differ")
         linked = {v["Path"]: v["Version"] for v in modules}
         require(all(linked.get(p) == v for p, v in FOUNDATION.items()), "wrong foundation version")
+
+
+def archived_build_info(data, name):
+    # `go version -m` statically reads PE/ELF/Mach-O bytes. Never launch an
+    # archive executable, including foreign targets, during offline verification.
+    return BASE.build_info(BASE.binary_build_text(data, name, Path.cwd()))
 
 
 def check_native_dependencies(value, goos):
@@ -413,6 +420,7 @@ def stage(root, cli, mcp, output, version, source, build_context):
     require(not skill_root.is_symlink() and not any(p.is_symlink() for p in skill_root.rglob('*')), "symlink in Skill")
     skill = {p.relative_to(skill_root).as_posix(): BASE.regular_bytes(p, BASE.JSON_BYTES) for p in skill_root.rglob('*') if p.is_file()}
     require(set(skill) == BASE.SKILL_FILES, "Skill inventory differs")
+    skill["LICENSE"] = license_text
     files[archive_names["skill"]] = BASE.archive_bytes(skill, windows=True)
     components["skill"] = {"archive": archive_names["skill"], "sha256": BASE.sha(files[archive_names["skill"]]),
                            "files": {name: BASE.sha(value) for name, value in skill.items()}}
@@ -472,8 +480,9 @@ def verify_platform(directory, version, source):
         require(record["archive"] == name and record["sha256"] == BASE.sha(outer[name]), "archive identity differs")
         expected = set(record["files"])
         if key == "skill":
-            require(set(record) == {"archive", "sha256", "files"} and expected == BASE.SKILL_FILES, "Skill fields differ")
+            require(set(record) == {"archive", "sha256", "files"} and expected == SKILL_FILES, "Skill fields differ")
             content = BASE.read_archive(outer[name], expected, windows=True)
+            component_licenses.append(content["LICENSE"])
         else:
             require(set(record) == {"archive", "sha256", "binary", "binary_sha256", "build", "files"}, "component fields differ")
             binary = ("nb1" if key == "cli" else "nb1-mcp") + (".exe" if value["target"]["GOOS"] == "windows" else "")
@@ -490,7 +499,9 @@ def verify_platform(directory, version, source):
                     and build["release"] is True and build["target"] == value["target"]
                     and build["build_context"] == value["build_context"]
                     and build["embedded_web"] == (value["embedded_web"] if key == "cli" else None), "component provenance differs")
-            check_binary(build["build_info"], build["modules"], version, source, value["target"], key == "mcp")
+            actual_info = archived_build_info(content[binary], binary)
+            require(actual_info == build["build_info"], "archived binary build info differs from manifest")
+            check_binary(actual_info, build["modules"], version, source, value["target"], key == "mcp")
             check_native_dependencies(build["native_dependencies"], value["target"]["GOOS"])
             check_notices(build["licenses"], build["modules"], source, value["embedded_web"] if key == "cli" else None)
             require(all(record == {"source": record["source"], "bytes": len(content[name]), "sha256": BASE.sha(content[name])}
@@ -500,7 +511,7 @@ def verify_platform(directory, version, source):
             require(content["SHA256SUMS"] == BASE.checksums({n: b for n, b in content.items() if n != "SHA256SUMS"}),
                     "inner component checksums differ")
         require({n: BASE.sha(b) for n, b in content.items()} == record["files"], "archive file hashes differ")
-    require(len(component_licenses) == 2 and component_licenses[0] == component_licenses[1], "component licenses differ")
+    require(len(component_licenses) == 3 and all(data == component_licenses[0] for data in component_licenses), "component licenses differ")
     return value
 
 
@@ -548,9 +559,17 @@ def verify_release(directory, version, source, publish=False):
     expected_targets = {os_name + "-" + arch for os_name, arch in TARGETS}
     require(set(manifest["platforms"]) == expected_targets, "missing release platforms")
     expected_assets = set()
-    for value in manifest["platforms"].values():
+    actual_targets = set()
+    for key, value in manifest["platforms"].items():
+        target = value["target"]
+        require(set(target) == {"GOOS", "GOARCH"}, "unexpected release target fields")
+        actual = (target["GOOS"], target["GOARCH"])
+        require(actual in TARGETS and key == "-".join(actual) and actual not in actual_targets,
+                "release platform key or unique target differs")
+        actual_targets.add(actual)
         require(value["build_context"] == manifest["build_context"] and value["embedded_web"] == manifest["embedded_web"], "platform context drift")
         expected_assets |= set(names(version, value["target"]).values())
+    require(actual_targets == TARGETS, "release actual target set differs")
     require(set(manifest["assets"]) == expected_assets and {p.name for p in directory.iterdir()} == expected_assets | {"release.json", "SHA256SUMS"},
             "release assets are not a closed inventory")
     files = {name: BASE.regular_bytes(directory / name) for name in expected_assets | {"release.json"}}

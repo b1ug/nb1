@@ -60,7 +60,8 @@ asset set. Published tags and checksums are immutable.
 - Five `nb1-vVERSION-OS-ARCH` archives: executable, embedded Web, short README,
   license files, build manifest and internal checksums.
 - Five optional `nb1-mcp-vVERSION-OS-ARCH` archives.
-- One platform-independent `blink1-control-vVERSION.zip`.
+- One platform-independent `blink1-control-vVERSION.zip`, containing the five
+  Skill instruction/reference files and the original root LICENSE.
 - `release.json` with all source, target, component, runtime and asset identities.
 - Global `SHA256SUMS`, including `release.json` and all eleven archives.
 
@@ -80,7 +81,12 @@ Web/model/editor/font notices. Missing module notices are reported as an error,
 not silently skipped; the packager copies texts without assigning license terms.
 
 `ci/release-suite.py verify` is an offline, bounded, closed-inventory check. It
-uses the existing candidate suite's safe archive parser, but the release schema
+requires Go 1.27.4 to statically re-read the exact archived executable bytes
+with `go version -m`, including foreign platforms; it never executes them.
+The actual build information must equal the manifest and satisfy the expected
+source, target, module and toolchain contracts. Platform keys must match five
+distinct actual targets, with the complete required target set. It uses the
+existing candidate suite's safe archive parser, but the release schema
 and versioned filenames are separate. Candidate evidence retains `release:false`;
 it is not relabeled as a release or silently promoted.
 

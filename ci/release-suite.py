@@ -8,6 +8,7 @@ from pathlib import Path
 import re
 import shlex
 import shutil
+import struct
 import subprocess
 import sys
 import tempfile
@@ -277,6 +278,54 @@ def web_inventory(root):
     return lock
 
 
+def pe_imports(data):
+    """Read only the AMD64 PE32+ import directory, independent of objdump output."""
+    require(64 <= len(data) <= BASE.MAX_BYTES and data[:2] == b"MZ", "invalid PE DOS header")
+    header = struct.unpack_from("<I", data, 60)[0]
+    require(64 <= header <= len(data) - 24 and data[header:header + 4] == b"PE\0\0", "invalid PE signature")
+    machine, sections = struct.unpack_from("<HH", data, header + 4)
+    optional_size = struct.unpack_from("<H", data, header + 20)[0]
+    optional = header + 24; section_table = optional + optional_size
+    require(machine == 0x8664 and 1 <= sections <= 96 and optional_size >= 128
+            and section_table + sections * 40 <= len(data), "unsupported or truncated PE headers")
+    require(struct.unpack_from("<H", data, optional)[0] == 0x20b, "release Windows binary must be PE32+")
+    directories = struct.unpack_from("<I", data, optional + 108)[0]
+    require(2 <= directories <= 16 and optional_size >= 112 + directories * 8, "invalid PE data directories")
+    if directories > 13:
+        require(struct.unpack_from("<II", data, optional + 112 + 13 * 8) == (0, 0), "delay-import PE dependencies are unsupported")
+    ranges = []
+    for index in range(sections):
+        virtual_size, virtual, raw_size, raw = struct.unpack_from("<IIII", data, section_table + index * 40 + 8)
+        require(raw <= len(data) and raw_size <= len(data) - raw, "PE section exceeds file bounds")
+        if raw_size:
+            ranges.append((virtual, min(raw_size, virtual_size or raw_size), raw))
+
+    def mapped(rva, size):
+        found = [(raw + rva - virtual, raw + raw_size) for virtual, raw_size, raw in ranges
+                 if virtual <= rva and rva - virtual < raw_size and size <= raw_size - (rva - virtual)]
+        require(len(found) == 1, "PE import RVA is unmapped or ambiguous")
+        return found[0]
+
+    rva, size = struct.unpack_from("<II", data, optional + 112 + 8)
+    require(rva and 20 <= size <= 4096 * 20, "missing or excessive PE import directory")
+    offset, _ = mapped(rva, size)
+    names, terminated = [], False
+    for position in range(offset, offset + size - 19, 20):
+        descriptor = struct.unpack_from("<IIIII", data, position)
+        if descriptor == (0, 0, 0, 0, 0):
+            terminated = True
+            break
+        require(descriptor[3] and descriptor[4], "invalid PE import descriptor")
+        name_offset, end = mapped(descriptor[3], 1)
+        end = data.find(b"\0", name_offset, min(end, name_offset + 261))
+        require(end > name_offset, "unterminated or empty PE import name")
+        raw_name = data[name_offset:end]
+        require(re.fullmatch(rb"[A-Za-z0-9_.-]+\.dll", raw_name, re.I), "invalid PE import DLL name")
+        names.append(raw_name.decode("ascii"))
+    require(terminated and names, "unterminated or empty PE import directory")
+    return sorted(set(names))
+
+
 def runtime_dependencies(binary, goos):
     if goos == "darwin":
         libraries = run(["otool", "-L", binary])
@@ -307,8 +356,7 @@ def runtime_dependencies(binary, goos):
         return {"kind": "elf", "linkage": "dynamic", "ldd": libraries.replace(str(binary), binary.name), "glibc_versions": glibc,
                 "required_glibc_from_binary": glibc[-1], "all_dependencies_resolved": True}
     require(goos == "windows", "unsupported native dependency target")
-    text = run(["objdump", "-p", binary])
-    libraries = sorted(set(re.findall(r"DLL Name:\s*(\S+)", text, re.I)))
+    libraries = pe_imports(BASE.regular_bytes(binary))
     system = Path(os.environ["SystemRoot"]) / "System32"
     rejected = [name for name in libraries if not name.lower().startswith(("api-ms-win-", "ext-ms-win-"))
                 and not (system / name).is_file()]

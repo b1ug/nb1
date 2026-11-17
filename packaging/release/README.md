@@ -99,6 +99,11 @@ signature inspection; Windows rejects dependencies outside the system DLL
 contracts. This prevents accidentally relying on the build runner's MinGW or
 other private runtime directories.
 
+Windows DLL names are read directly from the bounded AMD64 PE32+ import
+directory, independent of objdump's platform-specific text and without reading
+exported names as dependencies. Malformed/unmapped/truncated tables and
+delay-import tables are rejected; the system-DLL and system-PATH checks remain.
+
 These records are not a claim of Developer ID notarization, Windows publisher
 signing, every old OS, real USB on every platform, MK3, managed Windows service,
 login/reboot or optical qualification. Physical evidence stays separately

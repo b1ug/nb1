@@ -6,6 +6,7 @@ import io
 import json
 from pathlib import Path
 import stat
+import struct
 import tarfile
 import tempfile
 import unittest
@@ -434,6 +435,21 @@ def refresh_release_platform(directory, value):
     (directory / "SHA256SUMS").write_bytes(SUITE.checksums(files))
 
 
+def pe_import_fixture():
+    data = bytearray(0x600); data[:2] = b"MZ"; struct.pack_into("<I", data, 60, 0x80)
+    data[0x80:0x84] = b"PE\0\0"; struct.pack_into("<HH", data, 0x84, 0x8664, 1)
+    struct.pack_into("<H", data, 0x94, 240); struct.pack_into("<H", data, 0x98, 0x20b)
+    struct.pack_into("<I", data, 0x98 + 108, 16)
+    struct.pack_into("<II", data, 0x98 + 112, 0x11c0, 64)  # Export is deliberately irrelevant.
+    struct.pack_into("<II", data, 0x98 + 120, 0x1000, 60)
+    struct.pack_into("<IIII", data, 0x188 + 8, 0x400, 0x1000, 0x400, 0x200)
+    struct.pack_into("<IIIII", data, 0x200, 0, 0, 0, 0x1080, 0x1100)
+    struct.pack_into("<IIIII", data, 0x214, 0, 0, 0, 0x10a0, 0x1120)
+    data[0x280:0x288] = b"HID.DLL\0"; data[0x2a0:0x2ad] = b"kernel32.dll\0"
+    export = b"DLL name: a.out.exe\0"; data[0x3c0:0x3c0 + len(export)] = export
+    return data
+
+
 class ReleaseSuiteTests(unittest.TestCase):
     def setUp(self):
         def inspect(data, name):
@@ -592,11 +608,45 @@ class ReleaseSuiteTests(unittest.TestCase):
             with self.subTest(goos=goos), self.assertRaises(ValueError): RELEASE.check_native_dependencies(value, goos)
         with tempfile.TemporaryDirectory() as temporary:
             system = Path(temporary) / "System32"; system.mkdir(); (system / "HID.DLL").write_bytes(b"system fixture")
-            with patch.dict(RELEASE.os.environ, {"SystemRoot": temporary}), patch.object(RELEASE, "run", return_value="DLL Name: HID.DLL\nDLL Name: api-ms-win-crt-runtime-l1-1-0.dll\n"):
+            (system / "kernel32.dll").write_bytes(b"system fixture")
+            with patch.dict(RELEASE.os.environ, {"SystemRoot": temporary}), patch.object(RELEASE.BASE, "regular_bytes", return_value=bytes(pe_import_fixture())):
                 self.assertTrue(RELEASE.runtime_dependencies(Path("nb1.exe"), "windows")["system_DLLs_only"])
                 (system / "HID.DLL").unlink()
                 with self.assertRaisesRegex(ValueError, r'rejected=\["HID.DLL"\]'):
                     RELEASE.runtime_dependencies(Path("nb1.exe"), "windows")
+
+    def test_pe_import_reader_bounds_directories_names_and_excludes_exports(self):
+        original = pe_import_fixture()
+        self.assertEqual(RELEASE.pe_imports(original), ["HID.DLL", "kernel32.dll"])
+        mutations = {
+            "DOS signature": lambda b: b.__setitem__(slice(0, 2), b"XX"),
+            "PE header offset": lambda b: struct.pack_into("<I", b, 60, len(b)),
+            "PE signature": lambda b: b.__setitem__(slice(0x80, 0x84), b"XX\0\0"),
+            "machine": lambda b: struct.pack_into("<H", b, 0x84, 0x14c),
+            "excessive sections": lambda b: struct.pack_into("<H", b, 0x86, 97),
+            "optional size": lambda b: struct.pack_into("<H", b, 0x94, 120),
+            "PE32 magic": lambda b: struct.pack_into("<H", b, 0x98, 0x10b),
+            "directory count": lambda b: struct.pack_into("<I", b, 0x98 + 108, 1),
+            "raw section bounds": lambda b: struct.pack_into("<I", b, 0x188 + 16, len(b)),
+            "virtual section bounds": lambda b: struct.pack_into("<I", b, 0x188 + 8, 20),
+            "unmapped import RVA": lambda b: struct.pack_into("<I", b, 0x98 + 120, 0xfffffff0),
+            "no descriptor terminator": lambda b: struct.pack_into("<I", b, 0x98 + 124, 40),
+            "excessive import directory": lambda b: struct.pack_into("<I", b, 0x98 + 124, 4096 * 20 + 1),
+            "zero DLL name RVA": lambda b: struct.pack_into("<I", b, 0x20c, 0),
+            "unmapped DLL name RVA": lambda b: struct.pack_into("<I", b, 0x20c, 0xfffffff0),
+            "empty DLL name": lambda b: b.__setitem__(0x280, 0),
+            "unterminated DLL name": lambda b: b.__setitem__(slice(0x280, 0x280 + 261), b"A" * 261),
+            "unsafe DLL name": lambda b: b.__setitem__(slice(0x280, 0x28c), b"../evil.dll\0"),
+            "non-ASCII DLL name": lambda b: b.__setitem__(0x280, 255),
+            "delay import": lambda b: struct.pack_into("<II", b, 0x98 + 112 + 13 * 8, 0x1000, 20),
+        }
+        for name, mutate in mutations.items():
+            changed = bytearray(original); mutate(changed)
+            with self.subTest(name=name), self.assertRaises(ValueError): RELEASE.pe_imports(changed)
+        ambiguous = bytearray(original); struct.pack_into("<H", ambiguous, 0x86, 2)
+        ambiguous[0x188 + 40:0x188 + 80] = ambiguous[0x188:0x188 + 40]
+        with self.assertRaisesRegex(ValueError, "ambiguous"): RELEASE.pe_imports(ambiguous)
+        with self.assertRaises(ValueError): RELEASE.pe_imports(original[:0x550])
 
     def test_original_linked_module_and_toolchain_notices_are_collected_and_bound(self):
         with tempfile.TemporaryDirectory() as temporary:

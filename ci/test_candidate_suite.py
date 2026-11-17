@@ -460,6 +460,38 @@ class ReleaseSuiteTests(unittest.TestCase):
         self.inspection.start()
         self.addCleanup(self.inspection.stop)
 
+    def test_selected_source_floor_is_exact_and_public_module_rules_stay_strict(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            foundation = [{"Path": path, "Version": version, "Sum": "h1:fixture"}
+                          for path, version in RELEASE.FOUNDATION.items()]
+            # A synthetic ordinary public pseudo-version needs no replacement
+            # exception. It is not an actual dependency or publication receipt.
+            presentation = {"Path": "github.com/example/presentation/v2",
+                            "Version": "v2.0.2-0.20261117000000-111111111111", "Sum": "h1:fixture"}
+            for mcp in (False, True):
+                main = {"Path": SUITE.MCP if mcp else SUITE.CORE, "Main": True,
+                        "GoVersion": "1.25.8", "Dir": str(root / "adapters/mcp" if mcp else root)}
+                selected_presentation = copy.deepcopy(presentation)
+                selected = [main, *copy.deepcopy(foundation), selected_presentation]
+                linked = copy.deepcopy(MCP_MODULES if mcp else [*foundation, presentation])
+                if mcp:
+                    selected.extend([
+                        {"Path": SUITE.CORE, "Version": "v0.0.0", "Dir": str(root),
+                         "Replace": {"Path": "../..", "Dir": str(root)}}, dict(MCP_MODULES[1])])
+                with self.subTest(mcp=mcp), patch.object(
+                        RELEASE.BASE, "command", side_effect=lambda *_: "\n".join(map(json.dumps, selected))):
+                    records = RELEASE.selected_modules(root, {"dependencies": linked}, mcp)
+                    self.assertEqual(records, sorted(linked, key=lambda item: item["Path"]))
+                    for wrong in (None, "", "1.25.0", "1.25.7", "1.25.9", "1.26.0"):
+                        with self.subTest(floor=wrong), self.assertRaisesRegex(ValueError, "source Go floor"):
+                            main["GoVersion"] = wrong
+                            RELEASE.selected_modules(root, {"dependencies": linked}, mcp)
+                    main["GoVersion"] = "1.25.8"
+                    selected_presentation["Replace"] = {"Path": "../local-presentation"}
+                    with self.assertRaises(ValueError):
+                        RELEASE.selected_modules(root, {"dependencies": linked}, mcp)
+
     def test_five_native_versioned_platforms_assemble_and_rehearsal_cannot_publish(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary); platforms = root / "platforms"; platforms.mkdir()

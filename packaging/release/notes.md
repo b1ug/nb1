@@ -1,31 +1,33 @@
-## nb1 v0.1.0
+## nb1 v0.1.1
 
-nb1 provides one local control core for blink(1): a CLI, an optional foreground
-or managed daemon, an HTTP API and an embedded Web debugger. The debugger is
-part of the executable; no Node server or separate Web installation is needed.
+This patch corrects terminal styling found during Linux Homebrew acceptance.
+CLI help and human-readable version output now select colors for their actual
+output stream. Console diagnostics independently select colors for stderr.
+The existing RoseWater palette is retained.
 
-### Included
+### Fixed
 
-- The Nightlab workbench with English and Chinese UI, a 3D screen preview,
-  optional preview, direct Play, separate colors for the two LED channels,
-  local colors and saved Patterns, and curated eight-color themes.
-- Set, Off, Fade, Blink, Breathe, Pulse, Alternate, Orbit and seven-color Rainbow
-  Actions, plus unified host Sequence/Step authoring and finite playback.
-- Device ownership coordination, multiple managed devices, short Job IDs,
-  query/cancel/progress and configurable bounded terminal history.
-- Explicit foreground server and direct CLI modes. Installing the executable
-  does not silently install or start a service.
-- macOS LaunchAgent and Linux systemd-user management. Windows supports
-  foreground operation; automatic service management is not included.
-- A matching optional stdio MCP executable using the official Go SDK and a
-  standalone Agent Skill. MCP calls the existing daemon over HTTP.
-- Released foundation dependencies: blink1-go v0.0.2, GID v0.0.3 and
-  colorkit v0.1.0.
+- A nonempty `NO_COLOR` suppresses Logo and console-log color, including when
+  `CLICOLOR_FORCE` is also set.
+- Pipes and `TERM=dumb` use plain text by default, including a dumb terminal
+  with a leftover `COLORTERM=truecolor`. `CLICOLOR=0` disables ordinary color;
+  an explicit nonzero `CLICOLOR_FORCE` can request it when `NO_COLOR` is unset.
+- Human output respects the selected writer rather than a Logo cached at
+  process initialization. JSON command results keep their existing unstyled
+  stdout contract; diagnostics remain on stderr.
+- Homebrew source builds disable unrelated parent-repository VCS stamping.
+  The Formula renderer also emits the corrected strict Homebrew style, so new
+  releases can use their own renderer without the v0.1.0-specific tap adapter.
 
-### Start the local debugger
+CLI help and application-generated diagnostics remain English under English,
+Chinese, Japanese, French and other locale settings. This patch adjusts output
+styling; the bilingual embedded Web workbench has its own language switch.
+HTTP, MCP and Go identifiers retain their existing English contract.
 
-Download the archive for your platform, verify `SHA256SUMS`, unpack it into a
-trusted directory and run:
+### Install and start
+
+Download the matching v0.1.1 CLI archive, `release.json` and `SHA256SUMS` from
+this release. Verify the archive and unpack it into a new trusted directory:
 
 ```sh
 ./nb1 version --json
@@ -33,34 +35,33 @@ trusted directory and run:
 ./nb1 server --devices YOUR_DEVICE_SERIAL
 ```
 
-Open `http://127.0.0.1:8931/demo/`. Use the same executable's `control` commands
-from another terminal, or explicitly choose `control --direct run` when no
-daemon owns that device. On Windows the executable is `nb1.exe`.
+Open `http://127.0.0.1:8931/demo/`. The CLI, optional server and Nightlab
+workbench are one executable. The matching MCP adapter and Agent Skill are
+separate downloads. On Windows the executable is `nb1.exe`.
 
-### Scope
+The public [Homebrew tap](https://github.com/b1ug/homebrew-tap) installs the
+version currently published by that tap with `brew install b1ug/tap/nb1`.
+Check `nb1 version` before assuming its Formula has advanced to this release.
+Homebrew builds released source; services are explicitly managed with
+`nb1 service`. The [English and Chinese documentation](https://b1ug.github.io/nb1-docs/)
+includes installation, the API and Agent setup.
 
-The source commit, native target, embedded Web manifest, dependency selection,
-archive and executable hashes, and platform qualification are recorded in
-`release.json`. Check the support matrix before treating software CI as
-physical-device qualification.
+### Runtime and scope
 
-The prebuilt CLI/server binaries declare macOS 15.0 as their minimum on both
-Mac architectures and require glibc 2.38 or later on Linux. The optional MCP
-binaries declare a minimum of macOS 13.0 and are statically linked on Linux;
-they still require a compatible nb1 server. The macOS downloads are not
-Developer ID notarized. These binary requirements do not guarantee every
-operating system or physical USB combination.
+The prebuilt CLI/server binaries declare a minimum of macOS 15.0 and require
+glibc 2.38 or later on Linux. Optional MCP binaries declare macOS 13.0 and are
+statically linked on Linux; they still require a compatible nb1 server.
+The macOS downloads are not Developer ID notarized. These prebuilt requirements
+are separate from Homebrew source-build compatibility.
 
-The current public API rejects a new Job while a device is busy. New editable
-source libraries, semantic Trigger routing, composition and queue/preemption
-contracts remain separate work. Saved host Patterns are not automatically
-written to device RAM, Flash or startup storage.
+The source commit, Go/VCS/module information, embedded Web manifest, notices,
+archive hashes and platform qualification are recorded in `release.json`.
+Foundation dependencies remain blink1-go v0.0.2, GID v0.0.3 and colorkit v0.1.0.
+Software and container checks remain separate from physical USB, MK3, optical,
+login/reboot or nonvolatile-storage qualification. Windows supports foreground
+operation; automatic Windows service management remains separate work.
 
-Native synchronous I/O has no portable hard cancellation deadline. MK3,
-additional physical USB platforms, and Windows automatic service management
-are not implied by the presence of a native binary archive. No automatic
-daemon restart, startup playback or migration of user files is performed.
-
-The separate WebHID workbench and Chrome extension have their own device
-permissions and release process; they are not required for the embedded local
-debugger.
+The current public API rejects a new Job while its device is busy. Editable
+source libraries, Trigger routing, composition, queue/preemption and new native
+sequence APIs remain separate work. Installing a package does not automatically
+start/restart a daemon, install a service or migrate user content.

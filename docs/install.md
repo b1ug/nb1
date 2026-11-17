@@ -1,18 +1,18 @@
-# Install and use nb1 v0.1.0
+# Install and use nb1 v0.1.1
 
 [简体中文](install.zh-CN.md)
 
-Download the matching executable from [nb1 v0.1.0](https://github.com/b1ug/nb1/releases/tag/v0.1.0). The CLI, local server and complete Nightlab workbench are one `nb1` executable. Prebuilt executables need no Go or Node.js installation, and the embedded page needs no browser WebHID permission.
+Download the matching executable from [nb1 v0.1.1](https://github.com/b1ug/nb1/releases/tag/v0.1.1). The CLI, local server and complete Nightlab workbench are one `nb1` executable. Prebuilt executables need no Go or Node.js installation, and the embedded page needs no browser WebHID permission.
 
 ## Choose and verify a download
 
 | Computer | CLI archive |
 | --- | --- |
-| Apple Silicon Mac | `nb1-v0.1.0-darwin-arm64.tar.gz` |
-| Intel Mac | `nb1-v0.1.0-darwin-amd64.tar.gz` |
-| Linux arm64 | `nb1-v0.1.0-linux-arm64.tar.gz` |
-| Linux amd64 | `nb1-v0.1.0-linux-amd64.tar.gz` |
-| Windows amd64 | `nb1-v0.1.0-windows-amd64.zip` |
+| Apple Silicon Mac | `nb1-v0.1.1-darwin-arm64.tar.gz` |
+| Intel Mac | `nb1-v0.1.1-darwin-amd64.tar.gz` |
+| Linux arm64 | `nb1-v0.1.1-linux-arm64.tar.gz` |
+| Linux amd64 | `nb1-v0.1.1-linux-amd64.tar.gz` |
+| Windows amd64 | `nb1-v0.1.1-windows-amd64.zip` |
 
 The prebuilt CLI/server binaries declare a minimum of macOS 15.0 on both Mac architectures and require glibc 2.38 or later on Linux. The optional MCP binaries declare a minimum of macOS 13.0 and are statically linked on Linux; they still require a compatible nb1 server. The macOS downloads are not Developer ID notarized.
 
@@ -21,7 +21,7 @@ These binary requirements are separate from source compatibility and do not guar
 Download the selected archive, `release.json` and the global `SHA256SUMS` from the same release. Compare the archive's complete SHA-256 and exact filename with that manifest. For example, on an Apple Silicon Mac:
 
 ```sh
-shasum -a 256 nb1-v0.1.0-darwin-arm64.tar.gz
+shasum -a 256 nb1-v0.1.1-darwin-arm64.tar.gz
 ```
 
 Linux can use `sha256sum`; Windows PowerShell can use `Get-FileHash -Algorithm SHA256`. The global manifest also lists other platform archives, so checking every line requires downloading every listed file. Checksums detect inconsistency, not independent origin; obtain the archive and expected manifest from the trusted release page.
@@ -29,14 +29,28 @@ Linux can use `sha256sum`; Windows PowerShell can use `Get-FileHash -Algorithm S
 Unpack the CLI archive into its own new directory. The archive contains the executable, license notices, a short README, build identity and an inner checksum manifest. On macOS:
 
 ```sh
-mkdir nb1-v0.1.0
-tar -xzf nb1-v0.1.0-darwin-arm64.tar.gz -C nb1-v0.1.0
-cd nb1-v0.1.0
+mkdir nb1-v0.1.1
+tar -xzf nb1-v0.1.1-darwin-arm64.tar.gz -C nb1-v0.1.1
+cd nb1-v0.1.1
 shasum -a 256 -c SHA256SUMS
 ./nb1 version --json
 ```
 
 Use `tar -xzf` and `sha256sum -c` for a Linux tar archive. Extract the Windows ZIP into a new folder and run `nb1.exe`. Compare `build.json`, the release manifest and `version --json`; they describe the downloaded executable, not another already-running daemon. Keep this directory at a stable location if a service will use it.
+
+## Install with Homebrew
+
+The public [b1ug tap](https://github.com/b1ug/homebrew-tap) installs the version currently published by that tap:
+
+```sh
+brew tap b1ug/tap
+brew install b1ug/tap/nb1
+nb1 version
+```
+
+Homebrew builds released source and installs its build dependencies. Its Formula requires macOS 15 or a supported Linux Homebrew environment, with Go 1.27.4 or newer for compilation. The prebuilt Linux binary's glibc requirement above does not describe a Homebrew source build. Check the tap's current version and platform evidence before installing. With Homebrew, use `nb1` in the commands below; `./nb1` selects a manually unpacked executable.
+
+The [documentation site](https://b1ug.github.io/nb1-docs/) includes the English and Chinese setup guides. Installing nb1 does not register or start a background service.
 
 ## Open the embedded workbench
 
@@ -69,6 +83,8 @@ In another terminal, save an expression as `action.json`:
 
 Use `./nb1 control preview action.json` only when you want a plan without playback. CLI results are JSON on stdout; diagnostics go to stderr. If an accepted response is lost, preserve the original Job ID and endpoint and query it instead of submitting new playback. The [API reference](api-v1.md) describes required fields, defaults, errors and recovery.
 
+CLI help and application-generated diagnostics remain English under English, Chinese and other locale settings. The Web workbench has its own language switch. Terminal colors follow the destination stream: nonempty `NO_COLOR` wins, `CLICOLOR=0` disables ordinary color, and `CLICOLOR_FORCE=1` can explicitly force color when `NO_COLOR` is unset. A pipe or `TERM=dumb` otherwise uses plain text. JSON output stays unstyled.
+
 For one foreground run without a daemon, first release the lamp from the other controller, then explicitly choose direct mode:
 
 ```sh
@@ -91,7 +107,7 @@ Installation arranges possible login loading. Without `--start`, it does not req
 
 To stop it while retaining login configuration, use `service stop`. To remove the managed service and explicitly allow stopping it, use `service uninstall --stop`. Windows provides foreground operation and configuration rendering, not automatic install/start/stop/uninstall. A Linux container without a user manager should run `nb1 server` directly.
 
-For a manually unpacked upgrade, retain the old directory, verify and unpack the new version into a different directory, then explicitly uninstall the old managed service with `--stop` and install the chosen executable. Keep the same profile and device selection. Do not delete a directory still referenced by a service. Homebrew has a separate stable package-entry contract; use published tap instructions when available, rather than inventing a tap URL or using `brew services`.
+For a manually unpacked upgrade, retain the old directory, verify and unpack the new version into a different directory, then explicitly uninstall the old managed service with `--stop` and install the chosen executable. Keep the same profile and device selection. Do not delete a directory still referenced by a service. For Homebrew, use `brew upgrade b1ug/tap/nb1`, then explicitly stop/start a managed daemon when ready. The default service binding follows the stable `opt/nb1/bin/nb1` entry; an explicit `--binary` remains fixed. Follow the [tap lifecycle instructions](https://github.com/b1ug/homebrew-tap#upgrade-and-remove). Services are managed with `nb1 service`, not `brew services`.
 
 ## Configuration, MCP and the Skill
 
@@ -99,8 +115,8 @@ For a manually unpacked upgrade, retain the old directory, verify and unpack the
 
 Optional matching downloads are:
 
-- `nb1-mcp-v0.1.0-<os>-<arch>.tar.gz`, or Windows `.zip`: unpack into a separate new directory and verify its checksums. Configure the MCP host with the absolute `nb1-mcp` path and `--endpoint http://127.0.0.1:8931 --timeout 10s`. It reports version `v0.1.0` during MCP initialization and uses stdio to local HTTP, without launching a CLI or owning USB.
-- `blink1-control-v0.1.0.zip`: unpack its files into a new `blink1-control` folder and copy the complete folder to the project's `.agents/skills/`. Keep `SKILL.md`, `agents/` and `references/` together. The Skill does not install nb1, register MCP, enable global hooks or grant permissions. See [Agent setup](agent-guide.md).
+- `nb1-mcp-v0.1.1-<os>-<arch>.tar.gz`, or Windows `.zip`: unpack into a separate new directory and verify its checksums. Configure the MCP host with the absolute `nb1-mcp` path and `--endpoint http://127.0.0.1:8931 --timeout 10s`. It reports version `v0.1.1` during MCP initialization and uses stdio to local HTTP, without launching a CLI or owning USB.
+- `blink1-control-v0.1.1.zip`: unpack its files into a new `blink1-control` folder and copy the complete folder to the project's `.agents/skills/`. Keep `SKILL.md`, `agents/` and `references/` together. The Skill does not install nb1, register MCP, enable global hooks or grant permissions. See [Agent setup](agent-guide.md).
 
 MCP has its own endpoint argument and does not read nb1 YAML. Point all clients at the same intended daemon. The local API validates Host and browser Origin, but loopback is not user authentication; another local process able to call the endpoint may control configured lamps. No keyboard, input-monitoring or camera permission is needed for this workbench.
 

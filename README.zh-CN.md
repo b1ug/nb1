@@ -6,7 +6,7 @@
 
 通过 CLI、本机 HTTP、MCP 或内嵌 Web 控制 blink(1)。高级 Action 在 nb1 内编译为低级 Sequence，并交给同一设备 worker 执行。
 
-[安装 nb1 v0.1.0](docs/install.zh-CN.md)：下载并核验程序，启动本机 server，再打开它内嵌的调试器。MCP 与 Skill 是可选的同版下载。[开发候选](docs/candidate-install.zh-CN.md)保留独立的安装约定。
+[安装 nb1 v0.1.1](docs/install.zh-CN.md)：下载并核验程序，启动本机 server，再打开它内嵌的调试器。MCP 与 Skill 是可选的同版下载。[开发候选](docs/candidate-install.zh-CN.md)保留独立的安装约定。[公开 Homebrew tap](https://github.com/b1ug/homebrew-tap) 用 `brew install b1ug/tap/nb1` 从源码构建当前已发布的 Formula，实际版本以 `nb1 version` 为准。[双语文档站](https://b1ug.github.io/nb1-docs/zh/)提供安装说明与示例。
 
 nb1 实现 API v1，源码验证与机器当前安装版本分别记录。同一个可执行文件可以作为 CLI，也可以前台运行 daemon：
 
@@ -47,7 +47,7 @@ macOS/Linux 支持用 `nb1 service install --devices DEVICE_SERIAL --start` 显�
 
 用 `nb1 version --json` 查看这份程序的构建身份、Go 工具链及硬件依赖版本；该操作不连接 daemon 或 USB。普通源码构建会报告实际提交，无法确认版本时明确显示 development。
 
-CLI 默认诊断文案使用英文。命令结果写入 stdout，诊断日志（包括 `--debug`）写入 stderr，避免影响其他工具解析 JSON；Web 工作台保留英文与中文。
+CLI 的帮助与诊断在不同语言环境下均使用英文。终端颜色按各输出流判断；非空 `NO_COLOR` 禁用颜色，管道和 `TERM=dumb` 默认使用纯文本，除非显式设置 `CLICOLOR_FORCE` 请求颜色。命令结果写入 stdout，诊断日志（包括 `--debug`）写入 stderr，JSON 始终不着色；Web 工作台保留英文与中文。
 
 ## 配置与存储
 
@@ -63,7 +63,7 @@ macOS/Linux 的配置与本机颜色／Pattern 作品库使用 `$XDG_CONFIG_HOME
 - [Agent Skill](skills/blink1-control/SKILL.md)、[安装与使用](docs/agent-guide.zh-CN.md)和 [llms.txt](llms.txt)：Agent 的选择、跟踪和恢复指南。
 - [Codex 回合通知](examples/command-notify/CODEX.zh-CN.md)：可选的 notify／Stop 接入，默认预览，通过本机 daemon 播放，包含单次调用配置与软件验收记录。
 
-Web 位于 `/demo/`，默认英文，可切中文。其源码在独立的 nb1-web 私有仓库维护，固定构建结果内嵌到 nb1。双语文档站位于 nb1-site 私有仓库；独立 nb1-browser 网页与 Chrome 扩展通过 WebHID 直连，需明确交接同一只灯的控制权。仅打开网页或预览不会播放。
+Web 位于 `/demo/`，默认英文，可切中文。其源码在独立的 nb1-web 私有仓库维护，固定构建结果内嵌到 nb1。[双语文档站](https://b1ug.github.io/nb1-docs/zh/)由公开 [nb1-docs 仓库](https://github.com/b1ug/nb1-docs)维护；独立 nb1-browser 网页与 Chrome 扩展通过 WebHID 直连，需明确交接同一只灯的控制权。仅打开网页或预览不会播放。
 
 九个动作分别为 `set`、`off`、`fade`、`blink`、`breathe`、`pulse`、`alternate`、`orbit`、`rainbow`。颜色接受名字、Hex、RGB8、HSV/HSB 和 `@本机名字`。Pattern 存在电脑上；设备原生序列 API 仍为独立规划，当前 HTTP v1／MCP 不把主机 Pattern 部署到设备存储。
 

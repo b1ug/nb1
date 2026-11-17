@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"bitbucket.org/neiku/hlog"
 	"bitbucket.org/neiku/winornot"
 	"github.com/1set/gut/ystring"
 	"github.com/b1ug/nb1/config"
@@ -16,11 +15,9 @@ import (
 	"github.com/b1ug/nb1/internal/appconfig"
 	"github.com/b1ug/nb1/internal/textfmt"
 	"github.com/b1ug/nb1/util"
-	"github.com/muesli/termenv"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
 // for package scope shared variables
@@ -144,24 +141,13 @@ func initConfig() {
 	// init logger
 	// Keep diagnostics on stderr and command results on stdout. Retain the
 	// persistent logger's existing file format, size and retention policy.
-	loggerOptions := []hlog.Option{
-		hlog.WithNormalLogOutput(os.Stderr),
-		hlog.WithMonochrome(util.OutputColorProfile(os.Stderr) == termenv.Ascii),
-		hlog.WithOutputFile(logFile),
-		hlog.WithOutputFileLogFormat(hlog.LogFormatJSON),
-		hlog.WithOutputFileMaxSizeInMB(10),
-		hlog.WithOutputFileRetainNum(0),
-	}
-	if debugMode {
-		loggerOptions = append(loggerOptions, hlog.WithDevelopmentMode(), hlog.WithLevel(zapcore.DebugLevel))
-	}
-	lg := hlog.NewLogger(loggerOptions...)
+	lg := newApplicationLogger(os.Stderr, logFile, debugMode)
 	if debugMode {
 		logLevel = "debug"
 	}
 	err := lg.SetLevelString(logLevel)
 	cobra.CheckErr(err)
-	log = lg.SugaredLogger.With(zap.Int("pid", os.Getpid()))
+	log = lg.SugaredLogger
 
 	// pass logger to packages
 	util.SetLog(log)

@@ -12,7 +12,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -77,8 +76,9 @@ func TestRootDoctorJSONKeepsDiagnosticsOnStderr(t *testing.T) {
 			if !strings.Contains(stderr, "diagnostics need attention") || strings.Contains(stderr, "using config file") != test.debug {
 				t.Fatalf("diagnostics or debug-level behavior lost: %q", stderr)
 			}
-			// hlog deliberately retains its established monochrome Windows path.
-			wantColor := test.colored && runtime.GOOS != "windows"
+			// The actual Charm destination profile obeys the same explicit
+			// override on every platform; the file encoder stays undecorated.
+			wantColor := test.colored
 			if strings.ContainsRune(stderr, '\x1b') != wantColor {
 				t.Fatalf("stderr color policy differs (want color=%t): %q", wantColor, stderr)
 			}

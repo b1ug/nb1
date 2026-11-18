@@ -7,7 +7,7 @@
 daemon 默认启用独立的实验 v2 库，路径为当前服务账号的 `UserConfigDir()/nb1/patterns-v2`。`--pattern-v2-dir` 覆盖 `NB1_PATTERN_V2_DIR`，两者都没有设置时使用该默认路径。旧 `--pattern-dir` / `NB1_PATTERN_DIR` 只控制 v1 库，不能间接改变 v2 位置。
 
 ```sh
-nb1 server --devices 20005601 --pattern-v2-dir /absolute/private/patterns-v2
+nb1 server --devices DEVICE_SERIAL --pattern-v2-dir /absolute/private/patterns-v2
 ```
 
 启动、路径配置、读取不存在的库和纯预览都不创建目录。仅有效保存或导入进入原 StoreV2 写事务时才可能创建私有目录；后续发布或关闭失败不保证目录无痕。没有扫描、迁移、自动播放或恢复。错误配置只使需要 v2 库的请求返回 503 `pattern_library_unavailable`，不会阻断纯预览或旧灯光控制。默认路径计算失败也不回退到工作目录或临时目录。

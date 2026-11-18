@@ -5,6 +5,7 @@ import (
 	"compress/gzip"
 	"encoding/json"
 	"io/fs"
+	"regexp"
 	"strings"
 	"testing"
 	"testing/fstest"
@@ -70,7 +71,7 @@ func bundleFixture(t *testing.T) (fstest.MapFS, manifest) {
 	t.Helper()
 	files := fstest.MapFS{}
 	clean := false
-	record := manifest{SchemaVersion: 1, Product: "nb1-web", AssetBase: "./", Source: sourceRecord{Repository: "local:nb1-web", Commit: strings.Repeat("1", 40), Dirty: &clean, TreeSHA256: strings.Repeat("2", 64)}, Build: buildRecord{Tool: "static-editor/v1", Node: "v24.0.0", LockfileSHA256: strings.Repeat("3", 64)}, APIContracts: []string{"nb1-api/v1"}}
+	record := manifest{SchemaVersion: 1, Product: "nb1-web", AssetBase: "./", Source: sourceRecord{Repository: "https://github.com/b1ug/nb1-workbench", Commit: strings.Repeat("1", 40), Dirty: &clean, TreeSHA256: strings.Repeat("2", 64)}, Build: buildRecord{Tool: "static-editor/v1", Node: "v24.0.0", LockfileSHA256: strings.Repeat("3", 64)}, APIContracts: []string{"nb1-api/v1"}}
 	for _, name := range assetNames {
 		data := []byte("fixture " + name)
 		size := int64(len(data))
@@ -226,6 +227,24 @@ func TestEmbeddedBundle(t *testing.T) {
 	}
 	if _, err := ReadFile("../manifest.lock.json"); err != fs.ErrNotExist {
 		t.Fatal("nonasset lookup accepted", err)
+	}
+}
+
+func TestEmbeddedBundlePublication(t *testing.T) {
+	if err := Validate(); err != nil {
+		t.Fatal(err)
+	}
+	workstationPath := regexp.MustCompile(`(?i)(/Users/[^\s/"']+/|[A-Za-z]:[\\/]+Users[\\/]+[^\s\\/"']+[\\/]|/home/[^\s/"']+/(Codebase|projects|workspace|\.codex)/)`)
+	for _, file := range bundledRecord.Files {
+		t.Run(file.Path, func(t *testing.T) {
+			data, err := ReadFile(file.Path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if workstationPath.Match(data) {
+				t.Fatal("embedded asset contains a workstation-specific path")
+			}
+		})
 	}
 }
 

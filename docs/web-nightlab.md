@@ -12,7 +12,7 @@ The color-set chooser keeps nine common utility swatches separate from eight cur
 
 ## Closed profiles and provenance
 
-The legacy schema-1 `static-editor/v1` profile retains 26 assets plus its manifest and a 640 KiB total limit. The schema-2 `static-nightlab/v1` profile has 64 assets plus its manifest. Its limits, including the manifest, are:
+The legacy schema-1 `static-editor/v1` profile retains 26 assets plus its manifest and a 640 KiB total limit. The schema-2 `static-nightlab/v1` profile has 57 assets plus its manifest. Its limits, including the manifest, are:
 
 | Budget | Limit |
 | --- | ---: |
@@ -24,6 +24,8 @@ The legacy schema-1 `static-editor/v1` profile retains 26 assets plus its manife
 The base budget includes the shared presentation code. The complete model/compiler/help resources are excluded from that base subtotal and remain included in both complete-bundle limits.
 
 Manifest top-level keys remain `schema_version`, `product`, `asset_base`, `source`, `build`, `api_contracts` and `files`. Every schema-2 file records `path`, `bytes`, `sha256`, `encoding`, `decoded_bytes` and `decoded_sha256`. The path is both its logical and stored filename, including compressed `.js`, `.wasm` and `.stl` files. Stored length/hash and decoded length/hash are independently checked; `identity` requires both pairs to match. Gzip accepts exactly one complete member with no trailing data, bounded before and during decoding.
+
+The canonical producer is [nb1 Embedded Workbench](https://github.com/b1ug/nb1-workbench). Its manifest records that public repository URL and a clean source commit. Development capture records, research notes and local workstation paths are excluded from the public bundle. The importer checks decoded assets for workstation-specific paths, and production-bundle tests enforce the same publication boundary. Original geometry and approved artwork are retained.
 
 The source tree digest continues to cover sorted stored-file hashes. `manifest.lock.json` retains its schema-1 lock shape and binds the clean producer source commit and exact manifest SHA-256. The frontend builder, Python importer, Go validator and HTTP MIME/routes each retain closed reviewed inventories. Unknown files, directories, traversal, links, duplicate declarations, unsupported encodings and exceeded limits fail closed. Read the actual producer pin and current file hashes from the generated lock and manifest.
 

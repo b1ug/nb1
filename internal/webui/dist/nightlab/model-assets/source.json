@@ -3,12 +3,12 @@
   "repository": "https://github.com/todbot/blink1",
   "commit": "101abe3599c661c4dd4d1204b4d50fb592293143",
   "checked_on": "2026-11-14",
-  "copyright": "ThingM, 2012–2020",
+  "copyright": "ThingM, 2012\u20132020",
   "license": "CC-BY-SA-4.0",
   "license_file": "LICENSE.txt",
   "license_url": "https://github.com/todbot/blink1/blob/101abe3599c661c4dd4d1204b4d50fb592293143/LICENSE.txt",
   "license_note": "The exact LICENSE.txt at this commit states CC BY-SA 4.0; README.md still says 3.0. Preserve this discrepancy rather than silently substituting one. blink(1) is a ThingM trademark.",
-  "modifications": "Original STL and LICENSE bytes are unchanged. The derived render frame has a seating fit, exterior material clearance and local USB-corner subdivision. Original devel-blink1 files are unchanged.",
+  "modifications": "Original STL and LICENSE bytes are unchanged. The derived render frame has a seating fit, exterior material clearance and local USB-corner subdivision.",
   "assets": [
     {
       "file": "blink1mk2_enclosure_diffuser_v3k.stl",
@@ -147,7 +147,7 @@
     },
     "aligned_diffuser_bbox": {
       "min": [
-        -0.0000024999999996278,
+        -2.4999999996278e-06,
         0,
         -2.5494138999999993
       ],
@@ -181,7 +181,7 @@
     },
     "renderer_orientation": {
       "coordinate_mapping": "(x,y,z) in assembled frame coordinates -> (y-centerY, diffuserMaxZ-z, centerX-x), followed by uniform normalization",
-      "basis": "Rigid orientation places the original blink(1) CAD face upward and ThingM downward, as specified by the local project source. The reconstructed USB roof remains upward. Raw source meshes are unchanged."
+      "basis": "Rigid orientation places the fixed blink(1) face upward and ThingM downward. Raw source meshes are unchanged."
     }
   },
   "geometry_units": {
@@ -196,14 +196,6 @@
     {
       "url": "https://blink1.thingm.com/blink1-variations/",
       "note": "Official variation page confirms dual RGB LEDs and metal + plastic design for mk2."
-    },
-    {
-      "source_path": "/Users/vej/Codebase/devel-blink1/planning/assets/blink1-hardware/blink1mk2-device-preview.png",
-      "note": "Read-only local official preview; source/licence recorded in adjacent device-attribution.json."
-    },
-    {
-      "source_path": "/Users/vej/Codebase/devel-blink1/planning/assets/blink1-hardware/blink1mk2-twocolor-long.jpg",
-      "note": "Read-only local official photograph; upper face blue/cyan and underside/table red. Source/licence recorded in adjacent attribution.json."
     }
   ],
   "led_numbering": {
@@ -241,36 +233,6 @@
       "mapping": {
         "1": "blink(1) wordmark face / top / model +Y",
         "2": "ThingM wordmark face / bottom / model -Y"
-      },
-      "project_source": {
-        "path": "/Users/vej/Codebase/devel-blink1/reference/extracted/Notion-Doc1/开发 blink(1) 的配套软件和服务 37c106177ff54194ba7b04bcf63ef253.md",
-        "lines": [
-          101,
-          102,
-          103
-        ],
-        "sha256": "0268097386d52f16924cb47377e24f12775ae9311d9d6604324fdda12a6d7301",
-        "excerpt_file": "project-led-faces.txt",
-        "excerpt_sha256": "e1bd2c95e112edee15dd603ad1a7665313fa221eedd74b26dd2d80b089314bad"
-      },
-      "physical_verification": {
-        "date": "2026-11-14",
-        "product": "blink(1) mk2",
-        "serial": "20005601",
-        "receipt_path": "hardware-checks/led-face-20261114T143506Z.json",
-        "job_id": "nb1-face-01713ef5a85ba5019716deb5",
-        "job_status": "succeeded",
-        "readback": {
-          "led1": "#ff0000",
-          "led2": "#0000ff",
-          "sampled_at": "2026-11-14T14:35:06.502013Z"
-        },
-        "user_optical_confirmation": {
-          "red_face_wordmark": "blink(1)",
-          "blue_face_wordmark": "ThingM",
-          "source": "User's direct observation of this physical unit in the current session"
-        },
-        "scope": "RGB values come from fresh device readback; the corresponding wordmarks come from the user's optical identification on this unit. Manufacturer references separately establish LED 1=top and LED 2=bottom."
       }
     }
   },
@@ -311,17 +273,16 @@
     "calculation": "Smooth distance attenuation in model-local position; decode canonical sRGB source colors once and add their linear radiance before tone mapping. No average over source count and no hard face/UV split.",
     "scope": "Visual scattering parameters, not measured optics. Opaque metal, enclosure geometry, USB orientation and wordmarks are preserved.",
     "data": "Rendered mixture does not alter source RGB, Go playback plans or diagnostic 2D swatches.",
-    "verification": "The production GLSL is executed on software WebGL to check additive radiance, source dominance, finite cross-face transmission, continuity, black-state clearing and pose-invariant identity. Same-view red/blue comparison is retained in screenshots/blend-before-side.jpg and blend-after-side.jpg."
+    "verification": "Production GLSL software checks cover additive radiance, source dominance, cross-face transmission, continuity, black clearing and pose-invariant identity; they do not certify physical optics."
   },
   "seating_fit": {
     "date": "2026-11-15",
     "record": "seating-fit.json",
     "implementation": "enclosure-fit.js",
-    "test": "scripts/enclosure-fit.test.mjs",
     "scope": "Derived display geometry with hidden mounting overlap; not engineering fit certification.",
     "version": "derived-frame-seating-fit/v2",
-    "reference": "../screenshots/physical-joint-reference.png",
     "cause": "Coincident side planes plus metal depth bias; front roundover projected at stale pre-fit Z, exposing hidden metal triangle edges.",
     "correction": "Physical side clearance, no metal depth bias, local shared-edge subdivision and final-Z front-surface seating."
-  }
+  },
+  "public_metadata_note": "Published metadata retains manufacturer URLs, CAD attribution, model changes and LED mapping. Private project-note excerpts, local source paths, device identifiers and receipt paths are omitted; original handoff is retained privately."
 }

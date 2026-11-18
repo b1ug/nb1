@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Import one explicitly pinned, local nb1-web dist. No build or network access."""
+"""Import one pinned nb1 Embedded Workbench dist. No build or network access."""
 import argparse
 from dataclasses import dataclass
 import hashlib
@@ -42,19 +42,18 @@ NIGHTLAB_ASSETS = ASSETS | frozenset((
     "nightlab/readback.js", "nightlab/time-format.js",
     "nightlab/studio-3d.js", "nightlab/light-model.js", "nightlab/enclosure-fit.js", "nightlab/THREE-LICENSE.txt",
     "nightlab/compiler/nb1.wasm", "nightlab/compiler/wasm_exec.js",
-    "nightlab/compiler/compiler-source.json", "nightlab/compiler/GO-LICENSE.txt", "nightlab/compiler/NB1-LICENSE.txt",
+    "nightlab/compiler/compiler-source.json", "nightlab/compiler/GO-LICENSE.txt", "nightlab/compiler/NB1-LICENSE.txt", "nightlab/compiler/COLORKIT-LICENSE.txt",
     "nightlab/model-assets/blink1mk2_enclosure_diffuser_v3k.stl",
     "nightlab/model-assets/blink1mk2_enclosure_frame_v3k.stl",
     "nightlab/model-assets/source.json", "nightlab/model-assets/seating-fit.json",
-    "nightlab/model-assets/LICENSE.txt", "nightlab/model-assets/project-led-faces.txt",
-    "nightlab/model.html", "nightlab/model-notes.js", "nightlab/home.css", "nightlab/docs/INTEGRATION.md",
-    "nightlab/screenshots/physical-joint-reference.png", "nightlab/screenshots/joint-usb-quarter-unlit.png",
-    "nightlab/screenshots/joint-front-on-lit.png", "nightlab/screenshots/model-two-faces.jpg",
-    "nightlab/screenshots/joint-capture.json",
-    "nightlab/hardware-checks/led-face-20261114T143506Z.json",
+    "nightlab/model-assets/LICENSE.txt",
+    "nightlab/model.html", "nightlab/model-notes.js", "nightlab/home.css",
 ))
 CONTRACTS = frozenset(("nb1-api/v1",))
 PENDING = b"Waiting for verified nb1-web dist.\n"
+WORKSTATION_PATH = re.compile(
+    rb"(?:/Users/[^\s/\"']+/|[A-Za-z]:[\\/]+Users[\\/]+[^\s\\/\"']+[\\/]|"
+    rb"/home/[^\s/\"']+/(?:Codebase|projects|workspace|\.codex)/)", re.IGNORECASE)
 
 
 class InvalidBundle(ValueError):
@@ -84,7 +83,7 @@ def tree_digest(files):
 
 
 def nightlab_base_asset(name):
-    if name.startswith(("nightlab/compiler/", "nightlab/model-assets/", "nightlab/screenshots/", "nightlab/hardware-checks/", "nightlab/docs/")):
+    if name.startswith(("nightlab/compiler/", "nightlab/model-assets/")):
         return False
     return name not in ("nightlab/studio-3d.js", "nightlab/light-model.js", "nightlab/enclosure-fit.js", "nightlab/THREE-LICENSE.txt", "nightlab/model.html", "nightlab/model-notes.js", "nightlab/home.css")
 
@@ -220,7 +219,7 @@ def validate_directory(directory, expected_commit, expected_manifest_sha):
     require(len(data) <= (MAX_MANIFEST_BYTES if version == 1 else MAX_NIGHTLAB_MANIFEST_BYTES), "manifest exceeds profile limit")
     source = value["source"]
     object_keys(source, ("repository", "commit", "dirty", "tree_sha256"), "source")
-    require(source["repository"] == "local:nb1-web" and source["commit"] == expected_commit and source["dirty"] is False and hex_value(source["tree_sha256"], 64), "source must be the pinned clean nb1-web commit")
+    require(source["repository"] == "https://github.com/b1ug/nb1-workbench" and source["commit"] == expected_commit and source["dirty"] is False and hex_value(source["tree_sha256"], 64), "source must be the pinned clean nb1 Embedded Workbench commit")
     build = value["build"]
     object_keys(build, ("tool", "node", "lockfile_sha256"), "build")
     node = build["node"]
@@ -245,6 +244,7 @@ def validate_directory(directory, expected_commit, expected_manifest_sha):
         content = read_plain(directory / name, size)
         require(len(content) == size and sha(content) == item["sha256"], "asset differs from its manifest: " + name)
         decoded_size = size
+        decoded = content
         if version == 2:
             decoded_size = item["decoded_bytes"]
             require(hex_value(item["decoded_sha256"], 64), "invalid decoded asset digest")
@@ -252,6 +252,7 @@ def validate_directory(directory, expected_commit, expected_manifest_sha):
             require(sha(decoded) == item["decoded_sha256"], "asset differs from its decoded manifest: " + name)
             if item["encoding"] == "identity":
                 require(decoded_size == size and item["decoded_sha256"] == item["sha256"], "identity declarations differ")
+        require(not WORKSTATION_PATH.search(decoded), "asset includes a workstation-specific path: " + name)
         decoded_total += decoded_size
         if version == 1 or nightlab_base_asset(name):
             base_total += decoded_size

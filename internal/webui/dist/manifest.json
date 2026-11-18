@@ -4,9 +4,9 @@
   "asset_base": "./",
   "source": {
     "repository": "https://github.com/b1ug/nb1-workbench",
-    "commit": "90225555dad6ac2a17eac8d46a2469d00a04256e",
+    "commit": "aafecd2a88a272eb868a9e37f77d10c2b9da2c65",
     "dirty": false,
-    "tree_sha256": "83229b0fd4bf178081c5e3373dfb329db9087977e560d818f3de91fc94c50bad"
+    "tree_sha256": "cfe526bfe04299dff1fd3e0cd0bf3da4a1e806bcc4c1211d88b52d9f366c23bb"
   },
   "build": {
     "tool": "static-nightlab/v1",
@@ -59,11 +59,11 @@
     },
     {
       "path": "demo.js",
-      "bytes": 64788,
-      "sha256": "0ab0432a098a9f6b5070202e2e491229d4a0682a4124520d20174ff6a0da6574",
+      "bytes": 67064,
+      "sha256": "4e17ec4152e5a3f2fe7f4ce940643b0d533332bfa6f75b9b199744127a7f09ce",
       "encoding": "identity",
-      "decoded_bytes": 64788,
-      "decoded_sha256": "0ab0432a098a9f6b5070202e2e491229d4a0682a4124520d20174ff6a0da6574"
+      "decoded_bytes": 67064,
+      "decoded_sha256": "4e17ec4152e5a3f2fe7f4ce940643b0d533332bfa6f75b9b199744127a7f09ce"
     },
     {
       "path": "editor-LICENSES.txt",
@@ -163,11 +163,11 @@
     },
     {
       "path": "locales.js",
-      "bytes": 12377,
-      "sha256": "02a435f478910f6c37bae36db223654395372b2ede0fea2562d42a8a98014b13",
+      "bytes": 12827,
+      "sha256": "0d4ce7e6bb7d75944e8bac0c5eb483aabcdfeb0adbe64deeb56553808b812778",
       "encoding": "identity",
-      "decoded_bytes": 12377,
-      "decoded_sha256": "02a435f478910f6c37bae36db223654395372b2ede0fea2562d42a8a98014b13"
+      "decoded_bytes": 12827,
+      "decoded_sha256": "0d4ce7e6bb7d75944e8bac0c5eb483aabcdfeb0adbe64deeb56553808b812778"
     },
     {
       "path": "nightlab/THREE-LICENSE.txt",

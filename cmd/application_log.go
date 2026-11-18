@@ -1,9 +1,12 @@
 package cmd
 
 import (
+	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 
@@ -18,9 +21,21 @@ import (
 
 // newApplicationLogger keeps the established JSON file core and legacy logger
 // setters. Only the application's human stderr destination uses Charm Log.
-func newApplicationLogger(output io.Writer, file string, debug bool) *hlog.Logger {
+func newApplicationLogger(output io.Writer, file string, debug bool) (*hlog.Logger, error) {
+	file, err := prepareApplicationLogFile(file)
+	if err != nil {
+		return nil, err
+	}
 	profile := util.OutputColorProfile(output)
 	pid := zap.Int("pid", os.Getpid())
+	console := newCharmConsoleCore(zapcore.DebugLevel, output, profile, debug).(*charmConsoleCore)
+	// Both human destinations share a record lock, but internal sink failures
+	// render directly through Charm and never re-enter a Zap logger.
+	diagnostics := *console
+	diagnostics.enabled = zapcore.ErrorLevel
+	if debug {
+		diagnostics.fields = []zapcore.Field{pid}
+	}
 	options := []hlog.Option{
 		hlog.WithNormalLogOutput(io.Discard),
 		hlog.WithErrorLogOutput(io.Discard),
@@ -33,18 +48,75 @@ func newApplicationLogger(output io.Writer, file string, debug bool) *hlog.Logge
 			// human core so the normal console remains concise.
 			zap.Fields(pid),
 			zap.WrapCore(func(fileCore zapcore.Core) zapcore.Core {
-				console := newCharmConsoleCore(fileCore, output, profile, debug)
+				console.enabled = fileCore
+				var human zapcore.Core = console
 				if debug {
-					console = console.With([]zapcore.Field{pid})
+					human = console.With([]zapcore.Field{pid})
 				}
-				return zapcore.NewTee(fileCore, console)
+				return zapcore.NewTee(fileCore, human)
 			}),
+			zap.ErrorOutput(zapcore.AddSync(&charmDiagnosticOutput{core: &diagnostics})),
 		),
 	}
 	if debug {
 		options = append(options, hlog.WithDevelopmentMode(), hlog.WithLevel(zapcore.DebugLevel))
 	}
-	return hlog.NewLogger(options...)
+	return hlog.NewLogger(options...), nil
+}
+
+type charmDiagnosticOutput struct {
+	core *charmConsoleCore
+}
+
+func (w *charmDiagnosticOutput) Write(data []byte) (int, error) {
+	err := w.core.Write(zapcore.Entry{
+		Level: zapcore.ErrorLevel, Time: time.Now(), Message: "application log output failed",
+	}, []zapcore.Field{zap.String("details", string(data))})
+	// Consume this diagnostic once even if stderr itself failed. There is no
+	// fallback logger or retry that could recurse or delay application cleanup.
+	return len(data), err
+}
+
+// Check the initial sink before lumberjack can turn an append-open failure into
+// a rotation. In particular, an existing directory must never be renamed into
+// a backup and replaced with a log file. This is startup validation, not a
+// sandbox against another process replacing the path after the check.
+func prepareApplicationLogFile(name string) (string, error) {
+	if name == "" {
+		return "", nil
+	}
+	// Inspect exactly the path hlog will use, including its established cleanup.
+	filename := filepath.Clean(strings.TrimSpace(name))
+	info, err := os.Lstat(filename)
+	var file *os.File
+	switch {
+	case err == nil:
+		if !info.Mode().IsRegular() {
+			return "", fmt.Errorf("log file %q must be a regular file; directories, symlinks and special files are not supported", name)
+		}
+		file, err = os.OpenFile(filename, os.O_WRONLY|os.O_APPEND, 0)
+	case os.IsNotExist(err):
+		if err = os.MkdirAll(filepath.Dir(filename), 0700); err == nil {
+			file, err = os.OpenFile(filename, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0600)
+		}
+	}
+	if err != nil {
+		return "", fmt.Errorf("open log file %q: %w", name, err)
+	}
+	// Nothing is written or truncated by this probe. Close the descriptor before
+	// giving the same ordinary file to the existing JSON/rotation backend.
+	actual, statErr := file.Stat()
+	closeErr := file.Close()
+	if statErr != nil {
+		return "", fmt.Errorf("inspect log file %q: %w", name, statErr)
+	}
+	if !actual.Mode().IsRegular() {
+		return "", fmt.Errorf("log file %q must be a regular file", name)
+	}
+	if closeErr != nil {
+		return "", fmt.Errorf("close log file %q after checking append access: %w", name, closeErr)
+	}
+	return filename, nil
 }
 
 // charmOutput intentionally exposes Write only, not Fd or Read. The renderer

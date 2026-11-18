@@ -140,7 +140,7 @@ func init() {
 
 	// Persistent flags defined here will be global for your application.
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "configuration file (NB1_CONFIG or per-user nb1/config.yaml; established setting.yaml is a fallback)")
-	rootCmd.PersistentFlags().StringVar(&logFile, "log-file", "", "log file path (if non-empty, use this log file)")
+	rootCmd.PersistentFlags().StringVar(&logFile, "log-file", "", "append application diagnostics to a regular JSON log file")
 	rootCmd.PersistentFlags().StringVar(&logLevel, "log-level", "info", "log level (debug, info, warn, error, panic, fatal)")
 	rootCmd.PersistentFlags().BoolVarP(&debugMode, "debug", "D", false, "enable debug mode (if true, also use debug log level)")
 	rootCmd.PersistentFlags().StringP("device", "d", "", "preferred blink(1) device (if non-empty, use this device)")
@@ -169,7 +169,11 @@ func initConfig() {
 	// init logger
 	// Keep diagnostics on stderr and command results on stdout. Retain the
 	// persistent logger's existing file format, size and retention policy.
-	lg := newApplicationLogger(os.Stderr, logFile, debugMode)
+	lg, err := newApplicationLogger(os.Stderr, logFile, debugMode)
+	if err != nil {
+		loggerInitError = err
+		return
+	}
 	if debugMode {
 		logLevel = "debug"
 	}

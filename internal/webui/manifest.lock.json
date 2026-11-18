@@ -1,6 +1,6 @@
 {
-  "manifest_sha256": "aa911ab0f13f70fdbdc27cf2a190d139759dee25078f541f27c2770748a2db8f",
+  "manifest_sha256": "3c7490a01411dc643b7936bb08cd022fc62fb6c30d7f2c5580b29e61c31c5c01",
   "product": "nb1-web",
   "schema_version": 1,
-  "source_commit": "87561df163f4ab13590f4b5658c6952c56b053df"
+  "source_commit": "90225555dad6ac2a17eac8d46a2469d00a04256e"
 }

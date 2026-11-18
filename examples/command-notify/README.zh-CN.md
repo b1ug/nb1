@@ -9,7 +9,7 @@
 准备 Python 3.8+、支持 Action／Sequence／Job API 的 nb1 和已配置设备的本地 daemon。默认 dry-run 既不执行用户命令，也不调用 nb1，只显示 argv 和两种 Action 输入：
 
 ```sh
-python3 examples/command-notify/notify.py --serial 20005601 -- go test ./...
+python3 examples/command-notify/notify.py --serial DEVICE_SERIAL -- go test ./...
 ```
 
 明确加 `--execute` 才执行命令并通知。每次使用尚不存在的报告文件：
@@ -17,7 +17,7 @@ python3 examples/command-notify/notify.py --serial 20005601 -- go test ./...
 ```sh
 python3 examples/command-notify/notify.py \
   --execute --nb1-binary /absolute/path/to/nb1 \
-  --endpoint http://127.0.0.1:18000 --serial 20005601 \
+  --endpoint http://127.0.0.1:18000 --serial DEVICE_SERIAL \
   --report ./build-notify-001.json -- go test ./...
 ```
 

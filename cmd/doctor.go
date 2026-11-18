@@ -16,7 +16,7 @@ func newDoctorCommand() *cobra.Command {
 		Use: "doctor", Short: "Inspect build information, daemon health and configured device snapshots",
 		Long:    "Read the local binary's build information and the local daemon's health and v1 device list within a three-second total budget. This read-only check does not scan or open USB, set colors, submit Jobs, install services or fall back to direct control. Without --serial, show all daemon-configured devices. An HTTP response does not establish that a device is online; observed contains an existing snapshot with a timestamp.",
 		Args:    cobra.NoArgs,
-		Example: "  nb1 doctor\n  nb1 doctor --serial 20005601 --json\n  nb1 doctor --endpoint http://127.0.0.1:8932",
+		Example: "  nb1 doctor\n  nb1 doctor --serial DEVICE_SERIAL --json\n  nb1 doctor --endpoint http://127.0.0.1:8932",
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			// gid.Supported is a compile-time backend availability check, not
 			// enumeration or Open. HTTP diagnostics work even in CGO=0 builds.

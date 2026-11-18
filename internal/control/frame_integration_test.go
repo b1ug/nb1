@@ -113,6 +113,10 @@ func TestFrameIntegrationQuiesceRepeatNoReadsAndCleanupBeforeTerminal(t *testing
 	})
 	p := frameIntegrationProgram()
 	p.Repeat = 2
+	// This case checks ownership and final-readback ordering, not a 50 ms
+	// scheduling deadline. Leave the fade and all progress assertions intact;
+	// deterministic fake-clock cases cover strict deadline behavior separately.
+	p.Frames[0].IntervalMS = 500
 	accepted := submitFrameIntegration(t, e, p, receiptTicket(e, 1))
 	awaitEngineSignal(t, readGate.entered)
 	beforeRead, err := e.FrameJob(accepted.Job.ID)

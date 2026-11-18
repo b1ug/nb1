@@ -6,7 +6,7 @@
 
 通过 CLI、本机 HTTP、MCP 或内嵌 Web 控制 blink(1)。高级 Action 在 nb1 内编译为低级 Sequence，并交给同一设备 worker 执行。
 
-[安装 nb1 v0.1.1](docs/install.zh-CN.md)：下载并核验程序，启动本机 server，再打开它内嵌的调试器。MCP 与 Skill 是可选的同版下载。[开发候选](docs/candidate-install.zh-CN.md)保留独立的安装约定。[公开 Homebrew tap](https://github.com/b1ug/homebrew-tap) 用 `brew install b1ug/tap/nb1` 从源码构建当前已发布的 Formula，实际版本以 `nb1 version` 为准。[双语文档站](https://b1ug.github.io/nb1-docs/zh/)提供安装说明与示例。
+[安装 nb1 v0.1.2](docs/install.zh-CN.md)：下载并核验程序，启动本机 server，再打开它内嵌的调试器。MCP 与 Skill 是可选的同版下载。[开发候选](docs/candidate-install.zh-CN.md)保留独立的安装约定。[公开 Homebrew tap](https://github.com/b1ug/homebrew-tap) 用 `brew install b1ug/tap/nb1` 从源码构建当前已发布的 Formula，实际版本以 `nb1 version` 为准。[双语文档站](https://b1ug.github.io/nb1-docs/zh/)提供安装说明与示例。
 
 nb1 实现 API v1，源码验证与机器当前安装版本分别记录。同一个可执行文件可以作为 CLI，也可以前台运行 daemon：
 
@@ -63,7 +63,7 @@ macOS/Linux 的配置与本机颜色／Pattern 作品库使用 `$XDG_CONFIG_HOME
 - [Agent Skill](skills/blink1-control/SKILL.md)、[安装与使用](docs/agent-guide.zh-CN.md)和 [llms.txt](llms.txt)：Agent 的选择、跟踪和恢复指南。
 - [Codex 回合通知](examples/command-notify/CODEX.zh-CN.md)：可选的 notify／Stop 接入，默认预览，通过本机 daemon 播放，包含单次调用配置与软件验收记录。
 
-Web 位于 `/demo/`，默认英文，可切中文。其源码在独立的 nb1-web 私有仓库维护，固定构建结果内嵌到 nb1。[双语文档站](https://b1ug.github.io/nb1-docs/zh/)由公开 [nb1-docs 仓库](https://github.com/b1ug/nb1-docs)维护；独立 nb1-browser 网页与 Chrome 扩展通过 WebHID 直连，需明确交接同一只灯的控制权。仅打开网页或预览不会播放。
+Web 位于 `/demo/`，默认英文，可切中文。[nb1 Embedded Workbench](https://github.com/b1ug/nb1-workbench) 提供经校验后内嵌的静态资源；它调用同一个 nb1 server 的 HTTP API。[nb1 Documentation](https://github.com/b1ug/nb1-docs) 提供[双语文档站](https://b1ug.github.io/nb1-docs/zh/)，不申请硬件权限。独立 [nb1 Browser Tools](https://github.com/b1ug/nb1-browser-tools) 通过 WebHID 直连，其工作台为开发预览、Chrome 提醒扩展仍为实验版本，不随 nb1 自动安装；使用时需明确交接设备。仅打开或预览不会播放。详见 [Web 组件与构建边界](docs/web-components.zh-CN.md)。
 
 九个动作分别为 `set`、`off`、`fade`、`blink`、`breathe`、`pulse`、`alternate`、`orbit`、`rainbow`。颜色接受名字、Hex、RGB8、HSV/HSB 和 `@本机名字`。Pattern 存在电脑上；设备原生序列 API 仍为独立规划，当前 HTTP v1／MCP 不把主机 Pattern 部署到设备存储。
 

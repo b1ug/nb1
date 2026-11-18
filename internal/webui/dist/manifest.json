@@ -3,15 +3,15 @@
   "product": "nb1-web",
   "asset_base": "./",
   "source": {
-    "repository": "local:nb1-web",
-    "commit": "87561df163f4ab13590f4b5658c6952c56b053df",
+    "repository": "https://github.com/b1ug/nb1-workbench",
+    "commit": "90225555dad6ac2a17eac8d46a2469d00a04256e",
     "dirty": false,
-    "tree_sha256": "f493713fda6b22dea619ba55561056bc6a7774ad597f5b1fedc9f8084ee7c987"
+    "tree_sha256": "83229b0fd4bf178081c5e3373dfb329db9087977e560d818f3de91fc94c50bad"
   },
   "build": {
     "tool": "static-nightlab/v1",
     "node": "v26.12.1",
-    "lockfile_sha256": "1bf62d6454de03edc114b7dd5fc84e54659a0aa74b9e59262716618b92f2e3e6"
+    "lockfile_sha256": "ffab428bbe53826a3187e9c8db8ed12399a7767416598a4a35b66df839a23c2a"
   },
   "api_contracts": [
     "nb1-api/v1"
@@ -131,11 +131,11 @@
     },
     {
       "path": "index.html",
-      "bytes": 16207,
-      "sha256": "11a220093ebedee0b768a706f183e9feedf7fd132e456ac04585f8ad22e5d52e",
+      "bytes": 16200,
+      "sha256": "a4265fecad3759ad4db975a1867586848391e7791f0d8e3cb29fadf78569b623",
       "encoding": "identity",
-      "decoded_bytes": 16207,
-      "decoded_sha256": "11a220093ebedee0b768a706f183e9feedf7fd132e456ac04585f8ad22e5d52e"
+      "decoded_bytes": 16200,
+      "decoded_sha256": "a4265fecad3759ad4db975a1867586848391e7791f0d8e3cb29fadf78569b623"
     },
     {
       "path": "json-editor.css",
@@ -202,6 +202,14 @@
       "decoded_sha256": "1b9309e650c052db2939c729371f5a0e723226cdc277fc6a8b6d2d41db66dfb6"
     },
     {
+      "path": "nightlab/compiler/COLORKIT-LICENSE.txt",
+      "bytes": 1117,
+      "sha256": "aeb30ebfe31f295341ba5a850da50416931ab242bc225ca363a16aa7f124b05a",
+      "encoding": "identity",
+      "decoded_bytes": 1117,
+      "decoded_sha256": "aeb30ebfe31f295341ba5a850da50416931ab242bc225ca363a16aa7f124b05a"
+    },
+    {
       "path": "nightlab/compiler/GO-LICENSE.txt",
       "bytes": 1453,
       "sha256": "911f8f5782931320f5b8d1160a76365b83aea6447ee6c04fa6d5591467db9dad",
@@ -219,19 +227,19 @@
     },
     {
       "path": "nightlab/compiler/compiler-source.json",
-      "bytes": 5923,
-      "sha256": "77a7a8fa8b5129e530c7a6a708bd0d27a852922bf012f6e70256b3d0e6aa03bc",
+      "bytes": 6068,
+      "sha256": "63720786f224acbfbc44d2ed95ab95dbb58df43475c72894edc440ecf1acb200",
       "encoding": "identity",
-      "decoded_bytes": 5923,
-      "decoded_sha256": "77a7a8fa8b5129e530c7a6a708bd0d27a852922bf012f6e70256b3d0e6aa03bc"
+      "decoded_bytes": 6068,
+      "decoded_sha256": "63720786f224acbfbc44d2ed95ab95dbb58df43475c72894edc440ecf1acb200"
     },
     {
       "path": "nightlab/compiler/nb1.wasm",
-      "bytes": 1350464,
-      "sha256": "d767ec204bcdd12362d9b32358cb0a3bfba8116c0ea16f21af3cfb7c5392b02f",
+      "bytes": 1353178,
+      "sha256": "781f2bde56dc9c42794591dcf749ce38e835577dd7d0f62b3977fbd472b805ed",
       "encoding": "gzip",
-      "decoded_bytes": 4978528,
-      "decoded_sha256": "6c0fcf511b811b807f7c49391a3f01f750db192550663fde7299473f7aa438ea"
+      "decoded_bytes": 4983829,
+      "decoded_sha256": "a96e9b898094ffca5ad6d1c8e388df8695b8d2087726aec6cbe00846e17c0790"
     },
     {
       "path": "nightlab/compiler/wasm_exec.js",
@@ -250,14 +258,6 @@
       "decoded_sha256": "bcef17d758fcf6260c4310ae6bfe935277440e6d4b5c29c65943f1bac300973a"
     },
     {
-      "path": "nightlab/docs/INTEGRATION.md",
-      "bytes": 15781,
-      "sha256": "16b4efb4be2770d4b8cd81c86d44f64b2e98105160ccba4f23054bee82aae2f4",
-      "encoding": "identity",
-      "decoded_bytes": 15781,
-      "decoded_sha256": "16b4efb4be2770d4b8cd81c86d44f64b2e98105160ccba4f23054bee82aae2f4"
-    },
-    {
       "path": "nightlab/embedded-studio.css",
       "bytes": 25706,
       "sha256": "24f6dbeb550cedecf4f37afead4e26bf024e168594d67cb46280f942c75d2ab1",
@@ -274,14 +274,6 @@
       "decoded_sha256": "33a8c0fba98e078b9497da20289508ff5da08a4cfccc8abafbeec36a336ece99"
     },
     {
-      "path": "nightlab/hardware-checks/led-face-20261114T143506Z.json",
-      "bytes": 5567,
-      "sha256": "7eefb1d0b9603ba56e6bb9f5900c4a5bcf8bd2dd58214219fe7f5c41a645f9c3",
-      "encoding": "identity",
-      "decoded_bytes": 5567,
-      "decoded_sha256": "7eefb1d0b9603ba56e6bb9f5900c4a5bcf8bd2dd58214219fe7f5c41a645f9c3"
-    },
-    {
       "path": "nightlab/home.css",
       "bytes": 4122,
       "sha256": "75a48375d1b052ec8412b96f917cea2a43b5f52791eb6ce2514ce14d3b852520",
@@ -291,11 +283,11 @@
     },
     {
       "path": "nightlab/light-model.js",
-      "bytes": 23443,
-      "sha256": "b8231a6cd4342869cf0f7ea4f3533738b76712e452f3ec9262c436d38ffd731c",
+      "bytes": 23440,
+      "sha256": "764a0e92f26f6a6f32d00883c780965a852d335b951d9f27e2c1a316fae946e7",
       "encoding": "identity",
-      "decoded_bytes": 23443,
-      "decoded_sha256": "b8231a6cd4342869cf0f7ea4f3533738b76712e452f3ec9262c436d38ffd731c"
+      "decoded_bytes": 23440,
+      "decoded_sha256": "764a0e92f26f6a6f32d00883c780965a852d335b951d9f27e2c1a316fae946e7"
     },
     {
       "path": "nightlab/model-assets/LICENSE.txt",
@@ -322,14 +314,6 @@
       "decoded_sha256": "ba0797af2873c0fc4c3477b87cde07ca1b9ec761eda001b21abe101ce035b465"
     },
     {
-      "path": "nightlab/model-assets/project-led-faces.txt",
-      "bytes": 620,
-      "sha256": "e1bd2c95e112edee15dd603ad1a7665313fa221eedd74b26dd2d80b089314bad",
-      "encoding": "identity",
-      "decoded_bytes": 620,
-      "decoded_sha256": "e1bd2c95e112edee15dd603ad1a7665313fa221eedd74b26dd2d80b089314bad"
-    },
-    {
       "path": "nightlab/model-assets/seating-fit.json",
       "bytes": 3399,
       "sha256": "04516bf501b32ff8667a1738a99fad4cfde10cb5bcfc30836841115111d0c3c5",
@@ -339,27 +323,27 @@
     },
     {
       "path": "nightlab/model-assets/source.json",
-      "bytes": 16398,
-      "sha256": "34d5d2f9e129cf482be12485b34073ffbb51b8882bc000e13694a9ca503f7761",
+      "bytes": 14397,
+      "sha256": "2ad70d26bed617c673da560aada880008d388b5ca9e5520824ab6984284b211d",
       "encoding": "identity",
-      "decoded_bytes": 16398,
-      "decoded_sha256": "34d5d2f9e129cf482be12485b34073ffbb51b8882bc000e13694a9ca503f7761"
+      "decoded_bytes": 14397,
+      "decoded_sha256": "2ad70d26bed617c673da560aada880008d388b5ca9e5520824ab6984284b211d"
     },
     {
       "path": "nightlab/model-notes.js",
-      "bytes": 4527,
-      "sha256": "4702e2dd4889e07f05e3c276a68b5b7b1f9242ba88c9e65d587d3a9a7963a685",
+      "bytes": 4000,
+      "sha256": "1b166a811facb9ecc49ee5a0cadd9e7783edbe1e5425d961897ad573f090074e",
       "encoding": "identity",
-      "decoded_bytes": 4527,
-      "decoded_sha256": "4702e2dd4889e07f05e3c276a68b5b7b1f9242ba88c9e65d587d3a9a7963a685"
+      "decoded_bytes": 4000,
+      "decoded_sha256": "1b166a811facb9ecc49ee5a0cadd9e7783edbe1e5425d961897ad573f090074e"
     },
     {
       "path": "nightlab/model.html",
-      "bytes": 4349,
-      "sha256": "1ce562f3360fbe99ad98bbf62959fa98493b8ce8f3151e978292fdea029a564f",
+      "bytes": 3105,
+      "sha256": "94c1cdb89d2121cdd0d417ab51285445dd685068fd0c0fb845894585eb2b181c",
       "encoding": "identity",
-      "decoded_bytes": 4349,
-      "decoded_sha256": "1ce562f3360fbe99ad98bbf62959fa98493b8ce8f3151e978292fdea029a564f"
+      "decoded_bytes": 3105,
+      "decoded_sha256": "94c1cdb89d2121cdd0d417ab51285445dd685068fd0c0fb845894585eb2b181c"
     },
     {
       "path": "nightlab/preview-timeline.js",
@@ -378,52 +362,12 @@
       "decoded_sha256": "4cae4f0a4635ade74a718b8b5ff177463231e04c32fe1924b8d12d8c5afbca14"
     },
     {
-      "path": "nightlab/screenshots/joint-capture.json",
-      "bytes": 1656,
-      "sha256": "f451a8378796b2cd9ad450f9a91c8141c86354e7198ce1b46d00ce5b82672701",
-      "encoding": "identity",
-      "decoded_bytes": 1656,
-      "decoded_sha256": "f451a8378796b2cd9ad450f9a91c8141c86354e7198ce1b46d00ce5b82672701"
-    },
-    {
-      "path": "nightlab/screenshots/joint-front-on-lit.png",
-      "bytes": 239527,
-      "sha256": "e6344c6413c7b315d2e95b2238b39eb132b04baac11dbd04f00fe5562b918b16",
-      "encoding": "identity",
-      "decoded_bytes": 239527,
-      "decoded_sha256": "e6344c6413c7b315d2e95b2238b39eb132b04baac11dbd04f00fe5562b918b16"
-    },
-    {
-      "path": "nightlab/screenshots/joint-usb-quarter-unlit.png",
-      "bytes": 282500,
-      "sha256": "f2470b432c7c8586dbb27ae6327440e252730453ad1e4c896088679130621344",
-      "encoding": "identity",
-      "decoded_bytes": 282500,
-      "decoded_sha256": "f2470b432c7c8586dbb27ae6327440e252730453ad1e4c896088679130621344"
-    },
-    {
-      "path": "nightlab/screenshots/model-two-faces.jpg",
-      "bytes": 75318,
-      "sha256": "5f4d3233feca8962667cc0376c2a4a4c2050262edf7087658f675d41a4199347",
-      "encoding": "identity",
-      "decoded_bytes": 75318,
-      "decoded_sha256": "5f4d3233feca8962667cc0376c2a4a4c2050262edf7087658f675d41a4199347"
-    },
-    {
-      "path": "nightlab/screenshots/physical-joint-reference.png",
-      "bytes": 1690382,
-      "sha256": "f96e1cbc7a30b3963b57108b2bd683061083384cf84239585e18b0ffb07ca45b",
-      "encoding": "identity",
-      "decoded_bytes": 1690382,
-      "decoded_sha256": "f96e1cbc7a30b3963b57108b2bd683061083384cf84239585e18b0ffb07ca45b"
-    },
-    {
       "path": "nightlab/studio-3d.js",
-      "bytes": 209068,
-      "sha256": "718201e7881546967465b156b4bafdf9eb9807e5098f9324e45a2aaa8054c697",
+      "bytes": 209054,
+      "sha256": "6c39309275fd5a4759b888b4c304b646c5faf3259443c3127d56806033b3e935",
       "encoding": "gzip",
-      "decoded_bytes": 806805,
-      "decoded_sha256": "6f9045b30389d0f667248b531892f07a15b50ecdbbeb391d9c97e7c44687e012"
+      "decoded_bytes": 806802,
+      "decoded_sha256": "555c73cbe76a0804b16218bf32f089f43164ffff74ff7fdb34a8ed5660050ef7"
     },
     {
       "path": "nightlab/studio-appearance.js",
@@ -483,11 +427,11 @@
     },
     {
       "path": "orbit.html",
-      "bytes": 16289,
-      "sha256": "3d637e197acca1f32de4cd0a0f1261cb2af00c6a577b4e6c0a43277a35c7736f",
+      "bytes": 16291,
+      "sha256": "eb3ecda96857bcce2cc63ca97c41ddf8410f805c7b0e785aba1bbb9cc02939c7",
       "encoding": "identity",
-      "decoded_bytes": 16289,
-      "decoded_sha256": "3d637e197acca1f32de4cd0a0f1261cb2af00c6a577b4e6c0a43277a35c7736f"
+      "decoded_bytes": 16291,
+      "decoded_sha256": "eb3ecda96857bcce2cc63ca97c41ddf8410f805c7b0e785aba1bbb9cc02939c7"
     },
     {
       "path": "orbit.js",
@@ -507,11 +451,11 @@
     },
     {
       "path": "patterns.html",
-      "bytes": 16295,
-      "sha256": "9f8334606587922814109b3158f81ffcb4911625a732c4ac03d0058b0cb9c84e",
+      "bytes": 16304,
+      "sha256": "81a417253359b1454ef6739e2d807864d23395f95df62230b106704333f60cbe",
       "encoding": "identity",
-      "decoded_bytes": 16295,
-      "decoded_sha256": "9f8334606587922814109b3158f81ffcb4911625a732c4ac03d0058b0cb9c84e"
+      "decoded_bytes": 16304,
+      "decoded_sha256": "81a417253359b1454ef6739e2d807864d23395f95df62230b106704333f60cbe"
     },
     {
       "path": "patterns.js",

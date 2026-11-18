@@ -18,23 +18,19 @@ var nightlabAssetNames = append(append([]string(nil), assetNames...), []string{
 	"nightlab/readback.js", "nightlab/time-format.js",
 	"nightlab/studio-3d.js", "nightlab/light-model.js", "nightlab/enclosure-fit.js", "nightlab/THREE-LICENSE.txt",
 	"nightlab/compiler/nb1.wasm", "nightlab/compiler/wasm_exec.js",
-	"nightlab/compiler/compiler-source.json", "nightlab/compiler/GO-LICENSE.txt", "nightlab/compiler/NB1-LICENSE.txt",
+	"nightlab/compiler/compiler-source.json", "nightlab/compiler/GO-LICENSE.txt", "nightlab/compiler/NB1-LICENSE.txt", "nightlab/compiler/COLORKIT-LICENSE.txt",
 	"nightlab/model-assets/blink1mk2_enclosure_diffuser_v3k.stl",
 	"nightlab/model-assets/blink1mk2_enclosure_frame_v3k.stl",
 	"nightlab/model-assets/source.json", "nightlab/model-assets/seating-fit.json",
-	"nightlab/model-assets/LICENSE.txt", "nightlab/model-assets/project-led-faces.txt",
-	"nightlab/model.html", "nightlab/model-notes.js", "nightlab/home.css", "nightlab/docs/INTEGRATION.md",
-	"nightlab/screenshots/physical-joint-reference.png", "nightlab/screenshots/joint-usb-quarter-unlit.png",
-	"nightlab/screenshots/joint-front-on-lit.png", "nightlab/screenshots/model-two-faces.jpg",
-	"nightlab/screenshots/joint-capture.json",
-	"nightlab/hardware-checks/led-face-20261114T143506Z.json",
+	"nightlab/model-assets/LICENSE.txt",
+	"nightlab/model.html", "nightlab/model-notes.js", "nightlab/home.css",
 }...)
 
 func nightlabBaseAsset(name string) bool {
 	if !strings.HasPrefix(name, "nightlab/") {
 		return true
 	}
-	for _, prefix := range []string{"nightlab/compiler/", "nightlab/model-assets/", "nightlab/screenshots/", "nightlab/hardware-checks/", "nightlab/docs/"} {
+	for _, prefix := range []string{"nightlab/compiler/", "nightlab/model-assets/"} {
 		if strings.HasPrefix(name, prefix) {
 			return false
 		}

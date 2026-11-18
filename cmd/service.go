@@ -37,7 +37,7 @@ func newServiceCommandForRuntime(management userServiceRuntime) *cobra.Command {
 	render := &cobra.Command{
 		Use: "render", Short: "Render one target platform's startup configuration",
 		Args:    cobra.NoArgs,
-		Example: "  nb1 service render --platform darwin --binary /absolute/path/nb1 --devices 20005601\n  nb1 service render --platform linux --binary /opt/nb1/nb1 --devices 20005601 --output nb1.service",
+		Example: "  nb1 service render --platform darwin --binary /absolute/path/nb1 --devices DEVICE_SERIAL\n  nb1 service render --platform linux --binary /opt/nb1/nb1 --devices DEVICE_SERIAL --output nb1.service",
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			if output != "" {
 				_, err := service.WriteFile(config, output)

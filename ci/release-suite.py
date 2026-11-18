@@ -28,7 +28,7 @@ SOURCE_GO_FLOOR = "1.25.8"
 SCOPE = "Versioned native software package; physical USB, minimum-OS qualification and managed-service acceptance are separate."
 VERSION = re.compile(r"v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\Z")
 LICENSES = {"LICENSE.txt", "editor-LICENSES.txt", "fonts/MPLUSRounded1c-OFL.txt", "fonts/Fredoka-OFL.txt",
-            "nightlab/compiler/GO-LICENSE.txt", "nightlab/compiler/NB1-LICENSE.txt",
+            "nightlab/compiler/GO-LICENSE.txt", "nightlab/compiler/NB1-LICENSE.txt", "nightlab/compiler/COLORKIT-LICENSE.txt",
             "nightlab/model-assets/LICENSE.txt", "nightlab/THREE-LICENSE.txt"}
 SKILL_FILES = BASE.SKILL_FILES | {"LICENSE"}
 

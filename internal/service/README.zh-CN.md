@@ -14,11 +14,11 @@
 
 ```bash
 nb1 service render --platform darwin \
-  --binary /absolute/path/to/nb1 --devices 20005601 \
+  --binary /absolute/path/to/nb1 --devices DEVICE_SERIAL \
   --listen 127.0.0.1:8931 --output org.b1ug.nb1.plist
 
 nb1 service render --platform linux \
-  --binary /opt/nb1/nb1 --devices 20005601,30000001 \
+  --binary /opt/nb1/nb1 --devices SERIAL_A,SERIAL_B \
   --output nb1.service
 ```
 
@@ -27,7 +27,7 @@ Windows PowerShell示例：
 ```powershell
 $nb1 = 'C:\Program Files\nb1\nb1.exe'
 & $nb1 service render --platform windows --binary $nb1 `
-  --devices 20005601 --output .\nb1-task.ps1
+  --devices DEVICE_SERIAL --output .\nb1-task.ps1
 Get-Content .\nb1-task.ps1
 ```
 
@@ -78,7 +78,7 @@ nb1 service install --binary /absolute/path/to/nb1 --devices 20000001 --start
 # 已安装配置的单独启动，不需要重填配置参数
 nb1 service start --json
 nb1 service status --json
-nb1 doctor --serial 20005601 --json
+nb1 doctor --serial DEVICE_SERIAL --json
 ```
 
 立即加载前应正常停止占用同一监听端口或设备的手工daemon；安装器不会代停、替换或强杀它。服务先绑定端口，再尝试硬件所有权，注册成功也可能因端口占用、配置或设备问题而尚未提供API。`KeepAlive` 会保持已加载服务，不应把单纯 `kill` 当作永久停用。相同托管配置已注册时，重复install或start不会重启或kickstart进程，即使注册项当前没有运行进程。`start`只加载已有完整托管plist，不创建或接管配置；加载前复核完整内容、inode、当前用户身份和可查询的GUI域，并检查原绝对二进制仍为可执行普通文件、路径未改成符号链接。检查失败就拒绝bootstrap。

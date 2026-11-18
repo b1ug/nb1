@@ -38,7 +38,7 @@ func newServerCommand() *cobra.Command {
 		Use: "server", Aliases: aliasesServer, Short: "Run the local blink(1) device daemon",
 		Long:    "Keep explicitly selected devices open and serve the v1 HTTP API on loopback. API, CLI and agents share each device worker. Stop with Ctrl-C or SIGTERM; shutdown cancels jobs and turns devices off. No system service is installed.",
 		Args:    cobra.NoArgs,
-		Example: "  nb1 server --devices 20005601\n  nb1 --device 20005601 server --listen 127.0.0.1:8931\n  nb1 server --devices 20005601 --port 8932",
+		Example: "  nb1 server --devices DEVICE_SERIAL\n  nb1 --device DEVICE_SERIAL server --listen 127.0.0.1:8931\n  nb1 server --devices DEVICE_SERIAL --port 8932",
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			settings, _, err := applicationSettings(cmd)
 			if err != nil {

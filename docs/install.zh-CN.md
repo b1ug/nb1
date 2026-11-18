@@ -1,18 +1,18 @@
-# 安装与使用 nb1 v0.1.1
+# 安装与使用 nb1 v0.1.2
 
 [English](install.md)
 
-从 [nb1 v0.1.1](https://github.com/b1ug/nb1/releases/tag/v0.1.1) 下载匹配的程序。CLI、本地 server 和完整 Nightlab 调试器都在同一个 `nb1` 可执行文件里。使用预编译程序不需要安装 Go、Node.js 或单独的 Web，也不需要浏览器 WebHID 授权。
+从 [nb1 v0.1.2](https://github.com/b1ug/nb1/releases/tag/v0.1.2) 下载匹配的程序。CLI、本地 server 和完整 Nightlab 调试器都在同一个 `nb1` 可执行文件里。使用预编译程序不需要安装 Go、Node.js 或单独的 Web，也不需要浏览器 WebHID 授权。
 
 ## 下载与核验
 
 | 电脑 | CLI 包 |
 | --- | --- |
-| Apple Silicon Mac | `nb1-v0.1.1-darwin-arm64.tar.gz` |
-| Intel Mac | `nb1-v0.1.1-darwin-amd64.tar.gz` |
-| Linux arm64 | `nb1-v0.1.1-linux-arm64.tar.gz` |
-| Linux amd64 | `nb1-v0.1.1-linux-amd64.tar.gz` |
-| Windows amd64 | `nb1-v0.1.1-windows-amd64.zip` |
+| Apple Silicon Mac | `nb1-v0.1.2-darwin-arm64.tar.gz` |
+| Intel Mac | `nb1-v0.1.2-darwin-amd64.tar.gz` |
+| Linux arm64 | `nb1-v0.1.2-linux-arm64.tar.gz` |
+| Linux amd64 | `nb1-v0.1.2-linux-amd64.tar.gz` |
+| Windows amd64 | `nb1-v0.1.2-windows-amd64.zip` |
 
 本次预编译 CLI／server 在两种 Mac 架构上的二进制最低版本均为 macOS 15.0；Linux CLI 需要 glibc 2.38 或更新版本。可选 MCP 程序的 macOS 二进制最低版本为 13.0，Linux MCP 为静态链接；它仍需要兼容的 nb1 server，因此不会降低本机 server 的要求。macOS 下载包未经过 Developer ID 公证。
 
@@ -21,7 +21,7 @@
 从同一 Release 下载所选包、`release.json` 和全局 `SHA256SUMS`，核对完整 SHA-256 与准确文件名。Apple Silicon Mac 示例：
 
 ```sh
-shasum -a 256 nb1-v0.1.1-darwin-arm64.tar.gz
+shasum -a 256 nb1-v0.1.2-darwin-arm64.tar.gz
 ```
 
 Linux 可用 `sha256sum`，Windows PowerShell 可用 `Get-FileHash -Algorithm SHA256`。全局清单还列着其他平台的包，仅下载一个平台时不要把其他文件缺失误判成当前包损坏。校验和检查内容一致性，不是独立签名；下载包和预期清单都应来自可信的 Release 页面。
@@ -29,9 +29,9 @@ Linux 可用 `sha256sum`，Windows PowerShell 可用 `Get-FileHash -Algorithm SH
 解压到独立的新目录，再检查包内清单。macOS 示例：
 
 ```sh
-mkdir nb1-v0.1.1
-tar -xzf nb1-v0.1.1-darwin-arm64.tar.gz -C nb1-v0.1.1
-cd nb1-v0.1.1
+mkdir nb1-v0.1.2
+tar -xzf nb1-v0.1.2-darwin-arm64.tar.gz -C nb1-v0.1.2
+cd nb1-v0.1.2
 shasum -a 256 -c SHA256SUMS
 ./nb1 version --json
 ```
@@ -117,8 +117,8 @@ install 安排以后登录时可能加载；未加 `--start` 不请求本次立�
 
 可选同版下载：
 
-- `nb1-mcp-v0.1.1-<os>-<arch>.tar.gz`（Windows 为 `.zip`）：解压到另一新目录，核验包内清单，再配置 MCP host 使用绝对 `nb1-mcp` 路径及参数 `--endpoint http://127.0.0.1:8931 --timeout 10s`。初始化报告 `v0.1.1`；真实 stdio 协议连接本机 HTTP，不包装 CLI，也不占 USB。
-- `blink1-control-v0.1.1.zip`：把内容解压到新的 `blink1-control` 文件夹，再完整复制到项目的 `.agents/skills/`，保留 `SKILL.md`、`agents/` 与 `references/`。Skill 不安装程序、注册 MCP、启用全局 hook 或扩大权限，见 [Agent 指引](agent-guide.zh-CN.md)。
+- `nb1-mcp-v0.1.2-<os>-<arch>.tar.gz`（Windows 为 `.zip`）：解压到另一新目录，核验包内清单，再配置 MCP host 使用绝对 `nb1-mcp` 路径及参数 `--endpoint http://127.0.0.1:8931 --timeout 10s`。初始化报告 `v0.1.2`；真实 stdio 协议连接本机 HTTP，不包装 CLI，也不占 USB。
+- `blink1-control-v0.1.2.zip`：把内容解压到新的 `blink1-control` 文件夹，再完整复制到项目的 `.agents/skills/`，保留 `SKILL.md`、`agents/` 与 `references/`。Skill 不安装程序、注册 MCP、启用全局 hook 或扩大权限，见 [Agent 指引](agent-guide.zh-CN.md)。
 
 MCP 单独选择 endpoint，不读取 nb1 YAML；各客户端应指向同一份目标 daemon。API 校验 Host 与浏览器 Origin，但 loopback 不是用户身份认证，同机能调用端口的其他进程仍可能控制已配置的灯。本地调试器不需要键盘、输入监控或相机权限。
 

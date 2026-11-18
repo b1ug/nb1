@@ -2,12 +2,12 @@
   "schema_version": 1,
   "artifact_kind": "nb1-browser-pure-go-compiler",
   "status": "PASS",
-  "source_commit": "72c2f097319bc7ce0086204b8e713c8b3f16cbbc",
+  "source_commit": "b5cfe68cbb412d81a80d948b845aee5b0aba586b",
   "repository": "https://github.com/b1ug/nb1.git",
-  "source_mode": "pinned-public-git-object",
-  "archive_sha256": "a7e881b2c779b8fd45c62c1500fece9c0e06e9a7558bb8825490e5ae368b4cb5",
-  "archive_members": 763,
-  "source_lock_sha256": "e5a3c7baa8efdf5261a2c9f46c976aca878d2d9bbf856e87147b8403c31937a9",
+  "source_mode": "explicit-clean-checkout",
+  "archive_sha256": "42690a3eda04666aae8f7e9a27ff63082ef17472f733df0940c4ebb6d003a5f7",
+  "archive_members": 772,
+  "source_lock_sha256": "e1be5449a8e39a2ae54490a0d4c6deaa196dcec731741da174c9d0a0bc4af19a",
   "locked_files": [
     {
       "path": "LICENSE",
@@ -16,13 +16,13 @@
     },
     {
       "path": "go.mod",
-      "bytes": 2194,
-      "sha256": "9abaf6617c1c93234d15b1f43cbaab1bdb742223aed96095f383173b678cf905"
+      "bytes": 2874,
+      "sha256": "616f28b28bf4c92ff0513687f068ec0ae1f27ef5d02d072c7c9de0b0abc78618"
     },
     {
       "path": "go.sum",
-      "bytes": 59003,
-      "sha256": "3a9943f0fd4a045bd8e8c5f7cc9bb5502fa0130c22e9dc7b63fea1b7155ccf59"
+      "bytes": 59091,
+      "sha256": "955277101eee51b84f3d8f5a9e527bb0b12f65f48b37523a6a010a13c70352e6"
     },
     {
       "path": "internal/actionv1/compile.go",
@@ -41,28 +41,23 @@
     },
     {
       "path": "internal/colorinput/README.md",
-      "bytes": 1941,
-      "sha256": "64e556ce76e609cfd6cf8a8e8dd52abfc90133af89f79eb80d37651e6d7d95f6"
+      "bytes": 2437,
+      "sha256": "148106e6e01c2f44c0a3c56d9d3a632dbd491ac40fc9b1fb5bbd24dc1485719f"
     },
     {
       "path": "internal/colorinput/colorinput.go",
-      "bytes": 7929,
-      "sha256": "98e3357caec1ecc7c7a950f0d6465b4553788ad660b9da23916fb5b36a394d1f"
+      "bytes": 7620,
+      "sha256": "29e868f1eadbaf0a66495def36e929ae1010a800a8c4332fc7baf242d39c75cf"
     },
     {
       "path": "internal/colorinput/colorinput_test.go",
-      "bytes": 11605,
-      "sha256": "7f18309c909c08173e8efd720bcef12fe312b6e38294b0c8e558b1206b4dff6f"
+      "bytes": 12043,
+      "sha256": "5c172b247e94f81e9ea0ac6d8692e6229200a3d372d4b9bafffcf09dbda9aaaf"
     },
     {
       "path": "internal/colorinput/hsv.go",
-      "bytes": 1950,
-      "sha256": "afc4e88b41694a79dcbaa3f2a7ba6f2ade17f7841e2e809a210a13f516e016b2"
-    },
-    {
-      "path": "internal/colorinput/palette.go",
-      "bytes": 6607,
-      "sha256": "091ca03de6841a29e21d545650ea189d3303973cc033239a3614c1a70b4fbabf"
+      "bytes": 773,
+      "sha256": "2e277bb30814940a42798e969cac8442e4a92ae57d39132ee09c90bee0ed9949"
     },
     {
       "path": "internal/colorinput/testdata/css-named-2026.tsv",
@@ -105,16 +100,6 @@
       "sha256": "5a94c62f8c2f4b4e7bca46a7cc9bd5bed5ee7a12cd644b5aa670cdf971bd6e84"
     },
     {
-      "path": "internal/sequence/sequence.go",
-      "bytes": 6634,
-      "sha256": "7a4520451be301facaa39132c9489a161f7f83ffa99360b4e8deaf8513268746"
-    },
-    {
-      "path": "internal/sequence/sequence_test.go",
-      "bytes": 6246,
-      "sha256": "a4fbfdf0e764e9161f44d82890c16810d1e90c08aaaeef41a7506176c7a5e8ca"
-    },
-    {
       "path": "internal/sequence/playback.go",
       "bytes": 5678,
       "sha256": "7ca85593af61a4c08d75f560973a57c65159bad48d7e20991c87c7baca7b8de1"
@@ -123,11 +108,21 @@
       "path": "internal/sequence/playback_test.go",
       "bytes": 6874,
       "sha256": "c096e1b06b5bd8a42585803836a53ceb0c68a39378f9dd21502b33e416924257"
+    },
+    {
+      "path": "internal/sequence/sequence.go",
+      "bytes": 6634,
+      "sha256": "7a4520451be301facaa39132c9489a161f7f83ffa99360b4e8deaf8513268746"
+    },
+    {
+      "path": "internal/sequence/sequence_test.go",
+      "bytes": 6246,
+      "sha256": "a4fbfdf0e764e9161f44d82890c16810d1e90c08aaaeef41a7506176c7a5e8ca"
     }
   ],
   "bridge_files": {
     "compiler/bridge/bridge.go": {
-      "sha256": "223ef8a2c93d951eeb0f76908f7e46415aadb434d5ca4ff739653c0576d8ee45",
+      "sha256": "42ecb2c8d45f399f582dfe9cc1984f611a36b6df4ac2da5343401059b894b1ab",
       "bytes": 4412
     },
     "compiler/wasm/main.go": {
@@ -151,6 +146,13 @@
     "github.com/b1ug/nb1/internal/browsercompiler",
     "github.com/b1ug/nb1/cmd/nb1-browser-wasm"
   ],
+  "public_modules": [
+    {
+      "Path": "github.com/b1ug/colorkit",
+      "Version": "v0.1.0",
+      "Sum": "h1:rNKZBdsv6UdYCdg+x8c4Nav6WqpWDDYjEcMVH66n1z4="
+    }
+  ],
   "hardware_access": false,
   "pure_package_tests": {
     "run": true,
@@ -160,8 +162,8 @@
   },
   "files": {
     "nb1.wasm": {
-      "sha256": "6c0fcf511b811b807f7c49391a3f01f750db192550663fde7299473f7aa438ea",
-      "bytes": 4978528
+      "sha256": "a96e9b898094ffca5ad6d1c8e388df8695b8d2087726aec6cbe00846e17c0790",
+      "bytes": 4983829
     },
     "wasm_exec.js": {
       "sha256": "0c949f4996f9a89698e4b5c586de32249c3b69b7baadb64d220073cc04acba14",
@@ -174,7 +176,11 @@
     "NB1-LICENSE.txt": {
       "sha256": "a428d1101807989e11ae625f4316d360a27b2a922f4f6cb6ce5981e8cfeafe93",
       "bytes": 1076
+    },
+    "COLORKIT-LICENSE.txt": {
+      "sha256": "aeb30ebfe31f295341ba5a850da50416931ab242bc225ca363a16aa7f124b05a",
+      "bytes": 1117
     }
   },
-  "recorded_at": "2026-11-13T19:13:02.280037+00:00"
+  "recorded_at": "2026-11-18T02:24:51.758090+00:00"
 }

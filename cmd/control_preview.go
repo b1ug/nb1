@@ -42,7 +42,7 @@ func newControlPreviewCommand(options *controlFlags) *cobra.Command {
 		Use:     "preview --program FILE | --effect FILE [--serial SERIAL]",
 		Short:   "Preview a Program or Effect without creating a Job",
 		Long:    "Choose exactly one Program or Effect file. The daemon validates and compiles it by default, returning the normalized Program, nominal duration and limits. Optional --serial checks cached device capabilities; it does not confirm admission or execution. Explicit --mode direct uses the same pure software compiler without contacting a daemon, discovering devices, acquiring device ownership or opening USB; direct preview rejects --serial. Preview accepts no policy or request receipt and creates or cancels no Job. An unsupported daemon returns an error without falling back to direct control.",
-		Example: "  nb1 control preview --program program.json\n  nb1 control preview --effect pulse.effect.json\n  nb1 control preview --program program.json --serial 20005601\n  nb1 control preview --effect pulse.effect.json --serial 20005601\n  nb1 control --mode direct preview --effect pulse.effect.json",
+		Example: "  nb1 control preview --program program.json\n  nb1 control preview --effect pulse.effect.json\n  nb1 control preview --program program.json --serial DEVICE_SERIAL\n  nb1 control preview --effect pulse.effect.json --serial DEVICE_SERIAL\n  nb1 control --mode direct preview --effect pulse.effect.json",
 		Args:    cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			programFlag, effectFlag := cmd.Flags().Changed("program"), cmd.Flags().Changed("effect")

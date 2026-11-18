@@ -29,7 +29,7 @@ def fixture(path):
         (path / name).write_bytes(("fixture " + name + "\n").encode())
     manifest = {
         "schema_version": 1, "product": "nb1-web", "asset_base": "./",
-        "source": {"repository": "local:nb1-web", "commit": COMMIT, "dirty": False, "tree_sha256": "2" * 64},
+        "source": {"repository": "https://github.com/b1ug/nb1-workbench", "commit": COMMIT, "dirty": False, "tree_sha256": "2" * 64},
         "build": {"tool": "static-editor/v1", "node": "v24.0.0", "lockfile_sha256": "3" * 64},
         "api_contracts": sorted(contracts),
         "files": [{"path": name, "bytes": (path / name).stat().st_size, "sha256": importer.sha((path / name).read_bytes())} for name in sorted(assets)],
@@ -89,6 +89,18 @@ def snapshot(path):
 
 
 class ImportBoundaryTests(unittest.TestCase):
+    def test_workstation_paths_rejected_in_plain_and_compressed_assets(self):
+        for private_path in (b"/Users/example/project/model.stl", b"C:\\Users\\example\\project\\model.stl",
+                             b"/home/example/workspace/model.stl"):
+            for encoding in ("identity", "gzip"):
+                with self.subTest(path=private_path, encoding=encoding), tempfile.TemporaryDirectory() as temporary:
+                    source = Path(temporary) / "dist"
+                    manifest = nightlab_fixture(source)
+                    set_nightlab_asset(source, manifest, "nightlab/model-assets/source.json", private_path, encoding)
+                    refresh_nightlab_manifest(source, manifest)
+                    with self.assertRaisesRegex(importer.InvalidBundle, "workstation-specific path"):
+                        validate(source)
+
     def test_nightlab_profile_compression_and_import(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

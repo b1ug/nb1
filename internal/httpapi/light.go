@@ -328,16 +328,13 @@ var nightlabDemoAssetTypes = map[string]string{
 	"nightlab/light-model.js": "text/javascript; charset=utf-8", "nightlab/enclosure-fit.js": "text/javascript; charset=utf-8",
 	"nightlab/compiler/nb1.wasm": "application/wasm", "nightlab/compiler/wasm_exec.js": "text/javascript; charset=utf-8",
 	"nightlab/compiler/compiler-source.json": "application/json", "nightlab/compiler/GO-LICENSE.txt": "text/plain; charset=utf-8", "nightlab/compiler/NB1-LICENSE.txt": "text/plain; charset=utf-8",
+	"nightlab/compiler/COLORKIT-LICENSE.txt":                     "text/plain; charset=utf-8",
 	"nightlab/model-assets/blink1mk2_enclosure_diffuser_v3k.stl": "model/stl",
 	"nightlab/model-assets/blink1mk2_enclosure_frame_v3k.stl":    "model/stl",
 	"nightlab/model-assets/source.json":                          "application/json", "nightlab/model-assets/seating-fit.json": "application/json",
-	"nightlab/model-assets/LICENSE.txt": "text/plain; charset=utf-8", "nightlab/model-assets/project-led-faces.txt": "text/plain; charset=utf-8",
-	"nightlab/model.html": "text/html; charset=utf-8", "nightlab/home.css": "text/css; charset=utf-8",
-	"nightlab/model-notes.js": "text/javascript; charset=utf-8", "nightlab/docs/INTEGRATION.md": "text/markdown; charset=utf-8",
-	"nightlab/screenshots/physical-joint-reference.png": "image/png", "nightlab/screenshots/joint-usb-quarter-unlit.png": "image/png",
-	"nightlab/screenshots/joint-front-on-lit.png": "image/png", "nightlab/screenshots/model-two-faces.jpg": "image/jpeg",
-	"nightlab/screenshots/joint-capture.json":                 "application/json",
-	"nightlab/hardware-checks/led-face-20261114T143506Z.json": "application/json",
+	"nightlab/model-assets/LICENSE.txt": "text/plain; charset=utf-8",
+	"nightlab/model.html":               "text/html; charset=utf-8", "nightlab/home.css": "text/css; charset=utf-8",
+	"nightlab/model-notes.js": "text/javascript; charset=utf-8",
 }
 
 // Presentation queries belong only to the workbench documents. Assets and

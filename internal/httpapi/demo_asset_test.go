@@ -129,8 +129,6 @@ func TestNightlabRoutesReturnDecodedAssetsWithoutDeviceAccess(t *testing.T) {
 		"nightlab/compiler/nb1.wasm":                                 "application/wasm",
 		"nightlab/model-assets/blink1mk2_enclosure_diffuser_v3k.stl": "model/stl",
 		"nightlab/model.html":                                        "text/html; charset=utf-8",
-		"nightlab/screenshots/physical-joint-reference.png":          "image/png",
-		"nightlab/docs/INTEGRATION.md":                               "text/markdown; charset=utf-8",
 	} {
 		response := httptest.NewRecorder()
 		handler.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "http://127.0.0.1/demo/"+name, nil))
@@ -138,7 +136,9 @@ func TestNightlabRoutesReturnDecodedAssetsWithoutDeviceAccess(t *testing.T) {
 			t.Fatalf("critical MIME %s: %v", name, response.Header())
 		}
 	}
-	for _, path := range []string{"/demo/nightlab/", "/demo/nightlab/private.env", "/demo/nightlab/compiler/", "/demo/nightlab/compiler/../compiler/nb1.wasm", "/demo/nightlab/studio-3d.js.gz"} {
+	for _, path := range []string{"/demo/nightlab/", "/demo/nightlab/private.env", "/demo/nightlab/compiler/", "/demo/nightlab/compiler/../compiler/nb1.wasm", "/demo/nightlab/studio-3d.js.gz",
+		"/demo/nightlab/docs/INTEGRATION.md", "/demo/nightlab/model-assets/project-led-faces.txt", "/demo/nightlab/screenshots/joint-capture.json",
+		"/demo/nightlab/hardware-checks/led-face-20261114T143506Z.json"} {
 		response := httptest.NewRecorder()
 		handler.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "http://127.0.0.1"+path, nil))
 		if response.Code != http.StatusNotFound {

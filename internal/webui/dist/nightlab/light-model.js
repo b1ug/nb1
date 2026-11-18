@@ -377,7 +377,7 @@ export function createBlink1Model(THREE, { diffuserGeometry, frameGeometry } = {
     1: { axis: '+y', wordmark: hasCAD ? 'blink(1)' : null },
     2: { axis: '-y', wordmark: hasCAD ? 'ThingM' : null },
   };
-  group.userData.faceMappingSource = 'project author original LED address table: Notion-Doc1, lines 101–103; official FAQ supplies top/bottom numbering';
+  group.userData.faceMappingSource = 'Project MK2 wordmark mapping; manufacturer references supply top/bottom numbering. See model-assets/source.json.';
   group.userData.bodySize = { x: shellSize.x, y: shellSize.y, z: shellSize.z };
   group.userData.upAxis = 'y';
 

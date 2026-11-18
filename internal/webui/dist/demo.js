@@ -22,6 +22,7 @@
   let deviceGeneration = 0, colorLibraryGeneration = 0, recovery = null, pageActive = true, pageEpoch = 0, queryToken = null;
   const recoveryDelays = [1000, 2000, 4000];
   let localColors = [];
+  let devices = [], refreshGeneration = 0, deviceReady = false, deviceIssue = "Reading the local service…";
   const outputs = new Map(), actionDrafts = new Map();
   const colorSaves = Object.fromEntries(["a", "b"].map(suffix => [suffix, {key: null, color: null, pending: false, saving: false, unknown: null, generation: 0, timer: null, controller: null}]));
   const patternSave = {pending: false, unknown: false, capture: null};
@@ -250,7 +251,7 @@
   }
   function updateButtons() {
     const waiting = task && (task.unknown || !task.rejected && !terminal(task.job?.status));
-    $("play").disabled = submitting || previewing || waiting || !serial.test($("device-select").value);
+    $("play").disabled = submitting || previewing || waiting || !deviceReady || !serial.test($("device-select").value);
     $("play").setAttribute("aria-busy", String(submitting));
     $("play-feedback").dataset.recoveryState = recoveryState();
     $("preview").disabled = submitting || previewing;
@@ -270,6 +271,7 @@
       else {
         if (textSources.get($("play-feedback")) === "Preparing preview…") playFeedback("");
         if (!serial.test($("device-select").value)) playFeedback("Choose a device before playing.");
+        else if (!deviceReady) playFeedback(deviceIssue);
       }
     }
   }
@@ -466,6 +468,7 @@
     try {
       const capture = captureDraft();
       if (!serial.test(capture.device)) throw Error("Choose a device before playing.");
+      if (!deviceReady) throw Error(deviceIssue);
       playFeedback("Checking…");
       const {value} = await compileDraft(capture);
       if (intent !== playIntent || document.hidden || !currentDraft(capture)) {
@@ -662,38 +665,75 @@
     reconcile(); return sync;
   }
   const syncSelectPickers = installSelectPickers();
+  function deviceMessage() {
+    const id = $("device-select").value;
+    const summary = devices.length > 1 || id && !devices.some(d => d.serial === id) ? "Configured: " + devices.length + " · Target: " + id + ". " : "";
+    $("device-message").hidden = !summary && !deviceIssue;
+    $("device-message").textContent = summary + deviceIssue;
+  }
+  function clearReadback() {
+    for (const suffix of ["one", "two"]) {
+      $("led-" + suffix).style.backgroundColor = "#e4e7d5"; $("led-" + suffix).dataset.available = "false"; $("rgb-" + suffix).textContent = "—";
+    }
+    $("sample-time").textContent = "—";
+  }
   async function refreshDevices() {
-    const {value} = await request("/v1/devices");
-    if (!Array.isArray(value) || value.length > 64 || value.some(d => !serial.test(d.serial) || typeof d.connection !== "string")) throw Error("Invalid device list");
+    const generation = ++refreshGeneration;
+    deviceGeneration++;
+    deviceReady = false; deviceIssue = "Reading the local service…"; deviceMessage(); updateButtons();
+    let value;
+    try {
+      ({value} = await request("/v1/devices"));
+      if (!Array.isArray(value) || value.length > 64 || value.some(d => !d || typeof d.serial !== "string" || !serial.test(d.serial) || typeof d.connection !== "string") || new Set(value.map(d => d.serial)).size !== value.length) throw Error("Invalid device list");
+    } catch (error) {
+      if (generation !== refreshGeneration) return;
+      deviceIssue = "Could not read devices. Refresh to check again."; deviceMessage(); updateButtons();
+      throw error;
+    }
+    if (generation !== refreshGeneration) return;
+    devices = value.sort((a, b) => a.serial < b.serial ? -1 : a.serial > b.serial ? 1 : 0);
     const before = $("device-select").value; $("device-select").replaceChildren();
-    for (const device of value) $("device-select").append(new Option(device.serial, device.serial));
-    if (!value.length) $("device-select").append(new Option("—", ""));
-    if (value.some(d => d.serial === before)) $("device-select").value = before;
+    for (const device of devices) $("device-select").append(new Option(device.serial, device.serial));
+    // A refresh must never silently move an existing target to another light.
+    if (before && !devices.some(d => d.serial === before)) $("device-select").append(new Option(before, before));
+    if (before) $("device-select").value = before;
+    else if (devices.length) $("device-select").value = (devices.find(d => d.connection === "online") || devices[0]).serial;
+    else $("device-select").append(new Option("—", ""));
     syncSelectPickers($("device-select"));
     if (before !== $("device-select").value) invalidate();
-    $("device-message").textContent = value.length ? "Selected from the local service." : "No devices configured.";
     await readDevice();
   }
   async function readDevice() {
     const id = $("device-select").value, generation = ++deviceGeneration;
-    if (!id) {
+    deviceReady = false; clearReadback();
+    deviceIssue = !id ? "No devices configured." : !devices.some(d => d.serial === id) ? "Target is no longer configured. Choose a device." : "Reading the local service…";
+    deviceMessage(); updateButtons();
+    if (!id || !devices.some(d => d.serial === id)) {
       $("connection").textContent = "Disconnected"; $("connection").dataset.state = "disconnected";
-      for (const [suffix, key] of [["one", "led1"], ["two", "led2"]]) {
-        $("led-" + suffix).style.backgroundColor = "#e4e7d5"; $("led-" + suffix).dataset.available = "false"; $("rgb-" + suffix).textContent = "—";
-      }
-      $("sample-time").textContent = "—";
-      $("device-message").hidden = false; $("device-message").textContent = "Choose a device.";
       return;
     }
-    const {value} = await request("/v1/devices/" + id);
+    $("connection").textContent = "Checking…"; $("connection").dataset.state = "disconnected";
+    let value;
+    try {
+      ({value} = await request("/v1/devices/" + id));
+      if (!value || value.serial !== id || typeof value.connection !== "string" || value.observed !== null && (!value.observed || ![value.observed.led1, value.observed.led2].every(v => v === null || hex.test(v)))) throw Error("Invalid cached device state");
+    }
+    catch (error) {
+      if (generation !== deviceGeneration || id !== $("device-select").value) return;
+      deviceIssue = "Could not read devices. Refresh to check again."; deviceMessage(); updateButtons();
+      throw error;
+    }
     if (generation !== deviceGeneration || id !== $("device-select").value) return;
-    if (value.serial !== id || typeof value.connection !== "string" || value.observed !== null && (!value.observed || ![value.observed.led1, value.observed.led2].every(v => v === null || hex.test(v)))) throw Error("Invalid cached device state");
-    $("connection").textContent = value.connection === "online" ? "Online" : "Offline";
-    $("connection").dataset.state = value.connection === "online" ? "online" : "offline";
-    for (const [suffix, key] of [["one", "led1"], ["two", "led2"]]) { const color = value.observed?.[key]; $("led-" + suffix).style.backgroundColor = color || "#e4e7d5"; $("led-" + suffix).dataset.available = String(Boolean(color)); $("rgb-" + suffix).textContent = color || "—"; }
-    $("sample-time").textContent = value.observed?.sampled_at || "—";
-    $("device-message").hidden = value.connection === "online";
-    if (value.connection !== "online") $("device-message").textContent = "Device is offline.";
+    deviceReady = value.connection === "online";
+    const labels = {online: "Online", offline: "Offline", connecting: "Connecting", busy: "Busy", error: "Failed"};
+    $("connection").textContent = labels[value.connection] || "Unavailable"; $("connection").dataset.state = deviceReady ? "online" : "offline";
+    if (deviceReady && textSources.get($("play-feedback")) === deviceIssue) playFeedback("");
+    deviceIssue = deviceReady ? "" : value.connection === "offline" ? "Device is offline. Check USB or daemon diagnostics." : "Device is not ready. Refresh or check daemon diagnostics.";
+    if (deviceReady) {
+      for (const [suffix, key] of [["one", "led1"], ["two", "led2"]]) { const color = value.observed?.[key]; $("led-" + suffix).style.backgroundColor = color || "#e4e7d5"; $("led-" + suffix).dataset.available = String(Boolean(color)); $("rgb-" + suffix).textContent = color || "—"; }
+      $("sample-time").textContent = value.observed?.sampled_at || "—";
+    }
+    deviceMessage(); updateButtons();
   }
   async function refreshColors() {
     const generation = ++colorLibraryGeneration;

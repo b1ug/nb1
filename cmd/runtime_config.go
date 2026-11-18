@@ -5,13 +5,16 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
+	"sort"
+	"time"
 
 	"github.com/b1ug/nb1/internal/appconfig"
 	"github.com/b1ug/nb1/internal/control"
 	"github.com/b1ug/nb1/internal/daemonclient"
+	"github.com/b1ug/nb1/util"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"go.uber.org/zap/zapcore"
 )
 
 func profileSelection(cmd *cobra.Command) (appconfig.Selection, error) {
@@ -115,12 +118,39 @@ func resolveControlSerial(ctx context.Context, client *daemonclient.Client, cmd 
 	if err != nil {
 		return "", err
 	}
-	if len(devices) == 1 {
-		return devices[0].Serial, nil
+	if len(devices) == 0 {
+		return "", fmt.Errorf("daemon has no configured devices; start it with --devices SERIAL")
 	}
-	serials := make([]string, 0, len(devices))
+	if len(devices) > 64 {
+		return "", fmt.Errorf("daemon returned an invalid device list")
+	}
+	seen := make(map[string]bool, len(devices))
 	for _, device := range devices {
-		serials = append(serials, device.Serial)
+		if !control.ValidDeviceSerial(device.Serial) || seen[device.Serial] {
+			return "", fmt.Errorf("daemon returned an invalid device list")
+		}
+		seen[device.Serial] = true
 	}
-	return "", fmt.Errorf("select a device serial with an argument, --device or configuration; daemon has %d configured devices: %s", len(devices), strings.Join(serials, ", "))
+	// Directory order is not a selection contract. Prefer an online device in
+	// stable serial order; unknown or missing connection states are not online.
+	devices = append([]control.DeviceState(nil), devices...)
+	sort.Slice(devices, func(i, j int) bool { return devices[i].Serial < devices[j].Serial })
+	selected := devices[0].Serial
+	for _, device := range devices {
+		if device.Connection == "online" {
+			selected = device.Serial
+			break
+		}
+	}
+	if len(devices) > 1 {
+		output := cmd.ErrOrStderr()
+		core := newCharmConsoleCore(zapcore.InfoLevel, output, util.OutputColorProfile(output), false)
+		if err := core.Write(zapcore.Entry{
+			Level: zapcore.InfoLevel, Time: time.Now(),
+			Message: fmt.Sprintf("%d configured devices; using %s. Use --device SERIAL to choose another.", len(devices), selected),
+		}, nil); err != nil {
+			return "", fmt.Errorf("write device selection notice: %w", err)
+		}
+	}
+	return selected, nil
 }

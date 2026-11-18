@@ -6,7 +6,7 @@
 
 Control blink(1) from a CLI, local HTTP, MCP or an embedded Web workbench. High-level Actions compile into low-level Sequences and use the same per-device worker.
 
-[Install nb1 v0.1.2](docs/install.md): download and verify the executable, start the local server, and open its embedded workbench. MCP and the Skill are optional matching downloads. [Development candidates](docs/candidate-install.md) have a separate installation contract. The public [Homebrew tap](https://github.com/b1ug/homebrew-tap) builds the currently published Formula with `brew install b1ug/tap/nb1`; check `nb1 version` for its actual version. Read the [bilingual documentation](https://b1ug.github.io/nb1-docs/) for setup and examples.
+[Install nb1 v0.1.3](docs/install.md): download and verify the executable, start the local server, and open its embedded workbench. MCP and the Skill are optional matching downloads. [Development candidates](docs/candidate-install.md) have a separate installation contract. The public [Homebrew tap](https://github.com/b1ug/homebrew-tap) builds the currently published Formula with `brew install b1ug/tap/nb1`; check `nb1 version` for its actual version. Read the [bilingual documentation](https://b1ug.github.io/nb1-docs/) for setup and examples.
 
 nb1 implements API v1. Source validation and the version installed on a machine are tracked separately. Start an ordinary foreground daemon using the same executable as the CLI:
 

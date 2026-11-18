@@ -1,18 +1,18 @@
-# Install and use nb1 v0.1.2
+# Install and use nb1 v0.1.3
 
 [简体中文](install.zh-CN.md)
 
-Download the matching executable from [nb1 v0.1.2](https://github.com/b1ug/nb1/releases/tag/v0.1.2). The CLI, local server and complete Nightlab workbench are one `nb1` executable. Prebuilt executables need no Go or Node.js installation, and the embedded page needs no browser WebHID permission.
+Download the matching executable from [nb1 v0.1.3](https://github.com/b1ug/nb1/releases/tag/v0.1.3). The CLI, local server and complete Nightlab workbench are one `nb1` executable. Prebuilt executables need no Go or Node.js installation, and the embedded page needs no browser WebHID permission.
 
 ## Choose and verify a download
 
 | Computer | CLI archive |
 | --- | --- |
-| Apple Silicon Mac | `nb1-v0.1.2-darwin-arm64.tar.gz` |
-| Intel Mac | `nb1-v0.1.2-darwin-amd64.tar.gz` |
-| Linux arm64 | `nb1-v0.1.2-linux-arm64.tar.gz` |
-| Linux amd64 | `nb1-v0.1.2-linux-amd64.tar.gz` |
-| Windows amd64 | `nb1-v0.1.2-windows-amd64.zip` |
+| Apple Silicon Mac | `nb1-v0.1.3-darwin-arm64.tar.gz` |
+| Intel Mac | `nb1-v0.1.3-darwin-amd64.tar.gz` |
+| Linux arm64 | `nb1-v0.1.3-linux-arm64.tar.gz` |
+| Linux amd64 | `nb1-v0.1.3-linux-amd64.tar.gz` |
+| Windows amd64 | `nb1-v0.1.3-windows-amd64.zip` |
 
 The prebuilt CLI/server binaries declare a minimum of macOS 15.0 on both Mac architectures and require glibc 2.38 or later on Linux. The optional MCP binaries declare a minimum of macOS 13.0 and are statically linked on Linux; they still require a compatible nb1 server. The macOS downloads are not Developer ID notarized.
 
@@ -21,7 +21,7 @@ These binary requirements are separate from source compatibility and do not guar
 Download the selected archive, `release.json` and the global `SHA256SUMS` from the same release. Compare the archive's complete SHA-256 and exact filename with that manifest. For example, on an Apple Silicon Mac:
 
 ```sh
-shasum -a 256 nb1-v0.1.2-darwin-arm64.tar.gz
+shasum -a 256 nb1-v0.1.3-darwin-arm64.tar.gz
 ```
 
 Linux can use `sha256sum`; Windows PowerShell can use `Get-FileHash -Algorithm SHA256`. The global manifest also lists other platform archives, so checking every line requires downloading every listed file. Checksums detect inconsistency, not independent origin; obtain the archive and expected manifest from the trusted release page.
@@ -29,9 +29,9 @@ Linux can use `sha256sum`; Windows PowerShell can use `Get-FileHash -Algorithm S
 Unpack the CLI archive into its own new directory. The archive contains the executable, license notices, a short README, build identity and an inner checksum manifest. On macOS:
 
 ```sh
-mkdir nb1-v0.1.2
-tar -xzf nb1-v0.1.2-darwin-arm64.tar.gz -C nb1-v0.1.2
-cd nb1-v0.1.2
+mkdir nb1-v0.1.3
+tar -xzf nb1-v0.1.3-darwin-arm64.tar.gz -C nb1-v0.1.3
+cd nb1-v0.1.3
 shasum -a 256 -c SHA256SUMS
 ./nb1 version --json
 ```
@@ -68,6 +68,8 @@ The page, local fonts, editor, 3D model and two-face fallback are embedded in nb
 The browser talks to the same daemon as HTTP CLI and MCP clients. Its HTTP status, selected device state and Job result describe different things: an online device does not mean a draft has played, and accepted is not completed. The page keeps actionable errors and uncertain-Job recovery visible.
 
 Use Ctrl-C to request foreground-server shutdown. Do not start a second owner for the same lamp while the current controller is still cleaning up. A standalone browser WebHID tool owns USB separately; disconnect it before handing the lamp to nb1.
+
+With several configured lights, the Workbench lists them by serial and starts with the first online target. It shows the count and the selected serial. Refresh keeps the selected light. If that serial goes offline or disappears from the configuration, choose another target explicitly to play there.
 
 ## Use the CLI or explicit direct mode
 
@@ -123,8 +125,8 @@ For a manually unpacked upgrade, retain the old directory, verify and unpack the
 
 Optional matching downloads are:
 
-- `nb1-mcp-v0.1.2-<os>-<arch>.tar.gz`, or Windows `.zip`: unpack into a separate new directory and verify its checksums. Configure the MCP host with the absolute `nb1-mcp` path and `--endpoint http://127.0.0.1:8931 --timeout 10s`. It reports version `v0.1.2` during MCP initialization and uses stdio to local HTTP, without launching a CLI or owning USB.
-- `blink1-control-v0.1.2.zip`: unpack its files into a new `blink1-control` folder and copy the complete folder to the project's `.agents/skills/`. Keep `SKILL.md`, `agents/` and `references/` together. The Skill does not install nb1, register MCP, enable global hooks or grant permissions. See [Agent setup](agent-guide.md).
+- `nb1-mcp-v0.1.3-<os>-<arch>.tar.gz`, or Windows `.zip`: unpack into a separate new directory and verify its checksums. Configure the MCP host with the absolute `nb1-mcp` path and `--endpoint http://127.0.0.1:8931 --timeout 10s`. It reports version `v0.1.3` during MCP initialization and uses stdio to local HTTP, without launching a CLI or owning USB.
+- `blink1-control-v0.1.3.zip`: unpack its files into a new `blink1-control` folder and copy the complete folder to the project's `.agents/skills/`. Keep `SKILL.md`, `agents/` and `references/` together. The Skill does not install nb1, register MCP, enable global hooks or grant permissions. See [Agent setup](agent-guide.md).
 
 MCP has its own endpoint argument and does not read nb1 YAML. Point all clients at the same intended daemon. The local API validates Host and browser Origin, but loopback is not user authentication; another local process able to call the endpoint may control configured lamps. No keyboard, input-monitoring or camera permission is needed for this workbench.
 

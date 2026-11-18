@@ -119,7 +119,11 @@ nb1 control --endpoint http://127.0.0.1:8931 cancel j_7K3XJNY9ZM --wait
 
 Use `nb1 control preview action.json` separately when you want to inspect the compiled plan without playback.
 
-For `control run [SERIAL] FILE` and `control state [SERIAL]`, select the device from an explicit positional serial, root `--device`, `NB1_DEVICE`, or profile `device`, in that order. With none selected, the client reads the daemon's cached device list and uses it only when exactly one device is configured. Multiple devices require an explicit choice. This lookup does not enumerate USB, launch the daemon or switch to direct access.
+For `control run [SERIAL] FILE` and `control state [SERIAL]`, select the device from an explicit positional serial, root `--device`, `NB1_DEVICE`, or profile `device`, in that order. An explicit or preferred target is retained even when offline or missing; the command reports that target's result and never substitutes another device.
+
+With no selected target, the client reads the daemon's cached configured-device list, sorts it by serial and chooses the first device whose cached `connection` is `"online"`. If none is online, it chooses the first serial so `state` can show its actual status and `run` can report the daemon's submission error. Unknown or missing connection states are not treated as online. An empty list reports an error. With two or more configured devices, a short English notice on stderr identifies the count, selected serial and `--device SERIAL` override; stdout remains the same JSON result. The choice is made once per invocation. A later connection failure, busy device or uncertain submission never triggers a second-device attempt.
+
+This lookup does not enumerate USB, launch the daemon or switch to direct access. HTTP and MCP requests still require an explicit serial; this CLI convenience does not change their contracts. Direct execution still requires its own explicit or preferred serial.
 
 `control preview FILE` leaves `serial` absent by default, including when the profile has a preferred device. Add `--serial SERIAL` explicitly for the selected device's cached capability check.
 

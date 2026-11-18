@@ -348,6 +348,82 @@ func TestEngineQueueRejectBoundAndReplace(t *testing.T) {
 	}
 }
 
+func TestEngineDeviceQueuesReplacementAndCancellationStayIsolated(t *testing.T) {
+	// Exercise the internal legacy scheduler, not public API v1 admission.
+	a, b := newEngineBackend("a"), newEngineBackend("b")
+	e := startEngineTest(t, Options{QueueSize: 1}, a, b)
+	aGate, bGate := newEngineGate(), newEngineGate()
+	defer aGate.open()
+	defer bGate.open()
+	a.hooks(func(step Step) error {
+		if step.Color == "#ff0000" {
+			return aGate.block()
+		}
+		return nil
+	}, nil, nil)
+	b.hooks(func(step Step) error {
+		if step.Color == "#0000ff" {
+			return bGate.block()
+		}
+		return nil
+	}, nil, nil)
+
+	aActive := submitEngineJob(t, e, "a", engineProgram("#ff0000", "hold"), "queue")
+	awaitEngineSignal(t, aGate.entered)
+	aPending := submitEngineJob(t, e, "a", engineProgram("#00ff00", "hold"), "queue")
+	if _, err := e.Submit(context.Background(), "a", engineProgram("#ffffff", "hold"), "queue"); !errors.Is(err, ErrQueueFull) {
+		t.Fatalf("A full queue = %v, want ErrQueueFull", err)
+	}
+	// A's full queue and blocked native call must not consume B's capacity.
+	bActive := submitEngineJob(t, e, "b", engineProgram("#0000ff", "hold"), "queue")
+	awaitEngineSignal(t, bGate.entered)
+	bPending := submitEngineJob(t, e, "b", engineProgram("#800080", "hold"), "queue")
+	aReplacement := submitEngineJob(t, e, "a", engineProgram("#ffff00", "hold"), "replace")
+	if old, _ := e.Job(aActive.ID); old.Status != "cancelling" || old.FinishedAt != nil {
+		t.Fatalf("A cancellation completed before its native return: %+v", old)
+	}
+	if removed := awaitEngineJob(t, e, aPending.ID, "cancelled"); removed.StartedAt != nil {
+		t.Fatal("A replaced pending job started")
+	}
+	if cancelled, err := e.Cancel(context.Background(), aReplacement.ID); err != nil || cancelled.Status != "cancelled" || cancelled.StartedAt != nil {
+		t.Fatalf("A pending replacement cancellation = %+v, %v", cancelled, err)
+	}
+	if state, _ := e.Device("b"); state.ActiveJob != bActive.ID || state.QueueDepth != 1 {
+		t.Fatalf("A replacement/cancellation changed B's scheduler: %+v", state)
+	}
+	if pending, _ := e.Job(bPending.ID); pending.Status != "queued" || pending.StartedAt != nil {
+		t.Fatalf("A replacement/cancellation changed B's pending job: %+v", pending)
+	}
+
+	bGate.open()
+	awaitEngineJob(t, e, bActive.ID, "succeeded")
+	awaitEngineJob(t, e, bPending.ID, "succeeded")
+	if old, _ := e.Job(aActive.ID); old.Status != "cancelling" || old.FinishedAt != nil {
+		t.Fatalf("B finished without A remaining blocked in cancellation: %+v", old)
+	}
+	aGate.open()
+	awaitEngineJob(t, e, aActive.ID, "cancelled")
+	aCalls, _, _, _, _, _ := a.snapshot()
+	if got := strings.Join(engineSetColors(aCalls), ","); got != "#ff0000" {
+		t.Fatalf("A pending or cancelled replacement reached hardware: %s", got)
+	}
+	bCalls, bLED1, bLED2, _, _, _ := b.snapshot()
+	if got := strings.Join(engineSetColors(bCalls), ","); got != "#0000ff,#800080" || bLED1 != "#800080" || bLED2 != "#800080" {
+		t.Fatalf("B work/output changed by A cleanup: colors=%s LEDs=%s,%s", got, bLED1, bLED2)
+	}
+	for _, call := range bCalls {
+		if call.kind == "stop" && call.mode == "off" {
+			t.Fatal("A cancellation stopped B's held output")
+		}
+	}
+	for _, backend := range []*engineBackend{a, b} {
+		_, _, _, max, _, unsafe := backend.snapshot()
+		if max != 1 || unsafe {
+			t.Fatalf("backend %s overlapped native operations: max=%d unsafe=%v", backend.serial, max, unsafe)
+		}
+	}
+}
+
 func TestEngineCancelWaitsForHardwareCleanup(t *testing.T) {
 	b := newEngineBackend("a")
 	e := startEngineTest(t, Options{}, b)

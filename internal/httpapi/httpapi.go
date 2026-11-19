@@ -62,6 +62,12 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.Header().Set("Cache-Control", "no-store")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
+	// The browser presence check has its own narrow origin policy and never
+	// accesses the service. Keep all device and library routes behind sameOrigin.
+	if r.URL.EscapedPath() == "/v1/presence" && localHost(r.Host) {
+		servePresence(w, r)
+		return
+	}
 	// Loopback binding alone does not reject browser DNS rebinding. Only local
 	// hosts and same-origin browser requests may address this unauthenticated API.
 	if !localHost(r.Host) || !sameOrigin(r) {
@@ -276,6 +282,48 @@ func (h *handler) receiptService(w http.ResponseWriter) (control.ReceiptService,
 func receiptLocation(serial, requestID, instance string) string {
 	return "/v1/devices/" + url.PathEscape(serial) + "/requests/" + url.PathEscape(requestID) +
 		"?expected_daemon_instance_id=" + url.QueryEscape(instance)
+}
+
+// Browser UI and Chrome extension code may live on different origins. Only
+// the published website (an origin shared across its Pages paths) and local
+// HTTP(S) previews may read the public, constant presence marker.
+func presenceOrigin(origin string) bool {
+	if origin == "https://b1ug.github.io" {
+		return true
+	}
+	u, err := url.Parse(origin)
+	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || origin != u.Scheme+"://"+u.Host {
+		return false
+	}
+	host := u.Hostname()
+	ip := net.ParseIP(host)
+	if !strings.EqualFold(host, "localhost") && (ip == nil || !ip.IsLoopback()) {
+		return false
+	}
+	if port := u.Port(); port != "" {
+		n, err := strconv.ParseUint(port, 10, 16)
+		return err == nil && n > 0 && u.Host == net.JoinHostPort(host, port)
+	}
+	return u.Host == host || (strings.Contains(host, ":") && u.Host == "["+host+"]")
+}
+
+func servePresence(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Vary", "Origin")
+	origins := r.Header.Values("Origin")
+	if len(origins) > 1 || len(origins) == 1 && !presenceOrigin(origins[0]) {
+		writeError(w, http.StatusForbidden, "local_only", "browser origin cannot read daemon presence")
+		return
+	}
+	if !frameNoBodyOrQuery(w, r) {
+		return
+	}
+	if !method(w, r, http.MethodGet) {
+		return
+	}
+	if len(origins) == 1 {
+		w.Header().Set("Access-Control-Allow-Origin", origins[0])
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"service": "nb1", "api_version": "v1"})
 }
 
 func localHost(host string) bool {

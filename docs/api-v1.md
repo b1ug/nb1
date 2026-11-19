@@ -151,7 +151,8 @@ These operations are the current runtime's API v1 route table. Success bodies ar
 - Send one valid Unicode JSON object. Unknown, duplicate or incorrectly cased keys, trailing values, excessive nesting beyond 64 levels and explicit `null` anywhere are rejected. Omit an optional field to select its documented default; `null` does not mean omission.
 - Empty values are not general defaults. `id: ""` requests Job ID generation; `title: ""` clears a Pattern title. Empty `serial`, `pattern_id`, `color`, `timing` or `on_finish`, and empty required target/Step arrays, are invalid.
 - Preview, Job, device and library routes reject query parameters, including a bare trailing `?`. Job lookup/cancel and device/library GET routes accept no body, including `{}` or a chunked body. `Content-Type` is unnecessary when there is no body. The shared `/healthz` and `/v1/transport-metrics` handlers currently check only the method and do not inspect body/query values; clients should send neither.
-- Use a loopback Host. A browser `Origin`, when present, must match the request scheme and exact Host/port. An absent Origin is accepted for non-browser clients. A different browser origin, including `Origin: null`, is rejected; this API is not a cross-origin remote-control endpoint.
+- Use a loopback Host. Device, Job, library and other API routes accept same-origin browser requests and clients with no Origin. The single cross-origin exception is `GET /v1/presence`.
+- Presence accepts the website origin `https://b1ug.github.io` (shared by its project Pages) and HTTP or HTTPS loopback origins, including local previews. Send a simple GET without credentials, custom headers, body or query to the configured daemon port (default 8931). The browser may ask for local-network permission. A matching marker means the daemon answered at that address. It provides no device identity or ownership information. Older daemons, incorrect ports and browser permission failures all leave presence unconfirmed.
 
 ### Requests and success statuses
 
@@ -169,6 +170,7 @@ These operations are the current runtime's API v1 route table. Success bodies ar
 | `PUT /v1/patterns/{id}` | Pattern ID in the path and exactly one of `action` or `sequence` in the body. | `title`: omitted or `""` means no title, replacing any previous title. | `200`, complete saved Pattern, for both create and replacement. Does not play. |
 | `GET /v1/devices` | No body. | None. | `200`, configured device states, sorted by serial; `[]` when none are configured. Does not discover USB. |
 | `GET /v1/devices/{serial}` | Configured serial in the path; no body. | None. | `200`, one cached Device object. An unmatched serial returns `404`. |
+| `GET /v1/presence` | No fields. | None. | `200`, `{"service":"nb1","api_version":"v1"}`. Constant marker, independent of connected devices. |
 | `GET /healthz` | No fields. | None. | `200`, `{"status":"ok","api_version":"v1"}`. HTTP health does not imply device availability. |
 | `GET /v1/transport-metrics` | No fields. | None. | `200`, TransportMetric array; `[]` when no counters are available. |
 

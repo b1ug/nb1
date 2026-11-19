@@ -29,7 +29,7 @@ def fixture(path):
         (path / name).write_bytes(("fixture " + name + "\n").encode())
     manifest = {
         "schema_version": 1, "product": "nb1-web", "asset_base": "./",
-        "source": {"repository": "https://github.com/b1ug/nb1-workbench", "commit": COMMIT, "dirty": False, "tree_sha256": "2" * 64},
+        "source": {"repository": "https://github.com/b1ug/nb1-debugger", "commit": COMMIT, "dirty": False, "tree_sha256": "2" * 64},
         "build": {"tool": "static-editor/v1", "node": "v24.0.0", "lockfile_sha256": "3" * 64},
         "api_contracts": sorted(contracts),
         "files": [{"path": name, "bytes": (path / name).stat().st_size, "sha256": importer.sha((path / name).read_bytes())} for name in sorted(assets)],
@@ -116,6 +116,26 @@ class ImportBoundaryTests(unittest.TestCase):
             fixture(legacy)
             self.assertEqual(importer.install(validate(legacy), target), [])
             self.assertEqual(snapshot(target / "dist"), validate(legacy).files)
+
+    def test_previous_repository_is_only_valid_for_the_locked_destination(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            target = root / "webui"
+            target.mkdir()
+            previous = fixture(target / "dist")
+            previous["source"]["repository"] = "https://github.com/b1ug/nb1-workbench"
+            write_manifest(target / "dist", previous)
+            digest = importer.sha((target / "dist" / "manifest.json").read_bytes())
+            (target / "manifest.lock.json").write_text(json.dumps({
+                "schema_version": 1, "product": "nb1-web", "source_commit": COMMIT, "manifest_sha256": digest,
+            }))
+            with self.assertRaisesRegex(importer.InvalidBundle, "source must be"):
+                validate(target / "dist")
+            source = root / "new"
+            nightlab_fixture(source)
+            bundle = validate(source)
+            self.assertEqual(importer.install(bundle, target), [])
+            self.assertEqual(validate(target / "dist").files, bundle.files)
 
     def test_nightlab_decoded_contract_and_limits(self):
         variants = [

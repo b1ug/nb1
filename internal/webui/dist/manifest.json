@@ -3,15 +3,15 @@
   "product": "nb1-web",
   "asset_base": "./",
   "source": {
-    "repository": "https://github.com/b1ug/nb1-workbench",
-    "commit": "aafecd2a88a272eb868a9e37f77d10c2b9da2c65",
+    "repository": "https://github.com/b1ug/nb1-debugger",
+    "commit": "9dc2a9155354c6650b38a3355f3eebdb911f8320",
     "dirty": false,
-    "tree_sha256": "cfe526bfe04299dff1fd3e0cd0bf3da4a1e806bcc4c1211d88b52d9f366c23bb"
+    "tree_sha256": "cac71b56ecd8f555778f8280d61eb98ce2384a06fc7b5980cd4b18db81757c47"
   },
   "build": {
     "tool": "static-nightlab/v1",
     "node": "v26.12.1",
-    "lockfile_sha256": "ffab428bbe53826a3187e9c8db8ed12399a7767416598a4a35b66df839a23c2a"
+    "lockfile_sha256": "b4501db56e0735e9ba649b74817e5a1b7b2f3223723435af547e24a5c6015382"
   },
   "api_contracts": [
     "nb1-api/v1"
@@ -131,11 +131,11 @@
     },
     {
       "path": "index.html",
-      "bytes": 16200,
-      "sha256": "a4265fecad3759ad4db975a1867586848391e7791f0d8e3cb29fadf78569b623",
+      "bytes": 16190,
+      "sha256": "5a1cf4b029478ffc8f9729ddcb3d97b1d14c214a521e564934154a09a38cc86e",
       "encoding": "identity",
-      "decoded_bytes": 16200,
-      "decoded_sha256": "a4265fecad3759ad4db975a1867586848391e7791f0d8e3cb29fadf78569b623"
+      "decoded_bytes": 16190,
+      "decoded_sha256": "5a1cf4b029478ffc8f9729ddcb3d97b1d14c214a521e564934154a09a38cc86e"
     },
     {
       "path": "json-editor.css",
@@ -339,11 +339,11 @@
     },
     {
       "path": "nightlab/model.html",
-      "bytes": 3105,
-      "sha256": "94c1cdb89d2121cdd0d417ab51285445dd685068fd0c0fb845894585eb2b181c",
+      "bytes": 3095,
+      "sha256": "a613cdcb5a3e4d670b168e59bd5f1080138e40a3242d094e503fa97affef64af",
       "encoding": "identity",
-      "decoded_bytes": 3105,
-      "decoded_sha256": "94c1cdb89d2121cdd0d417ab51285445dd685068fd0c0fb845894585eb2b181c"
+      "decoded_bytes": 3095,
+      "decoded_sha256": "a613cdcb5a3e4d670b168e59bd5f1080138e40a3242d094e503fa97affef64af"
     },
     {
       "path": "nightlab/preview-timeline.js",
@@ -427,11 +427,11 @@
     },
     {
       "path": "orbit.html",
-      "bytes": 16291,
-      "sha256": "eb3ecda96857bcce2cc63ca97c41ddf8410f805c7b0e785aba1bbb9cc02939c7",
+      "bytes": 16281,
+      "sha256": "a713dc5e87ed4b33fb9fd39caa709614a5e9d24c302cb349ccf9952633e60d96",
       "encoding": "identity",
-      "decoded_bytes": 16291,
-      "decoded_sha256": "eb3ecda96857bcce2cc63ca97c41ddf8410f805c7b0e785aba1bbb9cc02939c7"
+      "decoded_bytes": 16281,
+      "decoded_sha256": "a713dc5e87ed4b33fb9fd39caa709614a5e9d24c302cb349ccf9952633e60d96"
     },
     {
       "path": "orbit.js",
@@ -451,11 +451,11 @@
     },
     {
       "path": "patterns.html",
-      "bytes": 16304,
-      "sha256": "81a417253359b1454ef6739e2d807864d23395f95df62230b106704333f60cbe",
+      "bytes": 16294,
+      "sha256": "86f05cd24e973435a86342341bc2f6f17a8e8074cf5ed161a7c877975011f79f",
       "encoding": "identity",
-      "decoded_bytes": 16304,
-      "decoded_sha256": "81a417253359b1454ef6739e2d807864d23395f95df62230b106704333f60cbe"
+      "decoded_bytes": 16294,
+      "decoded_sha256": "86f05cd24e973435a86342341bc2f6f17a8e8074cf5ed161a7c877975011f79f"
     },
     {
       "path": "patterns.js",

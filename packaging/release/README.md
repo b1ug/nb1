@@ -136,5 +136,5 @@ The public [Homebrew tap](https://github.com/b1ug/homebrew-tap) uses a real
 versioned source archive after its Release exists. Prepare and verify that
 version separately before updating the tap; publishing executable downloads
 does not silently advance its Formula. See [Homebrew packaging](../homebrew/README.md).
-The [English and Chinese documentation site](https://b1ug.github.io/nb1-docs/)
+The [English and Chinese documentation site](https://b1ug.github.io/nb1-guide/)
 also has a separate, source-bound publishing workflow.

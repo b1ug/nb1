@@ -178,7 +178,7 @@
       "get": {
         "operationId": "getServiceStatus",
         "summary": "Read HTTP liveness and cached device totals from a local nb1 daemon",
-        "description": "Send a credential-free simple GET with no body or query. Health reports HTTP liveness as in /healthz. Counts reflect cached device states. This request performs no USB I/O.",
+        "description": "API clients may call this route directly. WebHID checks /v1/presence first, then requests this summary once on the same port. It retains confirmed presence if the summary is unavailable. Send a credential-free simple GET with no body or query. Health reports HTTP liveness as in /healthz. Counts reflect cached device states. This request performs no USB I/O.",
         "tags": [
           "Runtime"
         ],

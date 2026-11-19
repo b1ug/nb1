@@ -17,6 +17,8 @@ import (
 	"unicode"
 	"unicode/utf16"
 	"unicode/utf8"
+
+	"github.com/b1ug/nb1/internal/daemonaddr"
 )
 
 const Label = "org.b1ug.nb1"
@@ -126,7 +128,7 @@ func arguments(c Config) []string {
 // not stat a remote executable or prove that it will run on the target system.
 func Render(c Config) (Artifact, error) {
 	if c.Listen == "" {
-		c.Listen = "127.0.0.1:8931"
+		c.Listen = daemonaddr.Listen
 	}
 	if err := validate(c); err != nil {
 		return Artifact{}, err

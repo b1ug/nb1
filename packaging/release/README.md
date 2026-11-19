@@ -38,8 +38,10 @@ rehearsal. After the workflow has landed on the default branch, run a manual
 rehearsal of that exact source:
 
 ```sh
-gh workflow run release.yml --ref master -f version=v0.1.1 -f publish=false
+gh workflow run release.yml --ref master -f version=v0.1.3 -f publish=false
 ```
+
+The tag workflow publishes the text from `packaging/release/notes.md`. For v0.1.3, check that both archive READMEs and the tag notes identify port 5885 and that the notes explain how to keep an explicitly configured 8931.
 
 Inspect the run, five native package jobs, assembly and attached evidence.
 Each platform records source and Web identity, actual Go build information,
@@ -61,7 +63,7 @@ uses the intended version for the version/installation checks.
 ## Publish only a real tag
 
 After reviewing the final source, test evidence and release notes, push its
-stable SemVer tag, such as `v0.1.1`. The official `b1ug/nb1` tag must peel to the
+stable SemVer tag, such as `v0.1.3`. The official `b1ug/nb1` tag must peel to the
 checked source and that commit must already be an ancestor of `origin/master`.
 Branch pushes, fork tags and malformed tags cannot pass the context gate.
 

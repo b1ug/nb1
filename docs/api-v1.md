@@ -20,7 +20,7 @@ nb1 config show
 device: ""
 server:
   devices: []
-  listen: "127.0.0.1:8931"
+  listen: "127.0.0.1:5885"
 jobs:
   terminal_limit: 16384
   terminal_ttl: 30m
@@ -111,10 +111,10 @@ These are host scheduling budgets, not optical deadlines. Native I/O, timer late
 Create an input file with one Action or Sequence, for example `{"action":{"kind":"pulse","color":"lime","cycles":2}}`. Run it directly with the CLI; a prior preview is optional.
 
 ```sh
-nb1 control --endpoint http://127.0.0.1:8931 run action.json --wait
-nb1 control --endpoint http://127.0.0.1:8931 state
-nb1 control --endpoint http://127.0.0.1:8931 job j_7K3XJNY9ZM
-nb1 control --endpoint http://127.0.0.1:8931 cancel j_7K3XJNY9ZM --wait
+nb1 control --endpoint http://127.0.0.1:5885 run action.json --wait
+nb1 control --endpoint http://127.0.0.1:5885 state
+nb1 control --endpoint http://127.0.0.1:5885 job j_7K3XJNY9ZM
+nb1 control --endpoint http://127.0.0.1:5885 cancel j_7K3XJNY9ZM --wait
 ```
 
 Use `nb1 control preview action.json` separately when you want to inspect the compiled plan without playback.
@@ -152,7 +152,7 @@ These operations are the current runtime's API v1 route table. Success bodies ar
 - Empty values are not general defaults. `id: ""` requests Job ID generation; `title: ""` clears a Pattern title. Empty `serial`, `pattern_id`, `color`, `timing` or `on_finish`, and empty required target/Step arrays, are invalid.
 - Preview, Job, device and library routes reject query parameters, including a bare trailing `?`. Job lookup/cancel and device/library GET routes accept no body, including `{}` or a chunked body. `Content-Type` is unnecessary when there is no body. The shared `/healthz` and `/v1/transport-metrics` handlers currently check only the method and do not inspect body/query values; clients should send neither.
 - Use a loopback Host. Device, Job and library routes accept same-origin browser requests and clients with no Origin. Two read-only browser diagnostics also accept the website origin `https://b1ug.github.io` (shared by its project Pages) and HTTP or HTTPS loopback origins, including local previews.
-- Send a simple GET without credentials, custom headers, body or query to the selected daemon port (default 8931). The browser may ask for local-network permission. WebHID checks `/v1/presence` first. A matching marker confirms nb1 answered. It then requests `/v1/service-status` once on the same port. A valid summary confirms HTTP liveness (the same signal as `/healthz`) and reports cached device totals. API clients can request the summary directly. `configured` counts its configured device workers. `online` counts workers whose last connection state is `online`. A zero count is a known result. A `null` devices field means the snapshot is unavailable. Reading status does not refresh USB or identify which light, if any, the process owns.
+- Send a simple GET without credentials, custom headers, body or query to the selected daemon port (default 5885). v0.1.2 used 8931. Profiles or service definitions that specify 8931 retain that port after upgrading. The browser may ask for local-network permission. WebHID checks `/v1/presence` first. A matching marker confirms nb1 answered. It then requests `/v1/service-status` once on the same port. A valid summary confirms HTTP liveness (the same signal as `/healthz`) and reports cached device totals. API clients can request the summary directly. `configured` counts its configured device workers. `online` counts workers whose last connection state is `online`. A zero count is a known result. A `null` devices field means the snapshot is unavailable. Reading status does not refresh USB or identify which light, if any, the process owns.
 - If the marker succeeds but the summary is unavailable, WebHID shows the responding daemon with device status unknown. If WebHID cannot confirm the marker, it reports presence as unconfirmed. Older versions, an incorrect port or browser permission can prevent the check.
 
 ### Requests and success statuses
@@ -252,6 +252,8 @@ Library PUT also has an uncertain-result boundary: replacement may have complete
 A request deadline bounds the caller's wait, not a synchronous native call already in progress. The worker retains its native ownership while it remains alive and the call is outstanding. Existing transport retries can repeat a fade write; Job-ID deduplication is admission control, not a guarantee of exactly-once physical updates. A process exit or native crash can break the connection outside this JSON error contract, and a restarted daemon has no previous in-memory Job records.
 
 ## CLI connection policy
+
+`nb1 doctor` uses the same configured loopback listener as `nb1 control`. Pass `--endpoint` to check another address.
 
 The agreed default for `nb1 control` is to report that the daemon is unavailable and let the user explicitly choose to start a daemon or use direct access. It must not start a daemon or fall back to USB automatically. Starting `nb1 server` does not install a system service.
 

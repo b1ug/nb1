@@ -189,7 +189,7 @@ func TestInitCreatesOnlyPrivateExampleAndDoesNotOverwrite(t *testing.T) {
 		t.Fatalf("directory permission = %o", info.Mode().Perm())
 	}
 	config, err := Load(Selection{BaseDir: base, Path: path, Required: true})
-	if err != nil || config.Device != "" || len(config.Server.Devices) != 0 {
+	if err != nil || config.Device != "" || len(config.Server.Devices) != 0 || config.Server.Listen != "127.0.0.1:5885" {
 		t.Fatalf("example selects hardware or is invalid: %+v %v", config, err)
 	}
 	if err := os.WriteFile(path, []byte("# user content\n{}\n"), 0600); err != nil {

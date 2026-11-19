@@ -1,6 +1,9 @@
 package config
 
-import "github.com/spf13/viper"
+import (
+	"github.com/b1ug/nb1/internal/daemonaddr"
+	"github.com/spf13/viper"
+)
 
 // This file contains the mutable configuration for the application.
 
@@ -17,7 +20,7 @@ const (
 	// DefaultConfigFile is the default configuration file name.
 	DefaultConfigFile = "setting.yaml"
 	// DefaultPort is the default port number of the web server. HACK: uint32 is used to avoid viper's bug for uint16.
-	DefaultPort = uint32(8080)
+	DefaultPort = uint32(daemonaddr.Port)
 )
 
 // SetDefaults sets the default values in Viper for the configuration.

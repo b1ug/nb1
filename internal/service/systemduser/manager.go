@@ -14,6 +14,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
+	"github.com/b1ug/nb1/internal/daemonaddr"
 	"github.com/b1ug/nb1/internal/service"
 	"github.com/b1ug/nb1/internal/userconfig"
 )
@@ -194,7 +195,7 @@ func (m *Manager) Install(ctx context.Context, config service.Config, start bool
 	}
 	config.UserConfigRoot = m.configRoot
 	if config.Listen == "" {
-		config.Listen = "127.0.0.1:8931"
+		config.Listen = daemonaddr.Listen
 	}
 	content, err := unitContent(definition{Version: 1, Unit: UnitName, UID: m.uid, Config: config})
 	if err != nil {

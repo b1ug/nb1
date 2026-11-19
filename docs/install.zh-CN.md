@@ -59,7 +59,7 @@ Homebrew 从已发布源码编译，并安装所需构建依赖。Formula 要求
 ./nb1 server --devices DEVICE_SERIAL
 ```
 
-把 `DEVICE_SERIAL` 换成真实灯的序列号，再打开 **http://127.0.0.1:8931/demo/**。选择设备、灯效或 Sequence，直接点 **Play**；Preview 可选，Play 会校验当前草稿。打开页面、编辑颜色或屏幕预览不会向真实灯提交任务。
+把 `DEVICE_SERIAL` 换成真实灯的序列号，再打开 **http://127.0.0.1:5885/demo/**。从 v0.1.2 升级时，已在配置文件或已安装服务中指定的 8931 仍然有效。请打开运行中的 daemon 打印的地址。选择设备、灯效或 Sequence，直接点 **Play**；Preview 可选，Play 会校验当前草稿。打开页面、编辑颜色或屏幕预览不会向真实灯提交任务。
 
 页面、字体、编辑器、3D 模型和双面 fallback 都已内嵌，无需外置 Web 目录或 CDN。默认英文，可切中文。若改过 `server.listen` 或 `--listen`，请使用实际回环监听地址加 `/demo/`。
 
@@ -119,7 +119,7 @@ install 安排以后登录时可能加载；未加 `--start` 不请求本次立�
 
 可选同版下载：
 
-- `nb1-mcp-v0.1.3-<os>-<arch>.tar.gz`（Windows 为 `.zip`）：解压到另一新目录，核验包内清单，再配置 MCP host 使用绝对 `nb1-mcp` 路径及参数 `--endpoint http://127.0.0.1:8931 --timeout 10s`。初始化报告 `v0.1.3`；真实 stdio 协议连接本机 HTTP，不包装 CLI，也不占 USB。
+- `nb1-mcp-v0.1.3-<os>-<arch>.tar.gz`（Windows 为 `.zip`）：解压到另一新目录，核验包内清单，再配置 MCP host 使用绝对 `nb1-mcp` 路径及参数 `--endpoint http://127.0.0.1:5885 --timeout 10s`。初始化报告 `v0.1.3`；真实 stdio 协议连接本机 HTTP，不包装 CLI，也不占 USB。
 - `blink1-control-v0.1.3.zip`：把内容解压到新的 `blink1-control` 文件夹，再完整复制到项目的 `.agents/skills/`，保留 `SKILL.md`、`agents/` 与 `references/`。Skill 不安装程序、注册 MCP、启用全局 hook 或扩大权限，见 [Agent 指引](agent-guide.zh-CN.md)。
 
 MCP 单独选择 endpoint，不读取 nb1 YAML；各客户端应指向同一份目标 daemon。API 校验 Host 与浏览器 Origin，但 loopback 不是用户身份认证，同机能调用端口的其他进程仍可能控制已配置的灯。本地调试器不需要键盘、输入监控或相机权限。

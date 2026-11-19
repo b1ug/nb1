@@ -84,7 +84,7 @@ macOS/Linux 默认为 `~/.config/nb1/config.yaml`；绝对路径的 `XDG_CONFIG_
 device: "20000001"
 server:
   devices: ["20000001"]
-  listen: "127.0.0.1:8931"
+  listen: "127.0.0.1:5885"
 jobs:
   terminal_limit: 16384
   terminal_ttl: 30m
@@ -117,7 +117,7 @@ library_dir: ""
 ./nb1 control run DEVICE_SERIAL action.json --wait
 ```
 
-在浏览器打开 `http://127.0.0.1:8931/demo/` 即可使用内嵌工作台。打开网页或预览
+在浏览器打开 `http://127.0.0.1:5885/demo/` 即可使用内嵌工作台。打开网页或预览
 不会播放 Job。HTTP 接受不等于播放完成，应检查返回 Job 的终态。用 Ctrl-C 停止
 前台 server。
 
@@ -181,7 +181,7 @@ Homebrew 候选另有稳定的 `opt/nb1/bin/nb1` 入口；明确升级或回滚�
 配置 MCP 宿主启动 `nb1-mcp` 的绝对路径，并传入：
 
 ```text
---endpoint http://127.0.0.1:8931 --timeout 10s
+--endpoint http://127.0.0.1:5885 --timeout 10s
 ```
 
 它通过 stdio 实现 MCP 协议，再通过 HTTP 调用已有 daemon，不是启动 CLI 子进程，

@@ -25,10 +25,10 @@ var configSetCmd = &cobra.Command{
 	`),
 	Example: hdocf(`
 		# preview the set result
-		$ %[1]s config set port 8080 --dry-run
+		$ %[1]s config set port 5886 --dry-run
 
 		# set the port for web server
-		$ %[1]s config set port 8080
+		$ %[1]s config set port 5886
 	`, config.AppName),
 	Args: cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {

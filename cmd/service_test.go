@@ -492,7 +492,7 @@ func TestServiceCLIRenderRemainsCrossPlatformWithoutManager(t *testing.T) {
 			}
 			var output bytes.Buffer
 			err := executeServiceCLI(fixture.management, context.Background(), &output, "render", "--platform", platform, "--binary", binary, "--devices", "20005601")
-			artifact, renderErr := service.Render(service.Config{Platform: platform, Binary: binary, Devices: []string{"20005601"}, Listen: "127.0.0.1:8931"})
+			artifact, renderErr := service.Render(service.Config{Platform: platform, Binary: binary, Devices: []string{"20005601"}, Listen: "127.0.0.1:5885"})
 			if err != nil || renderErr != nil || !bytes.Equal(output.Bytes(), artifact.Content) || len(fixture.created) != 0 {
 				t.Fatalf("render constructed native manager or changed artifact: created=%v err=%v %v", fixture.created, err, renderErr)
 			}

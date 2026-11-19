@@ -114,7 +114,7 @@ func newResponsiveFixture(t *testing.T) *responsiveFixture {
 	}
 	f.server = httptest.NewServer(New(f.engine))
 	f.client = f.server.Client()
-	if strings.HasSuffix(f.server.URL, ":8931") {
+	if strings.HasSuffix(f.server.URL, ":8931") || strings.HasSuffix(f.server.URL, ":5885") {
 		t.Fatal("test listener must never use the workspace daemon port")
 	}
 	t.Cleanup(func() {

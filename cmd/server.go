@@ -38,7 +38,7 @@ func newServerCommand() *cobra.Command {
 		Use: "server", Aliases: aliasesServer, Short: "Run the local blink(1) device daemon",
 		Long:    "Keep explicitly selected devices open and serve the v1 HTTP API on loopback. API, CLI and agents share each device worker. Stop with Ctrl-C or SIGTERM; shutdown cancels jobs and turns devices off. No system service is installed.",
 		Args:    cobra.NoArgs,
-		Example: "  nb1 server --devices DEVICE_SERIAL\n  nb1 --device DEVICE_SERIAL server --listen 127.0.0.1:8931\n  nb1 server --devices DEVICE_SERIAL --port 8932",
+		Example: "  nb1 server --devices DEVICE_SERIAL\n  nb1 --device DEVICE_SERIAL server --listen " + appconfig.DefaultListen + "\n  nb1 server --devices DEVICE_SERIAL --port 8932",
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			settings, _, err := applicationSettings(cmd)
 			if err != nil {
@@ -115,7 +115,7 @@ func newServerCommand() *cobra.Command {
 				httpapi.WithSequenceAPI(), httpapi.WithLibraryDirectory(libraryDir))
 		},
 	}
-	command.Flags().StringVar(&listen, "listen", "127.0.0.1:8931", "loopback host:port (port 0 chooses a free port)")
+	command.Flags().StringVar(&listen, "listen", appconfig.DefaultListen, "loopback host:port (port 0 chooses a free port)")
 	command.Flags().StringSliceVar(&serials, "devices", nil, "comma-separated device serial numbers")
 	command.Flags().StringVar(&lockDir, "lock-dir", os.Getenv("NB1_LOCK_DIR"), "shared ownership directory (NB1_LOCK_DIR or persistent per-user config)")
 	command.Flags().StringVar(&libraryDir, "library-dir", os.Getenv("NB1_LIBRARY_DIR"), "local color and Pattern directory (NB1_LIBRARY_DIR or per-user config/nb1/library)")
@@ -123,7 +123,7 @@ func newServerCommand() *cobra.Command {
 	command.Flags().BoolVar(&transportTrace, "transport-trace", false, "opt-in bounded private native-attempt diagnostics in this daemon's log; no extra USB calls")
 	command.Flags().IntVar(&jobCacheSize, "job-cache-size", appconfig.DefaultTerminalLimit, "maximum retained terminal Jobs; evict older records rather than reject new Jobs")
 	command.Flags().DurationVar(&jobCacheTTL, "job-cache-ttl", appconfig.DefaultTerminalTTL, "maximum terminal Job retention since completion; LRU eviction and restart may remove records sooner")
-	command.Flags().Uint32("port", 8931, "compatibility flag for a loopback port; cannot be combined with --listen")
+	command.Flags().Uint32("port", config.DefaultPort, "compatibility flag for a loopback port; cannot be combined with --listen")
 	command.Flags().String("base", "", "reserved legacy base URL; the v1 API uses the root endpoint")
 	_ = viper.BindPFlag("port", command.Flags().Lookup("port"))
 	_ = viper.BindPFlag("base_url", command.Flags().Lookup("base"))

@@ -61,7 +61,7 @@ Find your device serial, then start the server explicitly:
 ./nb1 server --devices DEVICE_SERIAL
 ```
 
-Replace `DEVICE_SERIAL` with the serial reported for your lamp. Open **http://127.0.0.1:8931/demo/** in your browser. Select the intended device, choose an effect or edit a Sequence, then click **Play**. Preview is optional; Play validates the current draft itself. Opening the page, changing a color or playing on screen does not send a Job to the lamp.
+Replace `DEVICE_SERIAL` with the serial reported for your lamp. Open **http://127.0.0.1:5885/demo/** in your browser. On upgrade from v0.1.2, existing profiles and installed service definitions that specify port 8931 keep using it. Open the URL printed by your running daemon. Select the intended device, choose an effect or edit a Sequence, then click **Play**. Preview is optional; Play validates the current draft itself. Opening the page, changing a color or playing on screen does not send a Job to the lamp.
 
 The page, local fonts, editor, 3D model and two-face fallback are embedded in nb1. No separate web directory, CDN or frontend build is needed. The default language is English, with Chinese available. If you changed `server.listen` or passed `--listen`, open that actual loopback address followed by `/demo/`.
 
@@ -125,7 +125,7 @@ For a manually unpacked upgrade, retain the old directory, verify and unpack the
 
 Optional matching downloads are:
 
-- `nb1-mcp-v0.1.3-<os>-<arch>.tar.gz`, or Windows `.zip`: unpack into a separate new directory and verify its checksums. Configure the MCP host with the absolute `nb1-mcp` path and `--endpoint http://127.0.0.1:8931 --timeout 10s`. It reports version `v0.1.3` during MCP initialization and uses stdio to local HTTP, without launching a CLI or owning USB.
+- `nb1-mcp-v0.1.3-<os>-<arch>.tar.gz`, or Windows `.zip`: unpack into a separate new directory and verify its checksums. Configure the MCP host with the absolute `nb1-mcp` path and `--endpoint http://127.0.0.1:5885 --timeout 10s`. It reports version `v0.1.3` during MCP initialization and uses stdio to local HTTP, without launching a CLI or owning USB.
 - `blink1-control-v0.1.3.zip`: unpack its files into a new `blink1-control` folder and copy the complete folder to the project's `.agents/skills/`. Keep `SKILL.md`, `agents/` and `references/` together. The Skill does not install nb1, register MCP, enable global hooks or grant permissions. See [Agent setup](agent-guide.md).
 
 MCP has its own endpoint argument and does not read nb1 YAML. Point all clients at the same intended daemon. The local API validates Host and browser Origin, but loopback is not user authentication; another local process able to call the endpoint may control configured lamps. No keyboard, input-monitoring or camera permission is needed for this workbench.

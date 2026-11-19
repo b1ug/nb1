@@ -14,7 +14,7 @@ nb1 实现 API v1，源码验证与机器当前安装版本分别记录。同一
 nb1 server --devices DEVICE_SERIAL
 ```
 
-打开 `http://127.0.0.1:8931/demo/` 使用双语 Nightlab 调试器。页面已内嵌，无需 Node 服务、单独安装 Web 或浏览器 WebHID 授权。Play 直接校验并播放当前草稿，Preview 可选；打开页面不会自动播放。若修改过监听端口，请使用实际地址。
+打开 `http://127.0.0.1:5885/demo/` 使用双语 Nightlab 调试器。页面已内嵌，无需 Node 服务、单独安装 Web 或浏览器 WebHID 授权。Play 直接校验并播放当前草稿，Preview 可选；打开页面不会自动播放。v0.1.3 的默认端口是 5885，v0.1.2 的默认端口是 8931。若配置文件或已安装的服务指定了端口，升级后请继续使用该端口。server 启动时会打印实际地址。
 
 通过 CLI 播放时，将请求保存在 `action.json`：
 
@@ -31,7 +31,7 @@ nb1 control run DEVICE_SERIAL action.json --wait
 
 需要只看编译计划而不播放时，单独运行 `nb1 control preview action.json`。
 
-`control` 默认连接 `http://127.0.0.1:8931`，可通过 `--endpoint` 指定其他本机端口。daemon 持有 USB，其他入口通过 HTTP 与它交互。一台设备由一个进程拥有。独立的 `on`、`off`、`blink`、`fade`、`play`、`read`、`write` 命令直接访问硬件，需要设备可用。
+`control` 默认连接 `http://127.0.0.1:5885`，可通过 `--endpoint` 指定其他本机端口。daemon 持有 USB，其他入口通过 HTTP 与它交互。一台设备由一个进程拥有。独立的 `on`、`off`、`blink`、`fade`、`play`、`read`、`write` 命令直接访问硬件，需要设备可用。
 
 不需要 daemon 时，可以前台执行一次 Action、Sequence 或已保存的 Pattern：
 

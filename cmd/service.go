@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	buildconfig "github.com/b1ug/nb1/config"
+	"github.com/b1ug/nb1/internal/daemonaddr"
 	"github.com/b1ug/nb1/internal/service"
 	"github.com/b1ug/nb1/internal/service/systemduser"
 	"github.com/b1ug/nb1/internal/service/taskquery"
@@ -58,7 +59,7 @@ func newServiceCommandForRuntime(management userServiceRuntime) *cobra.Command {
 	render.Flags().StringVar(&config.Platform, "platform", "", "target platform: darwin, linux or windows")
 	render.Flags().StringVar(&config.Binary, "binary", "", "explicit absolute path to the target platform's nb1 executable")
 	render.Flags().StringSliceVar(&config.Devices, "devices", nil, "comma-separated exact device serials")
-	render.Flags().StringVar(&config.Listen, "listen", "127.0.0.1:8931", "stable loopback host:port")
+	render.Flags().StringVar(&config.Listen, "listen", daemonaddr.Listen, "stable loopback host:port")
 	render.Flags().StringVar(&config.LockDir, "lock-dir", "", "optional absolute shared ownership directory; otherwise the service account's default")
 	render.Flags().StringVar(&config.ConfigFile, "config-file", "", "optional absolute target-platform user configuration file")
 	render.Flags().StringVar(&config.UserConfigRoot, "user-config-root", "", "optional absolute XDG_CONFIG_HOME for macOS/Linux; native install binds the current user's root")
@@ -124,7 +125,7 @@ func newServiceInstallCommand(management userServiceRuntime) *cobra.Command {
 	}
 	command.Flags().StringVar(&config.Binary, "binary", "", "pin an absolute executable path (default: the running nb1; Homebrew uses its stable package entry)")
 	command.Flags().StringSliceVar(&config.Devices, "devices", nil, "explicit eight-digit hexadecimal device serials")
-	command.Flags().StringVar(&config.Listen, "listen", "127.0.0.1:8931", "stable loopback host:port")
+	command.Flags().StringVar(&config.Listen, "listen", daemonaddr.Listen, "stable loopback host:port")
 	command.Flags().StringVar(&config.LockDir, "lock-dir", "", "optional absolute shared ownership directory")
 	command.Flags().BoolVar(&start, "start", false, "request immediate startup as well as login loading")
 	command.Flags().BoolVar(&asJSON, "json", false, "print the host platform's service status as JSON")

@@ -50,7 +50,7 @@ nb1 version
 
 Homebrew 从已发布源码编译，并安装所需构建依赖。Formula 要求 macOS 15 或受支持的 Linux Homebrew 环境，编译需要 Go 1.27.4 或更新版本。上文预编译 Linux 程序的 glibc 下限不能直接套用到 Homebrew 源码构建。安装前查看 tap 当前版本及平台记录。使用 Homebrew 时，后续命令中的 `./nb1` 改为 `nb1`；`./nb1` 指向手动解压的程序。
 
-[双语文档站](https://b1ug.github.io/nb1-docs/zh/)提供安装与使用说明。安装 nb1 不会自动注册或启动后台服务。
+[双语文档站](https://b1ug.github.io/nb1-guide/zh/)提供安装与使用说明。安装 nb1 不会自动注册或启动后台服务。
 
 ## 打开内嵌调试器
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Import one pinned nb1 Embedded Workbench dist. No build or network access."""
+"""Import one pinned nb1 Debugger dist. No build or network access."""
 import argparse
 from dataclasses import dataclass
 import hashlib
@@ -200,7 +200,7 @@ def names(directory, assets=None):
     return result
 
 
-def validate_directory(directory, expected_commit, expected_manifest_sha):
+def validate_directory(directory, expected_commit, expected_manifest_sha, *, existing_destination=False):
     require(hex_value(expected_commit, 40), "expected source commit must be 40 lowercase hex characters")
     require(hex_value(expected_manifest_sha, 64), "expected manifest SHA-256 must be 64 lowercase hex characters")
     directory = Path(directory)
@@ -219,7 +219,11 @@ def validate_directory(directory, expected_commit, expected_manifest_sha):
     require(len(data) <= (MAX_MANIFEST_BYTES if version == 1 else MAX_NIGHTLAB_MANIFEST_BYTES), "manifest exceeds profile limit")
     source = value["source"]
     object_keys(source, ("repository", "commit", "dirty", "tree_sha256"), "source")
-    require(source["repository"] == "https://github.com/b1ug/nb1-workbench" and source["commit"] == expected_commit and source["dirty"] is False and hex_value(source["tree_sha256"], 64), "source must be the pinned clean nb1 Embedded Workbench commit")
+    # A locked pre-rename destination can be replaced without relaxing the
+    # canonical repository requirement for a new import.
+    canonical = source["repository"] == "https://github.com/b1ug/nb1-debugger"
+    previous = existing_destination and source["repository"] == "https://github.com/b1ug/nb1-workbench"
+    require((canonical or previous) and source["commit"] == expected_commit and source["dirty"] is False and hex_value(source["tree_sha256"], 64), "source must be the pinned clean nb1 Debugger commit")
     build = value["build"]
     object_keys(build, ("tool", "node", "lockfile_sha256"), "build")
     node = build["node"]
@@ -278,7 +282,7 @@ def snapshot_destination(base):
     value = strict_json(old_lock)
     object_keys(value, ("schema_version", "product", "source_commit", "manifest_sha256"), "lock")
     require(value["schema_version"] == 1 and type(value["schema_version"]) is int and value["product"] == "nb1-web", "invalid existing bundle lock")
-    old = validate_directory(directory, value["source_commit"], value["manifest_sha256"])
+    old = validate_directory(directory, value["source_commit"], value["manifest_sha256"], existing_destination=True)
     return old.files, old_lock
 
 

@@ -6,9 +6,9 @@ nb1 的三个 Web 入口分别交付，按希望由谁持有设备来选择。
 
 | 名称 | 源码 | 用途与设备持有者 |
 | --- | --- | --- |
-| nb1 Documentation · 文档站 | [nb1-docs](https://github.com/b1ug/nb1-docs) | 静态英中教程，不申请 USB 权限，不控制灯。 |
-| nb1 Embedded Workbench · 内嵌工作台 | [nb1-workbench](https://github.com/b1ug/nb1-workbench) | 内嵌在 nb1，由 `/demo/` 提供页面；调用同源 HTTP API，nb1 daemon 持有 USB。 |
-| nb1 Browser Tools · 浏览器工具 | [nb1-browser-tools](https://github.com/b1ug/nb1-browser-tools) | 独立 WebHID 工作台开发预览，以及实验性 Chrome 提醒扩展；网页或扩展直接持有 USB。 |
+| nb1 Guide · 文档站 | [nb1-guide](https://github.com/b1ug/nb1-guide) | 静态英中教程，不申请 USB 权限，不控制灯。 |
+| nb1 Debugger · 内嵌工作台 | [nb1-debugger](https://github.com/b1ug/nb1-debugger) | 内嵌在 nb1，由 `/demo/` 提供页面；调用同源 HTTP API，nb1 daemon 持有 USB。 |
+| nb1 WebHID · 浏览器工具 | [nb1-webhid](https://github.com/b1ug/nb1-webhid) | 独立 WebHID 工作台开发预览，以及实验性 Chrome 提醒扩展；网页或扩展直接持有 USB。 |
 
 内嵌工作台和 HTTP API 属于同一个 `nb1 server` 进程，不需要再安装一个 daemon。
 使用直连 WebHID 工具前，需要明确让原生 nb1 或其他浏览器控制者释放设备；浏览器
@@ -16,6 +16,8 @@ nb1 的三个 Web 入口分别交付，按希望由谁持有设备来选择。
 
 实验扩展不是 Chrome Web Store 正式发行，关闭弹窗后的真实后台提醒验收与浏览器软件
 测试分开记录。内部规划和研究页面不属于公开产品入口。
+
+MK2 装配、ThingM 原始网格和许可来自 [blink1-models](https://github.com/b1ug/blink1-models) 的固定 Git 提交。调试器通过 npm 锁文件和模型清单校验输入，Go 构建直接使用已导入的资源。
 
 ## Go module、源码检出与内嵌资源
 
@@ -39,7 +41,7 @@ Git submodule 可以固定开发者检出的源码，但不会构建或校验 `d
 SHA-256，再从 nb1 目录执行：
 
 ```sh
-python3 tools/import-web-dist.py ../nb1-workbench/dist \
+python3 tools/import-web-dist.py ../nb1-debugger/dist \
   --source-commit WORKBENCH_COMMIT \
   --manifest-sha256 MANIFEST_SHA256 --check
 ```

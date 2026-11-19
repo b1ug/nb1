@@ -272,7 +272,7 @@ func validateBundle(files fs.FS) error {
 	default:
 		return fmt.Errorf("unsupported web profile")
 	}
-	if record.Product != "nb1-web" || record.AssetBase != "./" || record.Source.Repository != "https://github.com/b1ug/nb1-workbench" || record.Source.Commit != lock.SourceCommit || record.Source.Dirty == nil || *record.Source.Dirty || !validHex(record.Source.TreeSHA256, 64) || !validHex(record.Build.LockfileSHA256, 64) || len(record.Build.Node) == 0 || len(record.Build.Node) > 128 || strings.TrimSpace(record.Build.Node) != record.Build.Node {
+	if record.Product != "nb1-web" || record.AssetBase != "./" || record.Source.Repository != "https://github.com/b1ug/nb1-debugger" || record.Source.Commit != lock.SourceCommit || record.Source.Dirty == nil || *record.Source.Dirty || !validHex(record.Source.TreeSHA256, 64) || !validHex(record.Build.LockfileSHA256, 64) || len(record.Build.Node) == 0 || len(record.Build.Node) > 128 || strings.TrimSpace(record.Build.Node) != record.Build.Node {
 		return fmt.Errorf("invalid web manifest provenance")
 	}
 	for _, char := range record.Build.Node {

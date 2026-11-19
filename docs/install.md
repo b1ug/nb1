@@ -50,7 +50,7 @@ nb1 version
 
 Homebrew builds released source and installs its build dependencies. Its Formula requires macOS 15 or a supported Linux Homebrew environment, with Go 1.27.4 or newer for compilation. The prebuilt Linux binary's glibc requirement above does not describe a Homebrew source build. Check the tap's current version and platform evidence before installing. With Homebrew, use `nb1` in the commands below; `./nb1` selects a manually unpacked executable.
 
-The [documentation site](https://b1ug.github.io/nb1-docs/) includes the English and Chinese setup guides. Installing nb1 does not register or start a background service.
+The [documentation site](https://b1ug.github.io/nb1-guide/) includes the English and Chinese setup guides. Installing nb1 does not register or start a background service.
 
 ## Open the embedded workbench
 

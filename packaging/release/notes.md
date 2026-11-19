@@ -37,4 +37,4 @@ Developer ID notarized. Source builds require Go 1.25.8+.
 
 The [Homebrew tap](https://github.com/b1ug/homebrew-tap) installs the version in
 its current Formula. Installation and device selection are covered in the
-[English and Chinese documentation](https://b1ug.github.io/nb1-docs/).
+[English and Chinese documentation](https://b1ug.github.io/nb1-guide/).

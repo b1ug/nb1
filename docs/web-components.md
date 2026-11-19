@@ -7,9 +7,9 @@ owner you want; they are separate deliverables.
 
 | Name | Source | Purpose and device owner |
 | --- | --- | --- |
-| nb1 Documentation | [nb1-docs](https://github.com/b1ug/nb1-docs) | Static English/Chinese guides. It does not request USB permission or control a lamp. |
-| nb1 Embedded Workbench | [nb1-workbench](https://github.com/b1ug/nb1-workbench) | Built into nb1 and served at `/demo/`. It calls the same-origin HTTP API; the nb1 daemon owns USB. |
-| nb1 Browser Tools | [nb1-browser-tools](https://github.com/b1ug/nb1-browser-tools) | Independent WebHID workbench development preview and experimental Chrome reminder extension. The page or extension owns USB directly. |
+| nb1 Guide | [nb1-guide](https://github.com/b1ug/nb1-guide) | Static English/Chinese guides. It does not request USB permission or control a lamp. |
+| nb1 Debugger | [nb1-debugger](https://github.com/b1ug/nb1-debugger) | Built into nb1 and served at `/demo/`. It calls the same-origin HTTP API; the nb1 daemon owns USB. |
+| nb1 WebHID | [nb1-webhid](https://github.com/b1ug/nb1-webhid) | Independent WebHID workbench development preview and experimental Chrome reminder extension. The page or extension owns USB directly. |
 
 The embedded workbench is part of the same `nb1 server` process as its HTTP API;
 it is not another daemon to install. Direct WebHID tools require an explicit
@@ -24,6 +24,8 @@ Internal planning and research pages are not public product entry points.
 
 Go modules such as GID, blink1-go and colorkit supply Go code through `go.mod`.
 The frontend is a separate source project rather than a Go module dependency.
+
+The debugger consumes the MK2 assembly, original ThingM meshes and license from [blink1-models](https://github.com/b1ug/blink1-models) at a fixed Git commit. Its npm lockfile and model manifest bind the input bytes. The standalone Go build uses the imported files offline.
 
 The frontend build records its source repository, exact commit, clean-tree
 state and per-file hashes. nb1 imports only that reviewed `dist` inventory and
@@ -46,7 +48,7 @@ Build and review a clean workbench checkout using that repository's instructions
 Review its full commit and `dist/manifest.json` SHA-256, then from nb1 run:
 
 ```sh
-python3 tools/import-web-dist.py ../nb1-workbench/dist \
+python3 tools/import-web-dist.py ../nb1-debugger/dist \
   --source-commit WORKBENCH_COMMIT \
   --manifest-sha256 MANIFEST_SHA256 --check
 ```

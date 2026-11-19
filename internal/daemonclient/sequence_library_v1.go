@@ -174,7 +174,7 @@ func validateSequencePattern(pattern SequencePattern, id string) error {
 }
 
 func (c *Client) sequenceV1ListRequest(ctx context.Context, path string, output interface{}) error {
-	return c.sequenceV1Response(ctx, http.MethodGet, path, nil, func(response *http.Response) error {
+	return c.sequenceV1Response(ctx, http.MethodGet, path, nil, nil, func(response *http.Response) error {
 		data, err := io.ReadAll(io.LimitReader(response.Body, (2<<20)+1))
 		if err != nil {
 			return err

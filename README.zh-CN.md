@@ -65,6 +65,6 @@ macOS/Linux 的配置与本机颜色／Pattern 作品库使用 `$XDG_CONFIG_HOME
 
 Web 位于 `/demo/`，默认英文，可切中文。[nb1 Debugger](https://github.com/b1ug/nb1-debugger) 提供经校验后内嵌的静态资源；它调用同一个 nb1 server 的 HTTP API。[nb1 Guide](https://github.com/b1ug/nb1-guide) 提供[双语文档站](https://b1ug.github.io/nb1-guide/zh/)，不申请硬件权限。独立 [nb1 WebHID](https://github.com/b1ug/nb1-webhid) 通过 WebHID 直连，其工作台为开发预览、Chrome 提醒扩展仍为实验版本，不随 nb1 自动安装；使用时需明确交接设备。仅打开或预览不会播放。详见 [Web 组件与构建边界](docs/web-components.zh-CN.md)。
 
-九个动作分别为 `set`、`off`、`fade`、`blink`、`breathe`、`pulse`、`alternate`、`orbit`、`rainbow`。颜色接受名字、Hex、RGB8、HSV/HSB 和 `@本机名字`。Pattern 存在电脑上；设备原生序列 API 仍为独立规划，当前 HTTP v1／MCP 不把主机 Pattern 部署到设备存储。
+九个动作分别为 `set`、`off`、`fade`、`blink`、`breathe`、`pulse`、`alternate`、`orbit`、`rainbow`。颜色接受名字、Hex、RGB8、HSV/HSB 和 `@本机名字`。Pattern 存在电脑上；要更换灯内保存的上电灯效，可在内嵌调试器打开「设备 Flash」，选预设后点「重置 Flash」，也可执行 `nb1 device reset 序列号 [off|rainbow|starlight|fireflies]`。默认熄灭，其他三种分别为彩虹、星光和流萤。当前支持 MK2 固件 204 和 205。服务会先回读核对 16 行，再请求一次保存。若显示保存待核验，请先断电接充电器检查灯效。[Flash 重置与写入结果](docs/api-v1.md#device-flash-reset)。
 
 从源码构建 nb1 要求 Go 1.25.8 或更新版本；发布产物记录实际构建工具链及固定依赖。预编译程序不需要安装 Go。源码下限反映所选依赖的要求，设备协议与基础库自身的 Go 要求不变。软件、实机 USB、安装和相机光学结果分开记录。Mac/MK2 的有限结果不代表 MK3、Linux/Windows USB 或非易失存储已通过。开发提交不等于 tag 或 Release。

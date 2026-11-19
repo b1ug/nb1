@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -14,7 +15,9 @@ import (
 	"time"
 
 	"github.com/b1ug/nb1/internal/control"
+	"github.com/b1ug/nb1/internal/flashreset"
 	"github.com/b1ug/nb1/internal/httpapi"
+	"github.com/b1ug/nb1/internal/remoteaccess"
 	"github.com/b1ug/nb1/internal/sequence"
 	"github.com/b1ug/nb1/internal/triggerv1"
 )
@@ -666,5 +669,195 @@ func TestSequenceAPICancelledCallerIsUnavailable(t *testing.T) {
 	server.Config.Handler.ServeHTTP(response, request)
 	if response.Code != 503 || !strings.Contains(response.Body.String(), `"code":"unavailable"`) {
 		t.Fatalf("caller cancellation: %d %s", response.Code, response.Body.String())
+	}
+}
+
+type flashRouteFixture struct {
+	control.Service
+	calls          int
+	serial, preset string
+	result         flashreset.Result
+	err            error
+}
+
+func (f *flashRouteFixture) Device(serial string) (control.DeviceState, error) {
+	if serial != "20000002" && serial != "20000003" {
+		return control.DeviceState{}, control.ErrNotFound
+	}
+	return control.DeviceState{DeviceInfo: control.DeviceInfo{Serial: serial}}, nil
+}
+
+func issueTestFlashTicket(t *testing.T, h http.Handler, serial, token string) string {
+	t.Helper()
+	r := httptest.NewRequest("GET", "http://127.0.0.1/v1/devices/"+serial+"/flash/reset-ticket", nil)
+	if token != "" {
+		r.Header.Set("Authorization", "Bearer "+token)
+	}
+	w := httptest.NewRecorder()
+	h.ServeHTTP(w, r)
+	var ticket httpapi.FlashResetTicket
+	if w.Code != 200 || w.Header().Get("Cache-Control") != "no-store" || json.Unmarshal(w.Body.Bytes(), &ticket) != nil || len(ticket.Ticket) != 32 {
+		t.Fatalf("issue ticket %d: %s", w.Code, w.Body.String())
+	}
+	return ticket.Ticket
+}
+
+func (f *flashRouteFixture) ResetFlash(_ context.Context, serial, preset string) (flashreset.Result, error) {
+	f.calls++
+	f.serial, f.preset = serial, preset
+	return f.result, f.err
+}
+
+func TestFlashResetRouting(t *testing.T) {
+	const route = "/v1/devices/20000002/flash/reset"
+	const token = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	for _, tc := range []struct {
+		name, method, path, body, media, origin string
+		token                                   bool
+		status                                  int
+		preset                                  string
+	}{
+		{"default", "POST", route, "{}", "application/json", "", true, 200, "off"},
+		{"explicit", "POST", route, `{"preset":"fireflies"}`, "application/json", "", true, 200, "fireflies"},
+		{"missing body", "POST", route, "", "application/json", "", true, 400, ""},
+		{"null", "POST", route, `{"preset":null}`, "application/json", "", true, 400, ""},
+		{"empty preset", "POST", route, `{"preset":""}`, "application/json", "", true, 400, ""},
+		{"unknown preset", "POST", route, `{"preset":"factory"}`, "application/json", "", true, 400, ""},
+		{"duplicate", "POST", route, `{"preset":"off","preset":"rainbow"}`, "application/json", "", true, 400, ""},
+		{"unknown field", "POST", route, `{"presets":"rainbow"}`, "application/json", "", true, 400, ""},
+		{"trailing query", "POST", route + "?", "{}", "application/json", "", true, 400, ""},
+		{"empty serial", "POST", "/v1/devices//flash/reset", "{}", "application/json", "", true, 400, ""},
+		{"wrong serial", "POST", "/v1/devices/default/flash/reset", "{}", "application/json", "", true, 400, ""},
+		{"get", "GET", route, "{}", "application/json", "", true, 405, ""},
+		{"bad media", "POST", route, "{}", "text/plain", "", true, 415, ""},
+		{"missing token", "POST", route, "{}", "application/json", "", false, 401, ""},
+		{"bad origin", "POST", route, "{}", "application/json", "https://example.test", true, 403, ""},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			f := &flashRouteFixture{result: flashreset.Result{Serial: "20000002", Preset: tc.preset, Firmware: 204, Lines: 16, Staged: 16, Verified: 16, Status: flashreset.Acknowledged}}
+			handler := httpapi.New(f, httpapi.WithSequenceAPI(), httpapi.WithLocalProtection(func(h http.Handler) http.Handler { return remoteaccess.ProtectLocal(token, h) }))
+			req := httptest.NewRequest(tc.method, "http://127.0.0.1"+tc.path, strings.NewReader(tc.body))
+			req.Header.Set("Content-Type", tc.media)
+			req.Header.Set(httpapi.FlashTicketHeader, issueTestFlashTicket(t, handler, "20000002", token))
+			if tc.origin != "" {
+				req.Header.Set("Origin", tc.origin)
+			}
+			if tc.token {
+				req.Header.Set("Authorization", "Bearer "+token)
+			}
+			w := httptest.NewRecorder()
+			handler.ServeHTTP(w, req)
+			if w.Code != tc.status || (tc.preset == "" && f.calls != 0) || (tc.preset != "" && (f.calls != 1 || f.serial != "20000002" || f.preset != tc.preset)) {
+				t.Fatalf("HTTP %d, %d calls to %q/%q: %s", w.Code, f.calls, f.serial, f.preset, w.Body.String())
+			}
+		})
+	}
+}
+
+func TestFlashResetFailurePreservesProgress(t *testing.T) {
+	const serial = "20000002"
+	errWrite := errors.New("device transfer returned an error")
+	for _, tc := range []struct {
+		outcome          string
+		staged, verified int
+		err              error
+		status           int
+		code             string
+	}{
+		{flashreset.Unconfirmed, 16, 16, errWrite, 502, "flash_unconfirmed"},
+		{flashreset.StagingFailed, 5, 0, errWrite, 502, "flash_staging_failed"},
+		{flashreset.Unconfirmed, 2, 0, errWrite, 500, "internal_error"},
+		{"", 0, 0, flashreset.ErrUnsupported, 422, "unsupported_capability"},
+		{"", 0, 0, control.ErrBusy, 409, "device_busy"},
+		{"", 0, 0, control.ErrNotFound, 404, "device_not_managed"},
+		{"", 0, 0, control.ErrOffline, 503, "device_offline"},
+		{"", 0, 0, context.DeadlineExceeded, 503, "flash_outcome_unknown"},
+	} {
+		t.Run(tc.code, func(t *testing.T) {
+			f := &flashRouteFixture{err: tc.err}
+			if tc.outcome != "" {
+				f.result = flashreset.Result{Serial: serial, Preset: "off", Firmware: 204, Lines: 16, Staged: tc.staged, Verified: tc.verified, Status: tc.outcome}
+			}
+			r := httptest.NewRequest("POST", "http://127.0.0.1/v1/devices/"+serial+"/flash/reset", strings.NewReader("{}"))
+			r.Header.Set("Content-Type", "application/json")
+			w := httptest.NewRecorder()
+			handler := httpapi.New(f, httpapi.WithSequenceAPI())
+			r.Header.Set(httpapi.FlashTicketHeader, issueTestFlashTicket(t, handler, serial, ""))
+			handler.ServeHTTP(w, r)
+			var data httpapi.FlashResetFailure
+			if err := json.Unmarshal(w.Body.Bytes(), &data); err != nil || w.Code != tc.status || data.Error.Code != tc.code || f.calls != 1 || (w.Code == 502 && data.Result != f.result) || (w.Code != 502 && data.Result.Status != "") {
+				t.Fatalf("HTTP %d, %d calls: %s", w.Code, f.calls, w.Body.String())
+			}
+		})
+	}
+}
+
+func TestFlashResetTicketReplayAndRestart(t *testing.T) {
+	const serial = "20000002"
+	f := &flashRouteFixture{err: errors.New("save transfer uncertain"), result: flashreset.Result{Serial: serial, Preset: "off", Firmware: 204, Lines: 16, Staged: 16, Verified: 16, Status: flashreset.Unconfirmed}}
+	h := httpapi.New(f, httpapi.WithSequenceAPI())
+	token := issueTestFlashTicket(t, h, serial, "")
+	post := func(handler http.Handler, target string, keys ...string) int {
+		r := httptest.NewRequest("POST", "http://127.0.0.1/v1/devices/"+target+"/flash/reset", strings.NewReader("{}"))
+		r.Header.Set("Content-Type", "application/json")
+		for _, key := range keys {
+			r.Header.Add(httpapi.FlashTicketHeader, key)
+		}
+		w := httptest.NewRecorder()
+		handler.ServeHTTP(w, r)
+		if w.Code == 409 && !strings.Contains(w.Body.String(), `"code":"flash_ticket_used_or_expired"`) {
+			t.Errorf("unexpected ticket error %s", w.Body.String())
+		}
+		return w.Code
+	}
+	if post(h, serial) != 409 || post(h, serial, token, token) != 409 || post(h, "20000003", token) != 409 || post(httpapi.New(f, httpapi.WithSequenceAPI()), serial, token) != 409 || f.calls != 0 {
+		t.Fatal("a missing, ambiguous, wrongly targeted or prior-daemon ticket admitted a reset")
+	}
+	const attempts = 16
+	results := make(chan int, attempts)
+	for i := 0; i < attempts; i++ {
+		go func() { results <- post(h, serial, token) }()
+	}
+	admitted := 0
+	for i := 0; i < attempts; i++ {
+		switch status := <-results; status {
+		case 502:
+			admitted++
+		case 409:
+		default:
+			t.Fatalf("unexpected status %d", status)
+		}
+	}
+	if admitted != 1 || f.calls != 1 || post(h, serial, token) != 409 {
+		t.Fatalf("replayed a used ticket: %d valid responses, %d backend calls", admitted, f.calls)
+	}
+}
+
+func TestFlashResetTicketRoutes(t *testing.T) {
+	f := &flashRouteFixture{}
+	h := httpapi.New(f, httpapi.WithSequenceAPI(), httpapi.WithLocalProtection(func(h http.Handler) http.Handler {
+		return remoteaccess.ProtectLocal("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ", h)
+	}))
+	for _, tc := range []struct {
+		method, serial, query, body string
+		auth                        bool
+		status                      int
+	}{
+		{"GET", "20000002", "", "", false, 401},
+		{"GET", "20000001", "", "", true, 404},
+		{"GET", "default", "", "", true, 400},
+		{"POST", "20000002", "", "", true, 405},
+		{"GET", "20000002", "?serial=20000001", "", true, 400},
+		{"GET", "20000002", "", "{}", true, 400},
+	} {
+		r := httptest.NewRequest(tc.method, "http://127.0.0.1/v1/devices/"+tc.serial+"/flash/reset-ticket"+tc.query, strings.NewReader(tc.body))
+		if tc.auth {
+			r.Header.Set("Authorization", "Bearer 0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+		}
+		w := httptest.NewRecorder()
+		h.ServeHTTP(w, r)
+		if w.Code != tc.status || f.calls != 0 {
+			t.Errorf("%s %s: %d, %s", tc.method, r.URL, w.Code, w.Body)
+		}
 	}
 }

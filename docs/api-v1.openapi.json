@@ -4,7 +4,7 @@
   "info": {
     "title": "nb1 API v1",
     "version": "1.0.0-dev",
-    "description": "Implementation contract for this source checkout. x-source lists the original route baseline and the current implementation files. The candidate supports daemon-side target selection, named triggers, trigger checks and device-guarded Job cancellation. The installed local runtime has its own version and validation state. All example devices are virtual. JSON request bodies are bounded to 1 MiB. The runtime rejects duplicate fields, unknown fields, explicit null, invalid Unicode, and unsupported number spellings. Cross-field execution budgets are validated by the core."
+    "description": "Implementation contract for this source checkout. x-source lists the original route baseline and the current implementation files. The candidate supports daemon-side target selection, named triggers, trigger checks, device-guarded Job cancellation and serial-targeted Flash preset reset. The installed local runtime has its own version and validation state. All example devices are virtual. JSON request bodies are bounded to 1 MiB. The runtime rejects duplicate fields, unknown fields, explicit null, invalid Unicode, and unsupported number spellings. Cross-field execution budgets are validated by the core."
   },
   "servers": [
     {
@@ -56,7 +56,8 @@
       "internal/control/sequence_routing.go",
       "internal/triggerv1/store.go",
       "cmd/server_remote.go",
-      "internal/remoteaccess/http.go"
+      "internal/remoteaccess/http.go",
+      "internal/httpapi/flash_reset.go"
     ],
     "route_baseline_commit": "8a348d3746be01311c957fe16a916c6be121db07"
   },
@@ -743,6 +744,358 @@
             "example": "fixture-0001"
           }
         ]
+      }
+    },
+    "/v1/devices/{serial}/flash/reset-ticket": {
+      "get": {
+        "operationId": "getFlashResetTicket",
+        "summary": "Obtain a one-use Flash reset ticket",
+        "description": "Obtains a ticket scoped to this daemon process and the specified managed serial. No device I/O is issued. A fresh daemon rejects tickets from the previous process.",
+        "tags": [
+          "Runtime"
+        ],
+        "parameters": [
+          {
+            "name": "serial",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 8,
+              "pattern": "^[0-9A-Fa-f]{8}$"
+            },
+            "example": "20000001"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Opaque ticket for one Flash reset on the specified device during the next 60 seconds.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "ticket"
+                  ],
+                  "properties": {
+                    "ticket": {
+                      "type": "string",
+                      "minLength": 32,
+                      "maxLength": 32,
+                      "pattern": "^[0-9a-f]{32}$"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid serial, query or body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "Host or Origin rejected.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown device or API resource.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "GET required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Allow": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Supported HTTP method(s)."
+              }
+            }
+          },
+          "429": {
+            "description": "All 256 ticket slots are currently occupied. Unused tickets expire in 60 seconds.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected internal error. The caller may not know the outcome.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "The running service does not implement Flash reset.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-body-policy": "rejected",
+        "x-query-policy": "rejected"
+      }
+    },
+    "/v1/devices/{serial}/flash/reset": {
+      "post": {
+        "operationId": "resetDeviceFlash",
+        "summary": "Replace one device’s persistent pattern with a built-in preset",
+        "description": "Uses the idle worker for the exact serial. The request stages and reads back every persistent row before one Flash save attempt. Acknowledgement reports the transport result; persistence requires checking after a cold power cycle. First obtain a reset ticket for this serial. The server consumes it before attempting the operation; reusing the ticket cannot write twice. A lost response can still leave the original save outcome unknown. Do not resend after a lost response or an unconfirmed save.",
+        "tags": [
+          "Runtime"
+        ],
+        "parameters": [
+          {
+            "name": "serial",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 8,
+              "pattern": "^[0-9A-Fa-f]{8}$"
+            },
+            "example": "20000001"
+          },
+          {
+            "name": "X-NB1-Flash-Ticket",
+            "in": "header",
+            "required": true,
+            "description": "Single-use ticket from GET /v1/devices/{serial}/flash/reset-ticket on this daemon.",
+            "schema": {
+              "type": "string",
+              "minLength": 32,
+              "maxLength": 32,
+              "pattern": "^[0-9a-f]{32}$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FlashResetRequest"
+              },
+              "examples": {
+                "defaultOff": {
+                  "value": {}
+                },
+                "rainbow": {
+                  "value": {
+                    "preset": "rainbow"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "All rows verified in RAM and device acknowledged the Flash save.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/FlashResetResult"
+                    },
+                    {
+                      "properties": {
+                        "status": {
+                          "const": "acknowledged"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid JSON object, preset, query or device serial.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "Host or Origin rejected.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown device or API resource.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "POST required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Allow": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Supported HTTP method(s)."
+              }
+            }
+          },
+          "409": {
+            "description": "The device is busy or the supplied ticket is missing, invalid, already used or expired. A replayed request may have written previously.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request exceeds 1 MiB.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Content-Type must be application/json.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The device, firmware or runtime mode does not support this reset.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected internal error. The caller may not know the outcome.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "The running service does not implement Flash reset.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "The device transaction failed. flash_staging_failed means no Flash save was sent; staging may have modified RAM. flash_unconfirmed means a save was attempted and its persistent effect is unknown.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FlashResetFailure"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Device offline or service unavailable. flash_outcome_unknown indicates that the operation did not return before the request ended.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-query-policy": "rejected"
       }
     },
     "/v1/preview": {
@@ -5455,7 +5808,11 @@
                   "invalid_trigger_config",
                   "unauthorized",
                   "invalid_host",
-                  "invalid_origin"
+                  "invalid_origin",
+                  "flash_reset_unsupported",
+                  "flash_outcome_unknown",
+                  "flash_ticket_used_or_expired",
+                  "flash_ticket_capacity"
                 ]
               },
               "message": {
@@ -5596,6 +5953,137 @@
             ]
           }
         ]
+      },
+      "FlashResetRequest": {
+        "type": "object",
+        "properties": {
+          "preset": {
+            "type": "string",
+            "enum": [
+              "off",
+              "rainbow",
+              "starlight",
+              "fireflies"
+            ],
+            "default": "off"
+          }
+        },
+        "additionalProperties": false,
+        "examples": [
+          {},
+          {
+            "preset": "rainbow"
+          }
+        ]
+      },
+      "FlashResetResult": {
+        "type": "object",
+        "properties": {
+          "serial": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 8,
+            "pattern": "^[0-9A-Fa-f]{8}$"
+          },
+          "preset": {
+            "type": "string",
+            "enum": [
+              "off",
+              "rainbow",
+              "starlight",
+              "fireflies"
+            ]
+          },
+          "firmware": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "lines": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Number of persistent pattern rows in the supported firmware profile.",
+            "enum": [
+              16,
+              32
+            ]
+          },
+          "staged": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "RAM pattern writes acknowledged.",
+            "maximum": 32
+          },
+          "verified": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "RAM rows that matched the preset on readback.",
+            "maximum": 32
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "acknowledged",
+              "staging_failed",
+              "unconfirmed"
+            ]
+          }
+        },
+        "required": [
+          "serial",
+          "preset",
+          "firmware",
+          "lines",
+          "staged",
+          "verified",
+          "status"
+        ],
+        "additionalProperties": false
+      },
+      "FlashResetFailure": {
+        "type": "object",
+        "properties": {
+          "result": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/FlashResetResult"
+              },
+              {
+                "properties": {
+                  "status": {
+                    "enum": [
+                      "staging_failed",
+                      "unconfirmed"
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "enum": [
+                  "flash_staging_failed",
+                  "flash_unconfirmed"
+                ]
+              },
+              "message": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "code",
+              "message"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "error",
+          "result"
+        ],
+        "additionalProperties": false
       }
     },
     "securitySchemes": {

@@ -4,12 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/b1ug/nb1/internal/devicesequence"
+	"github.com/b1ug/nb1/internal/flashreset"
 	"github.com/b1ug/nb1/internal/nativeinspection"
 	"github.com/b1ug/nb1/internal/patternidentity"
 )
@@ -54,6 +56,8 @@ func (b *nativeEngineBackend) inspectionCalls() int {
 	}
 	return n
 }
+
+type nativeInspectionOutcome = idleOutcome[nativeinspection.Result]
 
 type nativeEngineDriver struct {
 	mu      sync.Mutex
@@ -138,7 +142,7 @@ func nativeOutcome(t *testing.T, out <-chan nativeInspectionOutcome) nativeInspe
 func nativeReserved(e *Engine, serial string, started bool) bool {
 	e.mu.Lock()
 	defer e.mu.Unlock()
-	call := e.workers[serial].inspection
+	call := e.workers[serial].idle
 	return call != nil && call.started == started
 }
 
@@ -379,7 +383,7 @@ func TestNativeInspectionInflightCancellationKeepsGateAndHandleUntilReturn(t *te
 		t.Fatal("cancellation closed or reopened native handle")
 	}
 	gate.open()
-	awaitEngineCondition(t, func() bool { e.mu.Lock(); defer e.mu.Unlock(); return e.workers["a"].inspection == nil })
+	awaitEngineCondition(t, func() bool { e.mu.Lock(); defer e.mu.Unlock(); return e.workers["a"].idle == nil })
 	if state, _ := e.Device("a"); state.Connection != "online" {
 		t.Fatal(state)
 	}
@@ -656,5 +660,164 @@ func TestNativeInspectionEmptyContractDiscardsResidualData(t *testing.T) {
 				t.Fatalf("uncollected residual escaped: %+v %v", result, err)
 			}
 		})
+	}
+}
+
+type flashEngineBackend struct {
+	*nativeEngineBackend
+	gate        *engineGate
+	contextDone chan struct{}
+}
+
+func (b *flashEngineBackend) Info() DeviceInfo {
+	info := b.nativeEngineBackend.Info()
+	info.Capabilities = append(info.Capabilities, "flash-reset")
+	return info
+}
+
+func (b *flashEngineBackend) ResetFlash(ctx context.Context, preset string) (flashreset.Result, error) {
+	b.begin(engineCall{kind: "flash-reset"})
+	defer b.end()
+	if b.contextDone != nil {
+		close(b.contextDone)
+		<-ctx.Done()
+	}
+	if b.gate != nil {
+		_ = b.gate.block()
+	}
+	return flashreset.Result{Status: flashreset.Acknowledged, Serial: b.serial, Preset: preset,
+		Firmware: 204, Lines: 16, Staged: 16, Verified: 16}, nil
+}
+
+func TestFlashResetAdmission(t *testing.T) {
+	b := &flashEngineBackend{nativeEngineBackend: newNativeEngineBackend("a")}
+	plain := newEngineBackend("plain")
+	e, _ := startNativeEngine(t, Options{}, map[string][]Backend{"a": {b}, "plain": {plain}})
+	ctx := context.Background()
+
+	for _, tc := range []struct {
+		serial string
+		preset string
+		want   error
+	}{
+		{"missing", "off", ErrNotFound},
+		{"a", "invalid", ErrInvalid},
+		{"plain", "off", flashreset.ErrUnsupported},
+	} {
+		if _, err := e.ResetFlash(ctx, tc.serial, tc.preset); !errors.Is(err, tc.want) {
+			t.Fatalf("reset %s %s: %v, want %v", tc.serial, tc.preset, err, tc.want)
+		}
+	}
+	readonly, _ := startNativeEngine(t, Options{ReadOnly: true}, map[string][]Backend{"a": {
+		&flashEngineBackend{nativeEngineBackend: newNativeEngineBackend("a")},
+	}})
+	if _, err := readonly.ResetFlash(ctx, "a", "off"); !errors.Is(err, ErrInvalid) {
+		t.Fatal("read-only reset", err)
+	}
+	readonlyState, _ := readonly.Device("a")
+	before, _ := e.Device("a")
+	if slices.Contains(readonlyState.Capabilities, "flash-reset") || !slices.Contains(before.Capabilities, "flash-reset") {
+		t.Fatal("runtime did not advertise its effective Flash reset capability")
+	}
+	result, err := e.ResetFlash(ctx, "a", "rainbow")
+	if err != nil || result.Preset != "rainbow" || result.Serial != "a" || result.Status != flashreset.Acknowledged {
+		t.Fatalf("reset: %+v %v", result, err)
+	}
+	after, _ := e.Device("a")
+	if *before.Observed != *after.Observed || after.Desired != nil {
+		t.Fatal("writing storage published an unmeasured LED color", before, after)
+	}
+
+	gate := newEngineGate()
+	defer gate.open()
+	b.hooks(func(Step) error { return gate.block() }, nil, nil)
+	submitEngineJob(t, e, "a", engineProgram("#ffffff", "hold"), "reject")
+	awaitEngineSignal(t, gate.entered)
+	submitEngineJob(t, e, "a", engineProgram("#ffaaee", "hold"), "queue")
+	if _, err := e.ResetFlash(ctx, "a", "off"); !errors.Is(err, ErrBusy) {
+		t.Fatal("reset admitted with active and queued control work", err)
+	}
+}
+
+func TestFlashResetOwnsOnlyItsTargetUntilNativeReturn(t *testing.T) {
+	gate := newEngineGate()
+	defer gate.open()
+	a := &flashEngineBackend{nativeEngineBackend: newNativeEngineBackend("a"), gate: gate}
+	b := &flashEngineBackend{nativeEngineBackend: newNativeEngineBackend("b")}
+	e, driver := startNativeEngine(t, Options{}, map[string][]Backend{"a": {a}, "b": {b}})
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	done := make(chan error, 1)
+	go func() {
+		_, err := e.ResetFlash(ctx, "a", "off")
+		done <- err
+	}()
+	awaitEngineSignal(t, gate.entered)
+	cancel()
+	select {
+	case err := <-done:
+		if !errors.Is(err, context.Canceled) || !strings.Contains(err.Error(), "outcome is unknown") {
+			t.Fatal("missing uncertainty after dispatch", err)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("caller waited for blocked native write after cancellation")
+	}
+
+	ctx = context.Background()
+	for _, policy := range []string{"reject", "queue", "replace"} {
+		if _, err := e.Submit(ctx, "a", engineProgram("#ffffff", "hold"), policy); !errors.Is(err, ErrBusy) {
+			t.Fatal("reset lost the worker after cancellation", policy, err)
+		}
+	}
+	if _, err := e.InspectNative(ctx, "a", nativeRAMRequest()); !errors.Is(err, ErrBusy) {
+		t.Fatal("inspection overlapped Flash reset", err)
+	}
+	if _, err := e.ResetFlash(ctx, "a", "off"); !errors.Is(err, ErrBusy) {
+		t.Fatal("second reset overlapped Flash reset", err)
+	}
+	if result, err := e.ResetFlash(ctx, "b", "off"); err != nil || result.Serial != "b" {
+		t.Fatal("unrelated serial blocked or changed", result, err)
+	}
+	timeout, stop := context.WithTimeout(ctx, 10*time.Millisecond)
+	defer stop()
+	if err := e.Close(timeout); !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatal("shutdown did not preserve in-flight handle", err)
+	}
+	gate.open()
+	if err := e.Close(ctx); err != nil {
+		t.Fatal(err)
+	}
+	calls, _, _, max, closed, unsafe := a.snapshot()
+	writes := 0
+	for _, call := range calls {
+		if call.kind == "flash-reset" {
+			writes++
+		}
+	}
+	if writes != 1 || max != 1 || closed != 1 || unsafe || driver.openCount("a") != 1 {
+		t.Fatal("unexpected reset, reopen or concurrent native call", calls, driver.openCount("a"))
+	}
+}
+
+func TestFlashResetShutdownCancelsStagingContextBeforeClosingHandle(t *testing.T) {
+	gate := newEngineGate()
+	defer gate.open()
+	started := make(chan struct{})
+	a := &flashEngineBackend{nativeEngineBackend: newNativeEngineBackend("a"), gate: gate, contextDone: started}
+	e, _ := startNativeEngine(t, Options{}, map[string][]Backend{"a": {a}})
+	done := make(chan error, 1)
+	go func() {
+		_, err := e.ResetFlash(context.Background(), "a", "off")
+		done <- err
+	}()
+	awaitEngineSignal(t, started)
+	e.beginClose()
+	awaitEngineSignal(t, gate.entered)
+	if _, _, _, _, closed, unsafe := a.snapshot(); closed != 0 || unsafe {
+		t.Fatal("shutdown closed an in-flight native handle")
+	}
+	gate.open()
+	if err := <-done; err != nil {
+		t.Fatal(err)
 	}
 }

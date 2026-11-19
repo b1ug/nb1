@@ -14,6 +14,7 @@ import (
 
 	"github.com/b1ug/nb1/internal/actionv1"
 	"github.com/b1ug/nb1/internal/control"
+	"github.com/b1ug/nb1/internal/flashreset"
 	"github.com/b1ug/nb1/internal/httpapi"
 	"github.com/b1ug/nb1/internal/libraryv1"
 )
@@ -31,10 +32,10 @@ type observation struct {
 	Body   json.RawMessage `json:"body"`
 }
 
-type backend struct{ one, two string }
+type backend struct{ serial, one, two string }
 
-func (*backend) Info() control.DeviceInfo {
-	return control.DeviceInfo{Serial: "fixture-0001", Product: "OpenAPI software fixture",
+func (b *backend) Info() control.DeviceInfo {
+	return control.DeviceInfo{Serial: b.serial, Product: "OpenAPI software fixture",
 		Capabilities: []string{"set", "program", "raw-rgb", "mk2-basic", "hold", "observe", "cancel"}}
 }
 func (b *backend) Set(step control.Step) error {
@@ -57,9 +58,19 @@ func (b *backend) Stop(mode string) error {
 }
 func (*backend) Close() {}
 
-type driver struct{ device *backend }
+func (b *backend) ResetFlash(_ context.Context, preset string) (flashreset.Result, error) {
+	return flashreset.Result{Serial: b.serial, Preset: preset, Firmware: 204,
+		Lines: 16, Staged: 16, Verified: 16, Status: flashreset.Acknowledged}, nil
+}
 
-func (d driver) Open(string) (control.Backend, error) { return d.device, nil }
+type driver map[string]*backend
+
+func (d driver) Open(serial string) (control.Backend, error) {
+	if device := d[serial]; device != nil {
+		return device, nil
+	}
+	return nil, control.ErrNotFound
+}
 
 func run() error {
 	var requests []request
@@ -85,7 +96,12 @@ func run() error {
 	if err := os.WriteFile(filepath.Join(dir, "triggers.json"), []byte(`{"schema_version":1,"triggers":{"build.done":{"pattern_id":"gentle-pulse"}}}`), 0600); err != nil {
 		return err
 	}
-	engine, err := control.New(driver{&backend{one: "#000000", two: "#000000"}}, control.Options{Serials: []string{"fixture-0001"}, PollInterval: time.Hour})
+	serials := []string{"fixture-0001", "20000001"}
+	fixtures := driver{}
+	for _, serial := range serials {
+		fixtures[serial] = &backend{serial: serial, one: "#000000", two: "#000000"}
+	}
+	engine, err := control.New(fixtures, control.Options{Serials: serials, PollInterval: time.Hour})
 	if err != nil {
 		return err
 	}
@@ -94,25 +110,37 @@ func run() error {
 	}
 	defer engine.Close(context.Background())
 	deadline := time.Now().Add(2 * time.Second)
-	for {
-		state, err := engine.Device("fixture-0001")
-		if err != nil {
-			return err
+	for _, serial := range serials {
+		for {
+			state, err := engine.Device(serial)
+			if err != nil {
+				return err
+			}
+			if state.Connection == "online" {
+				break
+			}
+			if time.Now().After(deadline) {
+				return fmt.Errorf("software fixture did not start")
+			}
+			time.Sleep(time.Millisecond)
 		}
-		if state.Connection == "online" {
-			break
-		}
-		if time.Now().After(deadline) {
-			return fmt.Errorf("software fixture did not start")
-		}
-		time.Sleep(time.Millisecond)
 	}
-	handler := httpapi.New(engine, httpapi.WithSequenceAPI(), httpapi.WithLibraryDirectory(dir), httpapi.WithSequenceRouting("", false, dir))
+	handler := httpapi.New(engine, httpapi.WithSequenceAPI(), httpapi.WithLibraryDirectory(dir), httpapi.WithSequenceRouting("fixture-0001", false, dir))
 	results := make([]observation, 0, len(requests))
 	for _, input := range requests {
 		r := httptest.NewRequest(input.Method, "http://127.0.0.1"+input.Path, strings.NewReader(input.Body))
 		if input.Body != "" {
 			r.Header.Set("Content-Type", "application/json")
+		}
+		if input.Method == "POST" && strings.HasSuffix(input.Path, "/flash/reset") {
+			issue := httptest.NewRequest("GET", "http://127.0.0.1"+input.Path+"-ticket", nil)
+			response := httptest.NewRecorder()
+			handler.ServeHTTP(response, issue)
+			var ticket httpapi.FlashResetTicket
+			if response.Code != 200 || json.Unmarshal(response.Body.Bytes(), &ticket) != nil || ticket.Ticket == "" {
+				return fmt.Errorf("issue fixture Flash reset ticket: HTTP %d", response.Code)
+			}
+			r.Header.Set(httpapi.FlashTicketHeader, ticket.Ticket)
 		}
 		w := httptest.NewRecorder()
 		handler.ServeHTTP(w, r)

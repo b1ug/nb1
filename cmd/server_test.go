@@ -4,11 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"net"
+	"strconv"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/b1ug/nb1/internal/control"
+	"github.com/b1ug/nb1/internal/daemonaddr"
 	"github.com/b1ug/nb1/internal/daemonclient"
 	"github.com/spf13/cobra"
 )
@@ -28,8 +30,18 @@ func TestLoopbackListenBoundary(t *testing.T) {
 
 func TestServerPortConfiguration(t *testing.T) {
 	command := &cobra.Command{}
-	command.Flags().String("listen", "127.0.0.1:8931", "")
-	command.Flags().Uint32("port", 8931, "")
+	if net.JoinHostPort("127.0.0.1", strconv.Itoa(daemonaddr.Port)) != daemonaddr.Listen {
+		t.Fatal("numeric default port and default listen address disagree")
+	}
+	if serverCmd.Flags().Lookup("port").DefValue != "5885" || serverCmd.Flags().Lookup("listen").DefValue != "127.0.0.1:5885" {
+		t.Fatal("server flags must default to the same loopback port as the profile")
+	}
+	command.Flags().String("listen", daemonaddr.Listen, "")
+	command.Flags().Uint32("port", daemonaddr.Port, "")
+	t.Setenv("NB1_PORT", "8931")
+	if address, err := serverAddress(command, daemonaddr.Listen); err != nil || address != "127.0.0.1:8931" {
+		t.Fatalf("configured legacy port: %s %v", address, err)
+	}
 	t.Setenv("NB1_PORT", "invalid")
 	if _, err := serverAddress(command, "127.0.0.1:8931"); err == nil {
 		t.Fatal("invalid environment port accepted")

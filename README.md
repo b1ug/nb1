@@ -14,7 +14,7 @@ nb1 implements API v1. Source validation and the version installed on a machine 
 nb1 server --devices DEVICE_SERIAL
 ```
 
-Open `http://127.0.0.1:8931/demo/` to use the bilingual Nightlab workbench. It is embedded in nb1: no Node server, separate Web installation or browser WebHID permission is required. Play validates and sends the current draft directly; Preview is optional. Opening the page does not start playback. Use the actual listening port if you configured another one.
+Open `http://127.0.0.1:5885/demo/` to use the bilingual Nightlab workbench. It is embedded in nb1: no Node server, separate Web installation or browser WebHID permission is required. Play validates and sends the current draft directly; Preview is optional. Opening the page does not start playback. The v0.1.3 default is 5885. v0.1.2 used 8931. If your profile or installed service specifies a port, use that port after upgrading. The server prints its listening URL at startup.
 
 For CLI playback, put an expression in `action.json`:
 
@@ -31,7 +31,7 @@ nb1 control run DEVICE_SERIAL action.json --wait
 
 Use `nb1 control preview action.json` separately when you want to inspect the compiled plan without playback.
 
-`control` defaults to `http://127.0.0.1:8931`; use `--endpoint` for another loopback port. The daemon owns USB while these clients communicate over HTTP. Standalone `on`, `off`, `blink`, `fade`, `play`, `read` and `write` access hardware directly and require the device to be available.
+`control` defaults to `http://127.0.0.1:5885`; use `--endpoint` for another loopback port. The daemon owns USB while these clients communicate over HTTP. Standalone `on`, `off`, `blink`, `fade`, `play`, `read` and `write` access hardware directly and require the device to be available.
 
 For a foreground Action, Sequence or saved Pattern run without a daemon:
 

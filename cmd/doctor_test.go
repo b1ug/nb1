@@ -40,7 +40,13 @@ func TestDoctorJSONAndExitStatusWithoutUSBFallback(t *testing.T) {
 			command.SetOut(&output)
 			command.SetErr(&errors)
 			command.SilenceErrors, command.SilenceUsage = true, true
-			command.SetArgs([]string{"--json", "--endpoint", server.URL, "--serial", "test-target"})
+			if connection == "online" {
+				profileForTest(t, "server:\n  listen: '"+server.Listener.Addr().String()+"'\n")
+				command.SetArgs([]string{"--json", "--serial", "test-target"})
+			} else {
+				profileForTest(t, "server:\n  listen: '127.0.0.1:8931'\n")
+				command.SetArgs([]string{"--json", "--endpoint", server.URL, "--serial", "test-target"})
+			}
 			err := command.Execute()
 			if (err != nil) != (connection == "offline") {
 				t.Fatalf("wrong exit result for %s: %v", connection, err)

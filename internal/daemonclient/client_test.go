@@ -3,6 +3,9 @@ package daemonclient
 import "testing"
 
 func TestEndpointBoundary(t *testing.T) {
+	if DefaultEndpoint != "http://127.0.0.1:5885" {
+		t.Fatal("unexpected default daemon endpoint:", DefaultEndpoint)
+	}
 	for _, endpoint := range []string{"http://127.0.0.1:8931", "http://localhost:8931/", "http://[::1]:8931"} {
 		client, err := New(endpoint)
 		if err != nil {

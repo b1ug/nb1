@@ -36,7 +36,7 @@ this MCP executable does not embed that Web bundle.
 
 Start the intended nb1 daemon explicitly, then configure your MCP host to run:
 
-    nb1-mcp --endpoint http://127.0.0.1:8931 --timeout 10s
+    nb1-mcp --endpoint http://127.0.0.1:5885 --timeout 10s
 
 On Windows the executable is nb1-mcp.exe. Stdout belongs to the MCP protocol.
 The adapter uses HTTP, never opens USB and does not start a daemon or install

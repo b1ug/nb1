@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/b1ug/nb1/internal/daemonaddr"
 	"github.com/b1ug/nb1/internal/userconfig"
 	"gopkg.in/yaml.v3"
 )
@@ -23,7 +24,7 @@ const (
 	MaxFileBytes         = 1 << 20
 	DefaultTerminalLimit = 16384
 	DefaultTerminalTTL   = 30 * time.Minute
-	DefaultListen        = "127.0.0.1:8931"
+	DefaultListen        = daemonaddr.Listen
 )
 
 type Config struct {

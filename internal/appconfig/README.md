@@ -28,7 +28,7 @@ candidate alongside an older daemon.
 device: ""
 server:
   devices: []
-  listen: "127.0.0.1:8931"
+  listen: "127.0.0.1:5885"
 jobs:
   terminal_limit: 16384
   terminal_ttl: 30m

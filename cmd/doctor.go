@@ -18,6 +18,17 @@ func newDoctorCommand() *cobra.Command {
 		Args:    cobra.NoArgs,
 		Example: "  nb1 doctor\n  nb1 doctor --serial DEVICE_SERIAL --json\n  nb1 doctor --endpoint http://127.0.0.1:8932",
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			if !cmd.Flags().Changed("endpoint") {
+				settings, _, err := applicationSettings(cmd)
+				if err != nil {
+					return err
+				}
+				address, err := serverAddress(cmd, settings.Server.Listen)
+				if err != nil {
+					return err
+				}
+				endpoint = "http://" + address
+			}
 			// gid.Supported is a compile-time backend availability check, not
 			// enumeration or Open. HTTP diagnostics work even in CGO=0 builds.
 			report, err := doctor.Collect(cmd.Context(), doctor.Options{Endpoint: endpoint, Serial: serial}, doctor.ReadBuild(gid.Supported()))
@@ -38,7 +49,7 @@ func newDoctorCommand() *cobra.Command {
 			return nil
 		},
 	}
-	command.Flags().StringVar(&endpoint, "endpoint", daemonclient.DefaultEndpoint, "local loopback HTTP service address")
+	command.Flags().StringVar(&endpoint, "endpoint", daemonclient.DefaultEndpoint, "local loopback HTTP service address (defaults to the configured listener)")
 	command.Flags().StringVar(&serial, "serial", "", "inspect only this exact serial; default: all daemon-configured devices")
 	command.Flags().BoolVar(&asJSON, "json", false, "print schema_version=1 JSON; exit with status 1 when attention is required")
 	return command

@@ -13,8 +13,8 @@ A CLI input file contains exactly one expression: `action`, `sequence` or `patte
 The following port is an example: use the task's actual daemon endpoint on every call.
 
 ```sh
-nb1 control --endpoint http://127.0.0.1:8931 run DEVICE_SERIAL action.json --id j_7K3XJNY9ZM --wait
-nb1 control --endpoint http://127.0.0.1:8931 job j_7K3XJNY9ZM
+nb1 control --endpoint http://127.0.0.1:5885 run DEVICE_SERIAL action.json --id j_7K3XJNY9ZM --wait
+nb1 control --endpoint http://127.0.0.1:5885 job j_7K3XJNY9ZM
 ```
 
 Replace the example serial and use a fresh ID for a new task. Preserve that ID if the response is lost. Preview is optional: `nb1 control preview action.json` compiles without playback. `preview --serial SERIAL` enables a cached capability check; preview does not infer the profile's preferred device.

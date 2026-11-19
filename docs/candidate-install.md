@@ -96,7 +96,7 @@ hexadecimal serial:
 device: "20000001"
 server:
   devices: ["20000001"]
-  listen: "127.0.0.1:8931"
+  listen: "127.0.0.1:5885"
 jobs:
   terminal_limit: 16384
   terminal_ttl: 30m
@@ -131,7 +131,7 @@ in the CLI directory, create `action.json`:
 ./nb1 control run DEVICE_SERIAL action.json --wait
 ```
 
-Open `http://127.0.0.1:8931/demo/` for the embedded workbench. Previewing or
+Open `http://127.0.0.1:5885/demo/` for the embedded workbench. Previewing or
 opening the page does not play a Job. HTTP acceptance is not completion; check
 the returned Job's terminal status. Stop the foreground server with Ctrl-C.
 
@@ -207,7 +207,7 @@ inner `SHA256SUMS`, as for the CLI. Configure an MCP host to launch the absolute
 path of `nb1-mcp` with these arguments:
 
 ```text
---endpoint http://127.0.0.1:8931 --timeout 10s
+--endpoint http://127.0.0.1:5885 --timeout 10s
 ```
 
 It speaks the MCP protocol over stdio and calls the existing daemon over HTTP;

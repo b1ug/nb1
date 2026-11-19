@@ -15,7 +15,7 @@
 ```bash
 nb1 service render --platform darwin \
   --binary /absolute/path/to/nb1 --devices DEVICE_SERIAL \
-  --listen 127.0.0.1:8931 --output org.b1ug.nb1.plist
+  --listen 127.0.0.1:5885 --output org.b1ug.nb1.plist
 
 nb1 service render --platform linux \
   --binary /opt/nb1/nb1 --devices SERIAL_A,SERIAL_B \
@@ -140,7 +140,7 @@ systemctl --user daemon-reload
 systemctl --user enable --now nb1.service
 systemctl --user status nb1.service
 journalctl --user -u nb1.service -n 100 --no-pager
-nb1 control --endpoint http://127.0.0.1:8931 devices
+nb1 control --endpoint http://127.0.0.1:5885 devices
 ```
 
 卸载：
@@ -178,7 +178,7 @@ $taskName = 'B1UG-nb1-' + [System.Security.Principal.WindowsIdentity]::GetCurren
 Get-ScheduledTask -TaskName $taskName
 Get-ScheduledTaskInfo -TaskName $taskName
 Start-ScheduledTask -TaskName $taskName
-& $nb1 control --endpoint http://127.0.0.1:8931 devices
+& $nb1 control --endpoint http://127.0.0.1:5885 devices
 ```
 
 脚本注册当前账号的交互登录触发器与普通权限principal；账号SID使任务名称在不同用户之间区分。注册不会立即启动daemon；下次登录会触发，立即运行须另行 `Start-ScheduledTask`。已存在同名任务时脚本报错，不会使用 `-Force` 替换。运行是否获准还取决于本机任务计划策略与账号权限。

@@ -13,7 +13,7 @@ func Template() []byte {
 device: ""
 server:
   devices: []
-  listen: "127.0.0.1:8931"
+  listen: "` + DefaultListen + `"
 jobs:
   # Terminal Jobs can expire sooner when the count limit is reached.
   # Eviction or daemon restart releases the ID; submitting it can run again.

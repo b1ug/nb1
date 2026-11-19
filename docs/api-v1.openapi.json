@@ -11,7 +11,7 @@
       "url": "http://127.0.0.1:{port}",
       "variables": {
         "port": {
-          "default": "8931",
+          "default": "5885",
           "description": "Configured loopback daemon port."
         }
       }

@@ -128,7 +128,7 @@ func TestSystemdLiteralArguments(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := `ExecStart=:"/opt/灯 100%%/$USER/\"q\"\\nb1" "server" "--devices" "20005601" "--listen" "127.0.0.1:8931" "--lock-dir" "/tmp/locks/%%u/$HOME/\\leaf"`
+	want := `ExecStart=:"/opt/灯 100%%/$USER/\"q\"\\nb1" "server" "--devices" "20005601" "--listen" "127.0.0.1:5885" "--lock-dir" "/tmp/locks/%%u/$HOME/\\leaf"`
 	if artifact.Filename != "nb1.service" || !strings.Contains(string(artifact.Content), want+"\n") {
 		t.Fatalf("missing literal ExecStart:\n%s\nwant:\n%s", artifact.Content, want)
 	}
@@ -168,7 +168,7 @@ func TestWindowsTaskLiteralLauncher(t *testing.T) {
 	payload := decodePowerShell(t, artifact.Content)
 	for _, required := range []string{
 		`$startInfo.FileName = 'C:\Program Files\灯''s 100%TEMP%\nb1.exe'`,
-		`$startInfo.Arguments = '"server" "--devices" "20005601" "--listen" "127.0.0.1:8931" "--lock-dir" "C:\Users\灯''s\locks 100%USERNAME%\\"'`,
+		`$startInfo.Arguments = '"server" "--devices" "20005601" "--listen" "127.0.0.1:5885" "--lock-dir" "C:\Users\灯''s\locks 100%USERNAME%\\"'`,
 		`$startInfo.UseShellExecute = $false`, `$process.WaitForExit()`, `exit $process.ExitCode`,
 	} {
 		if !strings.Contains(payload, required) {

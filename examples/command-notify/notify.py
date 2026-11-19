@@ -113,7 +113,7 @@ def parse_args(argv):
     modes.add_argument("--execute", action="store_true", help="run the command and submit one light notification")
     modes.add_argument("--dry-run", action="store_true", help="preview only (the default); run neither command nor CLI")
     parser.add_argument("--nb1-binary", default="nb1", help="explicit nb1 executable or a name on PATH")
-    parser.add_argument("--endpoint", default="http://127.0.0.1:8931")
+    parser.add_argument("--endpoint", default="http://127.0.0.1:5885")
     parser.add_argument("--serial", required=True, help="explicit daemon-configured device serial")
     parser.add_argument("--report", type=Path, help="new JSON report path, required for --execute; never overwrites an old run")
     parser.add_argument("--success-color", default="#00a000")

@@ -16,6 +16,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/b1ug/nb1/internal/daemonaddr"
 	"github.com/b1ug/nb1/internal/ownership"
 	"github.com/b1ug/nb1/internal/userconfig"
 )
@@ -218,7 +219,7 @@ func (m *UserManager) Install(ctx context.Context, config Config, start bool) (U
 	}
 	config.UserConfigRoot = configRoot
 	if config.Listen == "" {
-		config.Listen = "127.0.0.1:8931"
+		config.Listen = daemonaddr.Listen
 	}
 	if err := validate(config); err != nil {
 		return status, err

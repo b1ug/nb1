@@ -18,10 +18,11 @@ import (
 	"time"
 
 	"github.com/b1ug/nb1/internal/control"
+	"github.com/b1ug/nb1/internal/daemonaddr"
 	"github.com/b1ug/nb1/internal/httpapi"
 )
 
-const DefaultEndpoint = "http://127.0.0.1:8931"
+const DefaultEndpoint = "http://" + daemonaddr.Listen
 
 type Client struct {
 	endpoint string

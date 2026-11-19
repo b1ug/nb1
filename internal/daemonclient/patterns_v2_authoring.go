@@ -123,7 +123,7 @@ func (c *Client) SavePatternV2(ctx context.Context, data []byte) (PatternWriteRe
 	if err != nil {
 		return PatternWriteResultV2{}, err
 	}
-	request, err := http.NewRequestWithContext(ctx, http.MethodPost, c.endpoint+"/v2/patterns", bytes.NewReader(data))
+	request, err := c.newRequest(ctx, http.MethodPost, "/v2/patterns", bytes.NewReader(data))
 	if err != nil {
 		return PatternWriteResultV2{}, err
 	}

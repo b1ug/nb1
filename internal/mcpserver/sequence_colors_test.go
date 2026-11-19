@@ -1,4 +1,4 @@
-package main
+package mcpserver
 
 import (
 	"fmt"
@@ -17,7 +17,7 @@ func TestOfficialStdioSequenceColorsMatchResolver(t *testing.T) {
 		`{"space":"rgb8","r":0,"g":255,"b":136}`,
 		`{"space":"hsv","h_deg":120,"s_pct":100,"v_pct":50}`,
 	} {
-		var resolved resolvedColor
+		var resolved daemonclient.ResolvedSequenceColor
 		requireSuccess(t, call(t, session, "resolve_color", `{"color":`+color+`}`), &resolved)
 		var preview daemonclient.SequencePreview
 		args := fmt.Sprintf(`{"sequence":{"timing":"serial","steps":[{"targets":[{"led":0,"color":%s}]}]}}`, color)

@@ -12,12 +12,14 @@ import (
 	"github.com/b1ug/nb1/internal/control"
 	"github.com/b1ug/nb1/internal/daemonclient"
 	"github.com/b1ug/nb1/internal/devicebackend"
+	"github.com/b1ug/nb1/internal/remoteaccess"
 	"github.com/b1ug/nb1/internal/sequence"
 	"github.com/spf13/cobra"
 )
 
 type sequenceControlFlags struct {
 	endpoint        string
+	tokenFile       string
 	timeout         time.Duration
 	settings        appconfig.Config
 	direct          bool
@@ -35,6 +37,7 @@ func newSequenceControlCommandWithDriver(driver func(string) control.Driver) *co
 	command := &cobra.Command{Use: "control", Short: "Preview and run light actions and sequences",
 		Long: "Use a running local daemon over HTTP, or explicitly choose control --direct run for one foreground Action, Sequence or local Pattern. Direct execution always waits and keeps its Job only in this process; it does not contact a daemon. Other control commands use HTTP. No command starts a daemon or silently switches to USB."}
 	command.PersistentFlags().StringVar(&options.endpoint, "endpoint", daemonclient.DefaultEndpoint, "loopback daemon HTTP origin")
+	command.PersistentFlags().StringVar(&options.tokenFile, "token-file", "", "private Bearer token file for the loopback API")
 	command.PersistentFlags().DurationVar(&options.timeout, "timeout", 30*time.Second, "daemon request/wait limit; direct has no overall deadline unless explicitly set")
 	command.PersistentFlags().BoolVar(&options.direct, "direct", false, "run in the foreground using USB; only supported by run")
 	command.PersistentFlags().StringVar(&options.lockDir, "lock-dir", os.Getenv("NB1_LOCK_DIR"), "shared device ownership directory for explicit direct run")
@@ -44,6 +47,9 @@ func newSequenceControlCommandWithDriver(driver func(string) control.Driver) *co
 		}
 		if options.direct && cmd.Flags().Changed("endpoint") {
 			return fmt.Errorf("--endpoint cannot be combined with --direct")
+		}
+		if options.direct && cmd.Flags().Changed("token-file") {
+			return fmt.Errorf("--token-file cannot be combined with --direct")
 		}
 		if !options.direct && cmd.Flags().Changed("lock-dir") {
 			return fmt.Errorf("--lock-dir requires control --direct run")
@@ -209,7 +215,17 @@ func newSequenceControlCommandWithDriver(driver func(string) control.Driver) *co
 }
 
 func (options *sequenceControlFlags) withClient(cmd *cobra.Command, run func(context.Context, *daemonclient.Client) error) error {
-	client, err := daemonclient.New(options.endpoint)
+	var token string
+	var err error
+	if cmd.Flags().Changed("token-file") {
+		token, err = remoteaccess.LoadToken(options.tokenFile)
+	} else if !cmd.Flags().Changed("endpoint") && options.settings.Server.LocalTokenFile != "" {
+		token, err = remoteaccess.LoadToken(options.settings.Server.LocalTokenFile)
+	}
+	if err != nil {
+		return fmt.Errorf("load local API token: %w", err)
+	}
+	client, err := daemonclient.NewWithToken(options.endpoint, token)
 	if err != nil {
 		return err
 	}

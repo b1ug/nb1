@@ -6,11 +6,12 @@ import (
 	"github.com/b1ug/gid"
 	"github.com/b1ug/nb1/internal/daemonclient"
 	"github.com/b1ug/nb1/internal/doctor"
+	"github.com/b1ug/nb1/internal/remoteaccess"
 	"github.com/spf13/cobra"
 )
 
 func newDoctorCommand() *cobra.Command {
-	var endpoint, serial string
+	var endpoint, serial, tokenFile string
 	var asJSON bool
 	command := &cobra.Command{
 		Use: "doctor", Short: "Inspect build information, daemon health and configured device snapshots",
@@ -18,6 +19,7 @@ func newDoctorCommand() *cobra.Command {
 		Args:    cobra.NoArgs,
 		Example: "  nb1 doctor\n  nb1 doctor --serial DEVICE_SERIAL --json\n  nb1 doctor --endpoint http://127.0.0.1:8932",
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			loadToken := cmd.Flags().Changed("token-file")
 			if !cmd.Flags().Changed("endpoint") {
 				settings, _, err := applicationSettings(cmd)
 				if err != nil {
@@ -28,10 +30,22 @@ func newDoctorCommand() *cobra.Command {
 					return err
 				}
 				endpoint = "http://" + address
+				if !loadToken && settings.Server.LocalTokenFile != "" {
+					tokenFile = settings.Server.LocalTokenFile
+					loadToken = true
+				}
+			}
+			var token string
+			if loadToken {
+				value, err := remoteaccess.LoadToken(tokenFile)
+				if err != nil {
+					return err
+				}
+				token = value
 			}
 			// gid.Supported is a compile-time backend availability check, not
 			// enumeration or Open. HTTP diagnostics work even in CGO=0 builds.
-			report, err := doctor.Collect(cmd.Context(), doctor.Options{Endpoint: endpoint, Serial: serial}, doctor.ReadBuild(gid.Supported()))
+			report, err := doctor.Collect(cmd.Context(), doctor.Options{Endpoint: endpoint, Serial: serial, Token: token}, doctor.ReadBuild(gid.Supported()))
 			if err != nil {
 				return err
 			}
@@ -50,6 +64,7 @@ func newDoctorCommand() *cobra.Command {
 		},
 	}
 	command.Flags().StringVar(&endpoint, "endpoint", daemonclient.DefaultEndpoint, "local loopback HTTP service address (defaults to the configured listener)")
+	command.Flags().StringVar(&tokenFile, "token-file", "", "private Bearer token file for the loopback API")
 	command.Flags().StringVar(&serial, "serial", "", "inspect only this exact serial; default: all daemon-configured devices")
 	command.Flags().BoolVar(&asJSON, "json", false, "print schema_version=1 JSON; exit with status 1 when attention is required")
 	return command

@@ -14,6 +14,11 @@ device: ""
 server:
   devices: []
   listen: "` + DefaultListen + `"
+  # Set a private token file to require Bearer authentication on loopback.
+  local_token_file: ""
+  remote:
+    # Enable the separate HTTPS listener after configuring its address and files.
+    enabled: false
 jobs:
   # Terminal Jobs can expire sooner when the count limit is reached.
   # Eviction or daemon restart releases the ID; submitting it can run again.

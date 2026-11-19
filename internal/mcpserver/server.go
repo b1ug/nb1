@@ -1,4 +1,4 @@
-package main
+package mcpserver
 
 import (
 	"context"
@@ -41,18 +41,18 @@ type toolArgs struct {
 	input     daemonclient.SequenceInput
 }
 
-func newServer(d *daemon) *mcp.Server {
-	server := mcp.NewServer(&mcp.Implementation{Name: "nb1", Version: buildVersion}, &mcp.ServerOptions{Instructions: "Control the devices selected by the local nb1 daemon. Preview is optional. run_light validates and submits one Action, Sequence or saved pattern_id without a preceding preview. It submits once and returns a Job, whose status is read with get_job. A cancelling Job is still cleaning up. Keep its ID and endpoint when a response is lost and query that ID without submitting it again. HTTP timeout or MCP session closure leaves accepted daemon Jobs running. Active Job records remain retained; terminal records default to a thirty-minute TTL and 16,384-entry LRU limit, configurable through jobs.terminal_ttl and jobs.terminal_limit. Capacity eviction or daemon restart may remove them earlier. Colors and Patterns are saved in the daemon's computer-side library. This adapter connects over HTTP, selects its endpoint with --endpoint (default " + daemonclient.DefaultEndpoint + "), does not read nb1 YAML, and never opens USB or executes the CLI. Foreground CLI direct Jobs are separate process-local work and cannot be queried through these HTTP tools."})
+func newServer(d *daemon, version, recoveryEndpoint, transportInstructions string) *mcp.Server {
+	server := mcp.NewServer(&mcp.Implementation{Name: "nb1", Version: version}, &mcp.ServerOptions{Instructions: "Control the devices selected by the local nb1 daemon. Preview is optional. run_light validates and submits one Action, Sequence or saved pattern_id without a preceding preview. It submits once and returns a Job, whose status is read with get_job. A cancelling Job is still cleaning up. Keep its ID and endpoint when a response is lost and query that ID without submitting it again. HTTP timeout or MCP session closure leaves accepted daemon Jobs running. Active Job records remain retained; terminal records default to a thirty-minute TTL and 16,384-entry LRU limit, configurable through jobs.terminal_ttl and jobs.terminal_limit. Capacity eviction or daemon restart may remove them earlier. Colors and Patterns are saved in the daemon's computer-side library. " + transportInstructions + " Foreground CLI direct Jobs are separate process-local work and cannot be queried through these HTTP tools."})
 	for _, spec := range toolSpecifications() {
 		name := spec.Name
 		server.AddTool(spec, func(ctx context.Context, request *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			args, err := decodeArguments(name, request.Params.Arguments)
 			if err != nil {
-				return toolResult(output{Endpoint: d.endpoint, Error: &toolError{Code: "invalid_request", Message: err.Error()}})
+				return toolResult(output{Endpoint: recoveryEndpoint, Error: &toolError{Code: "invalid_request", Message: err.Error()}})
 			}
 			ctx, cancel := context.WithTimeout(ctx, d.timeout)
 			defer cancel()
-			return toolResult(invoke(ctx, d, name, args))
+			return toolResult(invoke(ctx, d, recoveryEndpoint, name, args))
 		})
 	}
 	return server
@@ -118,8 +118,8 @@ func inputFor(args toolArgs) (daemonclient.SequenceInput, error) {
 	return daemonclient.DecodeSequenceInput(raw)
 }
 
-func invoke(ctx context.Context, d *daemon, name string, args toolArgs) output {
-	out := output{Endpoint: d.endpoint, ID: args.ID, Name: args.Name}
+func invoke(ctx context.Context, d *daemon, recoveryEndpoint, name string, args toolArgs) output {
+	out := output{Endpoint: recoveryEndpoint, ID: args.ID, Name: args.Name}
 	var err error
 	switch name {
 	case "list_devices":
@@ -127,7 +127,7 @@ func invoke(ctx context.Context, d *daemon, name string, args toolArgs) output {
 	case "get_device_state":
 		out.Data, err = d.core.Device(ctx, args.Serial)
 	case "resolve_color":
-		out.Data, err = d.resolveColor(ctx, args.Color)
+		out.Data, err = d.core.ResolveSequenceColor(ctx, args.Color, d.timeout)
 	case "preview_light":
 		out.Data, err = d.core.PreviewSequence(ctx, args.input, args.Serial)
 	case "run_light":
@@ -170,6 +170,9 @@ func invoke(ctx context.Context, d *daemon, name string, args toolArgs) output {
 	var transport *url.Error
 	if errors.As(err, &transport) {
 		out.Error.Code = "daemon_unreachable"
+		if recoveryEndpoint != d.endpoint {
+			out.Error.Message = "The MCP service could not reach its device daemon."
+		}
 	}
 	if name == "run_light" || name == "cancel_job" || name == "save_color" || name == "save_pattern" {
 		out.Error.OutcomeUnknown = uncertainWrite(err)

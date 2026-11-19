@@ -18,7 +18,7 @@ const (
 	ObservationMaxAge = 5 * time.Second
 )
 
-type Options struct{ Endpoint, Serial string }
+type Options struct{ Endpoint, Serial, Token string }
 
 type Issue struct {
 	Code    string `json:"code"`
@@ -82,7 +82,7 @@ func collect(parent context.Context, options Options, build Build, now func() ti
 	if options.Endpoint == "" {
 		options.Endpoint = daemonclient.DefaultEndpoint
 	}
-	client, err := daemonclient.New(options.Endpoint)
+	client, err := daemonclient.NewWithToken(options.Endpoint, options.Token)
 	if err != nil {
 		// URL parsing errors may quote the original input, including accidental
 		// credentials. Report the constraint without echoing rejected input.

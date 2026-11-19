@@ -64,11 +64,11 @@ func TestLoadDefaultsAndOpaqueLegacyFields(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if config.Device != "" || config.Server.Listen != DefaultListen || len(config.Server.Devices) != 0 || config.Jobs.TerminalLimit != DefaultTerminalLimit || config.Jobs.TerminalTTL != DefaultTerminalTTL || config.LibraryDir != filepath.Join(selected.BaseDir, "library") {
+	if config.Device != "" || config.Server.Listen != DefaultListen || len(config.Server.Devices) != 0 || config.Server.Remote != nil || config.Server.LocalTokenFile != "" || config.Jobs.TerminalLimit != DefaultTerminalLimit || config.Jobs.TerminalTTL != DefaultTerminalTTL || config.LibraryDir != filepath.Join(selected.BaseDir, "library") {
 		t.Fatalf("wrong defaults: %+v", config)
 	}
 	data, _ := json.Marshal(config)
-	for _, key := range []string{"title", "base_url", "content_dir", "amber"} {
+	for _, key := range []string{"title", "base_url", "content_dir", "amber", "remote", "local_token_file"} {
 		if bytes.Contains(data, []byte(key)) {
 			t.Fatalf("legacy field leaked into typed output: %s", data)
 		}
@@ -97,6 +97,142 @@ func TestLoadOverridesAndDoesNotRelocateStorage(t *testing.T) {
 
 func strconvQuote(value string) string { data, _ := json.Marshal(value); return string(data) }
 
+func TestLoadRemoteListenerPathsUseSelectedConfigDirectory(t *testing.T) {
+	certFile := filepath.Join(t.TempDir(), "remote.crt")
+	selected := configSelection(t, `server:
+  remote:
+    enabled: true
+    listen: '192.168.1.55:9443'
+    host: 'blink.local:9443'
+    token_file: credentials/token
+    tls_cert_file: `+strconvQuote(certFile)+`
+    tls_key_file: credentials/remote.key
+`)
+	config, err := Load(selected)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := RemoteServerConfig{
+		Enabled: true, Listen: "192.168.1.55:9443", Host: "blink.local:9443",
+		TokenFile:   filepath.Join(filepath.Dir(selected.Path), "credentials", "token"),
+		TLSCertFile: certFile,
+		TLSKeyFile:  filepath.Join(filepath.Dir(selected.Path), "credentials", "remote.key"),
+	}
+	if config.Server.Remote == nil || *config.Server.Remote != want {
+		t.Fatalf("wrong remote configuration: %+v, want %+v", config.Server.Remote, want)
+	}
+	if config.Server.Listen != DefaultListen || config.Server.LocalTokenFile != "" || config.LibraryDir != filepath.Join(selected.BaseDir, "library") {
+		t.Fatalf("remote configuration replaced local defaults: %+v", config)
+	}
+	if _, err := os.Stat(filepath.Dir(want.TokenFile)); !os.IsNotExist(err) {
+		t.Fatalf("loading the configuration touched the credential directory: %v", err)
+	}
+}
+
+func TestLoadRejectsIncompleteOrUnknownRemoteConfiguration(t *testing.T) {
+	const complete = "    enabled: true\n    listen: '192.168.1.55:9443'\n    token_file: token\n    tls_cert_file: remote.crt\n    tls_key_file: remote.key\n"
+	for _, test := range []struct{ name, remote, want string }{
+		{"null block", " null\n", "server.remote"},
+		{"enabled quoted boolean", "\n    enabled: 'true'\n", "server.remote.enabled must be a boolean"},
+		{"enabled null", "\n    enabled: null\n", "server.remote.enabled must be a boolean"},
+		{"disabled invalid field type", "\n    enabled: false\n    tls_key_file: []\n", "server.remote.tls_key_file must be a string"},
+		{"disabled unknown field", "\n    enabled: false\n    token: sample-credential\n", "unknown configuration field server.remote.token"},
+		{"missing listen", "\n" + strings.Replace(complete, "    listen: '192.168.1.55:9443'\n", "", 1), "server.remote.listen"},
+		{"missing token file", "\n" + strings.Replace(complete, "    token_file: token\n", "", 1), "server.remote.token_file"},
+		{"missing certificate", "\n" + strings.Replace(complete, "    tls_cert_file: remote.crt\n", "", 1), "server.remote.tls_cert_file"},
+		{"missing key", "\n" + strings.Replace(complete, "    tls_key_file: remote.key\n", "", 1), "server.remote.tls_key_file"},
+		{"blank token path", "\n" + strings.Replace(complete, "token_file: token", "token_file: ' '", 1), "server.remote.token_file"},
+		{"typed host", "\n" + complete + "    host: 9443\n", "server.remote.host"},
+		{"inline token rejected", "\n" + complete + "    token: sample-credential\n", "unknown configuration field server.remote.token"},
+		{"duplicate field", "\n" + complete + "    token_file: other\n", "duplicate configuration key"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			_, err := Load(configSelection(t, "server:\n  remote:"+test.remote))
+			if err == nil || !strings.Contains(err.Error(), test.want) || strings.Contains(err.Error(), "sample-credential") {
+				t.Fatalf("load returned %v, want error containing %q", err, test.want)
+			}
+		})
+	}
+}
+
+func TestLoadDisabledRemoteConfigurationAndLocalTokenAreIndependent(t *testing.T) {
+	for _, test := range []struct {
+		name, yaml  string
+		wantRemote  bool
+		wantAddress string
+		wantToken   bool
+	}{
+		{"absent remote", "  local_token_file: credentials/local.token\n", false, "", false},
+		{"explicitly disabled with no remote settings", "  local_token_file: credentials/local.token\n  remote:\n    enabled: false\n", true, "", false},
+		{"default disabled with dormant settings", "  local_token_file: credentials/local.token\n  remote:\n    listen: '0.0.0.0:9443'\n    host: 'https://invalid.example.test/'\n    token_file: credentials/remote.token\n", true, "0.0.0.0:9443", true},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			selected := configSelection(t, "server:\n"+test.yaml)
+			settings, err := Load(selected)
+			if err != nil {
+				t.Fatal(err)
+			}
+			wantLocalToken := filepath.Join(filepath.Dir(selected.Path), "credentials", "local.token")
+			if settings.Server.LocalTokenFile != wantLocalToken {
+				t.Fatalf("local token file = %q, want %q", settings.Server.LocalTokenFile, wantLocalToken)
+			}
+			remote := settings.Server.Remote
+			if (remote != nil) != test.wantRemote {
+				t.Fatalf("remote = %+v, want configured = %t", remote, test.wantRemote)
+			}
+			if remote != nil && (remote.Enabled || remote.Listen != test.wantAddress) {
+				t.Fatalf("dormant settings changed: %+v", remote)
+			}
+			if test.wantToken {
+				wantRemoteToken := filepath.Join(filepath.Dir(selected.Path), "credentials", "remote.token")
+				if remote.TokenFile != wantRemoteToken {
+					t.Fatalf("remote token file = %q, want %q", remote.TokenFile, wantRemoteToken)
+				}
+			}
+		})
+	}
+}
+
+func TestRemoteListenerAndAuthorityValidation(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "credential")
+	for _, test := range []struct {
+		name, listen, host string
+		valid              bool
+	}{
+		{"explicit private IPv4", "10.0.0.1:9443", "blink.local:9443", true},
+		{"explicit IPv6", "[fd00::1]:9443", "[fd00::1]:9443", true},
+		{"loopback name", "localhost:9443", "localhost:9443", true},
+		{"ephemeral loopback port", "127.0.0.1:0", "", true},
+		{"default HTTPS authority", "[::1]:443", "[::1]", true},
+		{"default HTTPS DNS authority", "127.0.0.1:443", "blink.local", true},
+		{"IPv4 wildcard", "0.0.0.0:9443", "", false},
+		{"IPv6 wildcard", "[::]:9443", "", false},
+		{"empty bind host", ":9443", "", false},
+		{"multicast bind", "224.0.0.1:9443", "", false},
+		{"broadcast bind", "255.255.255.255:9443", "", false},
+		{"DNS bind", "blink.local:9443", "", false},
+		{"service name port", "127.0.0.1:https", "", false},
+		{"oversized port", "127.0.0.1:65536", "", false},
+		{"mismatched authority port", "127.0.0.1:9443", "blink.local:443", false},
+		{"missing authority port", "127.0.0.1:9443", "blink.local", false},
+		{"fixed authority for ephemeral port", "127.0.0.1:0", "blink.local:9443", false},
+		{"user info in authority", "127.0.0.1:9443", "user@blink.local:9443", false},
+		{"path in authority", "127.0.0.1:9443", "blink.local/path:9443", false},
+		{"scheme in authority", "127.0.0.1:443", "https://blink.local", false},
+		{"invalid DNS labels", "127.0.0.1:9443", "blink.-local:9443", false},
+		{"wildcard authority", "127.0.0.1:9443", "*.local:9443", false},
+		{"bracketed DNS name", "127.0.0.1:9443", "[blink.local]:9443", false},
+		{"unbracketed IPv6 authority", "[::1]:443", "::1", false},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			remote := RemoteServerConfig{Enabled: true, Listen: test.listen, Host: test.host, TokenFile: path, TLSCertFile: path, TLSKeyFile: path}
+			if err := remote.Validate(); (err == nil) != test.valid {
+				t.Fatalf("validation error = %v, want valid = %t", err, test.valid)
+			}
+		})
+	}
+}
+
 func TestLoadRejectsAmbiguousOrInvalidConfiguration(t *testing.T) {
 	for _, text := range []string{
 		"", "null\n", "[]\n", "---\n{}\n---\n{}\n", "device: [\n",
@@ -105,6 +241,7 @@ func TestLoadRejectsAmbiguousOrInvalidConfiguration(t *testing.T) {
 		"color:\n  amber: red\n  amber: blue\n", "title: &x old\ncontent_dir: *x\n", "<<: {device: '20005601'}\n",
 		"device: 20005601\n", "device: true\n", "device: null\n", "device: '1'\n", "device: '2000560g'\n",
 		"server: null\n", "server:\n  devices: '20005601'\n", "server:\n  devices: [20005601]\n",
+		"server:\n  local_token_file: true\n", "server:\n  local_token_file: ' '\n", "server:\n  local_token_file: null\n", "server:\n  local_token_file: \"credentials/\\0token\"\n",
 		"server:\n  devices: ['abcd1234', 'ABCD1234']\n", "server:\n  devices: ['../bad']\n",
 		"server:\n  listen: '0.0.0.0:8931'\n", "server:\n  listen: 'example.com:8931'\n", "server:\n  listen: '127.0.0.1:65536'\n", "server:\n  listen: '127.0.0.1:+80'\n",
 		"jobs:\n  terminal_limit: 0\n", "jobs:\n  terminal_limit: -1\n", "jobs:\n  terminal_limit: 1.5\n", "jobs:\n  terminal_limit: '3'\n", "jobs:\n  terminal_limit: 999999999999999999999999999999999999\n",
@@ -189,7 +326,7 @@ func TestInitCreatesOnlyPrivateExampleAndDoesNotOverwrite(t *testing.T) {
 		t.Fatalf("directory permission = %o", info.Mode().Perm())
 	}
 	config, err := Load(Selection{BaseDir: base, Path: path, Required: true})
-	if err != nil || config.Device != "" || len(config.Server.Devices) != 0 || config.Server.Listen != "127.0.0.1:5885" {
+	if err != nil || config.Device != "" || len(config.Server.Devices) != 0 || config.Server.Listen != "127.0.0.1:5885" || config.Server.LocalTokenFile != "" || config.Server.Remote == nil || config.Server.Remote.Enabled {
 		t.Fatalf("example selects hardware or is invalid: %+v %v", config, err)
 	}
 	if err := os.WriteFile(path, []byte("# user content\n{}\n"), 0600); err != nil {

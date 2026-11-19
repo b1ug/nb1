@@ -180,7 +180,7 @@ func lightDecodeError(status int, message string) *DecodeError {
 }
 
 func (c *Client) doLightResponse(ctx context.Context, method, path string, body []byte, output interface{}, status int) (http.Header, error) {
-	request, err := http.NewRequestWithContext(ctx, method, c.endpoint+path, bytes.NewReader(body))
+	request, err := c.newRequest(ctx, method, path, bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}

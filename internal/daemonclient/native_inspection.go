@@ -45,7 +45,7 @@ func (c *Client) InspectNative(ctx context.Context, serial string, request nativ
 		query.Set("line_count", fmt.Sprint(request.Range.LineCount))
 		path += "?" + query.Encode()
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.endpoint+path, nil)
+	req, err := c.newRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
 		return nativeinspection.Result{}, err
 	}

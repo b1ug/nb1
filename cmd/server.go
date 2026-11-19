@@ -20,6 +20,7 @@ import (
 	"github.com/b1ug/nb1/internal/devicebackend"
 	"github.com/b1ug/nb1/internal/httpapi"
 	"github.com/b1ug/nb1/internal/ownership"
+	"github.com/b1ug/nb1/internal/remoteaccess"
 	"github.com/b1ug/nb1/internal/transporttrace"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -36,7 +37,7 @@ func newServerCommand() *cobra.Command {
 	var jobCacheTTL time.Duration
 	command := &cobra.Command{
 		Use: "server", Aliases: aliasesServer, Short: "Run the local blink(1) device daemon",
-		Long:    "Keep explicitly selected devices open and serve the v1 HTTP API on loopback. API, CLI and agents share each device worker. Stop with Ctrl-C or SIGTERM; shutdown cancels jobs and turns devices off. No system service is installed.",
+		Long:    "Keep explicitly selected devices open and serve the v1 HTTP API on loopback. Set server.remote.enabled to open a separate HTTPS listener with Bearer authentication for the device API and MCP. Set server.local_token_file to separately require Bearer authentication on the loopback API. API, CLI and agents share each device worker. Stop with Ctrl-C or SIGTERM; shutdown cancels jobs and turns devices off. No system service is installed.",
 		Args:    cobra.NoArgs,
 		Example: "  nb1 server --devices DEVICE_SERIAL\n  nb1 --device DEVICE_SERIAL server --listen " + appconfig.DefaultListen + "\n  nb1 server --devices DEVICE_SERIAL --port 8932",
 		RunE: func(cmd *cobra.Command, _ []string) error {
@@ -94,6 +95,21 @@ func newServerCommand() *cobra.Command {
 				listener.Close()
 				return fmt.Errorf("daemon listener must bind a loopback address")
 			}
+			defer listener.Close()
+			var localToken string
+			if settings.Server.LocalTokenFile != "" {
+				localToken, err = remoteaccess.LoadToken(settings.Server.LocalTokenFile)
+				if err != nil {
+					return fmt.Errorf("load local API token: %w", err)
+				}
+			}
+			remote, err := bindRemote(settings.Server.Remote)
+			if err != nil {
+				return err
+			}
+			if remote != nil {
+				defer remote.Close()
+			}
 			var recorder *transporttrace.Recorder
 			driver := devicebackend.New(lockDir)
 			if transportTrace {
@@ -111,7 +127,7 @@ func newServerCommand() *cobra.Command {
 				recorder.SetInstance(engine.Instance().DaemonInstanceID)
 				transportTraceBuildStamp(recorder)
 			}
-			return serveRuntimeWithTrace(ctx, listener, engine, cmd.OutOrStdout(), shutdownTimeout, recorder,
+			return serveRuntimeWithTrace(ctx, listener, engine, cmd.OutOrStdout(), shutdownTimeout, recorder, remote, localToken,
 				httpapi.WithSequenceAPI(), httpapi.WithLibraryDirectory(libraryDir))
 		},
 	}
@@ -175,12 +191,30 @@ func validateLocalAddress(address string) error {
 }
 
 func serveRuntime(parent context.Context, listener net.Listener, engine *control.Engine, output io.Writer, shutdownTimeout time.Duration, options ...httpapi.Option) error {
-	return serveRuntimeWithTrace(parent, listener, engine, output, shutdownTimeout, nil, options...)
+	return serveRuntimeWithTrace(parent, listener, engine, output, shutdownTimeout, nil, nil, "", options...)
 }
 
-func serveRuntimeWithTrace(parent context.Context, listener net.Listener, engine *control.Engine, output io.Writer, shutdownTimeout time.Duration, recorder *transporttrace.Recorder, options ...httpapi.Option) error {
+func serveRuntimeWithTrace(parent context.Context, listener net.Listener, engine *control.Engine, output io.Writer, shutdownTimeout time.Duration, recorder *transporttrace.Recorder, remote *remoteListener, localToken string, options ...httpapi.Option) error {
 	ctx, cancel := context.WithCancel(parent)
 	defer cancel()
+	localOrigin := "http://" + listener.Addr().String()
+	if localToken != "" {
+		options = append(options, httpapi.WithLocalProtection(func(api http.Handler) http.Handler {
+			return remoteaccess.ProtectLocal(localToken, api)
+		}))
+	}
+	var localHandler http.Handler
+	var remoteHTTP *http.Server
+	if remote == nil {
+		localHandler = httpapi.New(engine, options...)
+	} else {
+		local, server, closeTools, err := remote.servers(engine, localOrigin, localToken, options...)
+		if err != nil {
+			return err
+		}
+		defer closeTools()
+		localHandler, remoteHTTP = local, server
+	}
 	if err := engine.Start(ctx); err != nil {
 		if recorder != nil {
 			recorder.Close()
@@ -191,16 +225,25 @@ func serveRuntimeWithTrace(parent context.Context, listener net.Listener, engine
 	if recorder != nil {
 		go func() { <-engine.Done(); recorder.Close() }()
 	}
-	server := &http.Server{Handler: httpapi.New(engine, options...), ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 10 * time.Second, WriteTimeout: 10 * time.Second, IdleTimeout: 30 * time.Second, MaxHeaderBytes: 16 << 10}
-	served := make(chan error, 1)
+	server := &http.Server{Handler: localHandler, ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 10 * time.Second, WriteTimeout: 10 * time.Second, IdleTimeout: 30 * time.Second, MaxHeaderBytes: 16 << 10}
+	servers := []*http.Server{server}
+	served := make(chan error, 2)
 	go func() { served <- server.Serve(listener) }()
+	if remoteHTTP != nil {
+		servers = append(servers, remoteHTTP)
+		go func() { served <- remoteHTTP.ServeTLS(remote.Listener, "", "") }()
+	}
 	// Exactly two typed records are queued, even if the single log writer is
 	// blocked or has failed. Capacity two means neither send waits on the sink.
 	// The caller never joins the logger as part of native/lease cleanup.
 	lifecycle := make(chan runtimeShutdownRecord, 2)
 	defer close(lifecycle)
 	cacheSize, cacheTTL := engine.SequenceJobLimits()
-	logging := startRuntimeLoggingWithLifecycle(engine, output, map[string]interface{}{"event": "daemon_listening", "url": "http://" + listener.Addr().String(), "api_version": "v1", "devices": engine.Devices(), "job_cache": map[string]interface{}{"terminal_limit": cacheSize, "terminal_ttl": cacheTTL.String()}}, lifecycle, recorder)
+	startup := map[string]interface{}{"event": "daemon_listening", "url": localOrigin, "api_version": "v1", "devices": engine.Devices(), "job_cache": map[string]interface{}{"terminal_limit": cacheSize, "terminal_ttl": cacheTTL.String()}}
+	if remote != nil {
+		startup["remote_url"] = "https://" + remote.authority
+	}
+	logging := startRuntimeLoggingWithLifecycle(engine, output, startup, lifecycle, recorder)
 	selected := waitRuntimeShutdown(parent, engine.Done(), served, logging.startupErrors)
 	began := time.Now()
 	instance := engine.Instance().DaemonInstanceID
@@ -208,12 +251,9 @@ func serveRuntimeWithTrace(parent context.Context, listener net.Listener, engine
 	cause := selected.cause
 	stopCtx, stop := context.WithTimeout(context.Background(), shutdownTimeout)
 	defer stop()
-	httpErr := server.Shutdown(stopCtx)
-	if httpErr != nil {
-		_ = server.Close()
-		if cause == nil {
-			cause = httpErr
-		}
+	httpErr := shutdownHTTPServers(stopCtx, servers...)
+	if httpErr != nil && cause == nil {
+		cause = httpErr
 	}
 	cancel()
 	engineErr := engine.Close(stopCtx)

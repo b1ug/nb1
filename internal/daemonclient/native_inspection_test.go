@@ -300,10 +300,13 @@ func TestNativeClientHeadersStatusAndNoRedirectFallback(t *testing.T) {
 	defer target.Close()
 	origin := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		atomic.AddInt32(&originCalls, 1)
+		if r.Header.Get("Authorization") != "Bearer "+testClientToken {
+			t.Error("native read omitted its Authorization header")
+		}
 		http.Redirect(w, r, target.URL, http.StatusTemporaryRedirect)
 	}))
 	defer origin.Close()
-	client, _ := New(origin.URL)
+	client, _ := NewWithToken(origin.URL, testClientToken)
 	defer client.Close()
 	_, err := client.InspectNative(context.Background(), "20000001", request)
 	var rejection *Error

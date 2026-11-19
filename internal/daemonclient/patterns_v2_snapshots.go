@@ -51,7 +51,7 @@ func (c *Client) ImportPatternsV2(ctx context.Context, data []byte) (PatternWrit
 			original: append([]byte(nil), data...), refs: refs,
 		}
 	}
-	request, err := http.NewRequestWithContext(ctx, http.MethodPost, c.endpoint+"/v2/patterns/import", bytes.NewReader(data))
+	request, err := c.newRequest(ctx, http.MethodPost, "/v2/patterns/import", bytes.NewReader(data))
 	if err != nil {
 		return PatternWriteResultV2{}, err
 	}
@@ -124,7 +124,7 @@ func (c *Client) ExportPatternsV2(ctx context.Context, id string) ([]byte, error
 		}
 		path += "/" + url.PathEscape(id)
 	}
-	request, err := http.NewRequestWithContext(ctx, http.MethodGet, c.endpoint+path+"?format=snapshot", nil)
+	request, err := c.newRequest(ctx, http.MethodGet, path+"?format=snapshot", nil)
 	if err != nil {
 		return nil, err
 	}

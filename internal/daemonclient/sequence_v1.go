@@ -187,7 +187,7 @@ func (c *Client) sequenceV1Response(ctx context.Context, method, path string, in
 			return fmt.Errorf("request exceeds 1 MiB")
 		}
 	}
-	request, err := http.NewRequestWithContext(ctx, method, c.endpoint+path, bytes.NewReader(body))
+	request, err := c.newRequest(ctx, method, path, bytes.NewReader(body))
 	if err != nil {
 		return err
 	}

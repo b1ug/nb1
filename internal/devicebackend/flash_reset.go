@@ -2,6 +2,7 @@ package devicebackend
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	b1 "github.com/b1ug/blink1-go"
@@ -11,8 +12,8 @@ import (
 	"github.com/b1ug/nb1/internal/nativeinspection"
 )
 
-// sdkLamp exposes raw RAM observations on the same handle as writes. The
-// existing native reader counts each R/S once and preserves the returned prefix.
+// sdkLamp exposes raw observations on the same handle as writes. Its reader
+// leaves accounting to the caller, which owns the complete S/R transaction.
 type sdkLamp struct {
 	*b1.Device
 	nativeSDKReader
@@ -69,7 +70,12 @@ func (b *backend) ResetFlash(ctx context.Context, preset string) (flashreset.Res
 
 	// The running native scheduler can change the LED selection between the l
 	// and P commands used by the SDK. Leave autonomous playback undisturbed.
-	state, err := device.ReadPlayback()
+	var state nativeinspection.PlaybackRead
+	err = retryMK2(ctx, b.metrics, b.pause, "query_playback_raw", "Flash reset: query playback S", func() error {
+		var err error
+		state, err = device.ReadPlayback()
+		return flashQueryError(state.Reply, err)
+	})
 	if err != nil {
 		return result, fmt.Errorf("read playback state before staging: %w", err)
 	}
@@ -97,7 +103,12 @@ func (b *backend) ResetFlash(ctx context.Context, preset string) (flashreset.Res
 		if err := ctx.Err(); err != nil {
 			return result, err
 		}
-		observed, err := device.ReadLine(i)
+		var observed nativeinspection.LineRead
+		err := retryMK2(ctx, b.metrics, b.pause, "query_pattern_line_raw", fmt.Sprintf("Flash reset: verify RAM row %d", i), func() error {
+			var err error
+			observed, err = device.ReadLine(i)
+			return flashQueryError(observed.Reply, err)
+		})
 		if err != nil {
 			return result, fmt.Errorf("read staged RAM row %d: %w", i, err)
 		}
@@ -121,6 +132,17 @@ func (b *backend) ResetFlash(ctx context.Context, preset string) (flashreset.Res
 	}
 	result.Status = flashreset.Acknowledged
 	return result, nil
+}
+
+var errFlashPartialReply = errors.New("unreliable Flash verification reply")
+
+// An SDK request may return bytes and an error together. Do not replace that
+// observation with a retry, even when the wrapped transport error is transient.
+func flashQueryError(reply nativeinspection.Reply, err error) error {
+	if err != nil && reply.ReadAttempted && (reply.ReturnedLength != 0 || !reply.LengthValid || len(reply.Bytes) != 0) {
+		return fmt.Errorf("%w (reported length %d, bytes %x): %w", errFlashPartialReply, reply.ReturnedLength, reply.Bytes, err)
+	}
+	return err
 }
 
 // Both matched firmware versions first copy the request into the response and

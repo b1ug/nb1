@@ -368,6 +368,8 @@ The ticket expires in 60 seconds and is consumed before device execution. Replay
 
 The daemon reserves the selected idle device. For matched MK2 firmware 204 and 205 it replaces persistent rows 0–15, reads each staged row back, then sends one Flash save. RAM-only rows 16–31 remain available. An active native or host playback needs to finish or stop first. Active portable transport tracing cannot record the complete native operation. MK3 firmware 304 saves startup parameters along with its rows, so this pattern-only operation is unavailable there. Check for the `flash-reset` capability in the device response.
 
+During reset, a recognized transient USB error can repeat the complete playback-state query (`S`) or RAM-row query (`R`), up to three total attempts per query. Transport metrics count these attempts. An unexpected response or a mismatch in the stored color, timing or LED stops verification. The daemon submits each row write and the final Flash save at most once. Independent native inspection still reports each read on its first attempt.
+
 | HTTP result | Meaning and next action |
 | --- | --- |
 | 200 with `acknowledged` | The save request returned successfully. Power-cycle the lamp to verify retention. |

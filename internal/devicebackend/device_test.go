@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"slices"
 	"testing"
+	"time"
 
 	b1 "github.com/b1ug/blink1-go"
 	"github.com/b1ug/gid"
@@ -158,6 +159,7 @@ type flashLampSpy struct {
 	meta                 *gid.DeviceInfo
 	rows                 [32]b1.DeviceLightState
 	writes, reads, saves int
+	onPlayback           func() error
 	onWrite              func(uint) error
 	onRead               func(uint, *nativeinspection.LineRead) error
 	onSave               func() error
@@ -187,6 +189,11 @@ func (f *flashLampSpy) ReadPlayback() (nativeinspection.PlaybackRead, error) {
 	}
 	read := nativeinspection.PlaybackRead{Reply: observedFlashBytes(raw)}
 	read.Fields.Mode = &raw[2]
+	if f.onPlayback != nil {
+		if err := f.onPlayback(); err != nil {
+			return nativeinspection.PlaybackRead{}, err
+		}
+	}
 	return read, f.fail
 }
 
@@ -378,11 +385,121 @@ func TestResetFlashRetainsPartialStateAndNeverRetriesSave(t *testing.T) {
 			defer cancel()
 			tc.hook(spy, cancel)
 			r, err := b.ResetFlash(ctx, "rainbow")
+			if b.metrics.data.Retries != 0 {
+				t.Fatalf("retried a non-transient error or mismatched reply: %+v", b.metrics.data)
+			}
 			if r.Validate(b.info.Serial, "rainbow") != nil || r.Status != tc.status || r.Staged != tc.staged || r.Verified != tc.verified || spy.saves != tc.saves || (err == nil) != (tc.status == flashreset.Acknowledged) || (tc.wantErr != nil && !errors.Is(err, tc.wantErr)) {
 				t.Fatalf("receipt %+v, saves %d, err %v", r, spy.saves, err)
 			}
 			if tc.name == "partial-RAM" && (spy.writes != 6 || spy.rows[5].FadeTimeMsec == 0) {
 				t.Fatalf("missing attempted partial row: %+v", spy)
+			}
+		})
+	}
+}
+
+func TestResetFlashRetriesOnlyReadTransactions(t *testing.T) {
+	transient := &gid.NativeError{Platform: "darwin", Code: 0xe00002bc, Err: errors.New("general error")}
+	t.Run("recovers complete S and R transactions", func(t *testing.T) {
+		b, spy := newFlashBackend(204)
+		var delays []time.Duration
+		b.pause = func(d time.Duration) { delays = append(delays, d) }
+		states, rowSeven := 0, 0
+		spy.onPlayback = func() error {
+			states++
+			if states == 1 {
+				return transient
+			}
+			return nil
+		}
+		spy.onRead = func(i uint, observed *nativeinspection.LineRead) error {
+			if i == 7 {
+				rowSeven++
+				if rowSeven < 3 {
+					*observed = nativeinspection.LineRead{Position: int(i)}
+					return transient
+				}
+			}
+			return nil
+		}
+		result, err := b.ResetFlash(t.Context(), "rainbow")
+		if err != nil || result.Status != flashreset.Acknowledged || result.Verified != 16 ||
+			spy.writes != 16 || spy.reads != 18 || spy.saves != 1 || states != 2 {
+			t.Fatalf("result %+v, err %v, S=%d R=%d P=%d W=%d", result, err, states, spy.reads, spy.writes, spy.saves)
+		}
+		if !slices.Equal(delays, []time.Duration{5 * time.Millisecond, 5 * time.Millisecond, 15 * time.Millisecond}) {
+			t.Fatal(delays)
+		}
+		s, r := b.metrics.operations["query_playback_raw"], b.metrics.operations["query_pattern_line_raw"]
+		if s == nil || s.Calls != 1 || s.Attempts != 2 || s.Retries != 1 || s.LastError == "" ||
+			r == nil || r.Calls != 16 || r.Attempts != 18 || r.Retries != 2 || r.LastError == "" ||
+			b.metrics.data.Operations != 34 || b.metrics.data.Attempts != 37 || b.metrics.data.RecoveredOperations != 2 {
+			t.Fatal(b.metrics.data, s, r)
+		}
+	})
+
+	t.Run("exhausted R stops before W", func(t *testing.T) {
+		b, spy := newFlashBackend(204)
+		b.pause = func(time.Duration) {}
+		spy.onRead = func(i uint, observed *nativeinspection.LineRead) error {
+			if i == 7 {
+				*observed = nativeinspection.LineRead{Position: int(i)}
+				return transient
+			}
+			return nil
+		}
+		result, err := b.ResetFlash(t.Context(), "off")
+		var op *OperationError
+		if !errors.Is(err, transient) || !errors.As(err, &op) || op.Attempts != 3 || result.Status != flashreset.StagingFailed ||
+			result.Staged != 16 || result.Verified != 7 || spy.reads != 10 || spy.saves != 0 ||
+			b.metrics.data.ExhaustedOperations != 1 || b.metrics.data.Retries != 2 {
+			t.Fatalf("result %+v, err %v, R=%d W=%d metrics %+v", result, err, spy.reads, spy.saves, b.metrics.data)
+		}
+	})
+
+	t.Run("preserves partial reply with transient native error", func(t *testing.T) {
+		b, spy := newFlashBackend(204)
+		spy.onRead = func(_ uint, observed *nativeinspection.LineRead) error {
+			observed.Reply = observedFlashBytes([]byte{0, 'P', 1})
+			return transient
+		}
+		result, err := b.ResetFlash(t.Context(), "off")
+		if !errors.Is(err, errFlashPartialReply) || !errors.Is(err, transient) || result.Verified != 0 ||
+			spy.reads != 1 || spy.saves != 0 || b.metrics.data.Retries != 0 {
+			t.Fatalf("result %+v, err %v, R=%d W=%d", result, err, spy.reads, spy.saves)
+		}
+	})
+
+	t.Run("cancel during backoff stops before another USB query", func(t *testing.T) {
+		b, spy := newFlashBackend(204)
+		ctx, cancel := context.WithCancel(t.Context())
+		defer cancel()
+		b.pause = func(time.Duration) { cancel() }
+		states := 0
+		spy.onPlayback = func() error { states++; return transient }
+		result, err := b.ResetFlash(ctx, "off")
+		metric := b.metrics.operations["query_playback_raw"]
+		if !errors.Is(err, context.Canceled) || !errors.Is(err, transient) ||
+			result.Status != flashreset.StagingFailed || states != 1 || spy.writes+spy.reads+spy.saves != 0 ||
+			metric == nil || metric.Calls != 1 || metric.Attempts != 1 || metric.Retries != 0 || metric.Failures != 1 {
+			t.Fatalf("result %+v, err %v, S=%d metrics %+v", result, err, states, metric)
+		}
+	})
+
+	for _, stage := range []string{"row-write", "save"} {
+		t.Run(stage+" fails once on transient error", func(t *testing.T) {
+			b, spy := newFlashBackend(204)
+			wantStatus, wantWrites, wantSaves := flashreset.StagingFailed, 1, 0
+			if stage == "row-write" {
+				spy.onWrite = func(uint) error { return transient }
+			} else {
+				spy.onSave = func() error { return transient }
+				wantStatus, wantWrites, wantSaves = flashreset.Unconfirmed, 16, 1
+			}
+			result, err := b.ResetFlash(t.Context(), "off")
+			if !errors.Is(err, transient) || result.Status != wantStatus || spy.writes != wantWrites ||
+				spy.saves != wantSaves || b.metrics.data.Retries != 0 {
+				t.Fatalf("result %+v, err %v, P=%d W=%d", result, err, spy.writes, spy.saves)
 			}
 		})
 	}

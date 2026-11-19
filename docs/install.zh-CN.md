@@ -122,6 +122,6 @@ install 安排以后登录时可能加载；未加 `--start` 不请求本次立�
 - `nb1-mcp-v0.1.3-<os>-<arch>.tar.gz`（Windows 为 `.zip`）：解压到另一新目录，核验包内清单，再配置 MCP host 使用绝对 `nb1-mcp` 路径及参数 `--endpoint http://127.0.0.1:5885 --timeout 10s`。初始化报告 `v0.1.3`；真实 stdio 协议连接本机 HTTP，不包装 CLI，也不占 USB。
 - `blink1-control-v0.1.3.zip`：把内容解压到新的 `blink1-control` 文件夹，再完整复制到项目的 `.agents/skills/`，保留 `SKILL.md`、`agents/` 与 `references/`。Skill 不安装程序、注册 MCP、启用全局 hook 或扩大权限，见 [Agent 指引](agent-guide.zh-CN.md)。
 
-MCP 单独选择 endpoint，不读取 nb1 YAML；各客户端应指向同一份目标 daemon。API 校验 Host 与浏览器 Origin，但 loopback 不是用户身份认证，同机能调用端口的其他进程仍可能控制已配置的灯。本地调试器不需要键盘、输入监控或相机权限。
+本机 stdio 可使用 `nb1 mcp` 或 `nb1-mcp`。可用 `--endpoint` 指定 daemon 地址，启用本机鉴权时须提供 `--token-file`。若客户端在另一台电脑上，请启用 daemon 的 HTTPS 监听器，连接客户端可访问的 `/mcp` 地址。[远程接入与本机鉴权](remote-access.zh-CN.md)
 
 这个版本包含当前 Action／Sequence、Job 与本机库能力；Trigger、新可编辑内容目录、queue／replace 和设备原生部署 API 仍为独立计划。[开发候选安装指南](candidate-install.zh-CN.md)保留 `release:false` 的 CI 套件约定，不能把它和本正式版包混用。

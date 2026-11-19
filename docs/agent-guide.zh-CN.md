@@ -30,6 +30,8 @@ daemon 模式需要显式启动 nb1，或使用已配置的用户服务：
 nb1 server --devices DEVICE_SERIAL
 ```
 
+若 Agent 在另一台电脑上，请配置到设备主机的 Streamable HTTP 连接，再调用 `list_devices` 选择序列号。[远程 MCP 接入](remote-access.zh-CN.md)
+
 HTTP CLI 可以用 `--endpoint` 或 profile 的 `server.listen` 选择地址；[MCP 适配器](../adapters/mcp/README.md)使用自己的 `--endpoint`，不读取 nb1 YAML。应说明目标地址和设备，尤其是本机有多套安装时。连接失败时由用户选择启动或显式直连，Skill 不授权自动启动或静默切换 USB。前台 direct 有独立生命周期。
 
 内嵌调试器使用该 daemon。独立浏览器 WebHID 工具自行拥有 USB，不共享原生 nb1 的设备锁；使用前需要明确切换控制权。

@@ -59,7 +59,7 @@ macOS/Linux 的配置与本机颜色／Pattern 作品库使用 `$XDG_CONFIG_HOME
 
 - [API v1](docs/api-v1.md)：Action、Sequence、Job、颜色、本机 Pattern 和资源限制。
 - [统一术语](docs/api-v1-terminology.md)：各入口共用的概念。
-- [MCP](adapters/mcp/README.md)：真实 stdio 到 HTTP，包含 12 个工具，不包装 CLI，不另占 USB。
+- 本机 Agent 可运行 `nb1 mcp`，另一台电脑的 Agent 可通过可选的 HTTPS `/mcp` 访问同一个 daemon。[十二个 MCP 工具](adapters/mcp/README.md) · [跨机接入](docs/remote-access.zh-CN.md)
 - [Agent Skill](skills/blink1-control/SKILL.md)、[安装与使用](docs/agent-guide.zh-CN.md)和 [llms.txt](llms.txt)：Agent 的选择、跟踪和恢复指南。
 - [Codex 回合通知](examples/command-notify/CODEX.zh-CN.md)：可选的 notify／Stop 接入，默认预览，通过本机 daemon 播放，包含单次调用配置与软件验收记录。
 

@@ -41,6 +41,8 @@ For daemon operation, start nb1 explicitly or use an already configured service:
 nb1 server --devices DEVICE_SERIAL
 ```
 
+For an agent on another computer, configure a Streamable HTTP connection to the device host and call `list_devices` to select a serial. [Remote MCP setup](remote-access.md)
+
 The HTTP CLI selects its endpoint with `--endpoint` or profile `server.listen`.
 The [MCP adapter](../adapters/mcp/README.md) takes its own `--endpoint` and does
 not read nb1 YAML. Give the agent the intended endpoint and device, especially

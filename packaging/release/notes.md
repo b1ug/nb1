@@ -29,6 +29,14 @@ the daemon with `--listen 127.0.0.1:8931` and point clients at it with
 pinned service and client settings together, restart the daemon, and update
 debugger bookmarks to <http://127.0.0.1:5885/demo/>.
 
+### Remote MCP
+
+An agent on another computer can connect to the daemon over Streamable HTTP
+at `https://HOST:PORT/mcp`. The optional HTTPS listener requires a Bearer
+token for both `/mcp` and `/v1`. Remote access defaults to off. Local agents
+can use `nb1 mcp` over stdio, and local API authentication is independently
+configurable. [Set up remote access](https://github.com/b1ug/nb1/blob/v0.1.3/docs/remote-access.md)
+
 ### Install and run
 
 Download the matching archive, `release.json` and `SHA256SUMS` from this release.

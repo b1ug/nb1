@@ -41,6 +41,8 @@ strings; it does not discover connected devices. `server.listen` must use a
 loopback IP or `localhost` and a numeric port in 0–65535. Service installation
 can impose a nonzero-port requirement separately.
 
+An optional `server.remote` section enables an HTTPS listener for the API and Streamable HTTP MCP. `server.local_token_file` independently requires authentication on the loopback API. Credential paths are relative to the profile, and changes take effect on daemon restart. [Configuration and client examples](../../docs/remote-access.md)
+
 Both Job limits must be positive. `terminal_ttl` is a Go duration string, such as
 `30m` or `1h30m`, measured from terminal publication. It is a maximum retention
 duration: the count limit can evict terminal Jobs sooner. Daemon restart also

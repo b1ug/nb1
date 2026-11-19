@@ -62,6 +62,13 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.Header().Set("Cache-Control", "no-store")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
+	// Browser diagnostics have a narrow origin policy. Device-specific
+	// and library routes still require a same-origin or non-browser client.
+	path := r.URL.EscapedPath()
+	if (path == "/v1/presence" || path == "/v1/service-status") && localHost(r.Host) {
+		h.serveBrowserStatus(w, r)
+		return
+	}
 	// Loopback binding alone does not reject browser DNS rebinding. Only local
 	// hosts and same-origin browser requests may address this unauthenticated API.
 	if !localHost(r.Host) || !sameOrigin(r) {
@@ -276,6 +283,70 @@ func (h *handler) receiptService(w http.ResponseWriter) (control.ReceiptService,
 func receiptLocation(serial, requestID, instance string) string {
 	return "/v1/devices/" + url.PathEscape(serial) + "/requests/" + url.PathEscape(requestID) +
 		"?expected_daemon_instance_id=" + url.QueryEscape(instance)
+}
+
+// Browser UI and Chrome extension code may live on different origins. Only
+// the published website (an origin shared across its Pages paths) and local
+// HTTP(S) previews may read the public, constant presence marker.
+func presenceOrigin(origin string) bool {
+	if origin == "https://b1ug.github.io" {
+		return true
+	}
+	u, err := url.Parse(origin)
+	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || origin != u.Scheme+"://"+u.Host {
+		return false
+	}
+	host := u.Hostname()
+	ip := net.ParseIP(host)
+	if !strings.EqualFold(host, "localhost") && (ip == nil || !ip.IsLoopback()) {
+		return false
+	}
+	if port := u.Port(); port != "" {
+		n, err := strconv.ParseUint(port, 10, 16)
+		return err == nil && n > 0 && u.Host == net.JoinHostPort(host, port)
+	}
+	return u.Host == host || (strings.Contains(host, ":") && u.Host == "["+host+"]")
+}
+
+func (h *handler) serveBrowserStatus(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Vary", "Origin")
+	origins := r.Header.Values("Origin")
+	if len(origins) > 1 || len(origins) == 1 && !presenceOrigin(origins[0]) {
+		writeError(w, http.StatusForbidden, "local_only", "browser origin cannot read daemon presence")
+		return
+	}
+	if !frameNoBodyOrQuery(w, r) {
+		return
+	}
+	if !method(w, r, http.MethodGet) {
+		return
+	}
+	if len(origins) == 1 {
+		w.Header().Set("Access-Control-Allow-Origin", origins[0])
+	}
+	if r.URL.Path == "/v1/presence" {
+		writeJSON(w, http.StatusOK, map[string]string{"service": "nb1", "api_version": "v1"})
+		return
+	}
+	type totals struct {
+		Configured int `json:"configured"`
+		Online     int `json:"online"`
+	}
+	var devices *totals
+	if h.service != nil {
+		// Devices returns a cached snapshot without refreshing or opening USB.
+		if snapshot := h.service.Devices(); snapshot != nil {
+			devices = &totals{Configured: len(snapshot)}
+			for _, device := range snapshot {
+				if device.Connection == "online" {
+					devices.Online++
+				}
+			}
+		}
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"service": "nb1", "api_version": "v1", "health": "ok", "devices": devices,
+	})
 }
 
 func localHost(host string) bool {

@@ -89,7 +89,7 @@ for path, item in document['paths'].items():
                              'body': '' if value is None else json.dumps(value, ensure_ascii=False, separators=(',', ':')),
                              'operation': name, 'valid': True})
 
-assert len(operations) == 15 and len(document['paths']) == 13
+assert len(operations) == 17 and len(document['paths']) == 15
 rank = lambda request: 0 if request['method'] == 'PUT' else 1 if request['operation'] == 'preview' else 2 if request['operation'] == 'submitJob' else 3
 requests.sort(key=rank)
 requests.append({'name': 'sequence-negative-zero', 'method': 'POST', 'path': '/v1/preview',

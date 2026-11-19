@@ -151,7 +151,9 @@ These operations are the current runtime's API v1 route table. Success bodies ar
 - Send one valid Unicode JSON object. Unknown, duplicate or incorrectly cased keys, trailing values, excessive nesting beyond 64 levels and explicit `null` anywhere are rejected. Omit an optional field to select its documented default; `null` does not mean omission.
 - Empty values are not general defaults. `id: ""` requests Job ID generation; `title: ""` clears a Pattern title. Empty `serial`, `pattern_id`, `color`, `timing` or `on_finish`, and empty required target/Step arrays, are invalid.
 - Preview, Job, device and library routes reject query parameters, including a bare trailing `?`. Job lookup/cancel and device/library GET routes accept no body, including `{}` or a chunked body. `Content-Type` is unnecessary when there is no body. The shared `/healthz` and `/v1/transport-metrics` handlers currently check only the method and do not inspect body/query values; clients should send neither.
-- Use a loopback Host. A browser `Origin`, when present, must match the request scheme and exact Host/port. An absent Origin is accepted for non-browser clients. A different browser origin, including `Origin: null`, is rejected; this API is not a cross-origin remote-control endpoint.
+- Use a loopback Host. Device, Job and library routes accept same-origin browser requests and clients with no Origin. Two read-only browser diagnostics also accept the website origin `https://b1ug.github.io` (shared by its project Pages) and HTTP or HTTPS loopback origins, including local previews.
+- Send a simple GET without credentials, custom headers, body or query to the selected daemon port (default 8931). The browser may ask for local-network permission. WebHID checks `/v1/presence` first. A matching marker confirms nb1 answered. It then requests `/v1/service-status` once on the same port. A valid summary confirms HTTP liveness (the same signal as `/healthz`) and reports cached device totals. API clients can request the summary directly. `configured` counts its configured device workers. `online` counts workers whose last connection state is `online`. A zero count is a known result. A `null` devices field means the snapshot is unavailable. Reading status does not refresh USB or identify which light, if any, the process owns.
+- If the marker succeeds but the summary is unavailable, WebHID shows the responding daemon with device status unknown. If WebHID cannot confirm the marker, it reports presence as unconfirmed. Older versions, an incorrect port or browser permission can prevent the check.
 
 ### Requests and success statuses
 
@@ -169,6 +171,8 @@ These operations are the current runtime's API v1 route table. Success bodies ar
 | `PUT /v1/patterns/{id}` | Pattern ID in the path and exactly one of `action` or `sequence` in the body. | `title`: omitted or `""` means no title, replacing any previous title. | `200`, complete saved Pattern, for both create and replacement. Does not play. |
 | `GET /v1/devices` | No body. | None. | `200`, configured device states, sorted by serial; `[]` when none are configured. Does not discover USB. |
 | `GET /v1/devices/{serial}` | Configured serial in the path; no body. | None. | `200`, one cached Device object. An unmatched serial returns `404`. |
+| `GET /v1/presence` | No fields. | None. | `200`, `{"service":"nb1","api_version":"v1"}`. Constant marker, independent of connected devices. |
+| `GET /v1/service-status` | No fields. | None. | `200`, `{"service":"nb1","api_version":"v1","health":"ok","devices":{"configured":2,"online":1}}`. The `devices` value can also be `null`. |
 | `GET /healthz` | No fields. | None. | `200`, `{"status":"ok","api_version":"v1"}`. HTTP health does not imply device availability. |
 | `GET /v1/transport-metrics` | No fields. | None. | `200`, TransportMetric array; `[]` when no counters are available. |
 

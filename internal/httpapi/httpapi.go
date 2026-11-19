@@ -46,9 +46,28 @@ type handler struct {
 	patternErr   error
 	patternsV2   PatternStoreV2
 	patternErrV2 error
+	localAPI     http.Handler
 }
 
 func New(service control.Service, options ...Option) http.Handler {
+	return newHandler(service, options...)
+}
+
+// NewWithRemote shares one API instance (including its library lock) between
+// the loopback listener and a distinct listener with its own access checks.
+// protect authenticates and restricts the network request before API dispatch.
+func NewWithRemote(service control.Service, protect func(http.Handler) http.Handler, options ...Option) (http.Handler, http.Handler) {
+	h := newHandler(service, options...)
+	return h, protect(http.HandlerFunc(h.serveRoutes))
+}
+
+// WithLocalProtection runs protection after the existing loopback Host and
+// Origin checks. Requests from the separate HTTPS listener use its own gate.
+func WithLocalProtection(protect func(http.Handler) http.Handler) Option {
+	return func(h *handler) { h.localAPI = protect(http.HandlerFunc(h.serveLocalRoutes)) }
+}
+
+func newHandler(service control.Service, options ...Option) *handler {
 	h := &handler{service: service}
 	for _, option := range options {
 		if option != nil {
@@ -59,22 +78,39 @@ func New(service control.Service, options ...Option) http.Handler {
 }
 
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.Header().Set("Cache-Control", "no-store")
-	w.Header().Set("X-Content-Type-Options", "nosniff")
-	// Browser diagnostics have a narrow origin policy. Device-specific
-	// and library routes still require a same-origin or non-browser client.
+	setResponseHeaders(w)
 	path := r.URL.EscapedPath()
-	if (path == "/v1/presence" || path == "/v1/service-status") && localHost(r.Host) {
-		h.serveBrowserStatus(w, r)
-		return
-	}
-	// Loopback binding alone does not reject browser DNS rebinding. Only local
-	// hosts and same-origin browser requests may address this unauthenticated API.
-	if !localHost(r.Host) || !sameOrigin(r) {
+	browserStatus := path == "/v1/presence" || path == "/v1/service-status"
+	if !localHost(r.Host) || (!browserStatus && !sameOrigin(r)) {
 		writeError(w, http.StatusForbidden, "local_only", "use a loopback host and a same-origin or non-browser client")
 		return
 	}
+	// The WebHID presence marker is constant. Device totals follow the local
+	// API's optional token policy. Both endpoints enforce their browser origin policy.
+	if h.localAPI != nil && path != "/v1/presence" {
+		h.localAPI.ServeHTTP(w, r)
+		return
+	}
+	h.serveLocalRoutes(w, r)
+}
+
+func (h *handler) serveLocalRoutes(w http.ResponseWriter, r *http.Request) {
+	switch r.URL.EscapedPath() {
+	case "/v1/presence", "/v1/service-status":
+		h.serveBrowserStatus(w, r)
+	default:
+		h.serveRoutes(w, r)
+	}
+}
+
+func setResponseHeaders(w http.ResponseWriter) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.Header().Set("Cache-Control", "no-store")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+}
+
+func (h *handler) serveRoutes(w http.ResponseWriter, r *http.Request) {
+	setResponseHeaders(w)
 	if h.sequenceAPI && h.serveSequenceAPI(w, r) {
 		return
 	}

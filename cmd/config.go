@@ -1,9 +1,12 @@
 package cmd
 
 import (
+	"fmt"
+	"path/filepath"
 	"sort"
 	"strings"
 
+	"github.com/b1ug/nb1/internal/remoteaccess"
 	"github.com/b1ug/nb1/internal/textfmt"
 	"github.com/spf13/cobra"
 )
@@ -21,6 +24,20 @@ var configCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(configCmd)
 	addProfileCommands(configCmd)
+	token := &cobra.Command{Use: "token", Short: "Manage the remote listener's Bearer token"}
+	token.AddCommand(&cobra.Command{Use: "init FILE", Args: cobra.ExactArgs(1), Short: "Generate a token in a new private file",
+		RunE: func(command *cobra.Command, args []string) error {
+			path, err := filepath.Abs(args[0])
+			if err != nil {
+				return err
+			}
+			if err := remoteaccess.GenerateTokenFile(path); err != nil {
+				return err
+			}
+			_, err = fmt.Fprintf(command.OutOrStdout(), "Token saved to %s\n", path)
+			return err
+		}})
+	configCmd.AddCommand(token)
 
 	// Configuration settings
 

@@ -15,6 +15,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/b1ug/nb1/internal/control"
@@ -26,6 +27,7 @@ const DefaultEndpoint = "http://" + daemonaddr.Listen
 
 type Client struct {
 	endpoint string
+	token    string
 	http     *http.Client
 }
 
@@ -61,6 +63,12 @@ func (e *ReceiptError) Error() string {
 func (e *ReceiptError) Unwrap() error { return e.Err }
 
 func New(endpoint string) (*Client, error) {
+	return NewWithToken(endpoint, "")
+}
+
+// NewWithToken sends a bearer credential only to the configured loopback HTTP
+// origin. An empty token keeps the unauthenticated client behavior.
+func NewWithToken(endpoint, token string) (*Client, error) {
 	u, err := url.Parse(endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("invalid daemon endpoint: %w", err)
@@ -73,10 +81,32 @@ func New(endpoint string) (*Client, error) {
 	}
 	transport := http.DefaultTransport.(*http.Transport).Clone()
 	transport.Proxy = nil
-	return &Client{endpoint: strings.TrimRight(endpoint, "/"), http: &http.Client{
+	if token != "" {
+		// Check the resolved socket address as well as the URL. A system
+		// resolver can return a non-loopback address for a localhost name.
+		dialer := &net.Dialer{Timeout: 30 * time.Second, KeepAlive: 30 * time.Second, ControlContext: loopbackOnly}
+		transport.DialContext = dialer.DialContext
+	}
+	return &Client{endpoint: strings.TrimRight(endpoint, "/"), token: token, http: &http.Client{
 		Timeout: 10 * time.Second, Transport: transport,
 		CheckRedirect: func(_ *http.Request, _ []*http.Request) error { return http.ErrUseLastResponse },
 	}}, nil
+}
+
+func loopbackOnly(_ context.Context, _, address string, _ syscall.RawConn) error {
+	host, _, err := net.SplitHostPort(address)
+	if err != nil || !net.ParseIP(host).IsLoopback() {
+		return errors.New("daemon connection address is not loopback")
+	}
+	return nil
+}
+
+func (c *Client) newRequest(ctx context.Context, method, path string, body io.Reader) (*http.Request, error) {
+	request, err := http.NewRequestWithContext(ctx, method, c.endpoint+path, body)
+	if err == nil && c.token != "" {
+		request.Header.Set("Authorization", "Bearer "+c.token)
+	}
+	return request, err
 }
 
 func (c *Client) Close() { c.http.CloseIdleConnections() }
@@ -244,7 +274,7 @@ func (c *Client) doResponseExpected(ctx context.Context, method, path string, in
 		}
 		body = bytes.NewReader(b)
 	}
-	req, err := http.NewRequestWithContext(ctx, method, c.endpoint+path, body)
+	req, err := c.newRequest(ctx, method, path, body)
 	if err != nil {
 		return nil, err
 	}

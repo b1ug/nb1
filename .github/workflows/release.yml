@@ -8,8 +8,8 @@ on:
       - ci/release-suite.py
       - ci/test_candidate_suite.py
       - packaging/release/**
-      - adapters/mcp/main.go
-      - adapters/mcp/server.go
+      - adapters/mcp/**
+      - internal/mcpserver/**
   workflow_dispatch:
     inputs:
       version:

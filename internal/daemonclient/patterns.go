@@ -98,7 +98,7 @@ func (c *Client) ExportPatterns(ctx context.Context, id string) ([]byte, error) 
 		}
 		path += "/" + url.PathEscape(id)
 	}
-	request, err := http.NewRequestWithContext(ctx, http.MethodGet, c.endpoint+path+"?format=snapshot", nil)
+	request, err := c.newRequest(ctx, http.MethodGet, path+"?format=snapshot", nil)
 	if err != nil {
 		return nil, err
 	}

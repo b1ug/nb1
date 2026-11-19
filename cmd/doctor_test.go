@@ -13,12 +13,28 @@ import (
 
 	"github.com/b1ug/nb1/internal/control"
 	"github.com/b1ug/nb1/internal/doctor"
+	"github.com/b1ug/nb1/internal/remoteaccess"
 )
 
 func TestDoctorJSONAndExitStatusWithoutUSBFallback(t *testing.T) {
 	for _, connection := range []string{"online", "offline"} {
 		t.Run(connection, func(t *testing.T) {
+			tokenFile := filepath.Join(t.TempDir(), "local.token")
+			if err := remoteaccess.GenerateTokenFile(tokenFile); err != nil {
+				t.Fatal(err)
+			}
+			token, err := remoteaccess.LoadToken(tokenFile)
+			if err != nil {
+				t.Fatal(err)
+			}
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				wantAuth := ""
+				if connection == "online" {
+					wantAuth = "Bearer " + token
+				}
+				if r.Header.Get("Authorization") != wantAuth {
+					t.Error("doctor did not apply the endpoint's credential policy")
+				}
 				if r.Method != http.MethodGet {
 					t.Errorf("doctor submitted a mutation: %s", r.Method)
 				}
@@ -41,13 +57,13 @@ func TestDoctorJSONAndExitStatusWithoutUSBFallback(t *testing.T) {
 			command.SetErr(&errors)
 			command.SilenceErrors, command.SilenceUsage = true, true
 			if connection == "online" {
-				profileForTest(t, "server:\n  listen: '"+server.Listener.Addr().String()+"'\n")
+				profileForTest(t, "server:\n  listen: '"+server.Listener.Addr().String()+"'\n  local_token_file: '"+tokenFile+"'\n")
 				command.SetArgs([]string{"--json", "--serial", "test-target"})
 			} else {
-				profileForTest(t, "server:\n  listen: '127.0.0.1:8931'\n")
+				profileForTest(t, "server:\n  listen: '127.0.0.1:8931'\n  local_token_file: '"+tokenFile+"'\n")
 				command.SetArgs([]string{"--json", "--endpoint", server.URL, "--serial", "test-target"})
 			}
-			err := command.Execute()
+			err = command.Execute()
 			if (err != nil) != (connection == "offline") {
 				t.Fatalf("wrong exit result for %s: %v", connection, err)
 			}

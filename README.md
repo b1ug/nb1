@@ -60,7 +60,7 @@ Device locks follow the established native OS coordination policy. On macOS they
 - [OpenAPI 3.1](docs/api-v1.openapi.json): machine-readable current HTTP contract.
 - [API v1 reference](docs/api-v1.md): Actions, Sequences, Jobs, colors, Patterns and limits.
 - [Terminology](docs/api-v1-terminology.md): names shared by all interfaces.
-- [MCP adapter](adapters/mcp/README.md): real stdio MCP to local HTTP.
+- Run `nb1 mcp` for a local agent, or connect a remote agent to the daemon’s optional HTTPS `/mcp` endpoint. [MCP tools](adapters/mcp/README.md) · [Remote setup](docs/remote-access.md)
 - [Web presentation](docs/web-typography.md): custom language menu, local fonts, SVG icons and embedded asset boundaries.
 - [Nightlab embedding](docs/web-nightlab.md): complete local 3D, screen playback, compressed assets and the current host contract.
 - [Agent skill](skills/blink1-control/SKILL.md), [setup and use](docs/agent-guide.md), and [llms.txt](llms.txt): guidance for AI clients.

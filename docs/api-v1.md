@@ -29,6 +29,8 @@ library_dir: ""
 
 `device` is an empty string or a quoted eight-hexadecimal-digit serial. `server.devices` is an explicit list of such strings. `jobs.terminal_limit` is a positive integer and `jobs.terminal_ttl` is a positive duration, such as `30m` or `1h`. These are defaults that users may change. An empty `library_dir` selects `library` under the same application root as the default profile, including the selected XDG root on macOS/Linux. A custom library path must be absolute.
 
+To allow a client on another computer, set `server.remote.enabled` and configure the separate HTTPS listener, certificate, key and Bearer token. Its `/v1` routes and Streamable HTTP `/mcp` share this daemon. The loopback listener has its own optional `server.local_token_file`. Default settings enable only the tokenless loopback listener. [Remote and local configuration](remote-access.md)
+
 Selecting a different configuration file keeps the application's default storage base stable. Device ownership keeps its established native OS policy, `os.UserConfigDir()/nb1/device-locks`. On macOS this is `~/Library/Application Support/nb1/device-locks`, separate from the XDG profile and library. Retaining this coordination directory lets controllers share the default device lease. An explicit lock-directory override must be shared by every controller accessing that device. Profile and library files remain in their existing locations until the user explicitly chooses another location; this path policy performs no file migration.
 
 ## Actions and sequences
@@ -151,8 +153,10 @@ These operations are the current runtime's API v1 route table. Success bodies ar
 - Send one valid Unicode JSON object. Unknown, duplicate or incorrectly cased keys, trailing values, excessive nesting beyond 64 levels and explicit `null` anywhere are rejected. Omit an optional field to select its documented default; `null` does not mean omission.
 - Empty values are not general defaults. `id: ""` requests Job ID generation; `title: ""` clears a Pattern title. Empty `serial`, `pattern_id`, `color`, `timing` or `on_finish`, and empty required target/Step arrays, are invalid.
 - Preview, Job, device and library routes reject query parameters, including a bare trailing `?`. Job lookup/cancel and device/library GET routes accept no body, including `{}` or a chunked body. `Content-Type` is unnecessary when there is no body. The shared `/healthz` and `/v1/transport-metrics` handlers currently check only the method and do not inspect body/query values; clients should send neither.
-- Use a loopback Host. Device, Job and library routes accept same-origin browser requests and clients with no Origin. Two read-only browser diagnostics also accept the website origin `https://b1ug.github.io` (shared by its project Pages) and HTTP or HTTPS loopback origins, including local previews.
-- Send a simple GET without credentials, custom headers, body or query to the selected daemon port (default 5885). v0.1.2 used 8931. Profiles or service definitions that specify 8931 retain that port after upgrading. The browser may ask for local-network permission. WebHID checks `/v1/presence` first. A matching marker confirms nb1 answered. It then requests `/v1/service-status` once on the same port. A valid summary confirms HTTP liveness (the same signal as `/healthz`) and reports cached device totals. API clients can request the summary directly. `configured` counts its configured device workers. `online` counts workers whose last connection state is `online`. A zero count is a known result. A `null` devices field means the snapshot is unavailable. Reading status does not refresh USB or identify which light, if any, the process owns.
+- On the local listener, use a loopback Host. Device, Job and library routes accept same-origin browser requests and clients with no Origin. Two read-only browser diagnostics also accept the website origin `https://b1ug.github.io` (shared by its project Pages) and HTTP or HTTPS loopback origins, including local previews.
+- On the optional HTTPS listener, send `Authorization: Bearer <token>` on every request and use the configured authority, including its port. If present, `Origin` must match the HTTPS origin. Query `GET /v1/devices` for device state. `/healthz`, `/v1/presence`, `/v1/service-status` and `/demo/` are local endpoints.
+- WebHID sends a simple GET without credentials, custom headers, body or query to the selected loopback daemon port (default 5885). v0.1.2 used 8931. Profiles or service definitions that specify 8931 retain that port after upgrading. The browser may ask for local-network permission. WebHID checks `/v1/presence` first. A matching marker confirms nb1 answered. It then requests `/v1/service-status` once on the same port. A valid summary confirms HTTP liveness (the same signal as `/healthz`) and reports cached device totals. API clients can request the summary directly. `configured` counts its configured device workers. `online` counts workers whose last connection state is `online`. A zero count is a known result. A `null` devices field means the snapshot is unavailable. Reading status does not refresh USB or identify which light, if any, the process owns.
+- With `server.local_token_file` set, `GET /healthz` and the constant `GET /v1/presence` marker remain public on loopback. `GET /v1/service-status` and other API calls require a Bearer token. The embedded debugger returns `403 workbench_unavailable` in this mode.
 - If the marker succeeds but the summary is unavailable, WebHID shows the responding daemon with device status unknown. If WebHID cannot confirm the marker, it reports presence as unconfirmed. Older versions, an incorrect port or browser permission can prevent the check.
 
 ### Requests and success statuses
@@ -231,7 +235,9 @@ An HTTP error is `{"error":{"code":"...","message":"..."}}`. Invalid Action comp
 | --- | --- | --- |
 | `400` | `invalid_request` | Invalid JSON syntax or shape, unknown/duplicate/null fields, invalid identifier/color/timing, body/query where forbidden, missing required input, or a read-only runtime rejecting execution. Missing color aliases also use this code. |
 | `400` | `invalid_json` | An error while reading the HTTP request body. Ordinary JSON decoder/validation failures on these v1 body routes use `invalid_request`. |
-| `403` | `local_only` | Host is not loopback or the browser Origin does not match. |
+| `401` | `unauthorized` | Supply the configured Bearer token for the listener. The response includes `WWW-Authenticate: Bearer`. |
+| `403` | `local_only` | The local listener rejected the Host or browser Origin. |
+| `403` | `invalid_host`, `invalid_origin` | The HTTPS authority or browser Origin does not match the configured remote listener. |
 | `404` | `not_found` | Unknown route, configured device, retained Job or saved Pattern. Expired/evicted Jobs also return this code; absence does not prove they never ran. |
 | `405` | `method_not_allowed` | Unsupported method. `Allow` lists the route's supported method(s); HEAD is not an implicit GET. |
 | `409` | `job_conflict` | Retained ID is bound to a different device or JSON input. Query the original ID; do not invent a new ID to retry uncertain work. |
@@ -253,7 +259,7 @@ A request deadline bounds the caller's wait, not a synchronous native call alrea
 
 ## CLI connection policy
 
-`nb1 doctor` uses the same configured loopback listener as `nb1 control`. Pass `--endpoint` to check another address.
+`nb1 doctor` and `nb1 control` both use the selected profile’s loopback listener and local token file. When setting `--endpoint` explicitly, supply `--token-file` for a daemon that requires authentication.
 
 The agreed default for `nb1 control` is to report that the daemon is unavailable and let the user explicitly choose to start a daemon or use direct access. It must not start a daemon or fall back to USB automatically. Starting `nb1 server` does not install a system service.
 

@@ -2,9 +2,9 @@
   "openapi": "3.1.0",
   "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
   "info": {
-    "title": "nb1 local API v1",
+    "title": "nb1 API v1",
     "version": "1.0.0-dev",
-    "description": "Implementation contract for the source checkout identified by x-source. The installed local runtime has its own version and validation state. The 16 API capabilities occupy 17 HTTP operations because the valid saved-color name resolve also has a concrete PUT path. All example devices are virtual. JSON request bodies are bounded to 1 MiB. The runtime rejects duplicate fields, unknown fields, explicit null, invalid Unicode, and unsupported number spellings. Cross-field execution budgets are validated by the core."
+    "description": "Implementation contract for this source checkout. x-source lists the original route baseline and the current implementation files. The installed local runtime has its own version and validation state. The 16 API capabilities occupy 17 HTTP operations because the valid saved-color name resolve also has a concrete PUT path. All example devices are virtual. JSON request bodies are bounded to 1 MiB. The runtime rejects duplicate fields, unknown fields, explicit null, invalid Unicode, and unsupported number spellings. Cross-field execution budgets are validated by the core."
   },
   "servers": [
     {
@@ -14,13 +14,28 @@
           "default": "5885",
           "description": "Configured loopback daemon port."
         }
+      },
+      "description": "Local HTTP listener. The local token file is optional."
+    },
+    {
+      "url": "https://{authority}",
+      "description": "Optional HTTPS listener. Use the configured client-visible authority and send its Bearer token on every request. The example port is configurable.",
+      "variables": {
+        "authority": {
+          "default": "nb1.example.test:9443",
+          "description": "Configured name or IP and HTTPS port."
+        }
       }
     }
   ],
-  "security": [],
+  "security": [
+    {},
+    {
+      "bearerAuth": []
+    }
+  ],
   "x-source": {
-    "commit": "8a348d3746be01311c957fe16a916c6be121db07",
-    "scope": "WithSequenceAPI route table",
+    "scope": "WithSequenceAPI route table and optional authenticated HTTPS listener",
     "files": [
       "internal/httpapi/sequence_api.go",
       "internal/httpapi/sequence_library.go",
@@ -36,14 +51,17 @@
       "internal/control/sequence_execution.go",
       "internal/control/types.go",
       "internal/control/metrics.go",
-      "internal/libraryv1/store.go"
-    ]
+      "internal/libraryv1/store.go",
+      "cmd/server_remote.go",
+      "internal/remoteaccess/http.go"
+    ],
+    "route_baseline_commit": "8a348d3746be01311c957fe16a916c6be121db07"
   },
   "x-access": {
-    "binding": "loopback only",
-    "browser_origin": "Same-origin browser or Origin-less local client. The read-only browser diagnostics at /v1/presence and /v1/service-status also accept https://b1ug.github.io and HTTP(S) loopback origins.",
-    "cors": "Only the two browser diagnostics reflect an allowed origin. Credentials are not enabled.",
-    "authentication": "local unauthenticated endpoint"
+    "binding": "Loopback HTTP by default. Explicitly enable server.remote to add a separately bound HTTPS listener.",
+    "authentication": "An empty security requirement applies only to a loopback operation with anonymous access. A configured local token protects the local API except GET /healthz and GET /v1/presence. All remote API operations require the remote Bearer token.",
+    "browser_origin": "The loopback listener accepts same-origin or Origin-less clients. Its two browser diagnostics also accept https://b1ug.github.io and HTTP(S) loopback origins. Remote authorities and any supplied Origin must match the configured HTTPS endpoint.",
+    "cors": "Only the two loopback browser diagnostics reflect an allowed origin. Credentials are not enabled for cross-origin browser checks."
   },
   "x-runtime-validation": {
     "max_request_bytes": 1048576,
@@ -171,14 +189,27 @@
           }
         },
         "x-query-policy": "ignored",
-        "x-body-policy": "ignored"
-      }
+        "x-body-policy": "ignored",
+        "security": []
+      },
+      "servers": [
+        {
+          "url": "http://127.0.0.1:{port}",
+          "variables": {
+            "port": {
+              "default": "5885",
+              "description": "Configured loopback daemon port."
+            }
+          },
+          "description": "Local HTTP listener. The local token file is optional."
+        }
+      ]
     },
     "/v1/service-status": {
       "get": {
         "operationId": "getServiceStatus",
         "summary": "Read HTTP liveness and cached device totals from a local nb1 daemon",
-        "description": "API clients may call this route directly. WebHID checks /v1/presence first, then requests this summary once on the same port. It retains confirmed presence if the summary is unavailable. Send a credential-free simple GET with no body or query. Health reports HTTP liveness as in /healthz. Counts reflect cached device states. This request performs no USB I/O.",
+        "description": "Loopback API clients may call this route directly. With local authentication, include the local Bearer token. The WebHID page sends a credential-free GET after a matching presence marker and retains confirmed presence if the summary is protected. Counts report cached device state and health indicates HTTP liveness. This request performs no USB I/O.",
         "tags": [
           "Runtime"
         ],
@@ -269,6 +300,9 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
           "403": {
             "description": "HTTP 403 error",
             "content": {
@@ -298,13 +332,25 @@
             }
           }
         }
-      }
+      },
+      "servers": [
+        {
+          "url": "http://127.0.0.1:{port}",
+          "variables": {
+            "port": {
+              "default": "5885",
+              "description": "Configured loopback daemon port."
+            }
+          },
+          "description": "Local HTTP listener. The local token file is optional."
+        }
+      ]
     },
     "/v1/presence": {
       "get": {
         "operationId": "getPresence",
         "summary": "Identify a local nb1 daemon",
-        "description": "Send a credential-free simple GET with no body or query. A matching marker identifies an nb1 daemon at this address. It does not reveal a device or controller owner.",
+        "description": "A matching marker identifies an nb1 daemon on loopback. This constant is available without credentials even with local token authentication enabled. Send a simple GET with no body or query.",
         "tags": [
           "Runtime"
         ],
@@ -380,8 +426,21 @@
               }
             }
           }
+        },
+        "security": []
+      },
+      "servers": [
+        {
+          "url": "http://127.0.0.1:{port}",
+          "variables": {
+            "port": {
+              "default": "5885",
+              "description": "Configured loopback daemon port."
+            }
+          },
+          "description": "Local HTTP listener. The local token file is optional."
         }
-      }
+      ]
     },
     "/v1/transport-metrics": {
       "get": {
@@ -410,6 +469,9 @@
                 }
               }
             }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
           },
           "403": {
             "description": "HTTP 403 error",
@@ -514,6 +576,9 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
           "403": {
             "description": "HTTP 403 error",
             "content": {
@@ -609,6 +674,9 @@
                 }
               }
             }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
           },
           "403": {
             "description": "HTTP 403 error",
@@ -1490,6 +1558,9 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
           "403": {
             "description": "HTTP 403 error",
             "content": {
@@ -1819,6 +1890,9 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
           "403": {
             "description": "HTTP 403 error",
             "content": {
@@ -2055,6 +2129,9 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
           "403": {
             "description": "HTTP 403 error",
             "content": {
@@ -2171,6 +2248,9 @@
                 }
               }
             }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
           },
           "403": {
             "description": "HTTP 403 error",
@@ -2316,6 +2396,9 @@
                 }
               }
             }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
           },
           "403": {
             "description": "HTTP 403 error",
@@ -2479,6 +2562,9 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
           "403": {
             "description": "HTTP 403 error",
             "content": {
@@ -2633,6 +2719,9 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
           "403": {
             "description": "HTTP 403 error",
             "content": {
@@ -2739,6 +2828,9 @@
                 }
               }
             }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
           },
           "403": {
             "description": "HTTP 403 error",
@@ -2900,6 +2992,9 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
           "403": {
             "description": "HTTP 403 error",
             "content": {
@@ -3016,6 +3111,9 @@
                 }
               }
             }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
           },
           "403": {
             "description": "HTTP 403 error",
@@ -3186,6 +3284,9 @@
                 }
               }
             }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
           },
           "403": {
             "description": "HTTP 403 error",
@@ -5186,7 +5287,10 @@
                   "unsupported_capability",
                   "library_capacity",
                   "unavailable",
-                  "internal_error"
+                  "internal_error",
+                  "unauthorized",
+                  "invalid_host",
+                  "invalid_origin"
                 ]
               },
               "message": {
@@ -5217,6 +5321,33 @@
             }
           }
         ]
+      }
+    },
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Use the token configured for this listener. The optional HTTPS listener always requires its remote token."
+      }
+    },
+    "responses": {
+      "Unauthorized": {
+        "description": "The listener requires a valid Bearer token.",
+        "headers": {
+          "WWW-Authenticate": {
+            "description": "Bearer challenge.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
       }
     }
   }

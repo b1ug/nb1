@@ -1,4 +1,4 @@
-package main
+package mcpserver
 
 import (
 	"github.com/b1ug/nb1/internal/sequence"

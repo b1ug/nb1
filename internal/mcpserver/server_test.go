@@ -1,6 +1,7 @@
-package main
+package mcpserver
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -22,6 +23,7 @@ import (
 	"github.com/b1ug/nb1/internal/control"
 	"github.com/b1ug/nb1/internal/daemonclient"
 	"github.com/b1ug/nb1/internal/httpapi"
+	"github.com/b1ug/nb1/internal/remoteaccess"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
@@ -33,33 +35,32 @@ type wireOutput struct {
 	Error    *toolError      `json:"error,omitempty"`
 }
 
+const testVersion = "dev"
+const publicTestEndpoint = "https://lamp.example/mcp"
+const testToken = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+
 func TestMCPStdioHelper(t *testing.T) {
 	if os.Getenv("NB1_MCP_STDIO_HELPER") != "1" {
 		return
 	}
-	timeout, err := time.ParseDuration(os.Getenv("NB1_MCP_TEST_TIMEOUT"))
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+	args := []string{
+		"--endpoint", os.Getenv("NB1_MCP_TEST_ENDPOINT"), "--timeout", os.Getenv("NB1_MCP_TEST_TIMEOUT"),
 	}
-	d, err := newDaemon(os.Getenv("NB1_MCP_TEST_ENDPOINT"), timeout)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+	if tokenFile := os.Getenv("NB1_MCP_TEST_TOKEN_FILE"); tokenFile != "" {
+		args = append(args, "--token-file", tokenFile)
 	}
-	err = newServer(d).Run(context.Background(), &mcp.StdioTransport{MaxLineLength: 1 << 20})
-	d.close()
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
-	}
-	os.Exit(0)
+	os.Exit(RunStdioCommand("nb1 mcp", args, testVersion, os.Stderr))
 }
 
 func connectStdio(t *testing.T, endpoint string, timeout time.Duration) *mcp.ClientSession {
 	t.Helper()
+	return connectStdioWithToken(t, endpoint, timeout, "")
+}
+
+func connectStdioWithToken(t *testing.T, endpoint string, timeout time.Duration, tokenFile string) *mcp.ClientSession {
+	t.Helper()
 	command := exec.Command(os.Args[0], "-test.run=^TestMCPStdioHelper$")
-	command.Env = append(os.Environ(), "NB1_MCP_STDIO_HELPER=1", "NB1_MCP_TEST_ENDPOINT="+endpoint, "NB1_MCP_TEST_TIMEOUT="+timeout.String())
+	command.Env = append(os.Environ(), "NB1_MCP_STDIO_HELPER=1", "NB1_MCP_TEST_ENDPOINT="+endpoint, "NB1_MCP_TEST_TIMEOUT="+timeout.String(), "NB1_MCP_TEST_TOKEN_FILE="+tokenFile)
 	command.Stderr = os.Stderr
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	t.Cleanup(cancel)
@@ -247,7 +248,7 @@ func TestOfficialStdioCanonicalToolsAndLocalLibrary(t *testing.T) {
 	if saved.Color != "#00ff00" {
 		t.Fatalf("saved color=%+v", saved)
 	}
-	var resolved resolvedColor
+	var resolved daemonclient.ResolvedSequenceColor
 	requireSuccess(t, call(t, session, "resolve_color", `{"color":"@status-ok"}`), &resolved)
 	if resolved.Color != saved.Color {
 		t.Fatalf("resolved local color=%+v", resolved)
@@ -299,8 +300,8 @@ func TestOfficialStdioBuildIdentityAndRunWithoutPreview(t *testing.T) {
 	server, backend := engineServer(t)
 	session := connectStdio(t, server.URL, 3*time.Second)
 	initialized := session.InitializeResult()
-	if initialized.ServerInfo.Name != "nb1" || initialized.ServerInfo.Version != buildVersion {
-		t.Fatalf("initialize identity=%+v, want nb1/%s", initialized.ServerInfo, buildVersion)
+	if initialized.ServerInfo.Name != "nb1" || initialized.ServerInfo.Version != testVersion {
+		t.Fatalf("initialize identity=%+v, want nb1/%s", initialized.ServerInfo, testVersion)
 	}
 	if !strings.Contains(initialized.Instructions, "Preview is optional.") || !strings.Contains(initialized.Instructions, "without a preceding preview") {
 		t.Fatalf("initialize instructions still require preview: %s", initialized.Instructions)
@@ -313,6 +314,137 @@ func TestOfficialStdioBuildIdentityAndRunWithoutPreview(t *testing.T) {
 	completed := waitJob(t, session, job.ID, "succeeded")
 	if completed.CompletedSteps != 1 || backend.setCount() != 1 {
 		t.Fatalf("run without preview=%+v Set=%d", completed, backend.setCount())
+	}
+}
+
+func TestStreamableHTTPUsesSameTools(t *testing.T) {
+	daemonServer, _ := engineServer(t)
+	protectedServer := httptest.NewServer(remoteaccess.ProtectLocal(testToken, daemonServer.Config.Handler))
+	t.Cleanup(protectedServer.Close)
+	handler, closeClient, err := NewHTTPHandler(protectedServer.URL, publicTestEndpoint, 3*time.Second, testVersion, testToken)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(closeClient)
+	server := httptest.NewServer(handler)
+	t.Cleanup(server.Close)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	client := mcp.NewClient(&mcp.Implementation{Name: "nb1-http-test", Version: "1"}, nil)
+	session, err := client.Connect(ctx, &mcp.StreamableClientTransport{Endpoint: server.URL}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		if err := session.Close(); err != nil {
+			t.Error(err)
+		}
+	})
+	if info := session.InitializeResult().ServerInfo; info.Name != "nb1" || info.Version != testVersion {
+		t.Fatalf("initialize identity=%+v, want nb1/%s", info, testVersion)
+	}
+	listed, err := session.ListTools(ctx, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(listed.Tools) != len(toolSpecifications()) || len(listed.Tools) != 12 {
+		t.Fatalf("tool count=%d, want 12", len(listed.Tools))
+	}
+	var devices []control.DeviceState
+	result := call(t, session, "list_devices", `{}`)
+	if result.Endpoint != publicTestEndpoint {
+		t.Fatalf("remote tools advertised endpoint %q, want %q", result.Endpoint, publicTestEndpoint)
+	}
+	requireSuccess(t, result, &devices)
+	if len(devices) != 1 || devices[0].Serial != "20000001" {
+		t.Fatalf("device list=%+v", devices)
+	}
+	var resolved daemonclient.ResolvedSequenceColor
+	requireSuccess(t, call(t, session, "resolve_color", `{"color":"#abc"}`), &resolved)
+	if resolved.Color != "#aabbcc" {
+		t.Fatalf("authenticated color resolution=%+v", resolved)
+	}
+}
+
+func TestStreamableHTTPRejectsOversizedBodyDuringRead(t *testing.T) {
+	handler, closeClient, err := NewHTTPHandler(defaultEndpoint, publicTestEndpoint, time.Second, testVersion, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(closeClient)
+	request := httptest.NewRequest(http.MethodPost, "/mcp", strings.NewReader(strings.Repeat(" ", (1<<20)+1)))
+	request.ContentLength = -1
+	request.Header.Set("Content-Type", "application/json")
+	request.Header.Set("Accept", "application/json, text/event-stream")
+	response := httptest.NewRecorder()
+	handler.ServeHTTP(response, request)
+	if response.Code != http.StatusRequestEntityTooLarge {
+		t.Fatalf("status=%d, body=%q", response.Code, response.Body.String())
+	}
+	if response.Header().Get("Mcp-Session-Id") != "" {
+		t.Fatal("stateless endpoint returned a session ID")
+	}
+}
+
+func TestStreamableHTTPAcceptsTheAuthorityValidatedByItsMount(t *testing.T) {
+	handler, closeClient, err := NewHTTPHandler(defaultEndpoint, publicTestEndpoint, time.Second, testVersion, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(closeClient)
+	server := httptest.NewTLSServer(handler)
+	t.Cleanup(server.Close)
+	request, err := http.NewRequest(http.MethodPost, server.URL, strings.NewReader(`{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-11-25","capabilities":{},"clientInfo":{"name":"test","version":"1"}}}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	request.Host = "lamp.example"
+	request.Header.Set("Content-Type", "application/json")
+	request.Header.Set("Accept", "application/json, text/event-stream")
+	response, err := server.Client().Do(request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer response.Body.Close()
+	if response.StatusCode != http.StatusOK || response.Header.Get("Content-Type") != "application/json" || response.Header.Get("Mcp-Session-Id") != "" {
+		t.Fatalf("status=%s headers=%v", response.Status, response.Header)
+	}
+}
+
+func TestOfficialStdioUsesTokenFileForLoopbackAPI(t *testing.T) {
+	file := filepath.Join(t.TempDir(), "token")
+	if err := remoteaccess.GenerateTokenFile(file); err != nil {
+		t.Fatal(err)
+	}
+	token, err := remoteaccess.LoadToken(file)
+	if err != nil {
+		t.Fatal(err)
+	}
+	daemonServer, _ := engineServer(t)
+	protectedServer := httptest.NewServer(remoteaccess.ProtectLocal(token, daemonServer.Config.Handler))
+	t.Cleanup(protectedServer.Close)
+	withoutToken := connectStdio(t, protectedServer.URL, 3*time.Second)
+	denied := call(t, withoutToken, "resolve_color", `{"color":"#abc"}`)
+	if denied.Error == nil || denied.Error.Code != "unauthorized" || denied.Error.HTTPStatus != http.StatusUnauthorized {
+		t.Fatalf("uncredentialed result=%+v", denied)
+	}
+	session := connectStdioWithToken(t, protectedServer.URL, 3*time.Second, file)
+	requireSuccess(t, call(t, session, "list_devices", `{}`), nil)
+	var resolved daemonclient.ResolvedSequenceColor
+	requireSuccess(t, call(t, session, "resolve_color", `{"color":"#abc"}`), &resolved)
+	if resolved.Color != "#aabbcc" {
+		t.Fatalf("authenticated color resolution=%+v", resolved)
+	}
+}
+
+func TestStdioInvalidTokenFileDiagnosticsArePrivate(t *testing.T) {
+	file := filepath.Join(t.TempDir(), "missing-private-token")
+	var diagnostics bytes.Buffer
+	if status := RunStdioCommand("nb1 mcp", []string{"--token-file", file}, testVersion, &diagnostics); status != 2 {
+		t.Fatalf("status=%d, want 2", status)
+	}
+	if out := diagnostics.String(); !strings.Contains(out, "load local API token") || strings.Contains(out, file) {
+		t.Fatal("token file diagnostics omitted context or exposed its path")
 	}
 }
 
@@ -368,6 +500,15 @@ func fixtureJob(id string) control.SequenceJob {
 }
 
 func TestOfficialStdioLostResponseKeepsIDAndQueriesOriginalJob(t *testing.T) {
+	testLostResponseRecovery(t, false)
+}
+
+func TestRemoteMCPReconnectsToAdvertisedEndpointForOriginalJob(t *testing.T) {
+	testLostResponseRecovery(t, true)
+}
+
+func testLostResponseRecovery(t *testing.T, remote bool) {
+	t.Helper()
 	var posts, gets int32
 	var id atomic.Value
 	id.Store("")
@@ -399,13 +540,53 @@ func TestOfficialStdioLostResponseKeepsIDAndQueriesOriginalJob(t *testing.T) {
 		w.WriteHeader(http.StatusNotFound)
 	}))
 	defer server.Close()
-	session := connectStdio(t, server.URL, time.Second)
+	recoveryURL := server.URL
+	connect := func() *mcp.ClientSession { return connectStdio(t, server.URL, time.Second) }
+	if remote {
+		public := httptest.NewUnstartedServer(nil)
+		t.Cleanup(public.Close)
+		recoveryURL = "https://" + public.Listener.Addr().String() + "/mcp"
+		handler, closeClient, err := NewHTTPHandler(server.URL, recoveryURL, time.Second, testVersion, "")
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(closeClient)
+		mux := http.NewServeMux()
+		mux.Handle("/mcp", handler)
+		public.Config.Handler = mux
+		public.StartTLS()
+		connect = func() *mcp.ClientSession {
+			agent := mcp.NewClient(&mcp.Implementation{Name: "recovery-client", Version: "1"}, nil)
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+			session, err := agent.Connect(ctx, &mcp.StreamableClientTransport{Endpoint: recoveryURL, HTTPClient: public.Client()}, nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			t.Cleanup(func() { _ = session.Close() })
+			return session
+		}
+	}
+	session := connect()
 	out := call(t, session, "run_light", `{"serial":"20000001","action":{"kind":"off"}}`)
-	if out.Error == nil || !out.Error.OutcomeUnknown || out.ID != id.Load().(string) || out.Endpoint != server.URL || !regexp.MustCompile(`^j_[0-9A-HJKMNP-TV-Z]{10}$`).MatchString(out.ID) {
+	if out.Error == nil || !out.Error.OutcomeUnknown || out.ID != id.Load().(string) || out.Endpoint != recoveryURL || !regexp.MustCompile(`^j_[0-9A-HJKMNP-TV-Z]{10}$`).MatchString(out.ID) {
 		t.Fatalf("lost-response result=%+v", out)
 	}
+	if remote {
+		if strings.Contains(out.Error.Message, server.URL) || !strings.Contains(out.Error.Message, recoveryURL) {
+			t.Fatalf("remote recovery diagnostic advertises the wrong URL: %q", out.Error.Message)
+		}
+		if err := session.Close(); err != nil {
+			t.Fatal(err)
+		}
+		session = connect()
+	}
 	var job control.SequenceJob
-	requireSuccess(t, call(t, session, "get_job", fmt.Sprintf(`{"id":%q}`, out.ID)), &job)
+	result := call(t, session, "get_job", fmt.Sprintf(`{"id":%q}`, out.ID))
+	if result.Endpoint != recoveryURL {
+		t.Fatalf("recovered through %q, want %q", result.Endpoint, recoveryURL)
+	}
+	requireSuccess(t, result, &job)
 	if job.ID != out.ID || atomic.LoadInt32(&posts) != 1 || atomic.LoadInt32(&gets) != 1 {
 		t.Fatalf("recovery changed intent: job=%+v POST=%d GET=%d", job, posts, gets)
 	}
@@ -482,11 +663,11 @@ func TestOfficialStdioHTTPTimeoutRetainsIDWithoutCancel(t *testing.T) {
 
 func TestEndpointAndTimeoutValidation(t *testing.T) {
 	for _, endpoint := range []string{"https://127.0.0.1:5885", "http://example.com:5885", "http://127.0.0.1:5885/path", "http://user@127.0.0.1:5885"} {
-		if _, err := newDaemon(endpoint, time.Second); err == nil {
+		if _, err := newDaemon(endpoint, time.Second, ""); err == nil {
 			t.Errorf("accepted invalid endpoint %s", endpoint)
 		}
 	}
-	if _, err := newDaemon(defaultEndpoint, 0); err == nil {
+	if _, err := newDaemon(defaultEndpoint, 0, ""); err == nil {
 		t.Fatal("accepted zero timeout")
 	}
 }

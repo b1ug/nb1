@@ -35,8 +35,10 @@ type Config struct {
 }
 
 type ServerConfig struct {
-	Devices []string `json:"devices" yaml:"devices"`
-	Listen  string   `json:"listen" yaml:"listen"`
+	Devices        []string            `json:"devices" yaml:"devices"`
+	Listen         string              `json:"listen" yaml:"listen"`
+	LocalTokenFile string              `json:"local_token_file,omitempty" yaml:"local_token_file,omitempty"`
+	Remote         *RemoteServerConfig `json:"remote,omitempty" yaml:"remote,omitempty"`
 }
 
 type JobConfig struct {
@@ -130,6 +132,11 @@ func Load(selected Selection) (Config, error) {
 	if config.LibraryDir == "" {
 		config.LibraryDir = filepath.Join(selected.BaseDir, "library")
 	}
+	configDir := filepath.Dir(selected.Path)
+	config.Server.LocalTokenFile = resolveCredentialPath(configDir, config.Server.LocalTokenFile)
+	if config.Server.Remote != nil {
+		config.Server.Remote.resolvePaths(configDir)
+	}
 	if err := Validate(config); err != nil {
 		return Config{}, fmt.Errorf("configuration %q: %w", selected.Path, err)
 	}
@@ -170,6 +177,14 @@ func Validate(config Config) error {
 	n, err := strconv.ParseUint(port, 10, 16)
 	if err != nil || n > 65535 {
 		return fmt.Errorf("server.listen port must be an integer between 0 and 65535")
+	}
+	if path := config.Server.LocalTokenFile; path != "" && !validCredentialPath(path) {
+		return fmt.Errorf("server.local_token_file must specify a file path")
+	}
+	if config.Server.Remote != nil {
+		if err := config.Server.Remote.Validate(); err != nil {
+			return err
+		}
 	}
 	if config.Jobs.TerminalLimit <= 0 {
 		return fmt.Errorf("jobs.terminal_limit must be a positive integer")
@@ -214,6 +229,12 @@ func decode(data []byte, config *Config) error {
 				switch key {
 				case "listen":
 					return stringValue(value, "server.listen", &config.Server.Listen)
+				case "local_token_file":
+					return stringValue(value, "server.local_token_file", &config.Server.LocalTokenFile)
+				case "remote":
+					remote, err := decodeRemoteServer(value)
+					config.Server.Remote = remote
+					return err
 				case "devices":
 					if value.Kind != yaml.SequenceNode || value.Tag != "!!seq" {
 						return fmt.Errorf("server.devices must be a list of strings")

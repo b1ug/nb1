@@ -220,7 +220,7 @@ func (c *Client) patternExecutionResponseV2(ctx context.Context, method, path st
 	if len(body) > 4096 {
 		return nil, fmt.Errorf("Pattern execution request exceeds4096 bytes")
 	}
-	r, err := http.NewRequestWithContext(ctx, method, c.endpoint+path, bytes.NewReader(body))
+	r, err := c.newRequest(ctx, method, path, bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}

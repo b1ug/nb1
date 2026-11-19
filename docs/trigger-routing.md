@@ -1,6 +1,6 @@
 # Trigger routing and default devices
 
-This local candidate extends the nb1 daemon. Published v0.1.2 playback requests use an explicit serial. Current workbench and direct USB controls keep their existing target selection. The APIs and clients below are available for candidate review.
+With nb1 v0.1.3, callers can name a Trigger and let the daemon select its configured lamp. Supply a serial to choose the lamp explicitly. The v0.1.2 HTTP API requires a serial for every playback request.
 
 ## Choose the target
 
@@ -47,7 +47,7 @@ curl -H 'Content-Type: application/json' -X PUT \
 }
 ```
 
-Trigger names match `[a-z][a-z0-9.-]{0,63}`. Titles are optional display text. Serial bindings are optional eight-digit hexadecimal strings. The file accepts up to 256 mappings and 1 MiB. Replace it atomically after editing to apply changes to new submissions. Invalid files return `invalid_trigger_config` on trigger operations. Ordinary explicit runs and the daemon health endpoint remain usable.
+Trigger names match `[a-z][a-z0-9.-]{0,63}`. Titles are optional display text. Serial bindings are optional eight-digit hexadecimal strings. The file accepts up to 256 mappings and 1 MiB. To apply changes, write the complete mapping to a temporary file in the same directory, close it and replace the original. On Windows, an open reader can briefly prevent replacement. Keep the temporary file and retry the rename if the editor reports a sharing violation or access denied. The previous mapping stays in effect until replacement succeeds. Invalid files return `invalid_trigger_config` on trigger operations. Ordinary explicit runs and the daemon health endpoint remain usable.
 
 ```console
 nb1 control triggers
@@ -69,4 +69,4 @@ The matching MCP adapter accepts the same `trigger`, `serial` and `id` fields in
 
 When cancelling by ID, use the serial returned on the accepted Job to guard the target. For example, run `nb1 control cancel j_7K3XJNY9ZM --serial 20000002 --wait` or send `POST /v1/jobs/j_7K3XJNY9ZM/cancel?serial=20000002` with an empty body. The daemon checks the serial at the moment it requests cancellation. A different serial returns `409 job_target_mismatch`. A daemon that rejects this optional query does not support the guard. Keep the explicit guard on any retry.
 
-Trigger playback uses the same per-device worker as other jobs. API v1 rejects competing playback on the same device. This candidate routes saved Patterns. Author file catalogs, composed Patterns and public queue or preemption remain separate work.
+Trigger playback uses the same per-device worker as other jobs. API v1 rejects competing playback on the same device. A Trigger selects one saved Pattern. Competing Jobs on different devices can run independently.

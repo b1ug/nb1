@@ -21,7 +21,7 @@ SPEC = importlib.util.spec_from_file_location("mcp_smoke", Path(__file__).with_n
 MCP_SMOKE = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(MCP_SMOKE)
 TARGETS = BASE.CLI.NATIVE_TARGETS
-FOUNDATION = {"github.com/b1ug/blink1-go": "v0.0.2", "github.com/b1ug/gid": "v0.0.3",
+FOUNDATION = {"github.com/b1ug/blink1-go": "v0.0.3", "github.com/b1ug/gid": "v0.0.3",
               "github.com/b1ug/colorkit": "v0.1.0"}
 TOOLCHAIN = "go1.27.4"
 SOURCE_GO_FLOOR = "1.25.8"

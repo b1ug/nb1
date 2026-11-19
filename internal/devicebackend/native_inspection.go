@@ -47,9 +47,8 @@ func (b *backend) InspectNative(ctx context.Context, request nativeinspection.Re
 	return nativeinspection.Collect(ctx, reader, request, nativeinspection.Identity{Serial: b.info.Serial, Product: b.info.Product, Firmware: b.info.Firmware, FirmwareSource: "cached-on-open"}, profile)
 }
 
-// nativeReadProfile preserves the SDK's FW205 reference separately. An audited
-// FW204 read interpretation is not a modification of that frozen SDK fact and
-// is not proof of the connected production image or physical qualification.
+// nativeReadProfile records the SDK's firmware reference separately from the
+// audited interpretation of raw reads. Hardware qualification is recorded independently.
 func nativeReadProfile(metadata *gid.DeviceInfo, firmware int) (nativeinspection.Profile, error) {
 	capabilities := b1.IdentifyPatternCapabilities(metadata, firmware)
 	if capabilities.Identity.Model == b1.ProfileModelUnknown || capabilities.Storage.RAMLines.Knowledge != b1.PatternKnowledgeKnown || capabilities.Storage.RAMLines.Value == nil {

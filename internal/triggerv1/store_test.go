@@ -7,9 +7,12 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"strings"
 	"sync"
+	"syscall"
 	"testing"
+	"time"
 )
 
 const validFile = `{"schema_version":1,"triggers":{"success":{"pattern_id":"saved-v1-id","serial":"20000001","title":"Success"}}}`
@@ -34,7 +37,19 @@ func replaceTestFile(dir, data string) error {
 	if err = file.Close(); err != nil {
 		return err
 	}
-	return os.Rename(file.Name(), filepath.Join(dir, Filename))
+	// Windows can deny replacement while a reader holds the previous snapshot.
+	// Keep the complete temporary file and retry the editor's rename operation.
+	destination := filepath.Join(dir, Filename)
+	const sharingViolation = syscall.Errno(32) // Windows ERROR_SHARING_VIOLATION
+	deadline := time.Now().Add(2 * time.Second)
+	for {
+		err := os.Rename(file.Name(), destination)
+		busy := errors.Is(err, os.ErrPermission) || errors.Is(err, sharingViolation)
+		if runtime.GOOS != "windows" || !busy || time.Now().After(deadline) {
+			return err
+		}
+		time.Sleep(5 * time.Millisecond)
+	}
 }
 
 func TestOptionalMissingFileIsEmptyAndCreatesNothing(t *testing.T) {
@@ -209,7 +224,9 @@ func TestStoreErrorsAndCapturedPath(t *testing.T) {
 		}
 	}
 	dir := t.TempDir()
-	store := New(filepath.Join(dir, strings.Repeat("x", 1024)))
+	// Name-length limits differ by filesystem. A NUL in the underlying
+	// path deterministically exercises the failed filesystem read on every OS.
+	store := &Store{path: filepath.Join(dir, "invalid\x00name")}
 	if _, err := store.List(); !errors.Is(err, ErrUnavailable) {
 		t.Fatalf("I/O failure lost its category: %v", err)
 	} else {

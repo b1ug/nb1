@@ -8,7 +8,7 @@ MCP registration or extra permissions. Use matching Skill and nb1 interfaces;
 the installed help and MCP schemas describe what is available.
 
 The [release installation guide](install.md) covers verification and unpacking
-of the independent CLI, MCP and Skill artifacts. For development artifacts,
+of the nb1 executable and optional Skill. For development artifacts,
 use the separate [matching candidate guide](candidate-install.md#add-mcp-or-the-skill-independently).
 
 ## Add it to one project
@@ -40,6 +40,8 @@ For daemon operation, start nb1 explicitly or use an already configured service:
 ```sh
 nb1 server --devices DEVICE_SERIAL
 ```
+
+For local stdio, set the MCP client’s command to the installed `nb1` executable and its first argument to `mcp`. When upgrading a v0.1.2 client, keep any additional arguments after `mcp`. [Client configuration example](install.md#connect-a-local-mcp-client)
 
 For an agent on another computer, configure a Streamable HTTP connection to the device host and call `list_devices` to select a serial. [Remote MCP setup](remote-access.md)
 

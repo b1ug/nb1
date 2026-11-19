@@ -79,12 +79,12 @@ func TestLoadDefaultsAndOpaqueLegacyFields(t *testing.T) {
 }
 
 func TestLoadOverridesAndDoesNotRelocateStorage(t *testing.T) {
-	selected := configSelection(t, "device: '20005601'\nserver:\n  devices: ['20005601', 'ABCD1234']\n  listen: '[::1]:8932'\njobs:\n  terminal_limit: 7\n  terminal_ttl: 1h30m\nlibrary_dir: ''\n")
+	selected := configSelection(t, "device: '20005601'\nserver:\n  devices: ['20005601', 'ABCD1234']\n  listen: '[::1]:8932'\n  default_device_fallback: single_online\njobs:\n  terminal_limit: 7\n  terminal_ttl: 1h30m\nlibrary_dir: ''\n")
 	config, err := Load(selected)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if config.Device != "20005601" || len(config.Server.Devices) != 2 || config.Server.Listen != "[::1]:8932" || config.Jobs.TerminalLimit != 7 || config.Jobs.TerminalTTL != 90*time.Minute || config.LibraryDir != filepath.Join(selected.BaseDir, "library") {
+	if config.Device != "20005601" || len(config.Server.Devices) != 2 || config.Server.Listen != "[::1]:8932" || config.Server.DefaultDeviceFallback != "single_online" || config.Jobs.TerminalLimit != 7 || config.Jobs.TerminalTTL != 90*time.Minute || config.LibraryDir != filepath.Join(selected.BaseDir, "library") {
 		t.Fatalf("wrong config: %+v", config)
 	}
 	custom := filepath.Join(t.TempDir(), "custom-library")
@@ -241,6 +241,7 @@ func TestLoadRejectsAmbiguousOrInvalidConfiguration(t *testing.T) {
 		"color:\n  amber: red\n  amber: blue\n", "title: &x old\ncontent_dir: *x\n", "<<: {device: '20005601'}\n",
 		"device: 20005601\n", "device: true\n", "device: null\n", "device: '1'\n", "device: '2000560g'\n",
 		"server: null\n", "server:\n  devices: '20005601'\n", "server:\n  devices: [20005601]\n",
+		"server:\n  default_device_fallback: first_found\n",
 		"server:\n  local_token_file: true\n", "server:\n  local_token_file: ' '\n", "server:\n  local_token_file: null\n", "server:\n  local_token_file: \"credentials/\\0token\"\n",
 		"server:\n  devices: ['abcd1234', 'ABCD1234']\n", "server:\n  devices: ['../bad']\n",
 		"server:\n  listen: '0.0.0.0:8931'\n", "server:\n  listen: 'example.com:8931'\n", "server:\n  listen: '127.0.0.1:65536'\n", "server:\n  listen: '127.0.0.1:+80'\n",

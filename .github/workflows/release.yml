@@ -6,6 +6,7 @@ on:
     paths:
       - .github/workflows/release.yml
       - ci/release-suite.py
+      - ci/mcp-candidate-smoke.py
       - ci/test_candidate_suite.py
       - packaging/release/**
       - adapters/mcp/**
@@ -105,22 +106,13 @@ jobs:
           go build -mod=readonly -trimpath -buildvcs=true \
             -ldflags "-X github.com/b1ug/nb1/config.GitSummary=$NB1_RELEASE_VERSION -X github.com/b1ug/nb1/config.GitCommit=$NB1_RELEASE_SOURCE -X github.com/b1ug/nb1/config.CIBuildNum=gh$GITHUB_RUN_NUMBER" \
             -o "$NB1_RELEASE_BUILD/nb1${{ matrix.extension }}" .
-      - name: Build matching versioned MCP adapter
-        working-directory: adapters/mcp
-        env:
-          CGO_ENABLED: "0"
-          NB1_RELEASE_BUILD: ${{ runner.temp }}/nb1-release-build
-        run: |
-          go mod verify
-          go build -mod=readonly -trimpath -buildvcs=true -ldflags "-X main.buildVersion=$NB1_RELEASE_VERSION" \
-            -o "$NB1_RELEASE_BUILD/nb1-mcp${{ matrix.extension }}" .
       - name: Inspect native dependencies and verify actual extracted archives
         env:
           NB1_RELEASE_BUILD: ${{ runner.temp }}/nb1-release-build
           NB1_RELEASE_OUT: ${{ runner.temp }}/nb1-release-platform
         run: |
           python3 -B ci/release-suite.py stage --root "$GITHUB_WORKSPACE" \
-            --cli "$NB1_RELEASE_BUILD/nb1${{ matrix.extension }}" --mcp "$NB1_RELEASE_BUILD/nb1-mcp${{ matrix.extension }}" \
+            --cli "$NB1_RELEASE_BUILD/nb1${{ matrix.extension }}" \
             --version "$NB1_RELEASE_VERSION" --source "$NB1_RELEASE_SOURCE" \
             --context "$RUNNER_TEMP/release-context.json" --output "$NB1_RELEASE_OUT"
       - name: Check actual offline daemon, CLI and embedded HTTP assets

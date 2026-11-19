@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/b1ug/nb1/internal/actionv1"
@@ -14,6 +15,7 @@ import (
 	"github.com/b1ug/nb1/internal/jsoninput"
 	"github.com/b1ug/nb1/internal/libraryv1"
 	"github.com/b1ug/nb1/internal/sequence"
+	"github.com/b1ug/nb1/internal/triggerv1"
 )
 
 // WithSequenceAPI selects the new runtime's route table.
@@ -25,6 +27,7 @@ type sequenceInput struct {
 	Action    json.RawMessage `json:"action,omitempty"`
 	Sequence  json.RawMessage `json:"sequence,omitempty"`
 	PatternID *string         `json:"pattern_id,omitempty"`
+	Trigger   *string         `json:"trigger,omitempty"`
 	Serial    *string         `json:"serial,omitempty"`
 }
 
@@ -104,6 +107,16 @@ func (h *handler) serveSequenceAPI(w http.ResponseWriter, r *http.Request) bool 
 	case "/v1/jobs":
 		h.submitSequence(w, r)
 		return true
+	case "/v1/triggers":
+		if h.routing != nil {
+			h.listTriggers(w, r)
+			return true
+		}
+	case "/v1/triggers/check":
+		if h.routing != nil {
+			h.checkTriggers(w, r)
+			return true
+		}
 	}
 	parts := strings.Split(strings.TrimPrefix(r.URL.Path, "/"), "/")
 	if h.serveSequenceLibrary(w, r, parts) {
@@ -155,7 +168,7 @@ func sequenceNoQuery(w http.ResponseWriter, r *http.Request) bool {
 	return false
 }
 
-func (in sequenceInput) validate(w http.ResponseWriter, requireSerial bool) bool {
+func (in sequenceInput) validate(w http.ResponseWriter, requireSerial, allowTrigger bool) bool {
 	count := 0
 	if in.Action != nil {
 		count++
@@ -166,8 +179,19 @@ func (in sequenceInput) validate(w http.ResponseWriter, requireSerial bool) bool
 	if in.PatternID != nil {
 		count++
 	}
+	if in.Trigger != nil {
+		if !allowTrigger || !triggerv1.ValidName(*in.Trigger) {
+			writeError(w, http.StatusBadRequest, "invalid_request", "trigger must be a valid trigger name on a routed Job submission")
+			return false
+		}
+		count++
+	}
 	if count != 1 {
-		writeError(w, http.StatusBadRequest, "invalid_request", "exactly one action, sequence or pattern_id is required")
+		message := "exactly one action, sequence or pattern_id is required"
+		if allowTrigger {
+			message = "exactly one action, sequence, pattern_id or trigger is required"
+		}
+		writeError(w, http.StatusBadRequest, "invalid_request", message)
 		return false
 	}
 	if in.PatternID != nil && !control.ValidSequenceJobID(*in.PatternID) {
@@ -219,6 +243,10 @@ func (in sequenceInput) fingerprint() ([32]byte, error) {
 		kind = "pattern_id"
 		raw, _ = json.Marshal(*in.PatternID)
 	}
+	if in.Trigger != nil {
+		kind = "trigger"
+		raw, _ = json.Marshal(*in.Trigger)
+	}
 	// JSON input has already been checked for duplicate keys and null. Preserve
 	// number spelling, array order and strings while normalizing object order.
 	decoder := json.NewDecoder(bytes.NewReader(raw))
@@ -239,7 +267,7 @@ func (h *handler) previewSequence(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var input sequenceInput
-	if !readSequenceJSON(w, r, &input) || !input.validate(w, false) {
+	if !readSequenceJSON(w, r, &input) || !input.validate(w, false, false) {
 		return
 	}
 	compiled, err := h.compileSequenceInput(input)
@@ -282,14 +310,15 @@ func (h *handler) submitSequence(w http.ResponseWriter, r *http.Request) {
 		Action    json.RawMessage `json:"action,omitempty"`
 		Sequence  json.RawMessage `json:"sequence,omitempty"`
 		PatternID *string         `json:"pattern_id,omitempty"`
+		Trigger   *string         `json:"trigger,omitempty"`
 		Serial    *string         `json:"serial,omitempty"`
 		ID        string          `json:"id,omitempty"`
 	}
 	if !readSequenceJSON(w, r, &body) {
 		return
 	}
-	input := sequenceInput{Action: body.Action, Sequence: body.Sequence, PatternID: body.PatternID, Serial: body.Serial}
-	if !input.validate(w, true) {
+	input := sequenceInput{Action: body.Action, Sequence: body.Sequence, PatternID: body.PatternID, Trigger: body.Trigger, Serial: body.Serial}
+	if !input.validate(w, h.routing == nil, h.routing != nil) {
 		return
 	}
 	if body.ID != "" && !control.ValidSequenceJobID(body.ID) {
@@ -305,9 +334,15 @@ func (h *handler) submitSequence(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid_request", "invalid action, sequence or pattern_id")
 		return
 	}
-	job, replayed, err := service.SubmitSequence(r.Context(), *input.Serial, body.ID, fingerprint, func() (sequence.Sequence, error) {
-		return h.compileSequenceInput(input)
-	})
+	var job control.SequenceJob
+	var replayed bool
+	if input.Serial == nil || input.Trigger != nil {
+		job, replayed, err = h.submitRoutedSequence(r.Context(), input, body.ID, fingerprint)
+	} else {
+		job, replayed, err = service.SubmitSequence(r.Context(), *input.Serial, body.ID, fingerprint, func() (sequence.Sequence, error) {
+			return h.compileSequenceInput(input)
+		})
+	}
 	if err != nil {
 		sequenceAPIError(w, err)
 		return
@@ -325,8 +360,21 @@ func (h *handler) readSequenceJob(w http.ResponseWriter, r *http.Request, id str
 	if cancel {
 		wanted = http.MethodPost
 	}
-	if !method(w, r, wanted) || !sequenceNoQuery(w, r) {
+	if !method(w, r, wanted) {
 		return
+	}
+	var expectedSerial string
+	if r.URL.RawQuery != "" || r.URL.ForceQuery {
+		if !cancel {
+			sequenceNoQuery(w, r)
+			return
+		}
+		query, err := url.ParseQuery(r.URL.RawQuery)
+		if err != nil || len(query) != 1 || len(query["serial"]) != 1 || !control.ValidDeviceSerial(query.Get("serial")) {
+			writeError(w, http.StatusBadRequest, "invalid_request", "cancellation query must contain exactly one valid serial")
+			return
+		}
+		expectedSerial = query.Get("serial")
 	}
 	if r.ContentLength != 0 || len(r.TransferEncoding) != 0 {
 		writeError(w, http.StatusBadRequest, "invalid_request", "job lookup and cancellation accept no body")
@@ -338,7 +386,16 @@ func (h *handler) readSequenceJob(w http.ResponseWriter, r *http.Request, id str
 	}
 	var job control.SequenceJob
 	var err error
-	if cancel {
+	if expectedSerial != "" {
+		guarded, ok := h.service.(interface {
+			CancelSequenceForDevice(context.Context, string, string) (control.SequenceJob, error)
+		})
+		if !ok {
+			writeError(w, http.StatusServiceUnavailable, "unavailable", "device-guarded cancellation is unavailable")
+			return
+		}
+		job, err = guarded.CancelSequenceForDevice(r.Context(), id, expectedSerial)
+	} else if cancel {
 		job, err = service.CancelSequence(r.Context(), id)
 	} else {
 		job, err = service.SequenceJob(id)
@@ -397,6 +454,18 @@ func sequenceAPIError(w http.ResponseWriter, err error) {
 		return
 	}
 	switch {
+	case errors.Is(err, triggerv1.ErrNotFound):
+		writeError(w, http.StatusNotFound, "trigger_not_found", "trigger not found")
+	case errors.Is(err, triggerv1.ErrInvalid):
+		writeError(w, http.StatusServiceUnavailable, "invalid_trigger_config", "the daemon's triggers.json is invalid")
+	case errors.Is(err, triggerv1.ErrUnavailable), errors.Is(err, errSequenceRoutingUnavailable):
+		writeError(w, http.StatusServiceUnavailable, "unavailable", "trigger routing is unavailable")
+	case errors.Is(err, control.ErrSequenceTargetRequired):
+		writeError(w, http.StatusBadRequest, "target_required", err.Error())
+	case errors.Is(err, control.ErrSequenceTargetAbsent):
+		writeError(w, http.StatusNotFound, "device_not_managed", err.Error())
+	case errors.Is(err, control.ErrSequenceTargetOffline):
+		writeError(w, http.StatusServiceUnavailable, "device_offline", err.Error())
 	case errors.Is(err, errSequenceLibraryUnavailable):
 		writeError(w, http.StatusServiceUnavailable, "unavailable", "local library is unavailable")
 	case errors.Is(err, libraryv1.ErrNotFound):
@@ -409,6 +478,8 @@ func sequenceAPIError(w http.ResponseWriter, err error) {
 		writeError(w, http.StatusServiceUnavailable, "unavailable", "request ended before the operation could complete")
 	case errors.Is(err, control.ErrSequenceJobConflict):
 		writeError(w, http.StatusConflict, "job_conflict", err.Error())
+	case errors.Is(err, control.ErrSequenceJobTarget):
+		writeError(w, http.StatusConflict, "job_target_mismatch", err.Error())
 	case errors.Is(err, control.ErrSequenceCapability):
 		writeError(w, http.StatusUnprocessableEntity, "unsupported_capability", "required device capabilities missing")
 	case errors.Is(err, control.ErrBusy), errors.Is(err, control.ErrQueueFull):

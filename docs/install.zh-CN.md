@@ -2,7 +2,7 @@
 
 [English](install.md)
 
-从 [nb1 v0.1.3](https://github.com/b1ug/nb1/releases/tag/v0.1.3) 下载匹配的程序。CLI、本地 server 和完整 Nightlab 调试器都在同一个 `nb1` 可执行文件里。使用预编译程序不需要安装 Go、Node.js 或单独的 Web，也不需要浏览器 WebHID 授权。
+从 [nb1 v0.1.3](https://github.com/b1ug/nb1/releases/tag/v0.1.3) 下载匹配的程序。CLI、本地 server、MCP 和内嵌 Nightlab 调试器都在同一个 `nb1` 可执行文件里。使用预编译程序不需要安装 Go、Node.js 或单独的 Web，也不需要浏览器 WebHID 授权。
 
 ## 下载与核验
 
@@ -14,7 +14,7 @@
 | Linux amd64 | `nb1-v0.1.3-linux-amd64.tar.gz` |
 | Windows amd64 | `nb1-v0.1.3-windows-amd64.zip` |
 
-本次预编译 CLI／server 在两种 Mac 架构上的二进制最低版本均为 macOS 15.0；Linux CLI 需要 glibc 2.38 或更新版本。可选 MCP 程序的 macOS 二进制最低版本为 13.0，Linux MCP 为静态链接；它仍需要兼容的 nb1 server，因此不会降低本机 server 的要求。macOS 下载包未经过 Developer ID 公证。
+预编译程序要求 macOS 15.0 及以上，或 Linux glibc 2.38 及以上。`nb1 mcp` 使用同一程序，系统要求相同。macOS 下载包未经过 Developer ID 公证。
 
 这些二进制要求与源码兼容性分开，不保证所有操作系统或实体 USB 组合。使用较旧系统前，请查看对应 Release 的构建和平台记录。已有 macOS arm64／MK2／FW204 的有限实物证据不扩大为所有平台、MK3、重启或持久化保证。Windows 支持前台运行，不包含自动服务管理。
 
@@ -93,7 +93,7 @@ Homebrew 从已发布源码编译，并安装所需构建依赖。Formula 要求
 
 CLI 的帮助与程序诊断在英文、中文和其他 locale 下均保留英文；Web 工作台有独立语言切换。终端颜色按实际输出流判断：任意非空 `NO_COLOR`（包括 `yes`）优先禁用全部 ANSI；`CLICOLOR=0` 禁用普通着色。没有设置 `NO_COLOR` 时，可用 `CLICOLOR_FORCE=1` 或 `true` 强制颜色。Force 值按 Go 的布尔规则解析：`false`、`0`，以及 `2` 等非布尔值，都回到普通终端规则。管道或 `TERM=dumb` 默认使用纯文本。JSON 始终不着色。
 
-面向人的帮助与错误由 Fang 呈现，stderr 上的程序诊断使用 Charm Log；`--debug` 还会显示调用位置和 PID。`--log-file PATH` 保留原有 JSON 文件格式、10 MiB 轮转、备份压缩和保留规则。命令结果 JSON、daemon 的 JSON 事件流及 MCP JSON-RPC 各自保持独立。CLI 翻译仍为独立工作。从源码构建 nb1 或独立 MCP 适配器要求 Go 1.25.8 或更新版本，与上文下载包及 Homebrew 构建要求分开。
+面向人的帮助与错误由 Fang 呈现，stderr 上的程序诊断使用 Charm Log；`--debug` 还会显示调用位置和 PID。`--log-file PATH` 保留原有 JSON 文件格式、10 MiB 轮转、备份压缩和保留规则。命令结果 JSON、daemon 的 JSON 事件流及 MCP JSON-RPC 各自保持独立。CLI 翻译仍为独立工作。从源码构建 nb1 要求 Go 1.25.8 或更新版本，与上文下载包及 Homebrew 构建要求分开。
 
 Fang 暂时使用基于官方 v2.0.1 的修复分支，准确的公开模块版本与校验和记录在发行清单中。显式选择背景的选项已作为 [官方 Fang PR #111](https://github.com/charmbracelet/fang/pull/111) 提出。 可选参数显示顺序的修正已独立提交为 [官方 Fang PR #112](https://github.com/charmbracelet/fang/pull/112)；帮助中的 `[SERIAL] FILE` 与实际执行顺序一致。
 
@@ -117,11 +117,24 @@ install 安排以后登录时可能加载；未加 `--start` 不请求本次立�
 
 `./nb1 config path/init/show` 可以不访问 USB 地查看位置、创建模板与检查解析结果。Mac/Linux 默认 profile 为 `~/.config/nb1/config.yaml`，设置绝对 `XDG_CONFIG_HOME` 时跟随该根目录；Windows 使用原生应用配置目录。本机颜色和 Pattern 存在电脑上，不是设备 RAM／Flash。
 
-可选同版下载：
+### 连接本机 MCP 客户端
 
-- `nb1-mcp-v0.1.3-<os>-<arch>.tar.gz`（Windows 为 `.zip`）：解压到另一新目录，核验包内清单，再配置 MCP host 使用绝对 `nb1-mcp` 路径及参数 `--endpoint http://127.0.0.1:5885 --timeout 10s`。初始化报告 `v0.1.3`；真实 stdio 协议连接本机 HTTP，不包装 CLI，也不占 USB。
-- `blink1-control-v0.1.3.zip`：把内容解压到新的 `blink1-control` 文件夹，再完整复制到项目的 `.agents/skills/`，保留 `SKILL.md`、`agents/` 与 `references/`。Skill 不安装程序、注册 MCP、启用全局 hook 或扩大权限，见 [Agent 指引](agent-guide.zh-CN.md)。
+先启动 daemon。在 MCP 客户端中，把可执行文件设为已安装的 `nb1` 的绝对路径（Windows 为 `nb1.exe`），首个参数填 `mcp`。以下配置连接默认端口上的 daemon。
 
-本机 stdio 可使用 `nb1 mcp` 或 `nb1-mcp`。可用 `--endpoint` 指定 daemon 地址，启用本机鉴权时须提供 `--token-file`。若客户端在另一台电脑上，请启用 daemon 的 HTTPS 监听器，连接客户端可访问的 `/mcp` 地址。[远程接入与本机鉴权](remote-access.zh-CN.md)
+```json
+{
+  "mcpServers": {
+    "nb1": {"command": "/absolute/path/to/nb1", "args": ["mcp"]}
+  }
+}
+```
 
-这个版本包含当前 Action／Sequence、Job 与本机库能力；Trigger、新可编辑内容目录、queue／replace 和设备原生部署 API 仍为独立计划。[开发候选安装指南](candidate-install.zh-CN.md)保留 `release:false` 的 CI 套件约定，不能把它和本正式版包混用。
+**从 v0.1.2 升级。** 将原来指向 `nb1-mcp` 的路径改为新程序，在原参数列表最前面加入 `mcp`。显式指定的端口可以保留。例如，`["mcp", "--endpoint", "http://127.0.0.1:8931", "--timeout", "10s"]` 仍连接旧端口上的 daemon。重新加载客户端，检查能否发现工具。如果仍运行 v0.1.2，请使用 [v0.1.2 安装指南](https://github.com/b1ug/nb1/blob/v0.1.2/docs/install.zh-CN.md)。
+
+本机启用鉴权时，在参数中加入 `--token-file PATH`。另一台电脑上的客户端可连接 daemon 的 HTTPS `/mcp` 地址。[远程接入与本机鉴权](remote-access.zh-CN.md)
+
+### 安装可选的 Skill
+
+将 `blink1-control-v0.1.3.zip` 解压到新的 `blink1-control` 文件夹，再完整复制到项目的 `.agents/skills/` 下，保留 `SKILL.md`、`agents/` 与 `references/`。[Agent 指引](agent-guide.zh-CN.md)
+
+本版支持 Action、Sequence、Job 和本机库。Trigger 可播放保存的 Pattern，省略串号时由 daemon 选灯，Job 会记录实际串号。多格式目录、公开排队与抢占、设备原生部署 API 继续独立推进。[Trigger 配置与选灯规则](trigger-routing.md) [开发候选安装指南](candidate-install.zh-CN.md)保留 `release:false` 的 CI 套件约定，不能把它和本正式版包混用。

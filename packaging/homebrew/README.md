@@ -2,8 +2,8 @@
 
 `nb1.rb.in` is a source Formula template for macOS and Linux. It builds the
 `nb1` binary with CGO enabled and verifies modules from `go.mod` and `go.sum`.
-The minimum macOS requirement applies only on macOS. The template does not
-install the separate MCP binary.
+The minimum macOS requirement applies only on macOS. Starting with v0.1.3 the
+installed executable also provides local stdio MCP through `nb1 mcp`.
 
 Building requires stable Go 1.27.4 or newer. The Formula checks the actual
 `go env GOVERSION` before module downloads and again before compilation, with

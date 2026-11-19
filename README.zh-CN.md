@@ -6,7 +6,7 @@
 
 通过 CLI、本机 HTTP、MCP 或内嵌 Web 控制 blink(1)。高级 Action 在 nb1 内编译为低级 Sequence，并交给同一设备 worker 执行。
 
-[安装 nb1 v0.1.3](docs/install.zh-CN.md)：下载并核验程序，启动本机 server，再打开它内嵌的调试器。MCP 与 Skill 是可选的同版下载。[开发候选](docs/candidate-install.zh-CN.md)保留独立的安装约定。[公开 Homebrew tap](https://github.com/b1ug/homebrew-tap) 用 `brew install b1ug/tap/nb1` 从源码构建当前已发布的 Formula，实际版本以 `nb1 version` 为准。[双语文档站](https://b1ug.github.io/nb1-guide/zh/)提供安装说明与示例。
+[安装 nb1 v0.1.3](docs/install.zh-CN.md)：下载并核验程序，启动本机 server，再打开它内嵌的调试器。这个程序也提供 `nb1 mcp`，Agent Skill 可按需单独下载。[开发候选](docs/candidate-install.zh-CN.md)保留独立的安装约定。[公开 Homebrew tap](https://github.com/b1ug/homebrew-tap) 用 `brew install b1ug/tap/nb1` 从源码构建当前已发布的 Formula，实际版本以 `nb1 version` 为准。[双语文档站](https://b1ug.github.io/nb1-guide/zh/)提供安装说明与示例。
 
 nb1 实现 API v1，源码验证与机器当前安装版本分别记录。同一个可执行文件可以作为 CLI，也可以前台运行 daemon：
 
@@ -67,4 +67,4 @@ Web 位于 `/demo/`，默认英文，可切中文。[nb1 Debugger](https://githu
 
 九个动作分别为 `set`、`off`、`fade`、`blink`、`breathe`、`pulse`、`alternate`、`orbit`、`rainbow`。颜色接受名字、Hex、RGB8、HSV/HSB 和 `@本机名字`。Pattern 存在电脑上；设备原生序列 API 仍为独立规划，当前 HTTP v1／MCP 不把主机 Pattern 部署到设备存储。
 
-从源码构建 CLI 与独立 MCP 模块要求 Go 1.25.8 或更新版本；发布产物记录实际构建工具链及固定依赖。预编译程序不需要安装 Go。源码下限反映所选依赖的要求，设备协议与基础库自身的 Go 要求不变。软件、实机 USB、安装和相机光学结果分开记录。Mac/MK2 的有限结果不代表 MK3、Linux/Windows USB 或非易失存储已通过。开发提交不等于 tag 或 Release。
+从源码构建 nb1 要求 Go 1.25.8 或更新版本；发布产物记录实际构建工具链及固定依赖。预编译程序不需要安装 Go。源码下限反映所选依赖的要求，设备协议与基础库自身的 Go 要求不变。软件、实机 USB、安装和相机光学结果分开记录。Mac/MK2 的有限结果不代表 MK3、Linux/Windows USB 或非易失存储已通过。开发提交不等于 tag 或 Release。

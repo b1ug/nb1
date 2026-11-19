@@ -40,15 +40,8 @@ func CheckSequenceDevice(input sequence.Sequence, state DeviceState) error {
 	return nil
 }
 
-func prepareSequenceJob(prepare func() (sequence.Sequence, error)) (sequence.Sequence, *record, error) {
-	if prepare == nil {
-		return sequence.Sequence{}, nil, fmt.Errorf("%w: job requires a sequence", ErrInvalid)
-	}
-	input, err := prepare()
-	if err != nil {
-		return sequence.Sequence{}, nil, err
-	}
-	input, err = sequence.Normalize(input)
+func prepareSequenceJob(input sequence.Sequence) (sequence.Sequence, *record, error) {
+	input, err := sequence.Normalize(input)
 	if err != nil {
 		return sequence.Sequence{}, nil, fmt.Errorf("%w: %v", ErrInvalid, err)
 	}

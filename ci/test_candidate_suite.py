@@ -368,7 +368,7 @@ class HostileArchiveTests(unittest.TestCase):
 RELEASE_SPEC = importlib.util.spec_from_file_location("release_suite", Path(__file__).with_name("release-suite.py"))
 RELEASE = importlib.util.module_from_spec(RELEASE_SPEC)
 RELEASE_SPEC.loader.exec_module(RELEASE)
-RELEASE_VERSION = "v0.1.0"
+RELEASE_VERSION = "v0.1.3"
 
 
 class ReleaseFixture:
@@ -386,22 +386,16 @@ class ReleaseFixture:
             path.write_bytes((name + "\n").encode())
         self.cli_input = directory / "release-cli-input"
         self.cli_input.write_bytes(b"non-executable CLI fixture")
-        self.modules = {
-            "cli": [{"Path": path, "Version": version, "Sum": "h1:fixture"} for path, version in RELEASE.FOUNDATION.items()],
-            "mcp": copy.deepcopy(MCP_MODULES)}
-        self.info = {}
-        for key, module in [("cli", SUITE.CORE), ("mcp", SUITE.MCP)]:
-            info = SUITE.build_info(build_text(module, self.target, self.modules[key]))
-            info["go_version"] = RELEASE.TOOLCHAIN
-            info["settings"]["CGO_ENABLED"] = "0" if key == "mcp" else "1"
-            flag = "main.buildVersion" if key == "mcp" else SUITE.CORE + "/config.GitSummary"
-            info["settings"]["-ldflags"] = "-X " + flag + "=" + RELEASE_VERSION
-            self.info[key] = info
+        self.modules = [{"Path": path, "Version": version, "Sum": "h1:fixture"} for path, version in RELEASE.FOUNDATION.items()]
+        self.modules.append(dict(MCP_MODULES[1]))
+        self.info = SUITE.build_info(build_text(SUITE.CORE, self.target, self.modules))
+        self.info["go_version"] = RELEASE.TOOLCHAIN
+        self.info["settings"]["CGO_ENABLED"] = "1"
+        self.info["settings"]["-ldflags"] = "-X " + SUITE.CORE + "/config.GitSummary=" + RELEASE_VERSION
         self.refresh_binary_bytes()
 
     def refresh_binary_bytes(self):
-        self.cli_input.write_bytes(b"release-fixture:" + SUITE.json_bytes(self.info["cli"]))
-        self.old.mcp.write_bytes(b"release-fixture:" + SUITE.json_bytes(self.info["mcp"]))
+        self.cli_input.write_bytes(b"release-fixture:" + SUITE.json_bytes(self.info))
 
     def dependencies(self, _binary, goos):
         if goos == "darwin":
@@ -414,11 +408,11 @@ class ReleaseFixture:
 
     def smoke(self, *_):
         return {"status": "PASS", "system_PATH_only": True, "MCP_version": RELEASE_VERSION,
-                "MCP_tools": 12, "MCP_protocol_only": True, "USB_access": False, "daemon_started": False,
+                "MCP_tools": 12, "MCP_command": ["mcp"], "MCP_protocol_only": True, "USB_access": False, "daemon_started": False,
                 "CLI_version": {"version": RELEASE_VERSION, "build": {"revision": SOURCE, "modified": "false",
                     "os": self.target["GOOS"], "arch": self.target["GOARCH"], "cgo_enabled": True}}}
 
-    def notices(self, root, modules, web=None, mcp=False):
+    def notices(self, root, modules, web=None):
         files = {"licenses/go/LICENSE": b"Go fixture license\n"}
         records = {"licenses/go/LICENSE": {"source": {"kind": "go-toolchain", "version": RELEASE.TOOLCHAIN},
                     "bytes": len(files["licenses/go/LICENSE"]), "sha256": SUITE.sha(files["licenses/go/LICENSE"])}}
@@ -437,17 +431,15 @@ class ReleaseFixture:
         return files, records
 
     def stage(self):
-        def info(_bytes, name, _root):
-            return self.info["mcp" if name.startswith("nb1-mcp") else "cli"]
         with patch.object(RELEASE.BASE, "source_identity", return_value=SOURCE), \
-                patch.object(RELEASE.BASE, "binary_build_text", side_effect=lambda data, name, root: info(data, name, root)), \
+                patch.object(RELEASE.BASE, "binary_build_text", return_value=self.info), \
                 patch.object(RELEASE.BASE, "build_info", side_effect=lambda value: value), \
-                patch.object(RELEASE, "selected_modules", side_effect=lambda root, value, mcp=False: self.modules["mcp" if mcp else "cli"]), \
+                patch.object(RELEASE, "selected_modules", return_value=self.modules), \
                 patch.object(RELEASE, "web_inventory", return_value=self.old.web), \
                 patch.object(RELEASE, "collect_notices", side_effect=self.notices), \
                 patch.object(RELEASE, "runtime_dependencies", side_effect=self.dependencies), \
                 patch.object(RELEASE, "native_smoke", side_effect=self.smoke):
-            return RELEASE.stage(self.root, self.cli_input, self.old.mcp, self.out, RELEASE_VERSION, SOURCE, self.context)
+            return RELEASE.stage(self.root, self.cli_input, self.out, RELEASE_VERSION, SOURCE, self.context)
 
 
 def refresh_release_platform(directory, value):
@@ -490,28 +482,20 @@ class ReleaseSuiteTests(unittest.TestCase):
             # exception. It is not an actual dependency or publication receipt.
             presentation = {"Path": "github.com/example/presentation/v2",
                             "Version": "v2.0.2-0.20261117000000-111111111111", "Sum": "h1:fixture"}
-            for mcp in (False, True):
-                main = {"Path": SUITE.MCP if mcp else SUITE.CORE, "Main": True,
-                        "GoVersion": "1.25.8", "Dir": str(root / "adapters/mcp" if mcp else root)}
-                selected_presentation = copy.deepcopy(presentation)
-                selected = [main, *copy.deepcopy(foundation), selected_presentation]
-                linked = copy.deepcopy(MCP_MODULES if mcp else [*foundation, presentation])
-                if mcp:
-                    selected.extend([
-                        {"Path": SUITE.CORE, "Version": "v0.0.0", "Dir": str(root),
-                         "Replace": {"Path": "../..", "Dir": str(root)}}, dict(MCP_MODULES[1])])
-                with self.subTest(mcp=mcp), patch.object(
-                        RELEASE.BASE, "command", side_effect=lambda *_: "\n".join(map(json.dumps, selected))):
-                    records = RELEASE.selected_modules(root, {"dependencies": linked}, mcp)
-                    self.assertEqual(records, sorted(linked, key=lambda item: item["Path"]))
-                    for wrong in (None, "", "1.25.0", "1.25.7", "1.25.9", "1.26.0"):
-                        with self.subTest(floor=wrong), self.assertRaisesRegex(ValueError, "source Go floor"):
-                            main["GoVersion"] = wrong
-                            RELEASE.selected_modules(root, {"dependencies": linked}, mcp)
-                    main["GoVersion"] = "1.25.8"
-                    selected_presentation["Replace"] = {"Path": "../local-presentation"}
-                    with self.assertRaises(ValueError):
-                        RELEASE.selected_modules(root, {"dependencies": linked}, mcp)
+            main = {"Path": SUITE.CORE, "Main": True, "GoVersion": "1.25.8", "Dir": str(root)}
+            selected = [main, *foundation, presentation]
+            linked = copy.deepcopy([*foundation, presentation])
+            with patch.object(RELEASE.BASE, "command", side_effect=lambda *_: "\n".join(map(json.dumps, selected))):
+                records = RELEASE.selected_modules(root, {"dependencies": linked})
+                self.assertEqual(records, sorted(linked, key=lambda item: item["Path"]))
+                for wrong in (None, "", "1.25.0", "1.25.7", "1.25.9", "1.26.0"):
+                    with self.subTest(floor=wrong), self.assertRaisesRegex(ValueError, "source Go floor"):
+                        main["GoVersion"] = wrong
+                        RELEASE.selected_modules(root, {"dependencies": linked})
+                main["GoVersion"] = "1.25.8"
+                presentation["Replace"] = {"Path": "../local-presentation"}
+                with self.assertRaises(ValueError):
+                    RELEASE.selected_modules(root, {"dependencies": linked})
 
     def test_five_native_versioned_platforms_assemble_and_rehearsal_cannot_publish(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -528,8 +512,12 @@ class ReleaseSuiteTests(unittest.TestCase):
             output = root / "release"
             manifest = RELEASE.assemble(platforms, output, RELEASE_VERSION, SOURCE)
             self.assertEqual(len(manifest["platforms"]), 5)
-            self.assertEqual(len(manifest["assets"]), 11)
-            self.assertEqual(len(list(output.iterdir())), 13)
+            expected = {"blink1-control-" + RELEASE_VERSION + ".zip"}
+            for os_name, arch in RELEASE.TARGETS:
+                suffix = ".zip" if os_name == "windows" else ".tar.gz"
+                expected.add(f"nb1-{RELEASE_VERSION}-{os_name}-{arch}{suffix}")
+            self.assertEqual(set(manifest["assets"]), expected)
+            self.assertEqual({p.name for p in output.iterdir()}, expected | {"release.json", "SHA256SUMS"})
             self.assertTrue(RELEASE.verify_release(output, RELEASE_VERSION, SOURCE)["release"])
             with self.assertRaisesRegex(ValueError, "rehearsal cannot publish"):
                 RELEASE.verify_release(output, RELEASE_VERSION, SOURCE, publish=True)
@@ -565,22 +553,26 @@ class ReleaseSuiteTests(unittest.TestCase):
     def test_dev_wrong_source_cgo_toolchain_and_foundation_are_rejected(self):
         with tempfile.TemporaryDirectory() as temporary:
             fixture = ReleaseFixture(Path(temporary))
-            original = fixture.info["cli"]
+            original = fixture.info
             for field, value in [("-ldflags", "-X github.com/b1ug/nb1/config.GitSummary=dev"),
                                  ("vcs.modified", "true"), ("vcs.revision", "2" * 40), ("CGO_ENABLED", "0")]:
                 changed = copy.deepcopy(original); changed["settings"][field] = value
                 with self.subTest(field=field), self.assertRaises(ValueError):
-                    RELEASE.check_binary(changed, fixture.modules["cli"], RELEASE_VERSION, SOURCE, fixture.target)
+                    RELEASE.check_binary(changed, fixture.modules, RELEASE_VERSION, SOURCE, fixture.target)
             changed = copy.deepcopy(original); changed["go_version"] = "go1.27.3"
-            with self.assertRaises(ValueError): RELEASE.check_binary(changed, fixture.modules["cli"], RELEASE_VERSION, SOURCE, fixture.target)
-            modules = copy.deepcopy(fixture.modules["cli"]); modules[0]["Version"] = "v0.0.0-local"
+            with self.assertRaises(ValueError): RELEASE.check_binary(changed, fixture.modules, RELEASE_VERSION, SOURCE, fixture.target)
+            without_sdk = [module for module in fixture.modules if module["Path"] != SUITE.MCP_SDK]
+            changed = {**original, "dependencies": without_sdk}
+            with self.assertRaisesRegex(ValueError, "integrated MCP SDK missing"):
+                RELEASE.check_binary(changed, without_sdk, RELEASE_VERSION, SOURCE, fixture.target)
+            modules = copy.deepcopy(fixture.modules); modules[0]["Version"] = "v0.0.0-local"
             changed = copy.deepcopy(original); changed["dependencies"] = modules
             with self.assertRaises(ValueError): RELEASE.check_binary(changed, modules, RELEASE_VERSION, SOURCE, fixture.target)
 
     def test_trimpath_without_ldflags_still_requires_real_native_version_evidence(self):
         with tempfile.TemporaryDirectory() as temporary:
             fixture = ReleaseFixture(Path(temporary))
-            for info in fixture.info.values(): info["settings"].pop("-ldflags")
+            fixture.info["settings"].pop("-ldflags")
             fixture.refresh_binary_bytes()
             value = fixture.stage()
             self.assertEqual(value["runtime"]["CLI_version"]["version"], RELEASE_VERSION)
@@ -595,6 +587,7 @@ class ReleaseSuiteTests(unittest.TestCase):
             for mutate in [lambda v: v.update(release=False),
                            lambda v: v["runtime"].update(system_PATH_only=False),
                            lambda v: v["runtime"].update(MCP_version="1.0.0-dev"),
+                           lambda v: v["runtime"].update(MCP_command=["nb1-mcp"]),
                            lambda v: v["runtime"].update(extracted_archives=False),
                            lambda v: v["runtime"]["CLI_version"]["build"].update(revision="2" * 40)]:
                 changed = copy.deepcopy(value); mutate(changed); refresh_release_platform(fixture.out, changed)
@@ -606,15 +599,15 @@ class ReleaseSuiteTests(unittest.TestCase):
     def test_offline_verifier_reinspects_rehashed_binary_bytes_and_rejects_identity_drift(self):
         with tempfile.TemporaryDirectory() as temporary:
             fixture = ReleaseFixture(Path(temporary)); original = fixture.stage()
-            record = original["components"]["mcp"]
+            record = original["components"]["cli"]
             content = SUITE.read_archive((fixture.out / record["archive"]).read_bytes(), set(record["files"]), record["binary"])
             alternatives = [b"harmless text without Go build information"]
             for field, wrong in [("vcs.revision", "2" * 40), ("GOARCH", "amd64")]:
-                info = copy.deepcopy(fixture.info["mcp"]); info["settings"][field] = wrong
+                info = copy.deepcopy(fixture.info); info["settings"][field] = wrong
                 alternatives.append(b"release-fixture:" + SUITE.json_bytes(info))
             for replacement in alternatives:
                 with self.subTest(replacement=replacement[:50]):
-                    value = copy.deepcopy(original); item = value["components"]["mcp"]
+                    value = copy.deepcopy(original); item = value["components"]["cli"]
                     changed = dict(content); changed[item["binary"]] = replacement
                     changed["SHA256SUMS"] = SUITE.checksums({n: b for n, b in changed.items() if n != "SHA256SUMS"})
                     archive = SUITE.archive_bytes(changed, item["binary"])
@@ -645,11 +638,11 @@ class ReleaseSuiteTests(unittest.TestCase):
         self.inspection.stop()
         with tempfile.TemporaryDirectory() as temporary:
             fixture = ReleaseFixture(Path(temporary))
-            text = build_text(SUITE.MCP, fixture.target, fixture.modules["mcp"])
+            text = build_text(SUITE.CORE, fixture.target, fixture.modules)
             with patch.object(RELEASE.BASE, "binary_build_text", return_value=text) as reader:
-                value = RELEASE.archived_build_info(b"foreign executable bytes", "nb1-mcp.exe")
-            self.assertEqual(value["module"], SUITE.MCP)
-            self.assertEqual(reader.call_args.args[:2], (b"foreign executable bytes", "nb1-mcp.exe"))
+                value = RELEASE.archived_build_info(b"foreign executable bytes", "nb1.exe")
+            self.assertEqual(value["module"], SUITE.CORE)
+            self.assertEqual(reader.call_args.args[:2], (b"foreign executable bytes", "nb1.exe"))
 
     def test_native_dependencies_distinguish_system_runtime_and_static_elf(self):
         valid = {"kind": "elf", "linkage": "static", "glibc_versions": [], "required_glibc_from_binary": None,

@@ -40,6 +40,7 @@ type ErrorResponse struct {
 type handler struct {
 	service      control.Service
 	sequenceAPI  bool
+	routing      *sequenceRouting
 	library      *libraryv1.Store
 	patterns     PatternStore
 	patternPath  string

@@ -16,7 +16,7 @@ HTTP POST /v1/preview compiles action, sequence or pattern_id without playing. P
 
 Preview is optional, not a prerequisite for playback or Pattern saving. When playback is requested, run the validated expression directly and track its Job.
 
-Local stdio runs through nb1 mcp or nb1-mcp. Its --endpoint defaults to http://127.0.0.1:5885. Supply --token-file when the local API requires a token. From another machine, connect the MCP client to the configured HTTPS /mcp URL with its Bearer token. The HTTP CLI can read profile server.listen. All transports share the daemon that owns the device. If the chosen daemon is unavailable, keep the original target for recovery.
+Local stdio runs through the installed executable with nb1 mcp. Its --endpoint defaults to http://127.0.0.1:5885. Supply --token-file when the local API requires a token. From another machine, connect the MCP client to the configured HTTPS /mcp URL with its Bearer token. The HTTP CLI can read profile server.listen. All transports share the daemon that owns the device. If the chosen daemon is unavailable, keep the original target for recovery.
 
 For daemon submissions, preserve endpoint, serial, input and Job ID. Omitted or empty IDs use j_ plus ten random Base32 characters. HTTP CLI and MCP generate IDs before sending. Accepted is not completed: query the original Job until terminal. HTTP client timeout or MCP closure does not cancel an accepted Job. On uncertainty, query the same ID without replaying. A missing record cannot prove nothing executed.
 

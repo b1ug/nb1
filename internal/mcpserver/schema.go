@@ -15,9 +15,9 @@ func makeToolSpecifications() []*mcp.Tool {
 		newTool("get_device_state", "Read a device's cached RGB observation and sampled_at timestamp.", object(map[string]any{"serial": serialSchema()}, "serial"), true, true),
 		newTool("resolve_color", "Resolve a hex color, name, RGB8/HSV object or @local-name through the daemon. Returns an exact lowercase Hex6 color.", object(map[string]any{"color": colorSchema()}, "color"), true, true),
 		newTool("preview_light", "Preview exactly one Action, Sequence or saved pattern_id. Returns the normalized Sequence, duration, step count and device capability check. Optional serial selects a cached device profile.", authorSchema(true, false), true, true),
-		newTool("run_light", "Submit exactly one Action, Sequence or saved pattern_id once. The adapter generates a short Job ID when id is omitted or empty. Returns a Job, which can still be running. Preserve the returned ID and endpoint and use get_job after an unknown outcome.", authorSchema(true, true), false, false),
+		newTool("run_light", "Submit exactly one Action, Sequence, saved pattern_id or trigger once. Set serial for a specific device. Omit serial to use routing on a daemon that supports it. Preserve the returned Job ID and endpoint and use get_job after an unknown outcome.", authorSchema(true, true), false, false),
 		newTool("get_job", "Read the original Job by ID. Missing records may have expired or belong to an earlier daemon lifetime.", object(map[string]any{"id": idSchema()}, "id"), true, true),
-		newTool("cancel_job", "Request cancellation of a Job by ID. A cancelling result requires get_job polling until cleanup reaches a terminal state.", object(map[string]any{"id": idSchema()}, "id"), false, true),
+		newTool("cancel_job", "Request cancellation of a Job by ID. Include the accepted serial to require device matching on a daemon that supports guarded cancellation. A cancelling result requires get_job polling until cleanup reaches a terminal state.", object(map[string]any{"id": idSchema(), "serial": serialSchema()}, "id"), false, true),
 		newTool("list_colors", "List locally saved color names and exact lowercase Hex6 values.", object(nil), true, true),
 		newTool("save_color", "Resolve and save a local named color. Names start with a lowercase letter and contain up to 32 lowercase letters, digits or hyphens. Existing names are replaced.", object(map[string]any{"name": map[string]any{"type": "string", "pattern": "^[a-z][a-z0-9-]{0,31}$"}, "color": colorSchema()}, "name", "color"), false, false),
 		newTool("list_patterns", "List locally saved Pattern ID and title summaries.", object(nil), true, true),
@@ -88,7 +88,8 @@ func authorSchema(pattern, run bool) map[string]any {
 		choices = append(choices, map[string]any{"required": []string{"pattern_id"}})
 		if run {
 			properties["id"] = map[string]any{"type": "string", "pattern": "^[A-Za-z0-9_-]{0,64}$", "description": "Omit or use an empty string to generate j_ plus ten Crockford Base32 characters."}
-			required = []string{"serial"}
+			properties["trigger"] = map[string]any{"type": "string", "pattern": "^[a-z][a-z0-9.-]{0,63}$"}
+			choices = append(choices, map[string]any{"required": []string{"trigger"}})
 		}
 	} else {
 		properties["id"] = idSchema()

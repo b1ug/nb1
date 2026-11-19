@@ -38,7 +38,7 @@ Homebrew 构建在链接时绑定 `opt/nb1/bin/nb1` 和 canonical `Cellar/nb1`�
 
 `check_upgrade_service.py` 用真实Git归档和本地候选tap依次验证安装、升级、删除旧keg、重启、回滚与清理。available模式要求普通用户和可信独立CLI，拒绝覆盖现有包及用户服务；核对实际进程可执行文件及未被重写的服务定义。unavailable模式只验普通Linux容器的受控失败与前台daemon，不能替代真实systemd验收。专门Actions工作流另跑真实用户manager。
 
-每次新发版仍需选择真实tag/归档与包布局，并在远程tap发布前保留平台验收；MCP是独立module，当前配方不捆绑。Windows分发和服务管理、Linux USB与登录/重启均有独立边界。源码说明不代替平台验收收据。
+每次新发版仍需选择真实tag/归档与包布局，并在远程tap发布前保留平台验收；从 v0.1.3 起，同一可执行文件通过 `nb1 mcp` 提供本机 stdio。Windows分发和服务管理、Linux USB与登录/重启均有独立边界。源码说明不代替平台验收收据。
 
 ## 本地离线检查
 

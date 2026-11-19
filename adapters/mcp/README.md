@@ -2,25 +2,22 @@
 
 The adapter exposes the nb1 API v1 through the official [Go MCP SDK](https://github.com/modelcontextprotocol/go-sdk), using JSON-RPC over stdio. It connects to a running local nb1 daemon over HTTP. The daemon selects devices, compiles Actions, executes Sequences, and stores local colors and Patterns.
 
-For a prebuilt release, follow the [installation guide](../../docs/install.md). Development artifacts use the separate [matching candidate guide](../../docs/candidate-install.md#add-mcp-or-the-skill-independently). The separate `nb1-mcp` download and the `nb1 mcp` subcommand both serve stdio. For an agent on another machine, enable Streamable HTTP in the daemon and give the client the HTTPS `/mcp` URL and Bearer token. Both transports expose the same twelve tools. [Remote setup](../../docs/remote-access.md)
+The v0.1.3 platform archive includes MCP in the `nb1` executable. For local stdio, configure the client to launch the executable with `mcp` as its first argument. If upgrading from a v0.1.2 `nb1-mcp` configuration, keep any existing flags after that argument. [Client setup and migration](../../docs/install.md#connect-a-local-mcp-client)
+
+An agent on another machine can connect directly to the daemon’s HTTPS `/mcp` endpoint with a Bearer token. Both transports expose the same twelve tools. [Remote setup](../../docs/remote-access.md)
 
 ## Build and run
 
-Use a complete nb1 source checkout and Go 1.25.8 or newer.
+Build nb1 in the repository root with Go 1.25.8 or newer.
 
 ```sh
-cd adapters/mcp
-GOWORK=off go build -o nb1-mcp .
-./nb1-mcp --endpoint http://127.0.0.1:5885 --timeout 10s
+GOWORK=off go build -o nb1 .
+./nb1 mcp --endpoint http://127.0.0.1:5885 --timeout 10s
 ```
 
-Configure an MCP host to launch that executable with those arguments. Stdout carries MCP protocol messages. Diagnostics go to stderr. The default endpoint is `http://127.0.0.1:5885`; endpoint validation accepts loopback HTTP origins. For a daemon still listening on the v0.1.2 default, pass `--endpoint http://127.0.0.1:8931` to the adapter.
+Stdout carries MCP protocol messages and stderr carries diagnostics. The endpoint defaults to `http://127.0.0.1:5885`. For a daemon on the v0.1.2 default port, pass `--endpoint http://127.0.0.1:8931`. When the daemon sets `server.local_token_file`, pass `--token-file PATH`.
 
-If the daemon sets `server.local_token_file`, pass `--token-file PATH` to the stdio launcher. An MCP client connecting over HTTPS sends the remote token in its Authorization header.
-
-The SDK is pinned to `github.com/modelcontextprotocol/go-sdk v1.8.0`. This nested module declares Go 1.25.8 to match the core module's requirement. Its `github.com/b1ug/nb1 v0.0.0` requirement is replaced by `../..`, allowing the adapter to share the exact core client, strict input validation, and Job ID generator in the same checkout. Building the nested module in isolation requires that root source directory. A standalone module publication will need a published matching core dependency and removal of the relative replacement. Release binaries can be built from a complete, versioned checkout.
-
-The MCP initialize response reports the version of the serving executable. Release packaging embeds the tag in the separate `nb1-mcp` launcher through `-X main.buildVersion`. The `nb1 mcp` subcommand and HTTPS listener report the main executable's build version.
+The implementation uses the official `github.com/modelcontextprotocol/go-sdk v1.8.0`. Both stdio and HTTPS report the main executable’s version during initialization. Source consumers of the previous `nb1-mcp` name can build the compatibility launcher in this directory from a complete checkout. Historical downloads are available with the [v0.1.2 release](https://github.com/b1ug/nb1/releases/tag/v0.1.2).
 
 ## Tools
 
@@ -30,9 +27,9 @@ The MCP initialize response reports the version of the serving executable. Relea
 | `get_device_state` | `serial` | `GET /v1/devices/{serial}` |
 | `resolve_color` | `color` | `POST /v1/colors/resolve` |
 | `preview_light` | One of `action`, `sequence`, `pattern_id`; optional `serial` | `POST /v1/preview` |
-| `run_light` | `serial`, one of `action`, `sequence`, `pattern_id`; optional `id` | `POST /v1/jobs` |
+| `run_light` | One of `action`, `sequence`, `pattern_id`, `trigger`; optional `id` and `serial` on a matching candidate daemon | `POST /v1/jobs` |
 | `get_job` | `id` | `GET /v1/jobs/{id}` |
-| `cancel_job` | `id` | `POST /v1/jobs/{id}/cancel` |
+| `cancel_job` | `id`, optional `serial` | `POST /v1/jobs/{id}/cancel`, with `?serial=…` for candidate device-guarded cancellation |
 | `list_colors` | `{}` | `GET /v1/colors` |
 | `save_color` | `name`, `color` | `PUT /v1/colors/{name}` |
 | `list_patterns` | `{}` | `GET /v1/patterns` |
@@ -44,6 +41,8 @@ Tool schemas describe the same Action kinds, Sequence timing rules, and color fo
 Examples below show the arguments supplied to `tools/call`.
 
 Preview is optional. `run_light` validates and submits the expression directly; it does not require a prior `preview_light` call. Use preview when you want to inspect the plan without playback.
+
+With the routing candidate, `{"trigger":"build.done"}` resolves through the daemon’s local mapping. The Job returns its final serial and the optional `target_source`. Provide an explicit serial with the published v0.1.2 daemon. [Candidate routing examples](../../docs/trigger-routing.md).
 
 ```json
 {"name":"preview_light","arguments":{"action":{"kind":"blink","color":"lime","cycles":2}}}
@@ -86,6 +85,11 @@ Each tool returns matching JSON in `structuredContent` and its text fallback. Th
 `run_light` sends one submission. An omitted or empty `id` generates `j_` followed by ten random Crockford Base32 characters before that submission. Callers can supply their own ID before running a task. A lost or malformed acceptance response returns `isError:true`, the original ID and endpoint, and `error.outcome_unknown:true`. Use `get_job` for that same ID on that same endpoint. The adapter performs no submission retry.
 
 A definite API rejection preserves its error code and HTTP status. HTTP timeouts and MCP session closure leave accepted daemon Jobs under daemon control. Cancellation is a separate `cancel_job` operation; inspect `get_job` while status is `cancelling`.
+
+For guarded cancellation, send the accepted Job's `id` and `serial` to the same
+daemon. A different device returns `409 job_target_mismatch` without modifying
+the Job. Older daemons reject the query, and the adapter preserves that response
+without retrying the request.
 
 Successful tool transport does not establish a successful lighting task. Inspect `data.status` for `queued`, `running`, `cancelling`, `succeeded`, `cancelled` or `failed`. Job deduplication applies during active execution and the retained terminal record's lifetime. Terminal records default to a thirty-minute expiration and 16,384-entry LRU retention. The daemon can configure these startup limits through `jobs.terminal_ttl` and `jobs.terminal_limit`; capacity eviction can occur before the TTL, and daemon restart clears memory. An unavailable record leaves the earlier execution outcome unresolved.
 

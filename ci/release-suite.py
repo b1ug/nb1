@@ -87,29 +87,25 @@ def check_context(value, version, source):
 def names(version, target):
     suffix = version + "-" + target["GOOS"] + "-" + target["GOARCH"]
     extension = ".zip" if target["GOOS"] == "windows" else ".tar.gz"
-    return {"cli": "nb1-" + suffix + extension, "mcp": "nb1-mcp-" + suffix + extension,
+    return {"cli": "nb1-" + suffix + extension,
             "skill": "blink1-control-" + version + ".zip"}
 
 
-def selected_modules(root, info, mcp=False):
-    cwd = root / "adapters/mcp" if mcp else root
-    values = BASE.documents(BASE.command(["go", "list", "-mod=readonly", "-m", "-json", "all"], cwd))
+def selected_modules(root, info):
+    values = BASE.documents(BASE.command(["go", "list", "-mod=readonly", "-m", "-json", "all"], root))
     selected = {v["Path"]: v for v in values}
-    main = selected.get(BASE.MCP if mcp else BASE.CORE, {})
+    main = selected.get(BASE.CORE, {})
     require(main.get("Main") and main.get("GoVersion") == SOURCE_GO_FLOOR, "release source Go floor differs")
     for path, version in FOUNDATION.items():
         require(selected.get(path, {}).get("Version") == version and not selected[path].get("Replace"),
                 "release requires the fixed public foundation versions")
     linked = {v["Path"] for v in info["dependencies"]}
-    if mcp:
-        records = BASE.module_records(values, root, linked)
-    else:
-        require(len([v for v in values if v.get("Main")]) == 1 and selected[BASE.CORE].get("Main"), "invalid root module")
-        require(all(not v.get("Replace") for v in values), "CLI module graph contains a replacement")
-        records = [{key: selected[path].get(key, "") for key in ("Path", "Version", "Sum")} for path in sorted(linked)]
-        require(all(v["Version"] and v["Sum"] for v in records), "linked public modules require checksums")
-        require({v["Path"]: v for v in records} == {v["Path"]: v for v in info["dependencies"]},
-                "binary modules do not match source selection")
+    require(len([v for v in values if v.get("Main")]) == 1 and selected[BASE.CORE].get("Main"), "invalid root module")
+    require(all(not v.get("Replace") for v in values), "CLI module graph contains a replacement")
+    records = [{key: selected[path].get(key, "") for key in ("Path", "Version", "Sum")} for path in sorted(linked)]
+    require(all(v["Version"] and v["Sum"] for v in records), "linked public modules require checksums")
+    require({v["Path"]: v for v in records} == {v["Path"]: v for v in info["dependencies"]},
+            "binary modules do not match source selection")
     return records
 
 
@@ -128,23 +124,21 @@ def linker_value(info, key):
     return values[0]
 
 
-def check_binary(info, modules, version, source, target, mcp=False):
-    BASE.check_identity(info, BASE.MCP if mcp else BASE.CORE, source, target)
+def check_binary(info, modules, version, source, target):
+    BASE.check_identity(info, BASE.CORE, source, target)
     require(info["go_version"] == TOOLCHAIN, "unexpected release toolchain")
-    require(info["settings"]["CGO_ENABLED"] == ("0" if mcp else "1"), "unexpected native backend selection")
-    key = "main.buildVersion" if mcp else BASE.CORE + "/config.GitSummary"
+    require(info["settings"]["CGO_ENABLED"] == "1", "unexpected native backend selection")
+    key = BASE.CORE + "/config.GitSummary"
     # Go may omit -ldflags from build info under -trimpath. The mandatory
     # extracted native CLI JSON and MCP initialization below verify the actual
     # version in those exact hashed bytes, rather than assuming flag retention.
     if "-ldflags" in info["settings"]:
         require(linker_value(info, key) == version, "linked release version differs")
-    if mcp:
-        BASE.check_mcp(info, modules, source, target)
-    else:
-        require(all("Replace" not in v for v in modules), "CLI replacement is not public release provenance")
-        require({v["Path"]: v for v in modules} == {v["Path"]: v for v in info["dependencies"]}, "CLI modules differ")
-        linked = {v["Path"]: v["Version"] for v in modules}
-        require(all(linked.get(p) == v for p, v in FOUNDATION.items()), "wrong foundation version")
+    require(all("Replace" not in v for v in modules), "CLI replacement is not public release provenance")
+    require({v["Path"]: v for v in modules} == {v["Path"]: v for v in info["dependencies"]}, "CLI modules differ")
+    linked = {v["Path"]: v["Version"] for v in modules}
+    require(all(linked.get(p) == v for p, v in FOUNDATION.items()), "wrong foundation version")
+    require(BASE.MCP_SDK in linked, "integrated MCP SDK missing from nb1")
 
 
 def archived_build_info(data, name):
@@ -187,17 +181,16 @@ def notice_prefix(module, source):
     return prefix
 
 
-def collect_notices(root, modules, web=None, mcp=False):
+def collect_notices(root, modules, web=None):
     """Copy original top-level notices from the exact linked module selection."""
-    cwd = root / "adapters/mcp" if mcp else root
-    selected = {v["Path"]: v for v in BASE.documents(BASE.command(["go", "list", "-mod=readonly", "-m", "-json", "all"], cwd))}
+    selected = {v["Path"]: v for v in BASE.documents(BASE.command(["go", "list", "-mod=readonly", "-m", "-json", "all"], root))}
     source = BASE.source_identity(root)
     files, records = {}, {}
     def add(path, data, origin):
         require(path not in files, "duplicate notice path")
         files[path] = data
         records[path] = {"source": origin, "bytes": len(data), "sha256": BASE.sha(data)}
-    goroot = Path(BASE.command(["go", "env", "GOROOT"], cwd).strip())
+    goroot = Path(BASE.command(["go", "env", "GOROOT"], root).strip())
     add("licenses/go/LICENSE", BASE.regular_bytes(goroot / "LICENSE", BASE.JSON_BYTES),
         {"kind": "go-toolchain", "version": TOOLCHAIN})
     for module in modules:
@@ -387,7 +380,7 @@ def restricted_environment(goos, config_root):
     return env
 
 
-def native_smoke(cli, mcp, version, source, target):
+def native_smoke(cli, version, source, target):
     with tempfile.TemporaryDirectory(prefix="nb1-release-smoke-") as temporary:
         scratch = Path(temporary)
         config = scratch / "config.yaml"
@@ -411,69 +404,71 @@ def native_smoke(cli, mcp, version, source, target):
         try:
             os.environ.clear(); os.environ.update(env)
             report = {}
-            MCP_SMOKE.smoke(mcp, report, time.monotonic())
+            MCP_SMOKE.smoke(cli, report, time.monotonic(), subcommand=("mcp",))
         finally:
             os.environ.clear(); os.environ.update(old_env)
         require(report["initialize"]["server_info"]["version"] == version, "MCP serverInfo release version differs")
         require(config.read_text() == "{}\n", "release smoke changed the private profile")
         return {"status": "PASS", "system_PATH_only": True, "CLI_version": value,
                 "CLI_help": helps, "MCP_version": report["initialize"]["server_info"]["version"],
-                "MCP_tools": len(report["tools"]), "MCP_protocol_only": report["stdout_protocol_only"],
+                "MCP_command": ["mcp"], "MCP_tools": len(report["tools"]), "MCP_protocol_only": report["stdout_protocol_only"],
                 "USB_access": False, "daemon_started": False}
 
 
-def readme(component, version):
-    if component == "cli":
-        text = f"""# nb1 {version}\n\nThe CLI, foreground server and bilingual Web debugger are in this executable.\nVerify the matching release.json and SHA256SUMS from the published GitHub release.\nA workflow rehearsal is not a published release. No Node server is needed.\n\nRun nb1 version --json, then nb1 list to find your device.\nStart nb1 server --devices YOUR_SERIAL and open http://127.0.0.1:5885/demo/.\nPreview is optional; Play explicitly controls the lamp.\nInstalling or unpacking does not start a daemon or register a service.\n\nWindows uses nb1.exe; automatic Windows service management is not included.\nFull guide: https://github.com/b1ug/nb1/blob/{version}/docs/install.md\n"""
-    else:
-        text = f"""# nb1 MCP {version}\n\nThis matching optional stdio adapter calls an explicitly started nb1 daemon over HTTP.\nRun nb1-mcp --endpoint http://127.0.0.1:5885 --timeout 10s.\nWindows uses nb1-mcp.exe. Stdout is reserved for JSON-RPC.\nIt never opens USB, executes the CLI, starts a daemon or installs itself.\nPreview is optional. Keep accepted Job IDs when responses are lost.\nCheck the matching published release.json and SHA256SUMS.\n"""
+def readme(version):
+    text = f"""# nb1 {version}
+
+Verify release.json and SHA256SUMS, then unpack the archive into a new directory.
+Run nb1 version --json and nb1 list. Start nb1 server --devices YOUR_SERIAL
+and open http://127.0.0.1:5885/demo/ for the embedded debugger.
+
+For an MCP client on this computer, set the executable to the absolute nb1
+path and put mcp first in the arguments, followed by any --endpoint or
+--token-file settings. The default daemon endpoint is http://127.0.0.1:5885.
+Windows uses nb1.exe for the same commands.
+
+Installation leaves daemon startup and service registration under your control.
+Full guide: https://github.com/b1ug/nb1/blob/{version}/docs/install.md
+"""
     return text.encode()
 
 
-def stage(root, cli, mcp, output, version, source, build_context):
+def stage(root, cli, output, version, source, build_context):
     identity(version, source); check_context(build_context, version, source)
     root = Path(root).resolve(strict=True); output = Path(output)
     require(not output.exists() and not output.is_symlink(), "output must be new")
     require(not output.resolve().is_relative_to(root), "release output must be outside source")
     require(BASE.source_identity(root) == source, "source checkout differs")
-    data = {"cli": BASE.regular_bytes(Path(cli)), "mcp": BASE.regular_bytes(Path(mcp))}
-    infos = {key: BASE.build_info(BASE.binary_build_text(value, "nb1" if key == "cli" else "nb1-mcp", root))
-             for key, value in data.items()}
-    target = {key: infos["cli"]["settings"][key] for key in ("GOOS", "GOARCH")}
+    data = BASE.regular_bytes(Path(cli))
+    info = BASE.build_info(BASE.binary_build_text(data, "nb1", root))
+    target = {key: info["settings"][key] for key in ("GOOS", "GOARCH")}
     require(tuple(target.values()) in TARGETS, "unsupported native release target")
-    modules = {key: selected_modules(root, info, key == "mcp") for key, info in infos.items()}
-    for key in infos:
-        check_binary(infos[key], modules[key], version, source, target, key == "mcp")
+    modules = selected_modules(root, info)
+    check_binary(info, modules, version, source, target)
     web = web_inventory(root)
     license_text = BASE.regular_bytes(root / "LICENSE")
-    archive_names = names(version, target); files = {}; components = {}
+    archive_names = names(version, target)
     windows = target["GOOS"] == "windows"
-    # Inspect and run the exact bytes in isolated directories, not mutable build paths.
+    binary = "nb1.exe" if windows else "nb1"
     with tempfile.TemporaryDirectory(prefix="nb1-release-native-") as temporary:
-        scratch = Path(temporary)
-        binaries = {}
-        for key in data:
-            directory = scratch / key; directory.mkdir()
-            name = ("nb1" if key == "cli" else "nb1-mcp") + (".exe" if windows else "")
-            path = directory / name; path.write_bytes(data[key]); path.chmod(0o755); binaries[key] = path
-        deps = {key: runtime_dependencies(path, target["GOOS"]) for key, path in binaries.items()}
-    for key in data:
-        binary = ("nb1" if key == "cli" else "nb1-mcp") + (".exe" if windows else "")
-        licenses, license_records = collect_notices(root, modules[key], web if key == "cli" else None, key == "mcp")
-        check_notices(license_records, modules[key], source, web if key == "cli" else None)
-        build = {"schema_version": 1, "artifact_kind": "nb1-release-component", "release": True,
-                 "version": version, "source": source, "target": target, "build_info": infos[key],
-                 "modules": modules[key], "embedded_web": web if key == "cli" else None,
-                 "native_dependencies": deps[key], "licenses": license_records, "build_context": build_context, "scope": SCOPE}
-        content = {binary: data[key], "LICENSE": license_text, "README.md": readme(key, version),
-                   "build.json": BASE.json_bytes(build)}
-        content.update(licenses)
-        content["SHA256SUMS"] = BASE.checksums(content)
-        archive = BASE.archive_bytes(content, binary, windows)
-        files[archive_names[key]] = archive
-        components[key] = {"archive": archive_names[key], "sha256": BASE.sha(archive), "binary": binary,
-                           "binary_sha256": BASE.sha(data[key]), "build": build,
-                           "files": {name: BASE.sha(value) for name, value in content.items()}}
+        executable = Path(temporary) / binary
+        executable.write_bytes(data)
+        executable.chmod(0o755)
+        deps = runtime_dependencies(executable, target["GOOS"])
+    licenses, license_records = collect_notices(root, modules, web)
+    check_notices(license_records, modules, source, web)
+    build = {"schema_version": 1, "artifact_kind": "nb1-release-component", "release": True,
+             "version": version, "source": source, "target": target, "build_info": info,
+             "modules": modules, "embedded_web": web, "native_dependencies": deps,
+             "licenses": license_records, "build_context": build_context, "scope": SCOPE}
+    content = {binary: data, "LICENSE": license_text, "README.md": readme(version),
+               "build.json": BASE.json_bytes(build), **licenses}
+    content["SHA256SUMS"] = BASE.checksums(content)
+    archive = BASE.archive_bytes(content, binary, windows)
+    files = {archive_names["cli"]: archive}
+    components = {"cli": {"archive": archive_names["cli"], "sha256": BASE.sha(archive),
+                          "binary": binary, "binary_sha256": BASE.sha(data), "build": build,
+                          "files": {name: BASE.sha(value) for name, value in content.items()}}}
     skill_root = root / "skills/blink1-control"
     require(not skill_root.is_symlink() and not any(p.is_symlink() for p in skill_root.rglob('*')), "symlink in Skill")
     skill = {p.relative_to(skill_root).as_posix(): BASE.regular_bytes(p, BASE.JSON_BYTES) for p in skill_root.rglob('*') if p.is_file()}
@@ -483,15 +478,14 @@ def stage(root, cli, mcp, output, version, source, build_context):
     components["skill"] = {"archive": archive_names["skill"], "sha256": BASE.sha(files[archive_names["skill"]]),
                            "files": {name: BASE.sha(value) for name, value in skill.items()}}
     with tempfile.TemporaryDirectory(prefix="nb1-release-extracted-") as temporary:
-        scratch = Path(temporary); binaries = {}
-        for key in ("cli", "mcp"):
-            record = components[key]; directory = scratch / key; directory.mkdir()
-            content = BASE.read_archive(files[record["archive"]], set(record["files"]), record["binary"], windows)
-            for name, value in content.items():
-                path = directory / name; path.parent.mkdir(parents=True, exist_ok=True); path.write_bytes(value)
-                path.chmod(0o755 if name == record["binary"] else 0o644)
-            binaries[key] = directory / record["binary"]
-        runtime = native_smoke(binaries["cli"], binaries["mcp"], version, source, target)
+        scratch = Path(temporary)
+        extracted = BASE.read_archive(archive, set(content), binary, windows)
+        for name, value in extracted.items():
+            path = scratch / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(value)
+            path.chmod(0o755 if name == binary else 0o644)
+        runtime = native_smoke(scratch / binary, version, source, target)
         runtime["extracted_archives"] = True
     platform = {"schema_version": 1, "artifact_kind": "nb1-release-platform", "release": True,
                 "version": version, "source": source, "target": target, "embedded_web": web,
@@ -523,6 +517,7 @@ def verify_platform(directory, version, source):
     require(BASE.regular_bytes(directory / "SHA256SUMS") == BASE.checksums(outer), "platform checksums differ")
     require(value["runtime"]["status"] == "PASS" and value["runtime"]["system_PATH_only"] is True
             and value["runtime"]["extracted_archives"] is True and value["runtime"]["MCP_tools"] == 12
+            and value["runtime"].get("MCP_command") == ["mcp"]
             and value["runtime"]["MCP_protocol_only"] is True and value["runtime"]["MCP_version"] == version
             and value["runtime"]["USB_access"] is False and value["runtime"]["daemon_started"] is False
             and value["runtime"]["CLI_version"]["version"] == version
@@ -543,7 +538,7 @@ def verify_platform(directory, version, source):
             component_licenses.append(content["LICENSE"])
         else:
             require(set(record) == {"archive", "sha256", "binary", "binary_sha256", "build", "files"}, "component fields differ")
-            binary = ("nb1" if key == "cli" else "nb1-mcp") + (".exe" if value["target"]["GOOS"] == "windows" else "")
+            binary = "nb1.exe" if value["target"]["GOOS"] == "windows" else "nb1"
             expected_files = {binary, "LICENSE", "README.md", "build.json", "SHA256SUMS"}
             expected_files |= set(record["build"].get("licenses", {}))
             require(record["binary"] == binary and expected == expected_files, "component inventory differs")
@@ -556,20 +551,20 @@ def verify_platform(directory, version, source):
                     and build["scope"] == SCOPE and build == record["build"] and build["version"] == version and build["source"] == source
                     and build["release"] is True and build["target"] == value["target"]
                     and build["build_context"] == value["build_context"]
-                    and build["embedded_web"] == (value["embedded_web"] if key == "cli" else None), "component provenance differs")
+                    and build["embedded_web"] == value["embedded_web"], "component provenance differs")
             actual_info = archived_build_info(content[binary], binary)
             require(actual_info == build["build_info"], "archived binary build info differs from manifest")
-            check_binary(actual_info, build["modules"], version, source, value["target"], key == "mcp")
+            check_binary(actual_info, build["modules"], version, source, value["target"])
             check_native_dependencies(build["native_dependencies"], value["target"]["GOOS"])
-            check_notices(build["licenses"], build["modules"], source, value["embedded_web"] if key == "cli" else None)
+            check_notices(build["licenses"], build["modules"], source, value["embedded_web"])
             require(all(record == {"source": record["source"], "bytes": len(content[name]), "sha256": BASE.sha(content[name])}
                         for name, record in build["licenses"].items()), "notice content differs from original hash record")
-            require(content["README.md"] == readme(key, version), "component instructions differ")
+            require(content["README.md"] == readme(version), "component instructions differ")
             component_licenses.append(content["LICENSE"])
             require(content["SHA256SUMS"] == BASE.checksums({n: b for n, b in content.items() if n != "SHA256SUMS"}),
                     "inner component checksums differ")
         require({n: BASE.sha(b) for n, b in content.items()} == record["files"], "archive file hashes differ")
-    require(len(component_licenses) == 3 and all(data == component_licenses[0] for data in component_licenses), "component licenses differ")
+    require(len(component_licenses) == 2 and all(data == component_licenses[0] for data in component_licenses), "component licenses differ")
     return value
 
 
@@ -659,7 +654,7 @@ def main():
     c = sub.add_parser("context"); c.add_argument("--root", required=True, type=Path); c.add_argument("--output", required=True, type=Path)
     d = sub.add_parser("verify-download"); d.add_argument("--expected", required=True, type=Path); d.add_argument("--downloaded", required=True, type=Path)
     s = sub.add_parser("stage")
-    for name in ("root", "cli", "mcp", "output", "context"): s.add_argument("--" + name, required=True, type=Path)
+    for name in ("root", "cli", "output", "context"): s.add_argument("--" + name, required=True, type=Path)
     for name in ("version", "source"): s.add_argument("--" + name, required=True)
     for operation in ("verify-platform", "assemble", "verify"):
         command = sub.add_parser(operation)
@@ -677,7 +672,7 @@ def main():
                     f.write("version=" + value["version"] + "\nsource=" + value["source"] + "\npublish=" + str(value["publication_eligible"]).lower() + "\n")
         elif args.operation == "verify-download": value = verify_download(args.expected, args.downloaded)
         elif args.operation == "stage":
-            value = stage(args.root, args.cli, args.mcp, args.output, args.version, args.source, BASE.read_json(args.context.read_bytes()))
+            value = stage(args.root, args.cli, args.output, args.version, args.source, BASE.read_json(args.context.read_bytes()))
         elif args.operation == "verify-platform": value = verify_platform(args.directory, args.version, args.source)
         elif args.operation == "assemble": value = assemble(args.platform_root, args.output, args.version, args.source)
         else: value = verify_release(args.directory, args.version, args.source, args.for_publication)

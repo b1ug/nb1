@@ -7,7 +7,7 @@ description: Control blink(1) or blink1 USB indicators with nb1 through MCP, CLI
 
 Use the device and interface covered by the user's request. This Skill uses an existing installation; it does not install services, register MCP servers or change system permissions.
 
-Inspect MCP schemas with `tools/list` or check `nb1 control --help` for installed support. The CLI, embedded debugger and MCP share the daemon's compiler and workers. For local stdio, pick the daemon with `--endpoint`. For remote MCP, use the configured HTTPS `/mcp` URL and its Bearer token. Standalone WebHID tools use separate ownership. Keep the original endpoint for Job recovery. An unavailable daemon never authorizes automatic startup or USB fallback.
+Inspect MCP schemas with `tools/list` or check `nb1 control --help` for installed support. The CLI, embedded debugger and MCP share the daemon's compiler and workers. Local stdio uses `nb1 mcp`. Select a nondefault daemon with `--endpoint`. For remote MCP, use the configured HTTPS `/mcp` URL and its Bearer token. Standalone WebHID tools use separate ownership. Keep the original endpoint for Job recovery. An unavailable daemon never authorizes automatic startup or USB fallback.
 
 ## Choose and execute
 
@@ -16,11 +16,11 @@ Inspect MCP schemas with `tools/list` or check `nb1 control --help` for installe
 - A Sequence specifies exact `steps[]` with `timing: serial` or `interval`. Action colors and authored Sequence target colors accept names, Hex3/6, RGB8, HSV/HSB and local `@name` colors. The core freezes resolved colors as lowercase Hex6 in normalized plans and saved Patterns. `resolve_color` needs no device. No implicit gamma correction is applied.
 - Pattern means a reusable Sequence saved on the computer. Saving does not deploy DeviceSequence RAM, Flash or startup settings. Read [local library workflows](references/patterns.md) for alias/Pattern requests.
 
-1. For device work, use `list_devices`, select the requested configured serial, and inspect `get_device_state`. Host-only library/conversion work needs no discovery. Observations are cached: inspect `observed.sampled_at`; interval playback defers RGB polling until cleanup.
+1. For a specific light, use `list_devices`, identify the requested serial, and inspect `get_device_state`. If the user asks for a Trigger or the daemon's default, use routing only when the installed daemon supports it. Published v0.1.2 playback requires a serial. See [configured routing](references/patterns.md#triggers). Host-only library/conversion work needs no discovery. Observations are cached: inspect `observed.sampled_at`; interval playback defers RGB polling until cleanup.
 2. Preview is optional. Use `preview_light` when the user asks for a preview or inspecting an unfamiliar plan is useful; give it exactly one of `action`, `sequence` or `pattern_id`. Optional `serial` checks cached capabilities. Preview does not play or write USB and is not a prerequisite for `run_light`. Read [expressions and fields](references/expressions.md) when constructing unfamiliar input.
-3. Preserve endpoint, serial and input. Choose and record a fresh explicit Job ID before a run when recovery matters; call `run_light` once, then track it. Omitted/empty IDs are generated before submission, but are available to you only if the adapter's result arrives.
+3. Preserve the endpoint and original input, including whether it omitted `serial`. Record the accepted Job's `serial` and any `target_source` for status reporting. Choose and record a fresh explicit Job ID before a run when recovery matters; call `run_light` once, then track it. Omitted/empty IDs are generated before submission, but are available to you only if the adapter's result arrives.
 4. Check MCP `data.status`, not just successful tool transport. HTTP 202 means accepted. Use `get_job` until `succeeded`, `cancelled` or `failed`; progress counters alone do not prove cleanup finished.
-5. Use `cancel_job` for active playback and query through `cancelling` to a terminal state. `off` does not cancel another Job. Cancelling a completed `hold` does not extinguish its color; submit an explicit `off` when requested.
+5. Use `cancel_job` for active playback and query through `cancelling` to a terminal state. When the user specifies a light, pass its serial if the installed tool supports the guard. See [device-guarded cancellation](references/patterns.md#device-guarded-cancellation). `off` does not cancel another Job. Cancelling a completed `hold` does not extinguish its color; submit an explicit `off` when requested.
 
 CLI expression file (`action.json`), without serial or Job ID:
 

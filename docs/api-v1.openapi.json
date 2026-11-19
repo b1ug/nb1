@@ -4,7 +4,7 @@
   "info": {
     "title": "nb1 API v1",
     "version": "1.0.0-dev",
-    "description": "Implementation contract for this source checkout. x-source lists the original route baseline and the current implementation files. The installed local runtime has its own version and validation state. The 16 API capabilities occupy 17 HTTP operations because the valid saved-color name resolve also has a concrete PUT path. All example devices are virtual. JSON request bodies are bounded to 1 MiB. The runtime rejects duplicate fields, unknown fields, explicit null, invalid Unicode, and unsupported number spellings. Cross-field execution budgets are validated by the core."
+    "description": "Implementation contract for this source checkout. x-source lists the original route baseline and the current implementation files. The candidate supports daemon-side target selection, named triggers, trigger checks and device-guarded Job cancellation. The installed local runtime has its own version and validation state. All example devices are virtual. JSON request bodies are bounded to 1 MiB. The runtime rejects duplicate fields, unknown fields, explicit null, invalid Unicode, and unsupported number spellings. Cross-field execution budgets are validated by the core."
   },
   "servers": [
     {
@@ -35,7 +35,7 @@
     }
   ],
   "x-source": {
-    "scope": "WithSequenceAPI route table and optional authenticated HTTPS listener",
+    "scope": "WithSequenceAPI, daemon target and Trigger routing, and optional authenticated HTTPS",
     "files": [
       "internal/httpapi/sequence_api.go",
       "internal/httpapi/sequence_library.go",
@@ -52,6 +52,9 @@
       "internal/control/types.go",
       "internal/control/metrics.go",
       "internal/libraryv1/store.go",
+      "internal/httpapi/sequence_routing.go",
+      "internal/control/sequence_routing.go",
+      "internal/triggerv1/store.go",
       "cmd/server_remote.go",
       "internal/remoteaccess/http.go"
     ],
@@ -2078,12 +2081,19 @@
                       "on_finish": "off"
                     }
                   }
+                },
+                "trigger": {
+                  "summary": "Run a daemon-configured trigger",
+                  "value": {
+                    "id": "trigger-example",
+                    "trigger": "build.done"
+                  }
                 }
               }
             }
           }
         },
-        "description": "The device must be idle and support the compiled Sequence. The daemon owns timing after admission. A lost HTTP response or client timeout can leave an accepted Job running. Query the original ID. Retained matching IDs replay before resolving mutable color or Pattern references. A changed source or serial conflicts. Terminal records use configurable LRU capacity and a soft TTL from completion, defaulting to 16,384 entries and 30 minutes. Profile jobs.terminal_limit / jobs.terminal_ttl or server --job-cache-size / --job-cache-ttl select these values at daemon startup. Restart is required for changes. LRU eviction or restart may remove records earlier; the TTL does not guarantee a deduplication window. Active Jobs stay pinned. Cache pressure evicts terminal records and does not reject new execution. After expiration or eviction the same ID can execute again."
+        "description": "The device must be idle and support the compiled Sequence. The daemon owns timing after admission. A lost HTTP response or client timeout can leave an accepted Job running. Query the original ID. Retained matching IDs replay before resolving mutable color or Pattern references. A changed source or serial conflicts. Terminal records use configurable LRU capacity and a soft TTL from completion, defaulting to 16,384 entries and 30 minutes. Profile jobs.terminal_limit / jobs.terminal_ttl or server --job-cache-size / --job-cache-ttl select these values at daemon startup. Restart is required for changes. LRU eviction or restart may remove records earlier; the TTL does not guarantee a deduplication window. Active Jobs stay pinned. Cache pressure evicts terminal records and does not reject new execution. After expiration or eviction the same ID can execute again. Omit serial to use daemon-side routing. Explicit serials and trigger bindings do not substitute another target. A configured default can opt into substitution when exactly one other managed device is online. Replays keep the accepted plan, target and target_source."
       }
     },
     "/v1/jobs/{id}": {
@@ -2319,9 +2329,19 @@
                 }
               }
             }
+          },
+          "409": {
+            "description": "The Job has a different accepted serial (job_target_mismatch). No cancellation was requested.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           }
         },
-        "x-query-policy": "rejected",
+        "x-query-policy": "Optional serial only",
         "x-body-policy": "rejected",
         "parameters": [
           {
@@ -2332,9 +2352,19 @@
               "$ref": "#/components/schemas/ID"
             },
             "example": "doc-job-example"
+          },
+          {
+            "name": "serial",
+            "in": "query",
+            "required": false,
+            "description": "Require the Job's accepted serial to match exactly. A daemon without this extension rejects the query.",
+            "schema": {
+              "$ref": "#/components/schemas/Serial"
+            },
+            "example": "fixture-0001"
           }
         ],
-        "description": "Returns 200 for a terminal Job and 202 while cancellation remains pending. A queued Job can be cancelled immediately without device writes or readback; a started Job requires cleanup and readback before succeeded/cancelled publication. Cleanup failure may produce failed. Cancelling a retained terminal Job updates its LRU position and leaves its expiry unchanged."
+        "description": "Returns 200 for a terminal Job and 202 while cancellation remains pending. A queued Job can be cancelled immediately without device writes or readback; a started Job requires cleanup and readback before succeeded/cancelled publication. Cleanup failure may produce failed. Cancelling a retained terminal Job updates its LRU position and leaves its expiry unchanged. Optional serial atomically guards the accepted Job target. A mismatch returns 409 and leaves it unchanged."
       }
     },
     "/v1/colors/resolve": {
@@ -3418,6 +3448,118 @@
                       "on_finish": "off"
                     }
                   }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/triggers": {
+      "get": {
+        "operationId": "listTriggers",
+        "summary": "Read the current local trigger mapping",
+        "tags": [
+          "Library"
+        ],
+        "responses": {
+          "200": {
+            "description": "Sorted mapping records, or an empty array if the optional file is missing.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Trigger"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Unexpected body or query.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "Host or Origin rejected by the selected listener.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The mapping is malformed or unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/triggers/check": {
+      "get": {
+        "operationId": "checkTriggers",
+        "summary": "Check exact saved Pattern references and managed device bindings",
+        "description": "Returns every mapping in sorted order, with per-row issues and informational cached connection. An absent file returns an empty report. This operation performs no USB I/O or playback.",
+        "tags": [
+          "Library"
+        ],
+        "responses": {
+          "200": {
+            "description": "Read-only mapping check. Individual invalid references are reported in items.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TriggerCheckReport"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Unexpected body or query.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "Host or Origin rejected by the selected listener.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The mapping file is malformed or unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
                 }
               }
             }
@@ -4843,15 +4985,16 @@
             "$ref": "#/components/schemas/ID"
           },
           "serial": {
-            "$ref": "#/components/schemas/Serial"
+            "$ref": "#/components/schemas/Serial",
+            "description": "Exact managed serial. Omit to use the running daemon’s trigger binding, configured default or sole managed device."
           },
           "id": {
             "$ref": "#/components/schemas/JobIDInput"
+          },
+          "trigger": {
+            "$ref": "#/components/schemas/TriggerName"
           }
         },
-        "required": [
-          "serial"
-        ],
         "additionalProperties": false,
         "oneOf": [
           {
@@ -4867,6 +5010,11 @@
           {
             "required": [
               "pattern_id"
+            ]
+          },
+          {
+            "required": [
+              "trigger"
             ]
           }
         ]
@@ -5103,6 +5251,17 @@
           },
           "error": {
             "type": "string"
+          },
+          "target_source": {
+            "type": "string",
+            "enum": [
+              "request",
+              "trigger",
+              "default",
+              "single_device",
+              "fallback"
+            ],
+            "description": "Selection source for routed submissions. Omitted for ordinary explicit v1 requests."
           }
         },
         "required": [
@@ -5279,6 +5438,7 @@
                   "invalid_json",
                   "not_found",
                   "job_conflict",
+                  "job_target_mismatch",
                   "device_busy",
                   "local_only",
                   "method_not_allowed",
@@ -5288,6 +5448,11 @@
                   "library_capacity",
                   "unavailable",
                   "internal_error",
+                  "target_required",
+                  "device_not_managed",
+                  "device_offline",
+                  "trigger_not_found",
+                  "invalid_trigger_config",
                   "unauthorized",
                   "invalid_host",
                   "invalid_origin"
@@ -5319,6 +5484,116 @@
               "message": "must use 10 ms units",
               "field": "action.duration_ms"
             }
+          }
+        ]
+      },
+      "TriggerName": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9.-]{0,63}$"
+      },
+      "Trigger": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "$ref": "#/components/schemas/TriggerName"
+          },
+          "pattern_id": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "serial": {
+            "type": "string",
+            "pattern": "^[0-9a-fA-F]{8}$"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 256
+          }
+        },
+        "required": [
+          "name",
+          "pattern_id"
+        ],
+        "additionalProperties": false,
+        "examples": [
+          {
+            "name": "build.done",
+            "pattern_id": "gentle-pulse"
+          }
+        ]
+      },
+      "TriggerCheckReport": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "$ref": "#/components/schemas/TriggerName"
+                },
+                "pattern_id": {
+                  "$ref": "#/components/schemas/ID"
+                },
+                "serial": {
+                  "type": "string",
+                  "pattern": "^[0-9a-fA-F]{8}$"
+                },
+                "title": {
+                  "type": "string",
+                  "maxLength": 256
+                },
+                "connection": {
+                  "type": "string",
+                  "description": "Cached connection when serial names a managed device."
+                },
+                "issues": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "code": {
+                        "type": "string",
+                        "enum": [
+                          "pattern_not_found",
+                          "pattern_unavailable",
+                          "device_not_managed"
+                        ]
+                      },
+                      "message": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "code",
+                      "message"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "required": [
+                "name",
+                "pattern_id",
+                "issues"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "additionalProperties": false,
+        "examples": [
+          {
+            "items": [
+              {
+                "name": "build.done",
+                "pattern_id": "gentle-pulse",
+                "issues": []
+              }
+            ]
           }
         ]
       }

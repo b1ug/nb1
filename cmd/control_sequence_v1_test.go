@@ -292,3 +292,22 @@ func TestSequenceControlV1CancelWaitsWithoutRepeatingPost(t *testing.T) {
 		t.Fatalf("cancel = %s, %v, POSTs %d, GETs %d", output, err, posts, gets)
 	}
 }
+
+func TestSequenceControlV1GuardedCancellationDoesNotRetryWithoutSerial(t *testing.T) {
+	var posts int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		atomic.AddInt32(&posts, 1)
+		if r.Method != http.MethodPost || r.URL.Path != "/v1/jobs/example/cancel" || r.URL.RawQuery != "serial=20000002" || r.ContentLength != 0 {
+			t.Errorf("unexpected guarded request: %s %s (%d bytes)", r.Method, r.URL, r.ContentLength)
+		}
+		sequenceControlJSON(w, http.StatusConflict, map[string]any{
+			"error": map[string]string{"code": "job_target_mismatch", "message": "expected serial does not match"},
+		})
+	}))
+	defer server.Close()
+	output, err := executeSequenceControl(t, server.URL, "cancel", "example", "--serial", "20000002", "--wait")
+	if err == nil || !strings.Contains(err.Error(), "cancellation rejected") ||
+		!strings.Contains(err.Error(), "job_target_mismatch") || output != "" || atomic.LoadInt32(&posts) != 1 {
+		t.Fatalf("guarded cancel = %q, %v, requests %d", output, err, posts)
+	}
+}

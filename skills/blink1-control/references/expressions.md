@@ -1,6 +1,6 @@
 # Expressions and field lookup
 
-Use the running MCP tool schema or installed CLI help first. This compact reference travels with the Skill; read the matching [v0.1.1 API reference](https://github.com/b1ug/nb1/blob/v0.1.1/docs/api-v1.md) or [OpenAPI](https://github.com/b1ug/nb1/blob/v0.1.1/docs/api-v1.openapi.json) only for exact ranges or more complex input. The [MCP adapter guide](https://github.com/b1ug/nb1/blob/v0.1.1/adapters/mcp/README.md) covers setup, transport and result envelopes. These references describe v0.1.1; inspect the installed version before assuming the same support.
+Use the running MCP tool schema or installed CLI help first. This compact reference travels with the Skill; read the matching [v0.1.1 API reference](https://github.com/b1ug/nb1/blob/v0.1.1/docs/api-v1.md) or [OpenAPI](https://github.com/b1ug/nb1/blob/v0.1.1/docs/api-v1.openapi.json) only for exact ranges or more complex input. These links document the v0.1.1 field definitions. Starting with v0.1.3, configure local MCP clients to launch the installed `nb1` executable with `mcp` as its first argument.
 
 ## Action, Sequence and request envelope
 

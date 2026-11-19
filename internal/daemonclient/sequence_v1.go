@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -13,6 +14,7 @@ import (
 	"github.com/b1ug/nb1/internal/control"
 	"github.com/b1ug/nb1/internal/jsoninput"
 	"github.com/b1ug/nb1/internal/sequence"
+	"github.com/b1ug/nb1/internal/triggerv1"
 )
 
 // SequenceInput retains the original author input used to identify a Job.
@@ -112,35 +114,103 @@ func (c *Client) SubmitSequence(ctx context.Context, input SequenceInput, serial
 	if !control.ValidDeviceSerial(serial) || !control.ValidSequenceJobID(id) {
 		return control.SequenceJob{}, fmt.Errorf("a valid device serial and explicit job ID are required")
 	}
-	request := struct {
-		ID        string          `json:"id"`
-		Serial    string          `json:"serial"`
-		Action    json.RawMessage `json:"action,omitempty"`
-		Sequence  json.RawMessage `json:"sequence,omitempty"`
-		PatternID *string         `json:"pattern_id,omitempty"`
-	}{ID: id, Serial: serial, Action: input.Action, Sequence: input.Sequence, PatternID: input.PatternID}
+	return c.submitSequence(ctx, sequenceSubmission{ID: id, Serial: serial, SequenceInput: input})
+}
+
+type sequenceSubmission struct {
+	ID      string `json:"id"`
+	Serial  string `json:"serial,omitempty"`
+	Trigger string `json:"trigger,omitempty"`
+	SequenceInput
+}
+
+// SequenceSubmissionRejected identifies subsystem errors that are returned
+// before admission. Generic 5xx or transport failures can leave a Job active.
+func SequenceSubmissionRejected(err error) bool {
+	var rejected *Error
+	if !errors.As(err, &rejected) {
+		return false
+	}
+	return (rejected.Status >= 400 && rejected.Status < 500) ||
+		(rejected.Status == 503 && (rejected.Code == "device_offline" || rejected.Code == "invalid_trigger_config"))
+}
+
+func (c *Client) SubmitDefaultSequence(ctx context.Context, input SequenceInput, id string) (control.SequenceJob, error) {
+	if err := input.validate(); err != nil {
+		return control.SequenceJob{}, err
+	}
+	return c.submitSequence(ctx, sequenceSubmission{ID: id, SequenceInput: input})
+}
+
+func (c *Client) SubmitTrigger(ctx context.Context, name, serial, id string) (control.SequenceJob, error) {
+	if !triggerv1.ValidName(name) {
+		return control.SequenceJob{}, fmt.Errorf("invalid trigger name")
+	}
+	if serial != "" && !control.ValidDeviceSerial(serial) {
+		return control.SequenceJob{}, fmt.Errorf("invalid device serial")
+	}
+	return c.submitSequence(ctx, sequenceSubmission{ID: id, Serial: serial, Trigger: name})
+}
+
+func (c *Client) SequenceTriggers(ctx context.Context) ([]triggerv1.Trigger, error) {
+	var result struct {
+		Items []triggerv1.Trigger `json:"items"`
+	}
+	if err := c.sequenceV1ListRequest(ctx, "/v1/triggers", &result); err != nil {
+		return nil, err
+	}
+	for i, trigger := range result.Items {
+		if !triggerv1.ValidName(trigger.Name) || !control.ValidSequenceJobID(trigger.PatternID) ||
+			(trigger.Serial != "" && !control.ValidDeviceSerial(trigger.Serial)) ||
+			(i > 0 && result.Items[i-1].Name >= trigger.Name) {
+			return nil, &DecodeError{Status: http.StatusOK, Err: fmt.Errorf("invalid trigger list identity or ordering")}
+		}
+	}
+	return result.Items, nil
+}
+
+// CheckSequenceTriggers checks stored Pattern references and device bindings without playing anything.
+func (c *Client) CheckSequenceTriggers(ctx context.Context) (triggerv1.CheckReport, error) {
+	var report triggerv1.CheckReport
+	err := c.sequenceV1Request(ctx, http.MethodGet, "/v1/triggers/check", nil, &report, http.StatusOK)
+	return report, err
+}
+
+func (c *Client) submitSequence(ctx context.Context, request sequenceSubmission) (control.SequenceJob, error) {
+	if !control.ValidSequenceJobID(request.ID) {
+		return control.SequenceJob{}, fmt.Errorf("a valid explicit job ID is required")
+	}
 	var job control.SequenceJob
 	if err := c.sequenceV1Request(ctx, http.MethodPost, "/v1/jobs", request, &job, http.StatusOK, http.StatusAccepted); err != nil {
 		return job, err
 	}
-	if err := validateSequenceJob(job, id); err != nil {
+	if err := validateSequenceJob(job, request.ID); err != nil {
 		return control.SequenceJob{}, err
 	}
-	if job.Serial != serial {
+	if request.Serial != "" && job.Serial != request.Serial {
 		return control.SequenceJob{}, &DecodeError{Err: fmt.Errorf("daemon changed the submitted device serial")}
 	}
 	return job, nil
 }
 
 func (c *Client) SequenceJob(ctx context.Context, id string) (control.SequenceJob, error) {
-	return c.sequenceJobRequest(ctx, id, false)
+	return c.sequenceJobRequest(ctx, id, false, "")
 }
 
 func (c *Client) CancelSequenceJob(ctx context.Context, id string) (control.SequenceJob, error) {
-	return c.sequenceJobRequest(ctx, id, true)
+	return c.sequenceJobRequest(ctx, id, true, "")
 }
 
-func (c *Client) sequenceJobRequest(ctx context.Context, id string, cancel bool) (control.SequenceJob, error) {
+// CancelSequenceJobOnDevice requests cancellation only if the Job has this
+// accepted serial. A server that rejects the guard is never retried without it.
+func (c *Client) CancelSequenceJobOnDevice(ctx context.Context, id, serial string) (control.SequenceJob, error) {
+	if !control.ValidDeviceSerial(serial) {
+		return control.SequenceJob{}, fmt.Errorf("invalid device serial")
+	}
+	return c.sequenceJobRequest(ctx, id, true, serial)
+}
+
+func (c *Client) sequenceJobRequest(ctx context.Context, id string, cancel bool, serial string) (control.SequenceJob, error) {
 	if !control.ValidSequenceJobID(id) {
 		return control.SequenceJob{}, fmt.Errorf("invalid job ID")
 	}
@@ -149,12 +219,21 @@ func (c *Client) sequenceJobRequest(ctx context.Context, id string, cancel bool)
 	if cancel {
 		method, path = http.MethodPost, path+"/cancel"
 		statuses = append(statuses, http.StatusAccepted)
+		if serial != "" {
+			path += "?serial=" + url.QueryEscape(serial)
+		}
 	}
 	var job control.SequenceJob
 	if err := c.sequenceV1Request(ctx, method, path, nil, &job, statuses...); err != nil {
 		return job, err
 	}
-	return job, validateSequenceJob(job, id)
+	if err := validateSequenceJob(job, id); err != nil {
+		return control.SequenceJob{}, err
+	}
+	if serial != "" && job.Serial != serial {
+		return control.SequenceJob{}, &DecodeError{Err: fmt.Errorf("daemon returned a Job for a different device serial")}
+	}
+	return job, nil
 }
 
 func validateSequenceJob(job control.SequenceJob, id string) error {

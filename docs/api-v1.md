@@ -125,7 +125,7 @@ For `control run [SERIAL] FILE` and `control state [SERIAL]`, select the device 
 
 With no selected target, the client reads the daemon's cached configured-device list, sorts it by serial and chooses the first device whose cached `connection` is `"online"`. If none is online, it chooses the first serial so `state` can show its actual status and `run` can report the daemon's submission error. Unknown or missing connection states are not treated as online. An empty list reports an error. With two or more configured devices, a short English notice on stderr identifies the count, selected serial and `--device SERIAL` override; stdout remains the same JSON result. The choice is made once per invocation. A later connection failure, busy device or uncertain submission never triggers a second-device attempt.
 
-This lookup does not enumerate USB, launch the daemon or switch to direct access. HTTP and MCP requests still require an explicit serial; this CLI convenience does not change their contracts. Direct execution still requires its own explicit or preferred serial.
+This lookup uses the running daemon’s cached device list. Direct execution still requires its own explicit or preferred serial. Use `control run FILE --daemon-default` to delegate routing to the daemon in this candidate. A positional serial, `--device` or `NB1_DEVICE` still takes precedence. Published v0.1.2 expects an explicit serial in HTTP and MCP playback requests. See the [candidate routing guide](trigger-routing.md) for configuration, precedence and examples.
 
 `control preview FILE` leaves `serial` absent by default, including when the profile has a preferred device. Add `--serial SERIAL` explicitly for the selected device's cached capability check.
 
@@ -152,7 +152,7 @@ These operations are the current runtime's API v1 route table. Success bodies ar
 - Body-bearing operations require `Content-Type: application/json`; media-type parameters such as `charset=utf-8` are accepted. The entire body, including whitespace, is limited to 1,048,576 bytes. Each embedded ColorInput has its smaller 4,096-byte limit.
 - Send one valid Unicode JSON object. Unknown, duplicate or incorrectly cased keys, trailing values, excessive nesting beyond 64 levels and explicit `null` anywhere are rejected. Omit an optional field to select its documented default; `null` does not mean omission.
 - Empty values are not general defaults. `id: ""` requests Job ID generation; `title: ""` clears a Pattern title. Empty `serial`, `pattern_id`, `color`, `timing` or `on_finish`, and empty required target/Step arrays, are invalid.
-- Preview, Job, device and library routes reject query parameters, including a bare trailing `?`. Job lookup/cancel and device/library GET routes accept no body, including `{}` or a chunked body. `Content-Type` is unnecessary when there is no body. The shared `/healthz` and `/v1/transport-metrics` handlers currently check only the method and do not inspect body/query values; clients should send neither.
+- Preview, Job, device and library routes reject query parameters, including a bare trailing `?`, except for one optional `serial` query on Job cancellation. Job lookup/cancel and device/library GET routes accept no body, including `{}` or a chunked body. `Content-Type` is unnecessary when there is no body. The shared `/healthz` and `/v1/transport-metrics` handlers currently check only the method and do not inspect body/query values; clients should send neither.
 - On the local listener, use a loopback Host. Device, Job and library routes accept same-origin browser requests and clients with no Origin. Two read-only browser diagnostics also accept the website origin `https://b1ug.github.io` (shared by its project Pages) and HTTP or HTTPS loopback origins, including local previews.
 - On the optional HTTPS listener, send `Authorization: Bearer <token>` on every request and use the configured authority, including its port. If present, `Origin` must match the HTTPS origin. Query `GET /v1/devices` for device state. `/healthz`, `/v1/presence`, `/v1/service-status` and `/demo/` are local endpoints.
 - WebHID sends a simple GET without credentials, custom headers, body or query to the selected loopback daemon port (default 5885). v0.1.2 used 8931. Profiles or service definitions that specify 8931 retain that port after upgrading. The browser may ask for local-network permission. WebHID checks `/v1/presence` first. A matching marker confirms nb1 answered. It then requests `/v1/service-status` once on the same port. A valid summary confirms HTTP liveness (the same signal as `/healthz`) and reports cached device totals. API clients can request the summary directly. `configured` counts its configured device workers. `online` counts workers whose last connection state is `online`. A zero count is a known result. A `null` devices field means the snapshot is unavailable. Reading status does not refresh USB or identify which light, if any, the process owns.
@@ -164,15 +164,17 @@ These operations are the current runtime's API v1 route table. Success bodies ar
 | Request | Required input | Optional input / omission default | Success |
 | --- | --- | --- | --- |
 | `POST /v1/preview` | Exactly one of `action`, `sequence`, `pattern_id`. | `serial`: omitted means compile without a device check. | `200`, Preview object. |
-| `POST /v1/jobs` | `serial` and exactly one of `action`, `sequence`, `pattern_id`. | `id`: omitted or `""` generates an ID. | `202` for new acceptance; `200` for matching replay. Both return a Job and `Location: /v1/jobs/{id}`. |
+| `POST /v1/jobs` | Exactly one of `action`, `sequence`, `pattern_id`, `trigger`. | `serial`: omitted delegates target selection to the daemon. `id`: omitted or `""` generates an ID. | `202` for new acceptance; `200` for matching replay. Both return a Job and `Location: /v1/jobs/{id}`. |
 | `GET /v1/jobs/{id}` | Job ID in the path; no body. | None. | `200`, Job object, including when that Job failed. |
-| `POST /v1/jobs/{id}/cancel` | Job ID in the path; no body. | None. | `202` while cancellation remains in progress; `200` when already terminal or cancelled before execution. Returns the current Job. |
+| `POST /v1/jobs/{id}/cancel` | Job ID in the path; no body. | Query `serial`: require the accepted Job's serial to match. Omit it for ID-only cancellation. | `202` while cancellation remains in progress; `200` when already terminal or cancelled before execution. Returns the current Job. |
 | `POST /v1/colors/resolve` | `color`: one ColorInput. | None. | `200`, `{"color":"#rrggbb"}`. Does not save or play. |
 | `GET /v1/colors` | No body. | None. | `200`, array of Color records; empty library returns `[]`. |
 | `PUT /v1/colors/{name}` | Color name in the path and `color`: one ColorInput in the body. | None. | `200`, saved Color record, for both create and replacement. |
 | `GET /v1/patterns` | No body. | None. | `200`, array of `{id,title?}` summaries; no Sequence payloads. Empty library returns `[]`. |
 | `GET /v1/patterns/{id}` | Pattern ID in the path; no body. | None. | `200`, complete Pattern record. |
 | `PUT /v1/patterns/{id}` | Pattern ID in the path and exactly one of `action` or `sequence` in the body. | `title`: omitted or `""` means no title, replacing any previous title. | `200`, complete saved Pattern, for both create and replacement. Does not play. |
+| `GET /v1/triggers` | No body or query. | None. | `200`, sorted mapping records. An absent mapping file returns `[]`. |
+| `GET /v1/triggers/check` | No body or query. | None. | `200`, `{"items":[...]}` with saved Pattern and device binding diagnostics. An absent mapping file yields an empty `items` array. |
 | `GET /v1/devices` | No body. | None. | `200`, configured device states, sorted by serial; `[]` when none are configured. Does not discover USB. |
 | `GET /v1/devices/{serial}` | Configured serial in the path; no body. | None. | `200`, one cached Device object. An unmatched serial returns `404`. |
 | `GET /v1/presence` | No fields. | None. | `200`, `{"service":"nb1","api_version":"v1"}`. Constant marker, independent of connected devices. |
@@ -204,6 +206,7 @@ Serial plans require `set`, `sequence` and `raw-rgb`; interval plans require `se
 | Job field | Presence / meaning |
 | --- | --- |
 | `id`, `serial` | Always present. Identify this accepted execution and device. |
+| `target_source` | Present for routed requests. Values are `request`, `trigger`, `default`, `single_device`, and `fallback`. Omitted for ordinary explicit v1 submissions. |
 | `status` | Always present: `queued`, `running`, `cancelling`, `succeeded`, `cancelled` or `failed`. |
 | `completed_steps`, `total_steps` | Always present integers, with `0 <= completed_steps <= total_steps <= 1024` and `total_steps >= 1`. Counts include repetitions, exclude initial interval targets and cleanup. Progress counts host Step/interval completion, not optical settling. |
 | `created_at` | Always present, UTC timestamp. |
@@ -241,12 +244,16 @@ An HTTP error is `{"error":{"code":"...","message":"..."}}`. Invalid Action comp
 | `404` | `not_found` | Unknown route, configured device, retained Job or saved Pattern. Expired/evicted Jobs also return this code; absence does not prove they never ran. |
 | `405` | `method_not_allowed` | Unsupported method. `Allow` lists the route's supported method(s); HEAD is not an implicit GET. |
 | `409` | `job_conflict` | Retained ID is bound to a different device or JSON input. Query the original ID; do not invent a new ID to retry uncertain work. |
+| `409` | `job_target_mismatch` | The cancellation serial differs from the retained Job's accepted serial. The Job remains unchanged. |
 | `409` | `device_busy` | Device is owned/busy, an execution or inspection is active, or admission cannot enqueue it. These v1 submissions reject competing work; no replace/queue policy field is accepted. |
 | `413` | `body_too_large` | HTTP body exceeds 1 MiB. A smaller ColorInput or compiled-Pattern limit violation instead uses `400 invalid_request`. |
 | `415` | `json_required` | Missing, malformed or non-`application/json` Content-Type on a body-bearing operation. |
 | `422` | `unsupported_capability` | Submission needs capabilities absent from the device's cached profile. |
 | `429` | `library_capacity` | Library record count exceeds its limit, or adding a new color/Pattern would exceed capacity. Replacing an existing record at capacity is allowed. |
 | `503` | `unavailable` | Runtime closed/offline, sequence execution unsupported by the service, request context ended, or local library unavailable/unreadable/unsafe/locked. |
+| `400` | `target_required` | Implicit request with multiple managed devices and no default or trigger binding. |
+| `404` | `trigger_not_found` / `device_not_managed` | An unknown trigger or a routed target outside the managed set. |
+| `503` | `device_offline` / `invalid_trigger_config` | The routed target is unavailable for execution, or the current trigger file fails validation. |
 | `500` | `internal_error` | Unexpected synchronous service failure. Record the response and original identifiers before deciding what to do next. |
 
 HTTP errors concern request handling or admission. An accepted Job can later fail because of native I/O, scheduling or cleanup; GET still returns `200` with `status: "failed"` and Job `error`. Do not treat every `200` as playback success, or every transport failure as rejection.

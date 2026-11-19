@@ -2,11 +2,11 @@
 
 [简体中文](install.zh-CN.md)
 
-Download the matching executable from [nb1 v0.1.3](https://github.com/b1ug/nb1/releases/tag/v0.1.3). The CLI, local server and complete Nightlab workbench are one `nb1` executable. Prebuilt executables need no Go or Node.js installation, and the embedded page needs no browser WebHID permission.
+Download the matching executable from [nb1 v0.1.3](https://github.com/b1ug/nb1/releases/tag/v0.1.3). The CLI, local server, MCP and embedded Nightlab workbench are one `nb1` executable. Prebuilt executables need no Go or Node.js installation, and the embedded page needs no browser WebHID permission.
 
 ## Choose and verify a download
 
-| Computer | CLI archive |
+| Computer | nb1 archive |
 | --- | --- |
 | Apple Silicon Mac | `nb1-v0.1.3-darwin-arm64.tar.gz` |
 | Intel Mac | `nb1-v0.1.3-darwin-amd64.tar.gz` |
@@ -14,7 +14,7 @@ Download the matching executable from [nb1 v0.1.3](https://github.com/b1ug/nb1/r
 | Linux amd64 | `nb1-v0.1.3-linux-amd64.tar.gz` |
 | Windows amd64 | `nb1-v0.1.3-windows-amd64.zip` |
 
-The prebuilt CLI/server binaries declare a minimum of macOS 15.0 on both Mac architectures and require glibc 2.38 or later on Linux. The optional MCP binaries declare a minimum of macOS 13.0 and are statically linked on Linux; they still require a compatible nb1 server. The macOS downloads are not Developer ID notarized.
+The prebuilt executable requires macOS 15.0 or later on Mac and glibc 2.38 or later on Linux. The same requirements apply to `nb1 mcp`. The macOS downloads are not Developer ID notarized.
 
 These binary requirements are separate from source compatibility and do not guarantee every operating system or physical USB combination. See the release's build and platform evidence before using an older system. Physical USB evidence for the recorded macOS arm64 / blink(1) MK2 / FW204 combinations is separate from software checks on other targets. Windows supports foreground operation; automatic service management is not included.
 
@@ -87,7 +87,7 @@ Use `./nb1 control preview action.json` only when you want a plan without playba
 
 CLI help and application-generated diagnostics remain English under English, Chinese and other locale settings. The Web workbench has its own language switch. Terminal colors follow the destination stream: any nonempty `NO_COLOR` disables all ANSI styling, including `yes`. `CLICOLOR=0` disables ordinary color; use `CLICOLOR_FORCE=1` or `true` to force color when `NO_COLOR` is unset. Force values follow Go's boolean parsing: `false`, `0` and invalid values such as `2` use ordinary terminal rules. A pipe or `TERM=dumb` otherwise uses plain text. JSON output stays unstyled.
 
-Fang presents human-facing help and errors; application diagnostics on stderr use Charm Log. `--debug` includes caller and PID details. `--log-file PATH` retains the existing JSON file format, 10 MiB rotation, compressed backups and retention policy. Command JSON, the daemon's JSON event stream and MCP JSON-RPC remain separate. CLI translation remains separate work. Building nb1 or its standalone MCP adapter from source requires Go 1.25.8 or newer, separate from the download and Homebrew build requirements above.
+Fang presents human-facing help and errors; application diagnostics on stderr use Charm Log. `--debug` includes caller and PID details. `--log-file PATH` retains the existing JSON file format, 10 MiB rotation, compressed backups and retention policy. Command JSON, the daemon's JSON event stream and MCP JSON-RPC remain separate. CLI translation remains separate work. Building nb1 from source requires Go 1.25.8 or newer, separate from the download and Homebrew build requirements above.
 
 `--log-file PATH` must name an appendable regular file. Directories, leaf symlinks and special files are rejected before the command starts, and an inaccessible or uncreatable target produces a command error. Existing file contents and permissions are preserved. A new target is created during logger initialization, even before the first diagnostic; on Unix, new files and missing parent directories use owner-only permissions. Help and `version --json` do not initialize a log file. File logs contain application diagnostics, not a transcript of Fang errors or daemon events.
 
@@ -123,11 +123,24 @@ For a manually unpacked upgrade, retain the old directory, verify and unpack the
 
 `./nb1 config path`, `config init` and `config show` locate, create and inspect the selected profile without USB. The profile defaults to `~/.config/nb1/config.yaml` on macOS/Linux, following an absolute `XDG_CONFIG_HOME` when set; Windows uses its native application configuration directory. Local colors and Patterns stay on the computer, independent of device RAM or Flash.
 
-Optional matching downloads are:
+### Connect a local MCP client
 
-- `nb1-mcp-v0.1.3-<os>-<arch>.tar.gz`, or Windows `.zip`: unpack into a separate new directory and verify its checksums. Configure the MCP host with the absolute `nb1-mcp` path and `--endpoint http://127.0.0.1:5885 --timeout 10s`. It reports version `v0.1.3` during MCP initialization and uses stdio to local HTTP, without launching a CLI or owning USB.
-- `blink1-control-v0.1.3.zip`: unpack its files into a new `blink1-control` folder and copy the complete folder to the project's `.agents/skills/`. Keep `SKILL.md`, `agents/` and `references/` together. The Skill does not install nb1, register MCP, enable global hooks or grant permissions. See [Agent setup](agent-guide.md).
+Start the daemon, then set the MCP client's executable to the absolute path of the installed `nb1` (`nb1.exe` on Windows). Its first argument must be `mcp`. This example connects to a daemon on the default port.
 
-Use `nb1 mcp` or `nb1-mcp` for local stdio. Point it at the daemon with `--endpoint` and supply `--token-file` if local authentication is enabled. For a client on another computer, enable the daemon’s HTTPS listener and use the client-visible `/mcp` URL. [Remote setup and local authentication](remote-access.md)
+```json
+{
+  "mcpServers": {
+    "nb1": {"command": "/absolute/path/to/nb1", "args": ["mcp"]}
+  }
+}
+```
 
-The release provides the current Action/Sequence, Job and computer-side library contract. Trigger mapping, editable multi-format content directories, queue/replace and new device-native deployment APIs remain separate planned work. [Development candidate installation](candidate-install.md) documents CI suites marked `release:false`; those artifacts are not interchangeable with this tagged release contract.
+**Upgrading from v0.1.2.** Replace the old `nb1-mcp` executable path and prepend `mcp` to its existing argument list. Keep any explicit endpoint. For example, `["mcp", "--endpoint", "http://127.0.0.1:8931", "--timeout", "10s"]` still targets a daemon on the old port. Reload the client and check that it discovers the tools. For a v0.1.2 installation, use the [v0.1.2 guide](https://github.com/b1ug/nb1/blob/v0.1.2/docs/install.md).
+
+For local authentication, add `--token-file PATH`. A client on another computer can connect to the daemon’s HTTPS `/mcp` URL. [Remote setup and local authentication](remote-access.md)
+
+### Add the optional Skill
+
+Unpack `blink1-control-v0.1.3.zip` into a new `blink1-control` folder and copy that folder to the project's `.agents/skills/`. Keep `SKILL.md`, `agents/` and `references/` together. [Agent setup](agent-guide.md)
+
+The release provides the current Action/Sequence, Job and computer-side library contract. Use a named Trigger to play a saved Pattern. The daemon can resolve an omitted serial and records the selected device on the Job. Editable multi-format directories, public queue/preemption and new device-native deployment APIs remain planned. [Trigger configuration and target selection](trigger-routing.md) [Development candidate installation](candidate-install.md) documents CI suites marked `release:false`; those artifacts are not interchangeable with this tagged release contract.

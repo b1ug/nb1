@@ -4,7 +4,7 @@
   "info": {
     "title": "nb1 local API v1",
     "version": "1.0.0-dev",
-    "description": "Implementation contract for the source checkout identified by x-source. The installed local runtime has its own version and validation state. The 15 API capabilities occupy 16 HTTP operations because the valid saved-color name resolve also has a concrete PUT path. All example devices are virtual. JSON request bodies are bounded to 1 MiB. The runtime rejects duplicate fields, unknown fields, explicit null, invalid Unicode, and unsupported number spellings. Cross-field execution budgets are validated by the core."
+    "description": "Implementation contract for the source checkout identified by x-source. The installed local runtime has its own version and validation state. The 16 API capabilities occupy 17 HTTP operations because the valid saved-color name resolve also has a concrete PUT path. All example devices are virtual. JSON request bodies are bounded to 1 MiB. The runtime rejects duplicate fields, unknown fields, explicit null, invalid Unicode, and unsupported number spellings. Cross-field execution budgets are validated by the core."
   },
   "servers": [
     {
@@ -41,8 +41,8 @@
   },
   "x-access": {
     "binding": "loopback only",
-    "browser_origin": "Same-origin browser or Origin-less local client. The read-only GET /v1/presence marker also accepts https://b1ug.github.io and HTTP(S) loopback origins.",
-    "cors": "Only the presence marker reflects an allowed origin. Credentials are not enabled.",
+    "browser_origin": "Same-origin browser or Origin-less local client. The read-only browser diagnostics at /v1/presence and /v1/service-status also accept https://b1ug.github.io and HTTP(S) loopback origins.",
+    "cors": "Only the two browser diagnostics reflect an allowed origin. Credentials are not enabled.",
     "authentication": "local unauthenticated endpoint"
   },
   "x-runtime-validation": {
@@ -172,6 +172,132 @@
         },
         "x-query-policy": "ignored",
         "x-body-policy": "ignored"
+      }
+    },
+    "/v1/service-status": {
+      "get": {
+        "operationId": "getServiceStatus",
+        "summary": "Read HTTP liveness and cached device totals from a local nb1 daemon",
+        "description": "Send a credential-free simple GET with no body or query. Health reports HTTP liveness as in /healthz. Counts reflect cached device states. This request performs no USB I/O.",
+        "tags": [
+          "Runtime"
+        ],
+        "responses": {
+          "200": {
+            "description": "Service identity, HTTP liveness and cached device totals",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "service",
+                    "api_version",
+                    "health",
+                    "devices"
+                  ],
+                  "properties": {
+                    "service": {
+                      "type": "string",
+                      "const": "nb1"
+                    },
+                    "api_version": {
+                      "type": "string",
+                      "const": "v1"
+                    },
+                    "health": {
+                      "type": "string",
+                      "const": "ok"
+                    },
+                    "devices": {
+                      "type": [
+                        "object",
+                        "null"
+                      ],
+                      "description": "Null when the cached device snapshot is unavailable.",
+                      "additionalProperties": false,
+                      "required": [
+                        "configured",
+                        "online"
+                      ],
+                      "properties": {
+                        "configured": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "description": "Number of configured device workers."
+                        },
+                        "online": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "description": "Number of workers whose cached connection state is online."
+                        }
+                      }
+                    }
+                  }
+                },
+                "examples": {
+                  "mixed_devices": {
+                    "value": {
+                      "service": "nb1",
+                      "api_version": "v1",
+                      "health": "ok",
+                      "devices": {
+                        "configured": 2,
+                        "online": 1
+                      }
+                    }
+                  },
+                  "unavailable": {
+                    "value": {
+                      "service": "nb1",
+                      "api_version": "v1",
+                      "health": "ok",
+                      "devices": null
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Unexpected request body or query",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "HTTP 403 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "HTTP 405 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Allow": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Supported HTTP method(s)."
+              }
+            }
+          }
+        }
       }
     },
     "/v1/presence": {

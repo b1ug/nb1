@@ -31,7 +31,9 @@ Windows模板使用当前用户、交互式登录和`RunLevel Limited`，不自�
 
 HTTP只绑定loopback，并校验Host和浏览器Origin；CLI/MCP客户端禁用代理及重定向。这限制远程访问和跨站请求，但**loopback不是用户认证**：当前API没有令牌或用户身份认证，同机能发出本地HTTP请求的其他进程仍可能控制已配置的灯。它也没有抵御同用户恶意进程的完整隔离保证。
 
-浏览器确认 daemon 是否运行时可请求 `GET /v1/presence`。它只返回固定的产品和 API 标记。该路径允许 `https://b1ug.github.io`（组织各个 Pages 项目共享此来源）以及本地 HTTP/HTTPS 回环来源跨域读取。网页以无凭据的 GET 请求用户选择的回环端口。浏览器可以要求本地网络授权。收到标记代表此端口有 daemon 应答，灯具归属仍需另行判断。设备、Job、配置与库接口继续使用既有同源约束。
+网页可以对用户选择的回环端口发送无凭据的 `GET /v1/service-status`。响应中的 `health: "ok"` 表示 HTTP API 已应答，与 `/healthz` 一致。`devices.configured` 是该 daemon 配置的设备数，`devices.online` 是缓存中连接状态为 `online` 的设备数。已知为空时两个数都是 0；缓存不可用时返回 `devices: null`。查询仅读取缓存，无法据此判断某一只灯由谁占用。
+
+旧版仅支持标记时，可请求 `GET /v1/presence` 确认该端口有 nb1 应答。两个诊断接口均允许 `https://b1ug.github.io`（组织各个 Pages 项目共享此来源）以及本地 HTTP/HTTPS 回环来源跨域读取。浏览器可能要求本地网络授权。两项均无法读取时，服务状态未知。设备明细、Job、配置与库接口继续使用既有同源约束。
 
 协作式设备锁用于协调本工具，不约束第三方程序或不同账号。文件归属与内容检查可拒绝已经观察到的替换，不承诺对同UID非合作写者提供原子比较删除。
 

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -245,6 +246,86 @@ func TestBrowserPresence(t *testing.T) {
 		h.ServeHTTP(w, r)
 		if w.Code != 403 || w.Header().Get("Access-Control-Allow-Origin") != "" {
 			t.Fatalf("got %d %v", w.Code, w.Header())
+		}
+	})
+}
+
+// Any accidental call other than Devices fails through the nil embedded service.
+type cachedDeviceService struct {
+	control.Service
+	states []control.DeviceState
+	reads  int
+}
+
+func (s *cachedDeviceService) Devices() []control.DeviceState {
+	s.reads++
+	return s.states
+}
+
+func TestBrowserServiceStatus(t *testing.T) {
+	mixed := &cachedDeviceService{}
+	for _, state := range []string{"online", "online", "connecting", "offline", "busy", "error", "closing", "closed"} {
+		mixed.states = append(mixed.states, control.DeviceState{
+			DeviceInfo: control.DeviceInfo{Serial: "private-id", Path: "private-path"},
+			Connection: state, ActiveJob: "private-job", LastError: "private-error",
+		})
+	}
+	for _, tc := range []struct {
+		name    string
+		cache   *cachedDeviceService
+		devices any
+	}{
+		{"mixed states", mixed, map[string]any{"configured": float64(8), "online": float64(2)}},
+		{"empty snapshot", &cachedDeviceService{states: []control.DeviceState{}}, map[string]any{"configured": float64(0), "online": float64(0)}},
+		{"missing snapshot", &cachedDeviceService{}, nil},
+		{"missing service", nil, nil},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var service control.Service
+			if tc.cache != nil {
+				service = tc.cache
+			}
+			h := httpapi.New(service, httpapi.WithSequenceAPI())
+			r := httptest.NewRequest("GET", "http://localhost/v1/service-status", nil)
+			r.Header.Set("Origin", "https://b1ug.github.io")
+			w := httptest.NewRecorder()
+			h.ServeHTTP(w, r)
+			var got map[string]any
+			want := map[string]any{"service": "nb1", "api_version": "v1", "health": "ok", "devices": tc.devices}
+			if err := json.Unmarshal(w.Body.Bytes(), &got); err != nil || !reflect.DeepEqual(got, want) || w.Code != 200 {
+				t.Fatalf("got %d %s, want %+v", w.Code, w.Body.String(), want)
+			}
+			if tc.cache != nil && tc.cache.reads != 1 {
+				t.Fatalf("read cache %d times", tc.cache.reads)
+			}
+			if w.Header().Get("Access-Control-Allow-Origin") != "https://b1ug.github.io" || w.Header().Get("Access-Control-Allow-Credentials") != "" || w.Header().Get("Vary") != "Origin" || w.Header().Get("Cache-Control") != "no-store" {
+				t.Fatalf("headers %v", w.Header())
+			}
+		})
+	}
+	t.Run("only an allowed status GET reads the cache", func(t *testing.T) {
+		cache := &cachedDeviceService{}
+		h := httpapi.New(cache)
+		for _, tc := range []struct {
+			method, url, origin, body string
+			code                      int
+		}{
+			{"GET", "http://localhost/v1/presence", "https://b1ug.github.io", "", 200},
+			{"GET", "http://localhost/v1/service-status", "https://example.com", "", 403},
+			{"GET", "http://example.com/v1/service-status", "https://b1ug.github.io", "", 403},
+			{"GET", "http://localhost/v1/service-status?query=1", "http://localhost:4173", "", 400},
+			{"GET", "http://localhost/v1/service-status", "http://localhost:4173", "{}", 400},
+			{"OPTIONS", "http://localhost/v1/service-status", "https://b1ug.github.io", "", 405},
+			{"POST", "http://localhost/v1/service-status", "https://b1ug.github.io", "", 405},
+			{"GET", "http://localhost/v1/%73ervice-status", "https://b1ug.github.io", "", 403},
+		} {
+			r := httptest.NewRequest(tc.method, tc.url, strings.NewReader(tc.body))
+			r.Header.Set("Origin", tc.origin)
+			w := httptest.NewRecorder()
+			h.ServeHTTP(w, r)
+			if w.Code != tc.code || (w.Code != 200 && w.Header().Get("Access-Control-Allow-Origin") != "") || cache.reads != 0 {
+				t.Errorf("%s %s from %s: status=%d, headers=%v, cache reads=%d", tc.method, tc.url, tc.origin, w.Code, w.Header(), cache.reads)
+			}
 		}
 	})
 }

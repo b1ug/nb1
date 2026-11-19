@@ -62,10 +62,11 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.Header().Set("Cache-Control", "no-store")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
-	// The browser presence check has its own narrow origin policy and never
-	// accesses the service. Keep all device and library routes behind sameOrigin.
-	if r.URL.EscapedPath() == "/v1/presence" && localHost(r.Host) {
-		servePresence(w, r)
+	// Browser diagnostics have a narrow origin policy. Device-specific
+	// and library routes still require a same-origin or non-browser client.
+	path := r.URL.EscapedPath()
+	if (path == "/v1/presence" || path == "/v1/service-status") && localHost(r.Host) {
+		h.serveBrowserStatus(w, r)
 		return
 	}
 	// Loopback binding alone does not reject browser DNS rebinding. Only local
@@ -307,7 +308,7 @@ func presenceOrigin(origin string) bool {
 	return u.Host == host || (strings.Contains(host, ":") && u.Host == "["+host+"]")
 }
 
-func servePresence(w http.ResponseWriter, r *http.Request) {
+func (h *handler) serveBrowserStatus(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Vary", "Origin")
 	origins := r.Header.Values("Origin")
 	if len(origins) > 1 || len(origins) == 1 && !presenceOrigin(origins[0]) {
@@ -323,7 +324,29 @@ func servePresence(w http.ResponseWriter, r *http.Request) {
 	if len(origins) == 1 {
 		w.Header().Set("Access-Control-Allow-Origin", origins[0])
 	}
-	writeJSON(w, http.StatusOK, map[string]string{"service": "nb1", "api_version": "v1"})
+	if r.URL.Path == "/v1/presence" {
+		writeJSON(w, http.StatusOK, map[string]string{"service": "nb1", "api_version": "v1"})
+		return
+	}
+	type totals struct {
+		Configured int `json:"configured"`
+		Online     int `json:"online"`
+	}
+	var devices *totals
+	if h.service != nil {
+		// Devices returns a cached snapshot without refreshing or opening USB.
+		if snapshot := h.service.Devices(); snapshot != nil {
+			devices = &totals{Configured: len(snapshot)}
+			for _, device := range snapshot {
+				if device.Connection == "online" {
+					devices.Online++
+				}
+			}
+		}
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"service": "nb1", "api_version": "v1", "health": "ok", "devices": devices,
+	})
 }
 
 func localHost(host string) bool {

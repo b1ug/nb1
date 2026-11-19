@@ -40,6 +40,135 @@ func awaitSequenceTerminal(t *testing.T, e *Engine, id, status string) SequenceJ
 	return job
 }
 
+func TestRoutedSequenceAdmitsOnlyTheExplicitSerial(t *testing.T) {
+	e, b := startSequenceTest(t, Options{})
+	prepare := func() (sequence.Sequence, SequenceRoute, error) {
+		return sequenceTestInput(), SequenceRoute{Serial: "a", Source: "default", UseSingleOnline: true}, nil
+	}
+	if _, _, err := e.SubmitRoutedSequence(t.Context(), "not-managed", "request", [32]byte{}, prepare); !errors.Is(err, ErrSequenceTargetAbsent) {
+		t.Fatalf("explicit unmanaged target must not use the prepared default: %v", err)
+	}
+	if _, err := e.SequenceJob("request"); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("rejected request retained a job: %v", err)
+	}
+	if calls, _, _, _, _, _ := b.snapshot(); len(engineSetColors(calls)) != 0 {
+		t.Fatalf("rejected request wrote to the prepared default: %+v", calls)
+	}
+	if _, _, err := e.SubmitRoutedSequence(t.Context(), "", "empty-binding", [32]byte{}, func() (sequence.Sequence, SequenceRoute, error) {
+		return sequenceTestInput(), SequenceRoute{Source: "trigger"}, nil
+	}); !errors.Is(err, ErrInvalid) {
+		t.Fatalf("an empty binding must not become an implicit selection: %v", err)
+	}
+	job, replayed, err := e.SubmitRoutedSequence(t.Context(), "a", "request", [32]byte{}, prepare)
+	if err != nil || replayed || job.Serial != "a" || job.TargetSource != "request" {
+		t.Fatalf("explicit target was not recorded: %+v, replayed=%t, err=%v", job, replayed, err)
+	}
+	awaitSequenceTerminal(t, e, job.ID, "succeeded")
+}
+
+type routedSequenceTestDriver func(string) (Backend, error)
+
+func (d routedSequenceTestDriver) Open(serial string) (Backend, error) { return d(serial) }
+
+func TestRoutedSequenceFallbackAndReplayAcrossConnectivityChanges(t *testing.T) {
+	backends := sequenceCacheDriver{
+		"a": {engineBackend: newEngineBackend("a"), capabilities: []string{"set", "program", "raw-rgb"}},
+		"b": {engineBackend: newEngineBackend("b"), capabilities: []string{"set", "program", "raw-rgb"}},
+	}
+	defaultAvailable := make(chan struct{})
+	driver := routedSequenceTestDriver(func(serial string) (Backend, error) {
+		if serial == "a" {
+			select {
+			case <-defaultAvailable:
+			default:
+				return nil, ErrOffline
+			}
+			if _, _, _, _, closed, _ := backends[serial].snapshot(); closed != 0 {
+				return nil, ErrOffline
+			}
+		}
+		return backends.Open(serial)
+	})
+	e, err := New(driver, Options{Serials: []string{"a", "b"}, PollInterval: 10 * time.Millisecond})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := e.Start(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+		if err := e.Close(ctx); err != nil {
+			t.Error(err)
+		}
+	})
+	awaitEngineCondition(t, func() bool {
+		a, _ := e.Device("a")
+		b, _ := e.Device("b")
+		return a.Connection == "offline" && b.Connection == "online"
+	})
+	alternate := newEngineGate()
+	defer alternate.open()
+	backends["b"].hooks(func(Step) error { return alternate.block() }, nil, nil)
+	prepare := func() (sequence.Sequence, SequenceRoute, error) {
+		return sequenceTestInput(), SequenceRoute{Serial: "a", Source: "default", UseSingleOnline: true}, nil
+	}
+	original, replayed, err := e.SubmitRoutedSequence(t.Context(), "", "original", [32]byte{1}, prepare)
+	if err != nil || replayed || original.Serial != "b" || original.TargetSource != "fallback" {
+		t.Fatalf("initial fallback: %+v, replayed=%t, err=%v", original, replayed, err)
+	}
+	awaitEngineSignal(t, alternate.entered)
+	if _, _, err := e.SubmitRoutedSequence(t.Context(), "", "busy-alternate", [32]byte{2}, prepare); !errors.Is(err, ErrBusy) {
+		t.Fatalf("an active alternate retains its busy rejection: %v", err)
+	}
+	if _, _, err := e.SubmitRoutedSequence(t.Context(), "", "bound-offline", [32]byte{3}, func() (sequence.Sequence, SequenceRoute, error) {
+		return sequenceTestInput(), SequenceRoute{Serial: "a", Source: "trigger", UseSingleOnline: true}, nil
+	}); !errors.Is(err, ErrSequenceTargetOffline) {
+		t.Fatalf("an unavailable binding must not substitute the alternate: %v", err)
+	}
+	// Becoming idle must not make a handle with known cleanup failure
+	// eligible to admit another submission.
+	backends["a"].hooks(nil, func(mode string) error {
+		if mode == "off" {
+			return errors.New("test cleanup failure")
+		}
+		return nil
+	}, nil)
+	close(defaultAvailable)
+	awaitEngineCondition(t, func() bool {
+		a, _ := e.Device("a")
+		return a.Connection == "online"
+	})
+	if _, _, err := e.SubmitRoutedSequence(t.Context(), "", "ambiguous", [32]byte{6}, func() (sequence.Sequence, SequenceRoute, error) {
+		return sequenceTestInput(), SequenceRoute{Serial: "missing", Source: "default", UseSingleOnline: true}, nil
+	}); !errors.Is(err, ErrSequenceTargetOffline) {
+		t.Fatalf("an active device still counts as online when testing uniqueness: %v", err)
+	}
+	retry, replayed, err := e.SubmitRoutedSequence(t.Context(), "", original.ID, [32]byte{1}, func() (sequence.Sequence, SequenceRoute, error) {
+		t.Error("retained job resolved its device again")
+		return sequence.Sequence{}, SequenceRoute{}, ErrInvalid
+	})
+	if err != nil || !replayed || retry.Serial != original.Serial || retry.TargetSource != original.TargetSource || !retry.CreatedAt.Equal(original.CreatedAt) {
+		t.Fatalf("fallback job replay changed its accepted identity: %+v, replayed=%t, err=%v", retry, replayed, err)
+	}
+	fresh, replayed, err := e.SubmitRoutedSequence(t.Context(), "", "fresh", [32]byte{4}, prepare)
+	if err != nil || replayed || fresh.Serial != "a" || fresh.TargetSource != "default" {
+		t.Fatalf("reconnected default: %+v, replayed=%t, err=%v", fresh, replayed, err)
+	}
+	awaitSequenceTerminal(t, e, fresh.ID, "failed")
+	a, _ := e.Device("a")
+	if a.Connection != "offline" || a.ActiveJob != "" || a.QueueDepth != 0 {
+		t.Fatalf("failed cleanup must leave the handle unadmittable: %+v", a)
+	}
+	if _, _, err := e.SubmitRoutedSequence(t.Context(), "", "after-cleanup-failure", [32]byte{5}, prepare); !errors.Is(err, ErrBusy) {
+		t.Fatalf("the only online alternate is still busy: %v", err)
+	}
+
+	alternate.open()
+	awaitSequenceTerminal(t, e, original.ID, "succeeded")
+}
+
 func TestSequenceReplayAfterConcurrentPreparationFailure(t *testing.T) {
 	e, b := startSequenceTest(t, Options{})
 	backendGate := newEngineGate()

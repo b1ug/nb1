@@ -18,6 +18,7 @@ type record struct {
 	pattern                                    patternAdmissionIdentity
 	kind                                       recordKind
 	state                                      recordState
+	targetSource                               string
 	program                                    *Program
 	frames                                     *FrameProgram
 	completedSteps, totalSteps                 int
@@ -446,8 +447,16 @@ func (e *Engine) cancelRecordLocked(r *record) {
 }
 
 func (w *worker) offline(err error) {
+	w.engine.mu.Lock()
+	w.markOfflineLocked(err)
+	w.engine.mu.Unlock()
+	w.closeBackend()
+}
+
+// Publish the known failure before native Close, which may block. The worker
+// still owns the handle and lease until Close returns; only then may it reopen.
+func (w *worker) markOfflineLocked(err error) {
 	e := w.engine
-	e.mu.Lock()
 	connection := "offline"
 	if errors.Is(err, ErrBusy) {
 		connection = "busy"
@@ -464,11 +473,9 @@ func (w *worker) offline(err error) {
 	}
 	w.queue = nil
 	w.state.QueueDepth = 0
-	e.mu.Unlock()
-	// Publish the known failure before native Close, which may block. New
-	// requests must not queue behind a handle already known to have failed.
-	// The worker still owns this handle and its lease until Close returns;
-	// only then may its loop reopen the serial or complete shutdown.
+}
+
+func (w *worker) closeBackend() {
 	if w.backend != nil {
 		w.backend.Close()
 		w.backend = nil
@@ -525,8 +532,7 @@ func (w *worker) loop() {
 				if !e.options.ReadOnly && e.options.ShutdownMode != "hold" {
 					err = w.scopedStop(nil, transporttrace.Shutdown, e.options.ShutdownMode)
 				}
-				w.backend.Close()
-				w.backend = nil
+				w.closeBackend()
 			}
 			e.mu.Lock()
 			if err != nil {
@@ -687,11 +693,18 @@ func (w *worker) finishExecution(r *record, runErr error, cancelled bool) {
 		}
 		w.active = nil
 		w.state.ActiveJob = ""
-		e.mu.Unlock()
+		failure := runErr
 		if cleanupErr != nil {
-			w.offline(cleanupErr)
-		} else if runErr != nil {
-			w.offline(runErr)
+			failure = cleanupErr
+		}
+		// Clearing the active job and marking a failed handle offline must
+		// happen in one critical section so routing never sees it as idle.
+		if failure != nil {
+			w.markOfflineLocked(failure)
+		}
+		e.mu.Unlock()
+		if failure != nil {
+			w.closeBackend()
 		}
 		return
 	}

@@ -32,7 +32,11 @@ The daemon's library selection is `--library-dir`, `NB1_LIBRARY_DIR`, profile `l
 
 Device locks retain the native platform root independently of profile/library choice. On macOS the default is `~/Library/Application Support/nb1/device-locks`; inspect `device_lock_dir` rather than deriving it from the library. All owners must agree on an explicit lock-directory override.
 
-The HTTP CLI uses `--endpoint` or the profile's `server.listen`, with `127.0.0.1:5885` as the default. Its default request/wait budget is 30s. The stdio MCP launcher uses its own `--endpoint`, defaulting to `http://127.0.0.1:5885`. Supply `--token-file` when the local API requires a token. For remote MCP, configure the client with the device host's HTTPS `/mcp` URL and its Bearer token. Use the selected daemon for Job recovery.
+The HTTP CLI uses `--endpoint` or the profile's `server.listen`, with `127.0.0.1:5885` as the default. Its default request/wait budget is 30s. The `nb1 mcp` stdio command uses its own `--endpoint`, defaulting to `http://127.0.0.1:5885`. Supply `--token-file` when the local API requires a token. For remote MCP, configure the client with the device host's HTTPS `/mcp` URL and its Bearer token. Use the selected daemon for Job recovery.
+
+## Daemon-side routing
+
+Use `nb1 control run FILE --daemon-default` to follow the running daemon's profile when the installed version supports routing. An explicitly supplied serial still wins. `nb1 control emit NAME` uses the daemon's Trigger mapping. Both commands in these modes use the configured HTTP endpoint. Direct execution requires a selected USB serial.
 
 ## Device-native storage
 

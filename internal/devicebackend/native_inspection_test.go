@@ -46,13 +46,19 @@ func (f *nativeLampSpy) ReadPlaystateRaw() (b1.RawPlaystate, error) {
 
 func TestNativeReadProfileKeepsSDKAndReadEvidenceSeparate(t *testing.T) {
 	for _, tc := range []struct {
-		fw   int
-		sdk  string
-		read string
-		end  string
-	}{{204, "model-only", "firmware-matched", "exclusive"}, {205, "firmware-matched", "firmware-matched", "exclusive"}, {206, "unresolved", "unresolved", "unknown"}, {203, "model-only", "unresolved", "unknown"}} {
+		fw           int
+		sdkReference int
+		sdk          string
+		read         string
+		end          string
+	}{
+		{204, 204, "firmware-matched", "firmware-matched", "exclusive"},
+		{205, 205, "firmware-matched", "firmware-matched", "exclusive"},
+		{206, 205, "unresolved", "unresolved", "unknown"},
+		{203, 205, "model-only", "unresolved", "unknown"},
+	} {
 		profile, err := nativeReadProfile(nativeMetadata(), tc.fw)
-		if err != nil || profile.SDKApplicability != tc.sdk || profile.ReadReference.Applicability != tc.read || profile.ReadReference.PlaybackEndEncoding != tc.end || profile.SDKReferenceFirmware == nil || *profile.SDKReferenceFirmware != 205 || profile.OperationQualification != "unverified" {
+		if err != nil || profile.SDKApplicability != tc.sdk || profile.ReadReference.Applicability != tc.read || profile.ReadReference.PlaybackEndEncoding != tc.end || profile.SDKReferenceFirmware == nil || *profile.SDKReferenceFirmware != tc.sdkReference || profile.OperationQualification != "unverified" {
 			t.Fatalf("fw%d %+v %v", tc.fw, profile, err)
 		}
 		if profile.ReadReference.RowsDecodable != (tc.read == "firmware-matched") {

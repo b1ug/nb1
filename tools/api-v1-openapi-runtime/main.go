@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -81,6 +82,9 @@ func run() error {
 	if _, err := store.SavePattern(libraryv1.Pattern{ID: "gentle-pulse", Title: "Gentle pulse", Sequence: compiled}); err != nil {
 		return err
 	}
+	if err := os.WriteFile(filepath.Join(dir, "triggers.json"), []byte(`{"schema_version":1,"triggers":{"build.done":{"pattern_id":"gentle-pulse"}}}`), 0600); err != nil {
+		return err
+	}
 	engine, err := control.New(driver{&backend{one: "#000000", two: "#000000"}}, control.Options{Serials: []string{"fixture-0001"}, PollInterval: time.Hour})
 	if err != nil {
 		return err
@@ -103,7 +107,7 @@ func run() error {
 		}
 		time.Sleep(time.Millisecond)
 	}
-	handler := httpapi.New(engine, httpapi.WithSequenceAPI(), httpapi.WithLibraryDirectory(dir))
+	handler := httpapi.New(engine, httpapi.WithSequenceAPI(), httpapi.WithLibraryDirectory(dir), httpapi.WithSequenceRouting("", false, dir))
 	results := make([]observation, 0, len(requests))
 	for _, input := range requests {
 		r := httptest.NewRequest(input.Method, "http://127.0.0.1"+input.Path, strings.NewReader(input.Body))

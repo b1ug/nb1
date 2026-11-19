@@ -35,10 +35,11 @@ type Config struct {
 }
 
 type ServerConfig struct {
-	Devices        []string            `json:"devices" yaml:"devices"`
-	Listen         string              `json:"listen" yaml:"listen"`
-	LocalTokenFile string              `json:"local_token_file,omitempty" yaml:"local_token_file,omitempty"`
-	Remote         *RemoteServerConfig `json:"remote,omitempty" yaml:"remote,omitempty"`
+	Devices               []string            `json:"devices" yaml:"devices"`
+	Listen                string              `json:"listen" yaml:"listen"`
+	DefaultDeviceFallback string              `json:"default_device_fallback,omitempty" yaml:"default_device_fallback,omitempty"`
+	LocalTokenFile        string              `json:"local_token_file,omitempty" yaml:"local_token_file,omitempty"`
+	Remote                *RemoteServerConfig `json:"remote,omitempty" yaml:"remote,omitempty"`
 }
 
 type JobConfig struct {
@@ -146,6 +147,11 @@ func Load(selected Selection) (Config, error) {
 var serialPattern = regexp.MustCompile(`^[0-9a-fA-F]{8}$`)
 
 func Validate(config Config) error {
+	switch config.Server.DefaultDeviceFallback {
+	case "", "error", "single_online":
+	default:
+		return fmt.Errorf("server.default_device_fallback must be error or single_online")
+	}
 	if config.Device != "" && !serialPattern.MatchString(config.Device) {
 		return fmt.Errorf("device must be empty or exactly eight hexadecimal digits")
 	}
@@ -229,6 +235,8 @@ func decode(data []byte, config *Config) error {
 				switch key {
 				case "listen":
 					return stringValue(value, "server.listen", &config.Server.Listen)
+				case "default_device_fallback":
+					return stringValue(value, "server.default_device_fallback", &config.Server.DefaultDeviceFallback)
 				case "local_token_file":
 					return stringValue(value, "server.local_token_file", &config.Server.LocalTokenFile)
 				case "remote":

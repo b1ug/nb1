@@ -59,6 +59,10 @@ func newServerCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
+			defaultSerial, err := preferredSerial(cmd, settings)
+			if err != nil {
+				return err
+			}
 			if !cmd.Flags().Changed("job-cache-size") {
 				jobCacheSize = settings.Jobs.TerminalLimit
 			}
@@ -128,7 +132,8 @@ func newServerCommand() *cobra.Command {
 				transportTraceBuildStamp(recorder)
 			}
 			return serveRuntimeWithTrace(ctx, listener, engine, cmd.OutOrStdout(), shutdownTimeout, recorder, remote, localToken,
-				httpapi.WithSequenceAPI(), httpapi.WithLibraryDirectory(libraryDir))
+				httpapi.WithSequenceAPI(), httpapi.WithLibraryDirectory(libraryDir),
+				httpapi.WithSequenceRouting(defaultSerial, settings.Server.DefaultDeviceFallback == "single_online", libraryDir))
 		},
 	}
 	command.Flags().StringVar(&listen, "listen", appconfig.DefaultListen, "loopback host:port (port 0 chooses a free port)")

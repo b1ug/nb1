@@ -198,7 +198,7 @@ func (h *handler) saveSequencePattern(w http.ResponseWriter, r *http.Request, id
 		return
 	}
 	input := sequenceInput{Action: body.Action, Sequence: body.Sequence}
-	if !input.validate(w, false) {
+	if !input.validate(w, false, false) {
 		return
 	}
 	if utf8.RuneCountInString(body.Title) > libraryv1.MaxTitleRunes {

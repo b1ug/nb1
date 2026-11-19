@@ -125,6 +125,26 @@ type fakeDriver struct{ backend *fakeBackend }
 
 func (d fakeDriver) Open(string) (control.Backend, error) { return d.backend, nil }
 
+type routedFakeBackend struct {
+	*fakeBackend
+	serial string
+}
+
+func (b *routedFakeBackend) Info() control.DeviceInfo {
+	info := b.fakeBackend.Info()
+	info.Serial = b.serial
+	return info
+}
+
+type routedFakeDriver map[string]*routedFakeBackend
+
+func (d routedFakeDriver) Open(serial string) (control.Backend, error) {
+	if backend := d[serial]; backend != nil {
+		return backend, nil
+	}
+	return nil, fmt.Errorf("missing fake device %s", serial)
+}
+
 type fakeBackend struct {
 	mu   sync.Mutex
 	sets int
@@ -317,6 +337,205 @@ func TestOfficialStdioBuildIdentityAndRunWithoutPreview(t *testing.T) {
 	}
 }
 
+func testMCPTransport(t *testing.T, daemonURL string, timeout time.Duration, remote bool) (string, func() *mcp.ClientSession) {
+	t.Helper()
+	recoveryURL := daemonURL
+	connect := func() *mcp.ClientSession { return connectStdio(t, daemonURL, timeout) }
+	if remote {
+		public := httptest.NewUnstartedServer(nil)
+		t.Cleanup(public.Close)
+		recoveryURL = "https://" + public.Listener.Addr().String() + "/mcp"
+		handler, closeClient, err := NewHTTPHandler(daemonURL, recoveryURL, timeout, testVersion, "")
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(closeClient)
+		mux := http.NewServeMux()
+		mux.Handle("/mcp", handler)
+		public.Config.Handler = mux
+		public.StartTLS()
+		connect = func() *mcp.ClientSession {
+			agent := mcp.NewClient(&mcp.Implementation{Name: "nb1-http-test", Version: "1"}, nil)
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+			session, err := agent.Connect(ctx, &mcp.StreamableClientTransport{Endpoint: recoveryURL, HTTPClient: public.Client()}, nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			t.Cleanup(func() { _ = session.Close() })
+			return session
+		}
+	}
+	return recoveryURL, connect
+}
+
+func TestOfficialStdioTriggerRoutingPreservesJobTargetAndIdentity(t *testing.T) {
+	testTriggerRoutingPreservesJobTargetAndIdentity(t, false)
+}
+
+func TestStreamableHTTPTriggerRoutingPreservesJobTargetAndIdentity(t *testing.T) {
+	testTriggerRoutingPreservesJobTargetAndIdentity(t, true)
+}
+
+func testTriggerRoutingPreservesJobTargetAndIdentity(t *testing.T, remote bool) {
+	t.Helper()
+	a := &routedFakeBackend{fakeBackend: &fakeBackend{led1: "#000000", led2: "#000000"}, serial: "20000001"}
+	b := &routedFakeBackend{fakeBackend: &fakeBackend{led1: "#000000", led2: "#000000"}, serial: "20000002"}
+	engine, err := control.New(routedFakeDriver{a.serial: a, b.serial: b}, control.Options{Serials: []string{a.serial, b.serial}, PollInterval: 10 * time.Millisecond})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := engine.Start(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+		if err := engine.Close(ctx); err != nil {
+			t.Error(err)
+		}
+	})
+	deadline := time.Now().Add(time.Second)
+	for _, serial := range []string{a.serial, b.serial} {
+		for {
+			state, _ := engine.Device(serial)
+			if state.Connection == "online" {
+				break
+			}
+			if time.Now().After(deadline) {
+				t.Fatal("fake devices failed to connect")
+			}
+			time.Sleep(time.Millisecond)
+		}
+	}
+	library := filepath.Join(t.TempDir(), "library")
+	if err := os.Mkdir(library, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	writeTrigger := func(serial string) {
+		t.Helper()
+		data := fmt.Sprintf(`{"schema_version":1,"triggers":{"success":{"pattern_id":"gentle","serial":%q}}}`, serial)
+		if err := os.WriteFile(filepath.Join(library, "triggers.json"), []byte(data), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	writeTrigger(b.serial)
+	handler := httpapi.New(engine, httpapi.WithSequenceAPI(), httpapi.WithLibraryDirectory(library), httpapi.WithSequenceRouting(a.serial, true, library))
+	var submissions int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost && r.URL.Path == "/v1/jobs" {
+			atomic.AddInt32(&submissions, 1)
+		}
+		handler.ServeHTTP(w, r)
+	}))
+	t.Cleanup(server.Close)
+	endpoint, connect := testMCPTransport(t, server.URL, 3*time.Second, remote)
+	session := connect()
+	listed, err := session.ListTools(context.Background(), nil)
+	if err != nil || len(listed.Tools) != 12 {
+		t.Fatalf("routing changed the twelve-tool surface: %+v, %v", listed, err)
+	}
+	saved := call(t, session, "save_pattern", `{"id":"gentle","action":{"kind":"set","color":"red"}}`)
+	if saved.Error != nil {
+		t.Fatalf("save fixture Pattern: %+v", *saved.Error)
+	}
+	requireSuccess(t, saved, nil)
+	run := func(args, id, serial string) control.SequenceJob {
+		t.Helper()
+		out := call(t, session, "run_light", args)
+		var job control.SequenceJob
+		requireSuccess(t, out, &job)
+		if out.ID != id || out.Endpoint != endpoint || job.ID != id || job.Serial != serial {
+			t.Fatalf("accepted Job identity/target changed: output=%+v Job=%+v", out, job)
+		}
+		finished := waitJob(t, session, id, "succeeded")
+		if finished.ID != id || finished.Serial != serial {
+			t.Fatalf("queried Job identity/target changed: %+v", finished)
+		}
+		return finished
+	}
+	run(`{"id":"trigger-original","trigger":"success"}`, "trigger-original", b.serial)
+	if a.setCount() != 0 || b.setCount() != 1 {
+		t.Fatalf("trigger without serial ignored its binding: A=%d B=%d", a.setCount(), b.setCount())
+	}
+	run(`{"id":"default-original","action":{"kind":"set","color":"blue"}}`, "default-original", a.serial)
+	run(`{"serial":"20000001","id":"override-original","trigger":"success"}`, "override-original", a.serial)
+	if a.setCount() != 2 || b.setCount() != 1 {
+		t.Fatalf("default/explicit override reached wrong target: A=%d B=%d", a.setCount(), b.setCount())
+	}
+	before := atomic.LoadInt32(&submissions)
+	for _, mixed := range []string{
+		`{"trigger":"success","action":{"kind":"off"}}`,
+		`{"trigger":"success","pattern_id":"gentle"}`,
+		`{"trigger":"success","sequence":{"timing":"serial","steps":[{"targets":[{"led":0,"color":"red"}],"fade_ms":0,"hold_ms":0}],"repeat":1,"on_finish":"hold"}}`,
+	} {
+		out := call(t, session, "run_light", mixed)
+		if out.Error == nil || out.Error.Code != "invalid_request" || out.Error.OutcomeUnknown {
+			t.Fatalf("mixed trigger selector accepted or reported unknown: %+v", out)
+		}
+	}
+	if atomic.LoadInt32(&submissions) != before {
+		t.Fatal("mixed trigger selectors reached HTTP submission")
+	}
+	// A new mapping must not retarget or repeat a Job retained under its ID.
+	writeTrigger(a.serial)
+	run(`{"id":"trigger-original","trigger":"success"}`, "trigger-original", b.serial)
+	if err := os.WriteFile(filepath.Join(library, "triggers.json"), []byte(`{"schema_version":1,"triggers":`), 0600); err != nil {
+		t.Fatal(err)
+	}
+	rejected := call(t, session, "run_light", `{"id":"bad-trigger-config","trigger":"success"}`)
+	if rejected.Error == nil || rejected.Error.Code != "invalid_trigger_config" || rejected.Error.HTTPStatus != 503 || rejected.Error.OutcomeUnknown {
+		t.Fatalf("invalid trigger configuration is a definite rejection: %+v", rejected)
+	}
+	if a.setCount() != 2 || b.setCount() != 1 {
+		t.Fatalf("replaying a retained trigger Job wrote again: A=%d B=%d", a.setCount(), b.setCount())
+	}
+
+	const hold = `{"timing":"serial","steps":[{"targets":[{"led":0,"color":"#123456"}],"hold_ms":10000}]}`
+	requireSuccess(t, call(t, session, "run_light", fmt.Sprintf(`{"id":"guard-a","serial":%q,"sequence":%s}`, a.serial, hold)), nil)
+	requireSuccess(t, call(t, session, "run_light", fmt.Sprintf(`{"id":"guard-b","serial":%q,"sequence":%s}`, b.serial, hold)), nil)
+	waitJob(t, session, "guard-a", "running")
+	waitJob(t, session, "guard-b", "running")
+	rejected = call(t, session, "cancel_job", fmt.Sprintf(`{"id":"guard-b","serial":%q}`, a.serial))
+	if rejected.Error == nil || rejected.Error.Code != "job_target_mismatch" || rejected.Error.HTTPStatus != 409 ||
+		rejected.Error.OutcomeUnknown || rejected.ID != "guard-b" || rejected.Endpoint != endpoint {
+		t.Fatalf("cross-device cancel guard rejection=%+v", rejected)
+	}
+	var running control.SequenceJob
+	requireSuccess(t, call(t, session, "get_job", `{"id":"guard-b"}`), &running)
+	if running.Status != "running" || running.Serial != b.serial {
+		t.Fatalf("wrong guard changed the Job: %+v", running)
+	}
+	requireSuccess(t, call(t, session, "cancel_job", fmt.Sprintf(`{"id":"guard-b","serial":%q}`, b.serial)), nil)
+	waitJob(t, session, "guard-b", "cancelled")
+	requireSuccess(t, call(t, session, "get_job", `{"id":"guard-a"}`), &running)
+	if running.Status != "running" || running.Serial != a.serial {
+		t.Fatalf("guarded cancellation touched another device: %+v", running)
+	}
+	requireSuccess(t, call(t, session, "cancel_job", `{"id":"guard-a"}`), nil)
+	waitJob(t, session, "guard-a", "cancelled")
+}
+
+func TestOfficialStdioGuardedCancelDoesNotRetryAfterLegacyRejection(t *testing.T) {
+	var attempts atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		attempts.Add(1)
+		if r.Method != http.MethodPost || r.URL.RequestURI() != "/v1/jobs/guarded/cancel?serial=20000001" || r.ContentLength != 0 {
+			t.Errorf("expected one bodyless guarded POST, got %s %s (%d bytes)", r.Method, r.URL.RequestURI(), r.ContentLength)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = io.WriteString(w, `{"error":{"code":"invalid_request","message":"unexpected query"}}`)
+	}))
+	defer server.Close()
+	session := connectStdio(t, server.URL, time.Second)
+	out := call(t, session, "cancel_job", `{"id":"guarded","serial":"20000001"}`)
+	if out.Error == nil || out.Error.Code != "invalid_request" || out.Error.HTTPStatus != 400 || out.Error.OutcomeUnknown ||
+		out.ID != "guarded" || out.Endpoint != server.URL || attempts.Load() != 1 {
+		t.Fatalf("legacy rejection=%+v attempts=%d", out, attempts.Load())
+	}
+}
+
 func TestStreamableHTTPUsesSameTools(t *testing.T) {
 	daemonServer, _ := engineServer(t)
 	protectedServer := httptest.NewServer(remoteaccess.ProtectLocal(testToken, daemonServer.Config.Handler))
@@ -482,6 +701,7 @@ func TestOfficialStdioInvalidArgumentsStayOffHTTP(t *testing.T) {
 		{"run_light", `{"serial":"20000001","action":{"kind":"off"},"pattern_id":"a"}`},
 		{"run_light", `{"serial":"20000001","sequence":{"timing":"serial","steps":[{"targets":[{"led":0,"color":"#123456"}],"interval_ms":50}]}}`},
 		{"get_job", `{"id":"bad/id"}`},
+		{"cancel_job", `{"id":"valid","serial":""}`},
 		{"save_pattern", `{"id":"a","pattern_id":"b"}`},
 		{"save_color", `{"name":"BadName","color":"red"}`},
 	} {
@@ -540,33 +760,7 @@ func testLostResponseRecovery(t *testing.T, remote bool) {
 		w.WriteHeader(http.StatusNotFound)
 	}))
 	defer server.Close()
-	recoveryURL := server.URL
-	connect := func() *mcp.ClientSession { return connectStdio(t, server.URL, time.Second) }
-	if remote {
-		public := httptest.NewUnstartedServer(nil)
-		t.Cleanup(public.Close)
-		recoveryURL = "https://" + public.Listener.Addr().String() + "/mcp"
-		handler, closeClient, err := NewHTTPHandler(server.URL, recoveryURL, time.Second, testVersion, "")
-		if err != nil {
-			t.Fatal(err)
-		}
-		t.Cleanup(closeClient)
-		mux := http.NewServeMux()
-		mux.Handle("/mcp", handler)
-		public.Config.Handler = mux
-		public.StartTLS()
-		connect = func() *mcp.ClientSession {
-			agent := mcp.NewClient(&mcp.Implementation{Name: "recovery-client", Version: "1"}, nil)
-			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-			defer cancel()
-			session, err := agent.Connect(ctx, &mcp.StreamableClientTransport{Endpoint: recoveryURL, HTTPClient: public.Client()}, nil)
-			if err != nil {
-				t.Fatal(err)
-			}
-			t.Cleanup(func() { _ = session.Close() })
-			return session
-		}
-	}
+	recoveryURL, connect := testMCPTransport(t, server.URL, time.Second, remote)
 	session := connect()
 	out := call(t, session, "run_light", `{"serial":"20000001","action":{"kind":"off"}}`)
 	if out.Error == nil || !out.Error.OutcomeUnknown || out.ID != id.Load().(string) || out.Endpoint != recoveryURL || !regexp.MustCompile(`^j_[0-9A-HJKMNP-TV-Z]{10}$`).MatchString(out.ID) {

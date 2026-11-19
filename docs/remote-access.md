@@ -94,7 +94,7 @@ either token, TLS credentials or listener settings.
 - `nb1 control` and `nb1 doctor` read the token file named in the active
   profile when using its endpoint. When choosing an endpoint explicitly, pass both
   `--endpoint http://127.0.0.1:5885` and `--token-file ./local.token`.
-- `nb1 mcp` and the compatible `nb1-mcp` launcher serve local stdio. Pass
+- Run `nb1 mcp` from the same platform download to serve local stdio. Pass
   `--token-file ./local.token` when the local API requires one.
 - With a local token, `GET /healthz` and the constant `GET /v1/presence`
   marker remain readable. `GET /v1/service-status` requires the token.

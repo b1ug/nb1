@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"io"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -178,35 +177,40 @@ func TestCompilerClientOlderDaemonIsUnsupported(t *testing.T) {
 
 func TestCompilerClientPreviewInputGuardAndCallerDeadline(t *testing.T) {
 	input, _ := compilerPreview(t)
-	var calls int32
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		atomic.AddInt32(&calls, 1)
-		_, _ = io.Copy(io.Discard, r.Body)
-		select {
-		case <-r.Context().Done():
-		case <-time.After(time.Second):
-		}
-	}))
-	defer server.Close()
-	client, err := New(server.URL)
+	client, err := New(DefaultEndpoint)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer client.Close()
+	var calls int
+	var callerDeadline time.Time
+	// Real HTTP tests above cover the wire. Inspect the request at the
+	// transport so TCP scheduling cannot consume the assertion's deadline.
+	client.http.Transport = lightRoundTripper(func(r *http.Request) (*http.Response, error) {
+		calls++
+		_ = r.Body.Close()
+		deadline, ok := r.Context().Deadline()
+		if !ok || !deadline.Equal(callerDeadline) {
+			t.Errorf("transport deadline = %v, want %v", deadline, callerDeadline)
+			return nil, errors.New("unexpected transport deadline")
+		}
+		<-r.Context().Done()
+		return nil, r.Context().Err()
+	})
 	invalidSerial := "../not-a-device"
 	for _, invalid := range []httpapi.PreviewRequest{{}, {Program: &control.Program{}, Effect: input.Effect}, {Effect: input.Effect, Serial: &invalidSerial}} {
 		if _, err := client.Preview(context.Background(), invalid); err == nil {
 			t.Fatal("invalid preview input accepted")
 		}
 	}
-	if atomic.LoadInt32(&calls) != 0 {
+	if calls != 0 {
 		t.Fatal("input guard contacted daemon")
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 25*time.Millisecond)
+	callerDeadline = time.Now().Add(25 * time.Millisecond)
+	ctx, cancel := context.WithDeadline(context.Background(), callerDeadline)
 	defer cancel()
-	started := time.Now()
 	_, err = client.Preview(ctx, input)
-	if !errors.Is(err, context.DeadlineExceeded) || time.Since(started) > time.Second || atomic.LoadInt32(&calls) != 1 {
+	if !errors.Is(err, context.DeadlineExceeded) || calls != 1 {
 		t.Fatalf("caller deadline not preserved or request retried: %v calls=%d", err, calls)
 	}
 }

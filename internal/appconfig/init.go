@@ -14,6 +14,8 @@ device: ""
 server:
   devices: []
   listen: "` + DefaultListen + `"
+  # Set single_online to allow an implicit default to use one online alternative.
+  default_device_fallback: "error"
   # Set a private token file to require Bearer authentication on loopback.
   local_token_file: ""
   remote:

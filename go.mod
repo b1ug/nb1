@@ -8,7 +8,7 @@ require (
 	charm.land/lipgloss/v2 v2.0.5
 	charm.land/log/v2 v2.0.1
 	github.com/1set/gut v0.0.0-20201117175203-a82363231997
-	github.com/b1ug/blink1-go v0.0.2
+	github.com/b1ug/blink1-go v0.0.3
 	github.com/b1ug/colorkit v0.1.0
 	github.com/b1ug/gid v0.0.3
 	github.com/charmbracelet/colorprofile v0.4.3

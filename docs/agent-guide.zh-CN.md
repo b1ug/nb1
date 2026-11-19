@@ -4,7 +4,7 @@
 
 [Skill](../skills/blink1-control/SKILL.md)告诉 Agent 如何使用已有的 nb1 CLI、HTTP API 或 MCP 连接。它不自带驱动，不自动启动 daemon、注册 MCP 或增加权限。Skill 应与 nb1 版本匹配；实际帮助和 MCP schema 才能说明当前可用的接口。
 
-[正式版本安装指南](install.zh-CN.md)说明独立 CLI、MCP 与 Skill 产物的核验和解压方式。开发产物仍使用独立的[同版候选指南](candidate-install.zh-CN.md#独立接入-mcp-或-skill)。
+[正式版本安装指南](install.zh-CN.md)说明如何核验与解压 nb1 程序和可选的 Skill。开发产物仍使用独立的[同版候选指南](candidate-install.zh-CN.md#独立接入-mcp-或-skill)。
 
 ## 安装到一个项目
 
@@ -29,6 +29,8 @@ daemon 模式需要显式启动 nb1，或使用已配置的用户服务：
 ```sh
 nb1 server --devices DEVICE_SERIAL
 ```
+
+本机 stdio 客户端的启动命令填已安装的 `nb1`，首个参数填 `mcp`。从 v0.1.2 升级时，原有参数放在 `mcp` 后面。[客户端配置示例](install.zh-CN.md#连接本机-mcp-客户端)
 
 若 Agent 在另一台电脑上，请配置到设备主机的 Streamable HTTP 连接，再调用 `list_devices` 选择序列号。[远程 MCP 接入](remote-access.zh-CN.md)
 

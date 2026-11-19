@@ -11,6 +11,7 @@ import (
 	"github.com/b1ug/nb1/internal/daemonclient"
 	"github.com/b1ug/nb1/internal/jsoninput"
 	"github.com/b1ug/nb1/internal/sequence"
+	"github.com/b1ug/nb1/internal/triggerv1"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
@@ -38,11 +39,12 @@ type toolArgs struct {
 	Action    json.RawMessage `json:"action,omitempty"`
 	Sequence  json.RawMessage `json:"sequence,omitempty"`
 	PatternID *string         `json:"pattern_id,omitempty"`
+	Trigger   *string         `json:"trigger,omitempty"`
 	input     daemonclient.SequenceInput
 }
 
 func newServer(d *daemon, version, recoveryEndpoint, transportInstructions string) *mcp.Server {
-	server := mcp.NewServer(&mcp.Implementation{Name: "nb1", Version: version}, &mcp.ServerOptions{Instructions: "Control the devices selected by the local nb1 daemon. Preview is optional. run_light validates and submits one Action, Sequence or saved pattern_id without a preceding preview. It submits once and returns a Job, whose status is read with get_job. A cancelling Job is still cleaning up. Keep its ID and endpoint when a response is lost and query that ID without submitting it again. HTTP timeout or MCP session closure leaves accepted daemon Jobs running. Active Job records remain retained; terminal records default to a thirty-minute TTL and 16,384-entry LRU limit, configurable through jobs.terminal_ttl and jobs.terminal_limit. Capacity eviction or daemon restart may remove them earlier. Colors and Patterns are saved in the daemon's computer-side library. " + transportInstructions + " Foreground CLI direct Jobs are separate process-local work and cannot be queried through these HTTP tools."})
+	server := mcp.NewServer(&mcp.Implementation{Name: "nb1", Version: version}, &mcp.ServerOptions{Instructions: "Control the devices selected by the local nb1 daemon. Preview is optional. run_light validates and submits one Action, Sequence, saved pattern_id or trigger without a preceding preview. Omit serial to use routing on a daemon that supports it. It submits once and returns a Job, whose status is read with get_job. A cancelling Job is still cleaning up. Keep its ID and endpoint when a response is lost and query that ID without submitting it again. HTTP timeout or MCP session closure leaves accepted daemon Jobs running. Active Job records remain retained; terminal records default to a thirty-minute TTL and 16,384-entry LRU limit, configurable through jobs.terminal_ttl and jobs.terminal_limit. Capacity eviction or daemon restart may remove them earlier. Colors and Patterns are saved in the daemon's computer-side library. " + transportInstructions + " Foreground CLI direct Jobs are separate process-local work and cannot be queried through these HTTP tools."})
 	for _, spec := range toolSpecifications() {
 		name := spec.Name
 		server.AddTool(spec, func(ctx context.Context, request *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
@@ -97,7 +99,11 @@ func decodeArguments(name string, raw json.RawMessage) (toolArgs, error) {
 	if name == "save_color" && !daemonclient.ValidSequenceColorName(args.Name) {
 		return toolArgs{}, fmt.Errorf("invalid color name")
 	}
-	if name == "preview_light" || name == "run_light" || name == "save_pattern" {
+	if args.Trigger != nil {
+		if !triggerv1.ValidName(*args.Trigger) || args.Action != nil || args.Sequence != nil || args.PatternID != nil {
+			return toolArgs{}, fmt.Errorf("trigger must be a valid name and the only content selector")
+		}
+	} else if name == "preview_light" || name == "run_light" || name == "save_pattern" {
 		input, err := inputFor(args)
 		if err != nil {
 			return toolArgs{}, err
@@ -137,11 +143,22 @@ func invoke(ctx context.Context, d *daemon, recoveryEndpoint, name string, args 
 				break
 			}
 		}
-		out.Data, err = d.core.SubmitSequence(ctx, args.input, args.Serial, out.ID)
+		switch {
+		case args.Trigger != nil:
+			out.Data, err = d.core.SubmitTrigger(ctx, *args.Trigger, args.Serial, out.ID)
+		case args.Serial == "":
+			out.Data, err = d.core.SubmitDefaultSequence(ctx, args.input, out.ID)
+		default:
+			out.Data, err = d.core.SubmitSequence(ctx, args.input, args.Serial, out.ID)
+		}
 	case "get_job":
 		out.Data, err = d.core.SequenceJob(ctx, args.ID)
 	case "cancel_job":
-		out.Data, err = d.core.CancelSequenceJob(ctx, args.ID)
+		if args.Serial == "" {
+			out.Data, err = d.core.CancelSequenceJob(ctx, args.ID)
+		} else {
+			out.Data, err = d.core.CancelSequenceJobOnDevice(ctx, args.ID, args.Serial)
+		}
 	case "list_colors":
 		out.Data, err = d.core.SequenceColors(ctx)
 	case "save_color":
@@ -176,6 +193,9 @@ func invoke(ctx context.Context, d *daemon, recoveryEndpoint, name string, args 
 	}
 	if name == "run_light" || name == "cancel_job" || name == "save_color" || name == "save_pattern" {
 		out.Error.OutcomeUnknown = uncertainWrite(err)
+	}
+	if name == "run_light" && daemonclient.SequenceSubmissionRejected(err) {
+		out.Error.OutcomeUnknown = false
 	}
 	if out.Error.OutcomeUnknown && (name == "run_light" || name == "cancel_job") {
 		out.Error.Message += fmt.Sprintf("; query get_job with id %q on endpoint %s", out.ID, out.Endpoint)

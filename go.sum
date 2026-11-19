@@ -54,8 +54,8 @@ github.com/aymanbagabas/go-osc52/v2 v2.0.1 h1:HwpRHbFMcZLEVr42D4p7XBqjyuxQH5SMiE
 github.com/aymanbagabas/go-osc52/v2 v2.0.1/go.mod h1:uYgXzlJ7ZpABp8OJ+exZzJJhRNQ2ASbcXHWsFqH8hp8=
 github.com/aymanbagabas/go-udiff v0.4.1 h1:OEIrQ8maEeDBXQDoGCbbTTXYJMYRCRO1fnodZ12Gv5o=
 github.com/aymanbagabas/go-udiff v0.4.1/go.mod h1:0L9PGwj20lrtmEMeyw4WKJ/TMyDtvAoK9bf2u/mNo3w=
-github.com/b1ug/blink1-go v0.0.2 h1:VizQqDHPYTvvlqo4reKpIhMRaGbMzptvtdHG2ljCbb4=
-github.com/b1ug/blink1-go v0.0.2/go.mod h1:WtEwMgAmJF3bVxFOzIB4NJOWyfcgiw1oIxHhWYnf+Tk=
+github.com/b1ug/blink1-go v0.0.3 h1:qseMXb2p0KM6HFED/xozKIfr42lE1Guye0VrdAuHg5A=
+github.com/b1ug/blink1-go v0.0.3/go.mod h1:WtEwMgAmJF3bVxFOzIB4NJOWyfcgiw1oIxHhWYnf+Tk=
 github.com/b1ug/colorkit v0.1.0 h1:rNKZBdsv6UdYCdg+x8c4Nav6WqpWDDYjEcMVH66n1z4=
 github.com/b1ug/colorkit v0.1.0/go.mod h1:NUCqQtVQ4gCs0lxrL51Eb7t5fivSdeDB89nTL82jY5E=
 github.com/b1ug/gid v0.0.3 h1:mZe/rkvVEatz1246mZ5stE2xREDSSTqZLTMrSHtYO78=

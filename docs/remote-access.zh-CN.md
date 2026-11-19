@@ -60,7 +60,7 @@ codex mcp add nb1-lan --url https://nb1.example.test:9443/mcp \
 本机 API 默认免 Token。如要开启本机鉴权，可用 `nb1 config token init local.token` 单独生成本机凭据，并在 `server` 下设置 `local_token_file: local.token`。更换任一 Token、证书或监听设置后，均须重启 daemon。
 
 - `nb1 control` 和 `nb1 doctor` 使用当前配置中的地址时，会同时读取其中指定的本机 Token 文件。显式选择端口时，同时提供 `--endpoint http://127.0.0.1:5885` 和 `--token-file ./local.token`。
-- `nb1 mcp` 和兼容的 `nb1-mcp` 均可提供本机 stdio。若本机 API 启用了鉴权，启动时传入 `--token-file ./local.token`。
+- 运行同一份下载程序的 `nb1 mcp` 子命令即可提供本机 stdio。若本机 API 启用了鉴权，启动时传入 `--token-file ./local.token`。
 - 启用本机鉴权后，`GET /healthz` 和 `GET /v1/presence` 固定标记仍可读取，`GET /v1/service-status` 需要 Token。WebHID 页面可确认服务已应答，设备数量显示未知。此模式下内嵌调试器暂停提供。
 
 ## 连接排错

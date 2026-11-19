@@ -2,10 +2,7 @@
 
 The release workflow builds the same source into five native targets:
 `darwin/arm64`, `darwin/amd64`, `linux/arm64`, `linux/amd64` and
-`windows/amd64`. The CLI uses CGO; the matching standalone MCP executable does
-not. Both use the fixed Go 1.27.4 build toolchain. The source floor is
-Go 1.25.8 for both the root and standalone MCP modules; it is a different
-contract from the release-build toolchain.
+`windows/amd64`. Each platform ships one CGO-enabled `nb1` executable containing the CLI, daemon, embedded debugger and MCP. The release build uses Go 1.27.4. Building the root module from source requires Go 1.25.8 or newer.
 
 Human CLI help and errors use a temporary fixed Fang fork based on upstream
 v2.0.1; application console diagnostics use Charm Log v2.0.1 on stderr. This
@@ -41,7 +38,7 @@ rehearsal of that exact source:
 gh workflow run release.yml --ref master -f version=v0.1.3 -f publish=false
 ```
 
-The tag workflow publishes the text from `packaging/release/notes.md`. For v0.1.3, check that both archive READMEs and the tag notes identify port 5885 and that the notes explain how to keep an explicitly configured 8931.
+The tag workflow publishes the text from `packaging/release/notes.md`. For v0.1.3, check that each platform archive README and the tag notes identify port 5885 and that the notes explain how to keep an explicitly configured 8931.
 
 Inspect the run, five native package jobs, assembly and attached evidence.
 Each platform records source and Web identity, actual Go build information,
@@ -51,7 +48,7 @@ also checks the embedded HTTP assets and foreground daemon lifecycle.
 
 Go may omit `-ldflags` from `go version -m` when `-trimpath` is used. The release
 version is therefore also checked by executing the exact extracted CLI's
-`version --json` and the MCP binary's real stdio `initialize` response. A version
+`version --json` and that executable’s `mcp` subcommand with a real stdio `initialize` request. A version
 string in the manifest alone does not satisfy the native smoke gate.
 
 Both `pull_request` and `workflow_dispatch` are always rehearsals. Requesting
@@ -81,17 +78,15 @@ asset set. Published tags and checksums are immutable.
 
 ## Assets and verification
 
-- Five `nb1-vVERSION-OS-ARCH` archives: executable, embedded Web, short README,
-  license files, build manifest and internal checksums.
-- Five optional `nb1-mcp-vVERSION-OS-ARCH` archives.
+- Five `nb1-vVERSION-OS-ARCH` archives, each with the executable (including
+  `nb1 mcp` and the embedded Web), README, licenses, build manifest and internal checksums.
 - One platform-independent `blink1-control-vVERSION.zip`, containing the five
   Skill instruction/reference files and the original root LICENSE.
 - `release.json` with all source, target, component, runtime and asset identities.
-- Global `SHA256SUMS`, including `release.json` and all eleven archives.
+- Global `SHA256SUMS`, including `release.json` and all six archives.
 
-Unix binaries use `.tar.gz`; Windows uses `.zip` and `.exe`. CLI and MCP archives
-are unpacked into separate directories because each has its own `build.json`
-and internal `SHA256SUMS`. For a single selected archive, compare its complete
+Unix archives use `.tar.gz`. Windows uses `.zip` and `.exe`. Each platform archive
+contains `build.json` and an internal `SHA256SUMS` for its files. For a single selected archive, compare its complete
 outer hash against the global list, then verify the inner list after extraction.
 Do not run `-c` against the global list when the other platform archives were
 not downloaded.

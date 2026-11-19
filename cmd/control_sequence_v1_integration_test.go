@@ -4,12 +4,16 @@ import (
 	"context"
 	"encoding/json"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
+	"strings"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/b1ug/nb1/internal/control"
 	"github.com/b1ug/nb1/internal/httpapi"
+	"github.com/b1ug/nb1/internal/triggerv1"
 )
 
 type sequenceControlDriver struct{ backend *sequenceControlBackend }
@@ -58,6 +62,7 @@ func (b *sequenceControlBackend) Stop(mode string) error {
 func (*sequenceControlBackend) Close() {}
 
 func TestSequenceControlV1ComposesWithHTTPAndEngine(t *testing.T) {
+	t.Setenv("NB1_DEVICE", "")
 	backend := &sequenceControlBackend{led1: "#000000", led2: "#000000"}
 	engine, err := control.New(sequenceControlDriver{backend}, control.Options{Serials: []string{"20000001"}})
 	if err != nil {
@@ -89,7 +94,8 @@ func TestSequenceControlV1ComposesWithHTTPAndEngine(t *testing.T) {
 		case <-time.After(time.Millisecond):
 		}
 	}
-	server := httptest.NewServer(httpapi.New(engine, httpapi.WithSequenceAPI()))
+	libraryDir := filepath.Join(t.TempDir(), "library")
+	server := httptest.NewServer(httpapi.New(engine, httpapi.WithSequenceAPI(), httpapi.WithLibraryDirectory(libraryDir), httpapi.WithSequenceRouting("20000001", false, libraryDir)))
 	defer server.Close()
 	path := sequenceControlFile(t, sequenceControlInput)
 	preview, err := executeSequenceControl(t, server.URL, "preview", path, "--serial", "20000001")
@@ -127,9 +133,48 @@ func TestSequenceControlV1ComposesWithHTTPAndEngine(t *testing.T) {
 			t.Fatalf("repeat submission changed the accepted Job: %+v then %+v", accepted, job)
 		}
 	}
-	backend.mu.Lock()
-	defer backend.mu.Unlock()
-	if backend.setCalls != 1 || backend.led1 != "#000000" || backend.led2 != "#000000" {
-		t.Fatalf("Set calls=%d, final RGB=%s/%s", backend.setCalls, backend.led1, backend.led2)
+	state := func(expected int) {
+		t.Helper()
+		backend.mu.Lock()
+		defer backend.mu.Unlock()
+		if backend.setCalls != expected || backend.led1 != "#000000" || backend.led2 != "#000000" {
+			t.Fatalf("Set calls=%d, final RGB=%s/%s", backend.setCalls, backend.led1, backend.led2)
+		}
 	}
+	state(1)
+	if _, err := executeSequenceControl(t, server.URL, "patterns", "save", "ready", path); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(libraryDir, "triggers.json"), []byte(`{"schema_version":1,"triggers":{"build.done":{"pattern_id":"ready"}}}`), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if output, err := executeSequenceControl(t, server.URL, "triggers"); err != nil || !strings.Contains(output, "build.done") {
+		t.Fatalf("CLI trigger listing: %s %v", output, err)
+	}
+	if output, err := executeSequenceControl(t, server.URL, "triggers", "--check"); err != nil || !strings.Contains(output, `"issues": []`) {
+		t.Fatalf("CLI clean trigger report: %s %v", output, err)
+	}
+	if err := os.WriteFile(filepath.Join(libraryDir, "triggers.json"), []byte(`{"schema_version":1,"triggers":{"build.done":{"pattern_id":"ready"},"dangling":{"pattern_id":"absent"}}}`), 0600); err != nil {
+		t.Fatal(err)
+	}
+	output, err := executeSequenceControl(t, server.URL, "triggers", "--check")
+	var report triggerv1.CheckReport
+	if err == nil || !strings.Contains(err.Error(), "trigger check found issues") ||
+		json.Unmarshal([]byte(output), &report) != nil || len(report.Items) != 2 ||
+		len(report.Items[0].Issues) != 0 || len(report.Items[1].Issues) != 1 ||
+		report.Items[1].Issues[0].Code != "pattern_not_found" {
+		t.Fatalf("CLI trigger check with known issue: %s %v", output, err)
+	}
+	state(1)
+	for _, args := range [][]string{
+		{"emit", "build.done", "--id", "trigger-job", "--wait"},
+		{"run", path, "--daemon-default", "--id", "default-job", "--wait"},
+	} {
+		output, err := executeSequenceControl(t, server.URL, args...)
+		var job control.SequenceJob
+		if err != nil || json.Unmarshal([]byte(output), &job) != nil || job.Status != "succeeded" || job.Serial != "20000001" || job.TargetSource != "default" {
+			t.Fatalf("CLI routed playback %v: %s %v", args[0], output, err)
+		}
+	}
+	state(3)
 }

@@ -6,6 +6,7 @@ The Go fixture uses a simulated device and temporary library. It opens no USB or
 listening port. Existing runtime tests remain the authority for device execution.
 """
 from pathlib import Path
+from urllib.parse import urlencode
 import argparse
 import importlib.metadata
 import json
@@ -77,19 +78,33 @@ for path, item in document['paths'].items():
                 for example in media.get('examples', {}).values():
                     validate(absolute_refs(media['schema']), example['value'])
         concrete = path
+        query = {}
         for parameter in operation.get('parameters', []):
-            concrete = concrete.replace('{' + parameter['name'] + '}', parameter['example'])
+            if parameter['in'] == 'path':
+                concrete = concrete.replace('{' + parameter['name'] + '}', parameter['example'])
+            elif parameter['in'] == 'query':
+                query[parameter['name']] = parameter['example']
+                validate(absolute_refs(parameter['schema']), parameter['example'])
         body = operation.get('requestBody')
         examples = {'none': {'value': None}} if body is None else body['content']['application/json']['examples']
         for example_name, example in examples.items():
             value = example['value']
             if body is not None:
                 validate(absolute_refs(body['content']['application/json']['schema']), value)
-            requests.append({'name': name + '/' + example_name, 'method': method.upper(), 'path': concrete,
-                             'body': '' if value is None else json.dumps(value, ensure_ascii=False, separators=(',', ':')),
-                             'operation': name, 'valid': True})
+            request = {'name': name + '/' + example_name, 'method': method.upper(), 'path': concrete,
+                       'body': '' if value is None else json.dumps(value, ensure_ascii=False, separators=(',', ':')),
+                       'operation': name, 'valid': True}
+            requests.append(request)
+            if query:
+                requests.append(dict(request, name=request['name'] + '/query', path=concrete + '?' + urlencode(query)))
 
-assert len(operations) == 17 and len(document['paths']) == 15
+expected_operations = {
+    'getHealth', 'getPresence', 'getServiceStatus', 'getTransportMetrics',
+    'listDevices', 'getDevice', 'preview', 'submitJob', 'getJob', 'cancelJob',
+    'listColors', 'resolveColor', 'saveColor', 'saveColorNamedResolve',
+    'listPatterns', 'getPattern', 'savePattern', 'listTriggers', 'checkTriggers',
+}
+assert set(operations) == expected_operations, set(operations) ^ expected_operations
 rank = lambda request: 0 if request['method'] == 'PUT' else 1 if request['operation'] == 'preview' else 2 if request['operation'] == 'submitJob' else 3
 requests.sort(key=rank)
 requests.append({'name': 'sequence-negative-zero', 'method': 'POST', 'path': '/v1/preview',

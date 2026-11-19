@@ -151,7 +151,7 @@ def inspect_unavailable(result, endpoint):
     return structured
 
 
-def smoke(binary, report, started):
+def smoke(binary, report, started, subcommand=()):
     deadline, work_deadline = started + TOTAL_SECONDS, started + TOTAL_SECONDS - 3
     process = stdout = stderr = None
     reserved = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -163,7 +163,7 @@ def smoke(binary, report, started):
         reserved.bind(("127.0.0.1", 0))
         endpoint = "http://127.0.0.1:" + str(reserved.getsockname()[1])
         report["endpoint"] = {"origin": endpoint, "reservation": "bound_not_listening"}
-        process = subprocess.Popen([str(binary), "--endpoint", endpoint, "--timeout", "1s"],
+        process = subprocess.Popen([str(binary), *subcommand, "--endpoint", endpoint, "--timeout", "1s"],
                                    stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = StdoutReader(process.stdout), StderrReader(process.stderr)
         stdout.start()

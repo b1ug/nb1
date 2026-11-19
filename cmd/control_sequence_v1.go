@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -91,6 +90,7 @@ func newSequenceControlCommandWithDriver(driver func(string) control.Driver) *co
 	preview.Flags().StringVar(&previewSerial, "serial", "", "check the selected device's capabilities")
 	var id string
 	var runWait bool
+	var daemonDefault bool
 	run := &cobra.Command{Use: "run [SERIAL] FILE", Short: "Run one action, sequence or saved pattern", Args: cobra.RangeArgs(1, 2), RunE: func(cmd *cobra.Command, args []string) error {
 		explicit := ""
 		if len(args) == 2 {
@@ -104,6 +104,9 @@ func newSequenceControlCommandWithDriver(driver func(string) control.Driver) *co
 			return err
 		}
 		if options.direct {
+			if daemonDefault {
+				return fmt.Errorf("--daemon-default requires the daemon")
+			}
 			if cmd.Flags().Changed("id") {
 				return fmt.Errorf("--id requires the daemon; each direct invocation is a new foreground run without retained deduplication")
 			}
@@ -115,39 +118,30 @@ func newSequenceControlCommandWithDriver(driver func(string) control.Driver) *co
 		if cmd.Flags().Changed("shutdown-timeout") {
 			return fmt.Errorf("--shutdown-timeout requires --direct")
 		}
-		if id == "" {
-			id, err = control.NewSequenceJobID()
-			if err != nil {
-				return err
-			}
-		}
-		if !control.ValidSequenceJobID(id) {
-			return fmt.Errorf("--id must contain 1 to 64 ASCII letters, digits, hyphens or underscores")
-		}
 		return options.withClient(cmd, func(ctx context.Context, client *daemonclient.Client) error {
-			serial, err := resolveControlSerial(ctx, client, cmd, options.settings, explicit)
+			serial := explicit
+			var err error
+			if daemonDefault {
+				if serial == "" {
+					serial, err = options.explicitSerial(cmd)
+				}
+			} else {
+				serial, err = resolveControlSerial(ctx, client, cmd, options.settings, explicit)
+			}
 			if err != nil {
 				return err
 			}
-			job, err := client.SubmitSequence(ctx, input, serial, id)
-			if err != nil {
-				var rejection *daemonclient.Error
-				if errors.As(err, &rejection) && rejection.Status >= 400 && rejection.Status < 500 {
-					return fmt.Errorf("job %s submission rejected: %w", id, err)
+			return options.runDaemonJob(ctx, client, cmd, id, runWait, func(jobID string) (control.SequenceJob, error) {
+				if serial == "" {
+					return client.SubmitDefaultSequence(ctx, input, jobID)
 				}
-				return sequenceControlUnknown(options.endpoint, id, err)
-			}
-			if runWait {
-				job, err = waitSequenceControlJob(ctx, client, job)
-				if err != nil {
-					return sequenceControlUnknown(options.endpoint, id, err)
-				}
-			}
-			return printSequenceControlJob(cmd, job, false)
+				return client.SubmitSequence(ctx, input, serial, jobID)
+			})
 		})
 	}}
 	run.Flags().StringVar(&id, "id", "", "daemon-only Job ID to preserve for queries and repeated submissions")
 	run.Flags().BoolVar(&runWait, "wait", false, "wait for a daemon Job's terminal state; direct always waits")
+	run.Flags().BoolVar(&daemonDefault, "daemon-default", false, "let the daemon resolve the target when no explicit serial is supplied")
 	run.Flags().DurationVar(&options.shutdownTimeout, "shutdown-timeout", 10*time.Second, "direct-only maximum cleanup wait; cannot interrupt blocked native I/O")
 	job := &cobra.Command{Use: "job ID", Short: "Read a Job's status", Args: cobra.ExactArgs(1), RunE: func(cmd *cobra.Command, args []string) error {
 		if !control.ValidSequenceJobID(args[0]) {
@@ -162,13 +156,27 @@ func newSequenceControlCommandWithDriver(driver func(string) control.Driver) *co
 		})
 	}}
 	var cancelWait bool
+	var cancelSerial string
 	cancel := &cobra.Command{Use: "cancel ID", Short: "Cancel a Job", Args: cobra.ExactArgs(1), RunE: func(cmd *cobra.Command, args []string) error {
 		if !control.ValidSequenceJobID(args[0]) {
 			return fmt.Errorf("invalid job ID")
 		}
+		guarded := cmd.Flags().Changed("serial")
+		if guarded && !control.ValidDeviceSerial(cancelSerial) {
+			return fmt.Errorf("--serial must be a valid device serial")
+		}
 		return options.withClient(cmd, func(ctx context.Context, client *daemonclient.Client) error {
-			result, err := client.CancelSequenceJob(ctx, args[0])
+			var result control.SequenceJob
+			var err error
+			if guarded {
+				result, err = client.CancelSequenceJobOnDevice(ctx, args[0], cancelSerial)
+			} else {
+				result, err = client.CancelSequenceJob(ctx, args[0])
+			}
 			if err != nil {
+				if daemonclient.SequenceSubmissionRejected(err) {
+					return fmt.Errorf("job %s cancellation rejected: %w", args[0], err)
+				}
 				return sequenceControlUnknown(options.endpoint, args[0], err)
 			}
 			if cancelWait {
@@ -181,6 +189,7 @@ func newSequenceControlCommandWithDriver(driver func(string) control.Driver) *co
 		})
 	}}
 	cancel.Flags().BoolVar(&cancelWait, "wait", false, "wait for cancellation and hardware cleanup")
+	cancel.Flags().StringVar(&cancelSerial, "serial", "", "require the Job's accepted device serial to match")
 	devices := &cobra.Command{Use: "devices", Short: "List the daemon's devices", Args: cobra.NoArgs, RunE: func(cmd *cobra.Command, _ []string) error {
 		return options.withClient(cmd, func(ctx context.Context, client *daemonclient.Client) error {
 			result, err := client.Devices(ctx)
@@ -211,7 +220,94 @@ func newSequenceControlCommandWithDriver(driver func(string) control.Driver) *co
 		})
 	}}
 	command.AddCommand(preview, run, job, cancel, devices, state, newSequenceColorsCommand(options), newSequencePatternsCommand(options))
+	command.AddCommand(newSequenceEmitCommand(options), newSequenceTriggersCommand(options))
 	return command
+}
+
+func (options *sequenceControlFlags) explicitSerial(cmd *cobra.Command) (string, error) {
+	settings := options.settings
+	settings.Device = ""
+	return preferredSerial(cmd, settings)
+}
+
+func newSequenceEmitCommand(options *sequenceControlFlags) *cobra.Command {
+	var id string
+	var wait bool
+	command := &cobra.Command{
+		Use: "emit NAME", Short: "Play a saved Pattern through a named daemon trigger", Args: cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			serial, err := options.explicitSerial(cmd)
+			if err != nil {
+				return err
+			}
+			return options.withClient(cmd, func(ctx context.Context, client *daemonclient.Client) error {
+				return options.runDaemonJob(ctx, client, cmd, id, wait, func(jobID string) (control.SequenceJob, error) {
+					return client.SubmitTrigger(ctx, args[0], serial, jobID)
+				})
+			})
+		},
+	}
+	command.Flags().StringVar(&id, "id", "", "Job ID to preserve for queries and repeated submissions")
+	command.Flags().BoolVar(&wait, "wait", false, "wait for the Job's terminal state")
+	return command
+}
+
+func newSequenceTriggersCommand(options *sequenceControlFlags) *cobra.Command {
+	var check bool
+	command := &cobra.Command{Use: "triggers", Short: "List the daemon's configured triggers", Args: cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			return options.withClient(cmd, func(ctx context.Context, client *daemonclient.Client) error {
+				if check {
+					report, err := client.CheckSequenceTriggers(ctx)
+					if err != nil {
+						return err
+					}
+					if err := printControlJSON(cmd.OutOrStdout(), report); err != nil {
+						return err
+					}
+					for _, row := range report.Items {
+						if len(row.Issues) != 0 {
+							return fmt.Errorf("trigger check found issues; review the JSON report")
+						}
+					}
+					return nil
+				}
+				result, err := client.SequenceTriggers(ctx)
+				if err != nil {
+					return err
+				}
+				return printControlJSON(cmd.OutOrStdout(), result)
+			})
+		},
+	}
+	command.Flags().BoolVar(&check, "check", false, "check saved Pattern references and device bindings")
+	return command
+}
+
+func (options *sequenceControlFlags) runDaemonJob(ctx context.Context, client *daemonclient.Client, cmd *cobra.Command, id string, wait bool, submit func(string) (control.SequenceJob, error)) error {
+	if id == "" {
+		var err error
+		id, err = control.NewSequenceJobID()
+		if err != nil {
+			return err
+		}
+	} else if !control.ValidSequenceJobID(id) {
+		return fmt.Errorf("--id must contain 1 to 64 ASCII letters, digits, hyphens or underscores")
+	}
+	job, err := submit(id)
+	if err != nil {
+		if daemonclient.SequenceSubmissionRejected(err) {
+			return fmt.Errorf("job %s submission rejected: %w", id, err)
+		}
+		return sequenceControlUnknown(options.endpoint, id, err)
+	}
+	if wait {
+		job, err = waitSequenceControlJob(ctx, client, job)
+		if err != nil {
+			return sequenceControlUnknown(options.endpoint, id, err)
+		}
+	}
+	return printSequenceControlJob(cmd, job, false)
 }
 
 func (options *sequenceControlFlags) withClient(cmd *cobra.Command, run func(context.Context, *daemonclient.Client) error) error {

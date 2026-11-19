@@ -16,6 +16,19 @@ first online device selected by default.
   continue to require that serial. A busy, failed or uncertain submission
   stays associated with its original device and Job ID.
 
+### Default port changed to 5885
+
+Starting with v0.1.3, the daemon listens on `127.0.0.1:5885` by default.
+The HTTP API and embedded debugger share that listener. The CLI and the optional
+stdio MCP adapter use the same address to reach the daemon.
+
+The v0.1.2 default was `8931`. Existing profiles and installed services with
+an explicit listen address keep that address. To keep using the old port, start
+the daemon with `--listen 127.0.0.1:8931` and point clients at it with
+`--endpoint http://127.0.0.1:8931`. To move to 5885, update any explicitly
+pinned service and client settings together, restart the daemon, and update
+debugger bookmarks to <http://127.0.0.1:5885/demo/>.
+
 ### Install and run
 
 Download the matching archive, `release.json` and `SHA256SUMS` from this release.
@@ -27,7 +40,7 @@ Verify and unpack the archive into a new trusted directory, then run:
 ./nb1 server --devices YOUR_DEVICE_SERIAL
 ```
 
-Open <http://127.0.0.1:8931/demo/>. On Windows, run `nb1.exe`. The matching MCP
+Open <http://127.0.0.1:5885/demo/>. On Windows, run `nb1.exe`. The matching MCP
 adapter and Agent Skill are separate optional downloads. Start a foreground
 server or explicitly manage it with `nb1 service`.
 

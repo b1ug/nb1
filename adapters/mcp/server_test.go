@@ -481,7 +481,7 @@ func TestOfficialStdioHTTPTimeoutRetainsIDWithoutCancel(t *testing.T) {
 }
 
 func TestEndpointAndTimeoutValidation(t *testing.T) {
-	for _, endpoint := range []string{"https://127.0.0.1:8931", "http://example.com:8931", "http://127.0.0.1:8931/path", "http://user@127.0.0.1:8931"} {
+	for _, endpoint := range []string{"https://127.0.0.1:5885", "http://example.com:5885", "http://127.0.0.1:5885/path", "http://user@127.0.0.1:5885"} {
 		if _, err := newDaemon(endpoint, time.Second); err == nil {
 			t.Errorf("accepted invalid endpoint %s", endpoint)
 		}

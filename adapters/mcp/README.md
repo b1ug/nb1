@@ -11,10 +11,10 @@ Use a complete nb1 source checkout and Go 1.25.8 or newer.
 ```sh
 cd adapters/mcp
 GOWORK=off go build -o nb1-mcp .
-./nb1-mcp --endpoint http://127.0.0.1:8931 --timeout 10s
+./nb1-mcp --endpoint http://127.0.0.1:5885 --timeout 10s
 ```
 
-Configure an MCP host to launch that executable with those arguments. Stdout carries MCP protocol messages. Diagnostics go to stderr. The default endpoint is `http://127.0.0.1:8931`; endpoint validation accepts loopback HTTP origins.
+Configure an MCP host to launch that executable with those arguments. Stdout carries MCP protocol messages. Diagnostics go to stderr. The default endpoint is `http://127.0.0.1:5885`; endpoint validation accepts loopback HTTP origins. For a daemon still listening on the v0.1.2 default, pass `--endpoint http://127.0.0.1:8931` to the adapter.
 
 The SDK is pinned to `github.com/modelcontextprotocol/go-sdk v1.8.0`. This nested module declares Go 1.25.8 to match the core module's requirement. Its `github.com/b1ug/nb1 v0.0.0` requirement is replaced by `../..`, allowing the adapter to share the exact core client, strict input validation, and Job ID generator in the same checkout. Building the nested module in isolation requires that root source directory. A standalone module publication will need a published matching core dependency and removal of the relative replacement. Release binaries can be built from a complete, versioned checkout.
 
@@ -75,7 +75,7 @@ Each tool returns matching JSON in `structuredContent` and its text fallback. Th
 
 ```json
 {
-  "endpoint":"http://127.0.0.1:8931",
+  "endpoint":"http://127.0.0.1:5885",
   "id":"agent-task-done",
   "data":{"id":"agent-task-done","serial":"20000001","status":"running","completed_steps":0,"total_steps":4,"created_at":"2026-11-11T00:00:00Z"}
 }

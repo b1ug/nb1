@@ -7,7 +7,7 @@ description: Control blink(1) or blink1 USB indicators with nb1 through MCP, CLI
 
 Use the device and interface covered by the user's request. This Skill uses an existing installation; it does not install services, register MCP servers or change system permissions.
 
-Inspect actual MCP schemas (`tools/list`) or `nb1 control --help`: installed support can differ from source. MCP connects stdio directly to HTTP, without a CLI subprocess or USB ownership. Daemon-mode CLI, the embedded debugger and MCP share the daemon's compiler and worker. Standalone WebHID tools do not share native ownership locks. Keep the actual endpoint consistent across clients. CLI can read profile `server.listen`; MCP has its own `--endpoint` and does not read nb1 YAML. An unavailable daemon never authorizes automatic startup or USB fallback.
+Inspect MCP schemas with `tools/list` or check `nb1 control --help` for installed support. The CLI, embedded debugger and MCP share the daemon's compiler and workers. For local stdio, pick the daemon with `--endpoint`. For remote MCP, use the configured HTTPS `/mcp` URL and its Bearer token. Standalone WebHID tools use separate ownership. Keep the original endpoint for Job recovery. An unavailable daemon never authorizes automatic startup or USB fallback.
 
 ## Choose and execute
 

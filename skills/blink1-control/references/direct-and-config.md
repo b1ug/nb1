@@ -32,7 +32,7 @@ The daemon's library selection is `--library-dir`, `NB1_LIBRARY_DIR`, profile `l
 
 Device locks retain the native platform root independently of profile/library choice. On macOS the default is `~/Library/Application Support/nb1/device-locks`; inspect `device_lock_dir` rather than deriving it from the library. All owners must agree on an explicit lock-directory override.
 
-The HTTP CLI selects its endpoint from `--endpoint` or selected profile `server.listen`, default `127.0.0.1:5885`; its default request/wait budget is 30s. MCP selects its own `--endpoint`, default `http://127.0.0.1:5885`, and does not read nb1 YAML. Use the task's actual endpoint, especially when another installation occupies the default port. Neither client starts an unavailable daemon or automatically falls back to USB.
+The HTTP CLI uses `--endpoint` or the profile's `server.listen`, with `127.0.0.1:5885` as the default. Its default request/wait budget is 30s. The stdio MCP launcher uses its own `--endpoint`, defaulting to `http://127.0.0.1:5885`. Supply `--token-file` when the local API requires a token. For remote MCP, configure the client with the device host's HTTPS `/mcp` URL and its Bearer token. Use the selected daemon for Job recovery.
 
 ## Device-native storage
 

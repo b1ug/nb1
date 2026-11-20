@@ -686,6 +686,18 @@ func TestOfficialStdioBusyRejectionAndActiveCancellation(t *testing.T) {
 	}
 }
 
+func TestOfficialStdioPreemptsActiveAndRetainsQueuedJob(t *testing.T) {
+	server, _ := engineServer(t)
+	session := connectStdio(t, server.URL, 3*time.Second)
+	requireSuccess(t, call(t, session, "run_light", `{"id":"active","serial":"20000001","sequence":{"timing":"serial","steps":[{"targets":[{"led":0,"color":"red"}],"hold_ms":10000}]}}`), nil)
+	waitJob(t, session, "active", "running")
+	requireSuccess(t, call(t, session, "run_light", `{"id":"queued","serial":"20000001","policy":"queue","action":{"kind":"off"}}`), nil)
+	requireSuccess(t, call(t, session, "run_light", `{"id":"urgent","serial":"20000001","policy":"preempt","action":{"kind":"set","color":"blue"}}`), nil)
+	waitJob(t, session, "active", "cancelled")
+	waitJob(t, session, "urgent", "succeeded")
+	waitJob(t, session, "queued", "succeeded")
+}
+
 func TestOfficialStdioInvalidArgumentsStayOffHTTP(t *testing.T) {
 	var calls int32
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
@@ -696,6 +708,9 @@ func TestOfficialStdioInvalidArgumentsStayOffHTTP(t *testing.T) {
 	session := connectStdio(t, server.URL, time.Second)
 	for _, tc := range []struct{ name, args string }{
 		{"list_devices", `{"include_capabilities":true}`},
+		{"run_light", `{"action":{"kind":"off"},"policy":"replace"}`},
+		{"run_light", `{"action":{"kind":"off"},"policy":null}`},
+		{"preview_light", `{"action":{"kind":"off"},"policy":"preempt"}`},
 		{"run_light", `{"serial":"20000001","id":"a","id":"b","action":{"kind":"off"}}`},
 		{"run_light", `{"serial":"20000001","action":{"kind":"set","color":null}}`},
 		{"run_light", `{"serial":"20000001","action":{"kind":"off"},"pattern_id":"a"}`},

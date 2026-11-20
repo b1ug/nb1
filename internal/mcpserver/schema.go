@@ -88,6 +88,7 @@ func authorSchema(pattern, run bool) map[string]any {
 		choices = append(choices, map[string]any{"required": []string{"pattern_id"}})
 		if run {
 			properties["id"] = map[string]any{"type": "string", "pattern": "^[A-Za-z0-9_-]{0,64}$", "description": "Omit or use an empty string to generate j_ plus ten Crockford Base32 characters."}
+			properties["policy"] = map[string]any{"type": "string", "enum": []string{"reject", "queue", "preempt"}, "description": "Busy-device policy. The default is reject. queue waits in order. preempt cancels the active Job on the selected device and runs next, preserving waiting Jobs."}
 			properties["trigger"] = map[string]any{"type": "string", "pattern": "^[a-z][a-z0-9.-]{0,63}$"}
 			choices = append(choices, map[string]any{"required": []string{"trigger"}})
 		}

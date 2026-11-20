@@ -89,9 +89,18 @@ func newSequenceControlCommandWithDriver(driver func(string) control.Driver) *co
 	}}
 	preview.Flags().StringVar(&previewSerial, "serial", "", "check the selected device's capabilities")
 	var id string
+	var policy string
 	var runWait bool
 	var daemonDefault bool
 	run := &cobra.Command{Use: "run [SERIAL] FILE", Short: "Run one action, sequence or saved pattern", Args: cobra.RangeArgs(1, 2), RunE: func(cmd *cobra.Command, args []string) error {
+		if cmd.Flags().Changed("policy") {
+			if options.direct {
+				return fmt.Errorf("--policy requires the daemon")
+			}
+			if !control.ValidSequencePolicy(policy) {
+				return fmt.Errorf("--policy must be reject, queue or preempt")
+			}
+		}
 		explicit := ""
 		if len(args) == 2 {
 			explicit = args[0]
@@ -133,12 +142,13 @@ func newSequenceControlCommandWithDriver(driver func(string) control.Driver) *co
 			}
 			return options.runDaemonJob(ctx, client, cmd, id, runWait, func(jobID string) (control.SequenceJob, error) {
 				if serial == "" {
-					return client.SubmitDefaultSequence(ctx, input, jobID)
+					return client.SubmitDefaultSequenceWithPolicy(ctx, input, jobID, policy)
 				}
-				return client.SubmitSequence(ctx, input, serial, jobID)
+				return client.SubmitSequenceWithPolicy(ctx, input, serial, jobID, policy)
 			})
 		})
 	}}
+	run.Flags().StringVar(&policy, "policy", "", sequencePolicyHelp)
 	run.Flags().StringVar(&id, "id", "", "daemon-only Job ID to preserve for queries and repeated submissions")
 	run.Flags().BoolVar(&runWait, "wait", false, "wait for a daemon Job's terminal state; direct always waits")
 	run.Flags().BoolVar(&daemonDefault, "daemon-default", false, "let the daemon resolve the target when no explicit serial is supplied")
@@ -230,23 +240,29 @@ func (options *sequenceControlFlags) explicitSerial(cmd *cobra.Command) (string,
 	return preferredSerial(cmd, settings)
 }
 
+const sequencePolicyHelp = "when the selected device is busy: reject (default), queue in order, or preempt the current Job"
+
 func newSequenceEmitCommand(options *sequenceControlFlags) *cobra.Command {
-	var id string
+	var id, policy string
 	var wait bool
 	command := &cobra.Command{
 		Use: "emit NAME", Short: "Play a saved Pattern through a named daemon trigger", Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if cmd.Flags().Changed("policy") && !control.ValidSequencePolicy(policy) {
+				return fmt.Errorf("--policy must be reject, queue or preempt")
+			}
 			serial, err := options.explicitSerial(cmd)
 			if err != nil {
 				return err
 			}
 			return options.withClient(cmd, func(ctx context.Context, client *daemonclient.Client) error {
 				return options.runDaemonJob(ctx, client, cmd, id, wait, func(jobID string) (control.SequenceJob, error) {
-					return client.SubmitTrigger(ctx, args[0], serial, jobID)
+					return client.SubmitTriggerWithPolicy(ctx, args[0], serial, jobID, policy)
 				})
 			})
 		},
 	}
+	command.Flags().StringVar(&policy, "policy", "", sequencePolicyHelp)
 	command.Flags().StringVar(&id, "id", "", "Job ID to preserve for queries and repeated submissions")
 	command.Flags().BoolVar(&wait, "wait", false, "wait for the Job's terminal state")
 	return command

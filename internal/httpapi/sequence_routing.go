@@ -101,9 +101,9 @@ func (h *handler) checkTriggerPattern(id string) triggerv1.CheckIssue {
 	}
 }
 
-func (h *handler) submitRoutedSequence(ctx context.Context, input sequenceInput, id string, fingerprint [32]byte) (control.SequenceJob, bool, error) {
+func (h *handler) submitRoutedSequence(ctx context.Context, input sequenceInput, id string, fingerprint [32]byte, policy string) (control.SequenceJob, bool, error) {
 	service, ok := h.service.(interface {
-		SubmitRoutedSequence(context.Context, string, string, [32]byte, func() (sequence.Sequence, control.SequenceRoute, error)) (control.SequenceJob, bool, error)
+		SubmitRoutedSequenceWithPolicy(context.Context, string, string, [32]byte, string, func() (sequence.Sequence, control.SequenceRoute, error)) (control.SequenceJob, bool, error)
 	})
 	if !ok || h.routing == nil {
 		return control.SequenceJob{}, false, errSequenceRoutingUnavailable
@@ -116,7 +116,7 @@ func (h *handler) submitRoutedSequence(ctx context.Context, input sequenceInput,
 	// the request supplied a target. Neither remapping nor reconnection can
 	// change the identity of a Job retained by the daemon.
 	identity := append([]byte("nb1 routed job\x00"+requested+"\x00"), fingerprint[:]...)
-	return service.SubmitRoutedSequence(ctx, requested, id, sha256.Sum256(identity), func() (sequence.Sequence, control.SequenceRoute, error) {
+	return service.SubmitRoutedSequenceWithPolicy(ctx, requested, id, sha256.Sum256(identity), policy, func() (sequence.Sequence, control.SequenceRoute, error) {
 		route := control.SequenceRoute{Serial: h.routing.defaultSerial, Source: "default", UseSingleOnline: h.routing.useSingleOnline}
 		if input.Trigger != nil {
 			entry, err := h.routing.triggers.Get(*input.Trigger)

@@ -20,7 +20,7 @@ server:
 | Request omits serial and has a configured default | Use that device. The default `error` policy reports a missing or offline default and keeps the daemon available for other requests. |
 | Configured default is missing or offline and `single_online` is enabled | Use the only other online managed device, if exactly one is online. The response records `target_source: "fallback"`. Zero or multiple candidates cause a rejection. |
 | No default or trigger binding | Select the sole managed device. With multiple managed devices return `400 target_required`. |
-| Selected device is busy or lacks capabilities | Return `device_busy` or `unsupported_capability`. The selected serial stays fixed. |
+| Selected device is busy or lacks capabilities | Apply the Job’s busy policy (default `reject`), or return `unsupported_capability` if the compiled plan cannot run. The selected serial stays fixed. |
 
 Omit `serial` to inherit routing. Empty and null values are invalid. Stop/start the daemon to change its startup profile. Routing does not add devices to its managed set. Explicit requests keep the v1 status and error contract. The Job always returns the accepted serial, which remains fixed through cancellation and replay.
 
@@ -65,8 +65,8 @@ HTTP clients submit the same intent with `POST /v1/jobs`. Use exactly one select
 {"id":"build-42","trigger":"build.done"}
 ```
 
-The matching MCP adapter accepts the same `trigger`, `serial` and `id` fields in `run_light`. An identical retained ID returns the original Job before reading the current mapping, including after remapping or a change in connectivity. Changing the trigger, selected content or requested serial under the same retained ID returns `job_conflict`. For an uncertain response, query the original ID.
+The matching MCP adapter accepts the same `trigger`, `serial`, `id` and `policy` fields in `run_light`. An identical retained ID returns the original Job before reading the current mapping, including after remapping or a change in connectivity. Changing the trigger, policy, selected content or requested serial under the same retained ID returns `job_conflict`. For an uncertain response, query the original ID.
 
 When cancelling by ID, use the serial returned on the accepted Job to guard the target. For example, run `nb1 control cancel j_7K3XJNY9ZM --serial 20000002 --wait` or send `POST /v1/jobs/j_7K3XJNY9ZM/cancel?serial=20000002` with an empty body. The daemon checks the serial at the moment it requests cancellation. A different serial returns `409 job_target_mismatch`. A daemon that rejects this optional query does not support the guard. Keep the explicit guard on any retry.
 
-Trigger playback uses the same per-device worker as other jobs. API v1 rejects competing playback on the same device. A Trigger selects one saved Pattern. Competing Jobs on different devices can run independently.
+A Trigger selects one saved Pattern. Use `nb1 control emit build.done --policy queue` to wait behind earlier Jobs on its bound device. Use `--policy preempt` for an urgent event that should play after the active Job’s cancellation and cleanup. Jobs already waiting continue afterward. The default is `reject`. Another device keeps its own playback and queue. [Per-device policies and errors](api-v1.md#choosing-what-happens-on-a-busy-device)

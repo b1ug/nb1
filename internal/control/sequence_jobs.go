@@ -15,6 +15,7 @@ import (
 
 var (
 	ErrSequenceJobConflict = errors.New("sequence job ID has a different accepted payload")
+	ErrPreemptionPending   = errors.New("another preemption is pending on this device")
 	ErrSequenceCapability  = errors.New("sequence device capability missing")
 	ErrSequenceJobTarget   = errors.New("expected serial does not match the accepted Job target")
 )
@@ -51,6 +52,7 @@ type SequenceJob struct {
 // SequenceService is the v1 execution interface. The fingerprint identifies
 // the original request, while prepare resolves its execution input.
 type SequenceService interface {
+	SubmitSequenceWithPolicy(ctx context.Context, serial, id string, fingerprint [32]byte, policy string, prepare func() (sequence.Sequence, error)) (SequenceJob, bool, error)
 	SubmitSequence(ctx context.Context, serial, id string, fingerprint [32]byte, prepare func() (sequence.Sequence, error)) (SequenceJob, bool, error)
 	SequenceJob(id string) (SequenceJob, error)
 	CancelSequence(ctx context.Context, id string) (SequenceJob, error)
@@ -111,10 +113,20 @@ func readSequenceJobID(random io.Reader) (string, error) {
 // SubmitSequence resolves a new intent outside the engine mutex. An already
 // accepted ID is checked on both sides of that work, even if resolution failed.
 func (e *Engine) SubmitSequence(ctx context.Context, serial, id string, fingerprint [32]byte, prepare func() (sequence.Sequence, error)) (SequenceJob, bool, error) {
+	return e.SubmitSequenceWithPolicy(ctx, serial, id, fingerprint, "reject", prepare)
+}
+
+// ValidSequencePolicy reports whether the value is an explicit v1 Job policy.
+func ValidSequencePolicy(policy string) bool {
+	return policy == "reject" || policy == "queue" || policy == "preempt"
+}
+
+// SubmitSequenceWithPolicy admits a Job against one explicit device.
+func (e *Engine) SubmitSequenceWithPolicy(ctx context.Context, serial, id string, fingerprint [32]byte, policy string, prepare func() (sequence.Sequence, error)) (SequenceJob, bool, error) {
 	if !ValidDeviceSerial(serial) {
 		return SequenceJob{}, false, fmt.Errorf("%w: invalid serial or job ID", ErrInvalid)
 	}
-	return e.submitSequence(ctx, serial, id, fingerprint, func() (sequence.Sequence, SequenceRoute, error) {
+	return e.submitSequence(ctx, serial, id, fingerprint, policy, func() (sequence.Sequence, SequenceRoute, error) {
 		if prepare == nil {
 			return sequence.Sequence{}, SequenceRoute{}, fmt.Errorf("%w: job requires a sequence", ErrInvalid)
 		}
@@ -128,6 +140,12 @@ func (e *Engine) SubmitSequence(ctx context.Context, serial, id string, fingerpr
 // An empty requested serial denotes an implicit target, never a wildcard ID.
 // An explicit request serial is authoritative over the prepared routing hint.
 func (e *Engine) SubmitRoutedSequence(ctx context.Context, requestedSerial, id string, fingerprint [32]byte, prepare func() (sequence.Sequence, SequenceRoute, error)) (SequenceJob, bool, error) {
+	return e.SubmitRoutedSequenceWithPolicy(ctx, requestedSerial, id, fingerprint, "reject", prepare)
+}
+
+// SubmitRoutedSequenceWithPolicy freezes the resolved plan and target before
+// changing the selected device's queue or requesting cancellation of its Job.
+func (e *Engine) SubmitRoutedSequenceWithPolicy(ctx context.Context, requestedSerial, id string, fingerprint [32]byte, policy string, prepare func() (sequence.Sequence, SequenceRoute, error)) (SequenceJob, bool, error) {
 	if requestedSerial != "" && !ValidDeviceSerial(requestedSerial) {
 		return SequenceJob{}, false, fmt.Errorf("%w: invalid serial", ErrInvalid)
 	}
@@ -138,17 +156,20 @@ func (e *Engine) SubmitRoutedSequence(ctx context.Context, requestedSerial, id s
 			return input, SequenceRoute{Serial: requestedSerial, Source: "request"}, err
 		}
 	}
-	return e.submitSequence(ctx, requestedSerial, id, fingerprint, prepare)
+	return e.submitSequence(ctx, requestedSerial, id, fingerprint, policy, prepare)
 }
 
-func (e *Engine) submitSequence(ctx context.Context, requestedSerial, id string, fingerprint [32]byte, prepare func() (sequence.Sequence, SequenceRoute, error)) (SequenceJob, bool, error) {
+func (e *Engine) submitSequence(ctx context.Context, requestedSerial, id string, fingerprint [32]byte, policy string, prepare func() (sequence.Sequence, SequenceRoute, error)) (SequenceJob, bool, error) {
+	if !ValidSequencePolicy(policy) {
+		return SequenceJob{}, false, fmt.Errorf("%w: policy must be reject, queue or preempt", ErrInvalid)
+	}
 	if id != "" && !ValidSequenceJobID(id) {
 		return SequenceJob{}, false, fmt.Errorf("%w: invalid job ID", ErrInvalid)
 	}
 	if id != "" {
 		e.mu.Lock()
 		e.pruneSequenceJobsLocked()
-		job, replayed, err := e.sequenceReplayLocked(requestedSerial, id, fingerprint)
+		job, replayed, err := e.sequenceReplayLocked(requestedSerial, id, fingerprint, policy)
 		e.mu.Unlock()
 		if replayed || err != nil {
 			return job, replayed, err
@@ -171,7 +192,7 @@ func (e *Engine) submitSequence(ctx context.Context, requestedSerial, id string,
 	defer e.mu.Unlock()
 	e.pruneSequenceJobsLocked()
 	if id != "" {
-		if job, replayed, err := e.sequenceReplayLocked(requestedSerial, id, fingerprint); replayed || err != nil {
+		if job, replayed, err := e.sequenceReplayLocked(requestedSerial, id, fingerprint, policy); replayed || err != nil {
 			return job, replayed, err
 		}
 	}
@@ -186,7 +207,7 @@ func (e *Engine) submitSequence(ctx context.Context, requestedSerial, id string,
 	if err != nil {
 		return SequenceJob{}, false, err
 	}
-	w, err := e.canAdmitLocked(serial, "reject")
+	w, err := e.canAdmitLocked(serial, policy)
 	if err != nil {
 		return SequenceJob{}, false, err
 	}
@@ -201,12 +222,13 @@ func (e *Engine) submitSequence(ctx context.Context, requestedSerial, id string,
 	}
 	candidate.state = recordState{ID: id, Device: serial, Status: "queued", CreatedAt: store.now().UTC()}
 	candidate.targetSource = targetSource
+	candidate.sequencePolicy = policy
 	store.entries[id] = &sequenceJobEntry{fingerprint: fingerprint, record: candidate}
-	e.publishLocked(w, candidate, "reject")
+	e.publishLocked(w, candidate, policy)
 	return candidate.sequenceSnapshot(), false, nil
 }
 
-func (e *Engine) sequenceReplayLocked(serial, id string, fingerprint [32]byte) (SequenceJob, bool, error) {
+func (e *Engine) sequenceReplayLocked(serial, id string, fingerprint [32]byte, policy string) (SequenceJob, bool, error) {
 	entry := e.sequenceJobs.entries[id]
 	if entry == nil {
 		if e.jobIDInUseLocked(id) {
@@ -214,7 +236,7 @@ func (e *Engine) sequenceReplayLocked(serial, id string, fingerprint [32]byte) (
 		}
 		return SequenceJob{}, false, nil
 	}
-	if (serial != "" && entry.record.state.Device != serial) || entry.fingerprint != fingerprint {
+	if (serial != "" && entry.record.state.Device != serial) || entry.fingerprint != fingerprint || entry.record.sequencePolicy != policy {
 		return SequenceJob{}, false, ErrSequenceJobConflict
 	}
 	e.touchSequenceJobLocked(entry)

@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"slices"
 	"sort"
 	"strings"
 	"sync"
@@ -19,6 +20,8 @@ type record struct {
 	kind                                       recordKind
 	state                                      recordState
 	targetSource                               string
+	sequencePolicy                             string
+	preempted                                  bool // Active Job has been asked to yield to a v1 preemption.
 	program                                    *Program
 	frames                                     *FrameProgram
 	completedSteps, totalSteps                 int
@@ -348,6 +351,12 @@ func (e *Engine) canAdmitLocked(serial, policy string) (*worker, error) {
 	if w.inspection != nil {
 		return nil, ErrBusy
 	}
+	// One urgent Job may wait for this worker. If it is cancelled first,
+	// the interrupted Job must still finish its synchronous cleanup.
+	if policy == "preempt" && ((w.active != nil && w.active.preempted) ||
+		(len(w.queue) > 0 && w.queue[0].sequencePolicy == "preempt")) {
+		return nil, ErrPreemptionPending
+	}
 	if policy == "reject" && (w.active != nil || len(w.queue) > 0) {
 		return nil, ErrBusy
 	}
@@ -357,20 +366,27 @@ func (e *Engine) canAdmitLocked(serial, policy string) (*worker, error) {
 	return w, nil
 }
 
-// Nothing after newRecordLocked may fail admission: replace must not cancel
-// existing work when capacity, state checks or random ID generation fail.
+// Admission and Job allocation are complete before cancellation can affect a device.
 func (e *Engine) publishLocked(w *worker, r *record, policy string) {
-	if policy == "replace" {
+	switch policy {
+	case "replace": // Legacy submissions explicitly discard all waiting work.
 		if w.active != nil {
 			e.cancelLocked(w.active)
 		}
 		for _, r := range w.queue {
 			e.finishLocked(r, "cancelled", nil)
 		}
-		w.queue = nil
+		w.queue = []*record{r}
+	case "preempt":
+		if w.active != nil {
+			w.active.preempted = true
+			e.cancelLocked(w.active)
+		}
+		w.queue = slices.Insert(w.queue, 0, r)
+	default:
+		w.queue = append(w.queue, r)
 	}
 	e.jobs[r.state.ID] = r
-	w.queue = append(w.queue, r)
 	w.state.QueueDepth = len(w.queue)
 	select {
 	case w.wake <- struct{}{}:

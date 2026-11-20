@@ -72,8 +72,9 @@ Interval Sequences require `initial` with physical LED 1/2 targets. Every Step k
 ## Error routing
 
 - `invalid_request`: inspect the schema/input; do not blindly retry unchanged JSON.
-- `device_busy`: another Job owns playback. If the user wants it stopped, cancel that active Job, wait for terminal cleanup, then perform the requested operation.
-- `job_conflict`: the retained ID belongs to different input/serial. Keep it for recovery; do not choose a new ID merely to bypass an uncertain prior execution.
+- `device_busy`: the selected device is busy. If the user asks to play next and interrupt current playback, use `policy: preempt` on a supporting daemon. Use `queue` when the user wants to wait. For a stop-only request, cancel the original Job and follow its ID through cleanup.
+- `queue_full` or `preemption_pending`: the new Job was rejected. Check the active and accepted Jobs before making another scheduling decision.
+- `job_conflict`: the retained ID belongs to different input, serial or policy. Keep it for recovery; do not choose a new ID merely to bypass an uncertain prior execution.
 - `unavailable` or connection/transport error: preserve endpoint and ID; do not start services or switch to direct USB automatically. An uncertain submission is recovered by querying, not replaying.
 - `not_found` for a Job: its record may have expired, been evicted or belonged to an earlier process. It does not prove the operation never happened.
 

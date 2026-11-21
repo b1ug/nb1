@@ -14,6 +14,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/b1ug/nb1/internal/buildmeta"
 	"github.com/b1ug/nb1/internal/control"
 	"github.com/b1ug/nb1/internal/flashreset"
 	"github.com/b1ug/nb1/internal/httpapi"
@@ -142,6 +143,11 @@ func TestSequenceRoutingDefaultAndFallback(t *testing.T) {
 }
 
 func TestSequenceAPIWelcomeDirectory(t *testing.T) {
+	oldGitCommit, oldGitSummary := buildmeta.GitCommit, buildmeta.GitSummary
+	buildmeta.GitCommit, buildmeta.GitSummary = "test-source-commit", "v0.1.4-test"
+	t.Cleanup(func() {
+		buildmeta.GitCommit, buildmeta.GitSummary = oldGitCommit, oldGitSummary
+	})
 	server, _ := routedSequenceServer(t, []string{"20000001", "20000002"}, routedSequenceDriver{
 		"20000001": &sequenceRouteBackend{},
 	}, "20000001", false)
@@ -182,12 +188,18 @@ func TestSequenceAPIWelcomeDirectory(t *testing.T) {
 	if welcome.Build.Version == "" {
 		t.Fatalf("missing build version: %+v", welcome.Build)
 	}
-	if len(welcome.Endpoints) != 19 {
-		t.Fatalf("directory has %d endpoints, want 19", len(welcome.Endpoints))
+	if welcome.Build.Version != "v0.1.4-test" {
+		t.Fatalf("welcome build version = %q, want injected release version", welcome.Build.Version)
+	}
+	if len(welcome.Endpoints) != 22 {
+		t.Fatalf("directory has %d endpoints, want 22", len(welcome.Endpoints))
 	}
 	want := map[string]bool{
 		"GET /": true, "GET /v1/triggers": true, "GET /v1/triggers/check": true,
 		"POST /v1/jobs": true, "GET /v1/devices/{serial}": true,
+		"GET /v1/devices/{serial}/flash/reset-ticket": true,
+		"POST /v1/devices/{serial}/flash/reset":       true,
+		"PUT /v1/colors/resolve":                      true,
 	}
 	for _, endpoint := range welcome.Endpoints {
 		delete(want, endpoint.Method+" "+endpoint.Path)

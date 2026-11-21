@@ -33,6 +33,8 @@ class Nb1 < Formula
     check_go_version
     ldflags = ["-X", "github.com/b1ug/nb1/config.GitCommit=" + @@SOURCE_COMMIT@@,
                "-X", "github.com/b1ug/nb1/config.GitSummary=v#{version}",
+               "-X", "github.com/b1ug/nb1/internal/buildmeta.GitCommit=" + @@SOURCE_COMMIT@@,
+               "-X", "github.com/b1ug/nb1/internal/buildmeta.GitSummary=v#{version}",
                "-X", "github.com/b1ug/nb1/config.ServiceBinary=#{opt_bin}/nb1",
                "-X", "github.com/b1ug/nb1/config.ServiceBinaryRoot=#{rack}"]
     system "go", "build", "-buildvcs=false", *std_go_args(output: bin/"nb1", ldflags: ldflags), "-mod=readonly", "."

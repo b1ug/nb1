@@ -31,6 +31,8 @@ class FormulaDraftTests(unittest.TestCase):
         self.assertIn('system "go", "mod", "download"', text)
         self.assertIn('"-mod=readonly"', text)
         self.assertIn('"-buildvcs=false"', text)
+        self.assertIn('github.com/b1ug/nb1/internal/buildmeta.GitCommit=', text)
+        self.assertIn('github.com/b1ug/nb1/internal/buildmeta.GitSummary=v#{version}', text)
         self.assertIn('"--config", testpath/"setting.yaml"', text)
         self.assertIn('[["control", "--help"], "nb1 control [command]"]', text)
         self.assertIn('[["control", "run", "--help"], "nb1 control run [SERIAL] FILE"]', text)

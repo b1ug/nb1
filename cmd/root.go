@@ -41,6 +41,7 @@ var rootCmd = &cobra.Command{
 		Use control --direct run for one foreground Action, Sequence or local
 		Pattern without a daemon. Its Job is local to that invocation.
 
+		Use device reset SERIAL to replace the selected device's persistent Flash preset through the daemon.
 		Standalone commands on, off, blink, fade, play, read and write access the
 		device directly and require it to be available. Use nb1 <command> --help.
 

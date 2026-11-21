@@ -423,3 +423,8 @@ footer { display: flex; align-items: center; gap: 7px; padding: 24px 3px 5px; fo
 .action:hover:enabled { background: #fffdf3; border-color: var(--action-ink); }
 .action.selected { box-shadow: inset 0 1px 0 #ffffffb0, 0 3px 0 #bad1b94a; }
 .action.selected:hover:enabled { background: var(--action-wash); }
+
+#flash-panel { order: 5; }
+.flash-controls { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 10px; align-items: end; margin-block: 10px; }
+.flash-controls > label { grid-column: 1 / -1; }
+#flash-last-preset:not(:empty)::after { content: " · "; }

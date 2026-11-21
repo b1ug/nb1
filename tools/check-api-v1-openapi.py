@@ -100,7 +100,7 @@ for path, item in document['paths'].items():
 
 expected_operations = {
     'getWelcome', 'getHealth', 'getPresence', 'getServiceStatus', 'getTransportMetrics',
-    'listDevices', 'getDevice', 'preview', 'submitJob', 'getJob', 'cancelJob',
+    'listDevices', 'getDevice', 'getFlashResetTicket', 'resetDeviceFlash', 'preview', 'submitJob', 'getJob', 'cancelJob',
     'listColors', 'resolveColor', 'saveColor', 'saveColorNamedResolve',
     'listPatterns', 'getPattern', 'savePattern', 'listTriggers', 'checkTriggers',
 }
@@ -118,6 +118,8 @@ negative = [
 ]
 for name, body in negative:
     requests.append({'name': name, 'method': 'POST', 'path': '/v1/preview', 'body': body, 'operation': 'preview', 'valid': False})
+requests.append({'name': 'unsupported-flash-preset', 'method': 'POST', 'path': '/v1/devices/20000001/flash/reset',
+                 'body': '{"preset":"factory"}', 'operation': 'resetDeviceFlash', 'valid': False})
 wire = [{key: value for key, value in request.items() if key in ('name', 'method', 'path', 'body')} for request in requests]
 result = subprocess.run(['go', 'run', './tools/api-v1-openapi-runtime'], cwd=ROOT,
                         input=json.dumps(wire), text=True, capture_output=True, timeout=120,

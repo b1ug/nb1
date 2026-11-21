@@ -119,6 +119,16 @@ func (h *handler) serveSequenceAPI(w http.ResponseWriter, r *http.Request) bool 
 		}
 	}
 	parts := strings.Split(strings.TrimPrefix(r.URL.Path, "/"), "/")
+	if len(parts) == 5 && parts[0] == "v1" && parts[1] == "devices" && parts[3] == "flash" {
+		switch parts[4] {
+		case "reset-ticket":
+			h.issueFlashTicket(w, r, parts[2])
+			return true
+		case "reset":
+			h.resetFlash(w, r, parts[2])
+			return true
+		}
+	}
 	if h.serveSequenceLibrary(w, r, parts) {
 		return true
 	}

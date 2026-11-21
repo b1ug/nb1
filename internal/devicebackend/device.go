@@ -1,9 +1,10 @@
 // Package devicebackend adapts the verified blink SDK path to the executor.
-// It never writes patterns or flash and does not use the mk2 single-LED 'n'
-// command. New generations require their own verified capability profile.
+// Ordinary effect playback uses RGB fades. The explicit Flash preset reset
+// uses the firmware-matched Pattern operation on the owning worker.
 package devicebackend
 
 import (
+	"context"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -83,7 +84,7 @@ func (d *driver) Open(serial string) (control.Backend, error) {
 	if d.trace != nil {
 		firmwareTrace = d.trace.Operation(serial, transporttrace.EmptyScope(transporttrace.OpenFirmware), transporttrace.QueryFirmware, transporttrace.Target{})
 	}
-	err = retryMK2Traced(tracker, nil, "query_firmware", "open: query firmware v", func() error {
+	err = retryMK2Traced(context.Background(), tracker, nil, "query_firmware", "open: query firmware v", func() error {
 		var queryErr error
 		version, queryErr = device.GetVersion()
 		return queryErr
@@ -98,7 +99,8 @@ func (d *driver) Open(serial string) (control.Backend, error) {
 	}
 	info.Firmware = version
 	info.Capabilities = []string{"set", "program", "cancel", "hold", "observe", "raw-rgb", "mk2-basic"}
-	b := &backend{dev: device, lease: lease, info: info, metrics: tracker}
+	lamp := &sdkLamp{Device: device, nativeSDKReader: nativeSDKReader{lamp: device}}
+	b := &backend{dev: lamp, lease: lease, info: info, metrics: tracker}
 	if d.trace != nil {
 		b.trace = &backendTrace{recorder: d.trace, scope: transporttrace.EmptyScope(transporttrace.PhaseNone)}
 		return &tracedBackend{b}, nil
@@ -139,6 +141,9 @@ func (b *tracedBackend) SetTransportScope(scope transporttrace.Scope) { b.trace.
 func (b *backend) Info() control.DeviceInfo {
 	i := b.info
 	i.Capabilities = append([]string(nil), i.Capabilities...)
+	if storage, _ := b.flashStorage(); storage != nil {
+		i.Capabilities = append(i.Capabilities, "flash-reset")
+	}
 	return i
 }
 

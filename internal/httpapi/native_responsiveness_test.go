@@ -334,3 +334,31 @@ func TestNativeInspectionEarlierCallerDeadlineKeepsNativeOwner(t *testing.T) {
 	}
 	f.assertOwnerHeld(t)
 }
+
+func TestFlashResetTicketExpiryAndCapacity(t *testing.T) {
+	var store flashTicketStore
+	start := time.Now()
+	var first string
+	for i := 0; i < flashTicketLimit; i++ {
+		ticket, ok := store.issue("20000002", start)
+		if !ok {
+			t.Fatalf("ticket %d rejected early", i)
+		}
+		if i == 0 {
+			first = ticket.Ticket
+		}
+	}
+	if _, ok := store.issue("20000003", start); ok {
+		t.Fatal("ticket capacity exceeded")
+	}
+	if store.consume(first, "20000002", start.Add(flashTicketTTL)) {
+		t.Fatal("expired ticket accepted")
+	}
+	replacement, ok := store.issue("20000003", start.Add(flashTicketTTL))
+	if !ok || !store.consume(replacement.Ticket, "20000003", start.Add(flashTicketTTL)) {
+		t.Fatal("expired tickets blocked issuance")
+	}
+	if store.consume(first, "20000002", start.Add(flashTicketTTL)) {
+		t.Fatal("pruned ticket accepted")
+	}
+}

@@ -53,22 +53,7 @@ func newSequenceControlCommandWithDriver(driver func(string) control.Driver) *co
 		if !options.direct && cmd.Flags().Changed("lock-dir") {
 			return fmt.Errorf("--lock-dir requires control --direct run")
 		}
-		if options.timeout <= 0 {
-			return fmt.Errorf("--timeout must be positive")
-		}
-		settings, _, err := applicationSettings(cmd)
-		if err != nil {
-			return err
-		}
-		options.settings = settings
-		if !options.direct && !cmd.Flags().Changed("endpoint") {
-			address, err := serverAddress(cmd, settings.Server.Listen)
-			if err != nil {
-				return err
-			}
-			options.endpoint = "http://" + address
-		}
-		return nil
+		return options.configureConnection(cmd)
 	}
 	var previewSerial string
 	preview := &cobra.Command{Use: "preview FILE", Short: "Preview an action, sequence or saved pattern", Args: cobra.ExactArgs(1), RunE: func(cmd *cobra.Command, args []string) error {
@@ -324,6 +309,25 @@ func (options *sequenceControlFlags) runDaemonJob(ctx context.Context, client *d
 		}
 	}
 	return printSequenceControlJob(cmd, job, false)
+}
+
+func (options *sequenceControlFlags) configureConnection(cmd *cobra.Command) error {
+	if options.timeout <= 0 {
+		return fmt.Errorf("--timeout must be positive")
+	}
+	settings, _, err := applicationSettings(cmd)
+	if err != nil {
+		return err
+	}
+	options.settings = settings
+	if !options.direct && !cmd.Flags().Changed("endpoint") {
+		address, err := serverAddress(cmd, settings.Server.Listen)
+		if err != nil {
+			return err
+		}
+		options.endpoint = "http://" + address
+	}
+	return nil
 }
 
 func (options *sequenceControlFlags) withClient(cmd *cobra.Command, run func(context.Context, *daemonclient.Client) error) error {

@@ -4,9 +4,9 @@
   "asset_base": "./",
   "source": {
     "repository": "https://github.com/b1ug/nb1-debugger",
-    "commit": "9dc2a9155354c6650b38a3355f3eebdb911f8320",
+    "commit": "de0691a263e05093c65f8a872b23670a2e469fa1",
     "dirty": false,
-    "tree_sha256": "cac71b56ecd8f555778f8280d61eb98ce2384a06fc7b5980cd4b18db81757c47"
+    "tree_sha256": "743b653608c6d13f7b93255bda77e051bd0d6eb0baebd71d20df1406b93322eb"
   },
   "build": {
     "tool": "static-nightlab/v1",
@@ -51,19 +51,19 @@
     },
     {
       "path": "demo.css",
-      "bytes": 34509,
-      "sha256": "bda650854b9e0641b3eb84ab5f400b5f1349b548081217fe593c7a9c8521e53a",
+      "bytes": 34777,
+      "sha256": "6e3b2d2d4915657f66f5691990f9c6e0f6f051da5b57e176ba919296854dbac3",
       "encoding": "identity",
-      "decoded_bytes": 34509,
-      "decoded_sha256": "bda650854b9e0641b3eb84ab5f400b5f1349b548081217fe593c7a9c8521e53a"
+      "decoded_bytes": 34777,
+      "decoded_sha256": "6e3b2d2d4915657f66f5691990f9c6e0f6f051da5b57e176ba919296854dbac3"
     },
     {
       "path": "demo.js",
-      "bytes": 67064,
-      "sha256": "4e17ec4152e5a3f2fe7f4ce940643b0d533332bfa6f75b9b199744127a7f09ce",
+      "bytes": 58320,
+      "sha256": "2296daf6f059b6b26049c737e96c4f2aeadfaaa51898dbad1705f444906e351a",
       "encoding": "identity",
-      "decoded_bytes": 67064,
-      "decoded_sha256": "4e17ec4152e5a3f2fe7f4ce940643b0d533332bfa6f75b9b199744127a7f09ce"
+      "decoded_bytes": 58320,
+      "decoded_sha256": "2296daf6f059b6b26049c737e96c4f2aeadfaaa51898dbad1705f444906e351a"
     },
     {
       "path": "editor-LICENSES.txt",
@@ -131,11 +131,11 @@
     },
     {
       "path": "index.html",
-      "bytes": 16190,
-      "sha256": "5a1cf4b029478ffc8f9729ddcb3d97b1d14c214a521e564934154a09a38cc86e",
+      "bytes": 17052,
+      "sha256": "78c6a5055a98b6ebe257f3d0e3d37edb392cf9ec5560ace2551ddd15c6063441",
       "encoding": "identity",
-      "decoded_bytes": 16190,
-      "decoded_sha256": "5a1cf4b029478ffc8f9729ddcb3d97b1d14c214a521e564934154a09a38cc86e"
+      "decoded_bytes": 17052,
+      "decoded_sha256": "78c6a5055a98b6ebe257f3d0e3d37edb392cf9ec5560ace2551ddd15c6063441"
     },
     {
       "path": "json-editor.css",
@@ -163,11 +163,11 @@
     },
     {
       "path": "locales.js",
-      "bytes": 12827,
-      "sha256": "0d4ce7e6bb7d75944e8bac0c5eb483aabcdfeb0adbe64deeb56553808b812778",
+      "bytes": 13638,
+      "sha256": "328f39188f505cad5126a4a0a6202c6ebcd9a2b574a06543edc7372af6656129",
       "encoding": "identity",
-      "decoded_bytes": 12827,
-      "decoded_sha256": "0d4ce7e6bb7d75944e8bac0c5eb483aabcdfeb0adbe64deeb56553808b812778"
+      "decoded_bytes": 13638,
+      "decoded_sha256": "328f39188f505cad5126a4a0a6202c6ebcd9a2b574a06543edc7372af6656129"
     },
     {
       "path": "nightlab/THREE-LICENSE.txt",

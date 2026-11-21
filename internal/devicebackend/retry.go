@@ -128,7 +128,7 @@ func (d *driver) Metrics() []control.TransportMetric {
 }
 
 func transientMK2Transport(err error) bool {
-	for _, permanent := range []error{context.Canceled, context.DeadlineExceeded, control.ErrInvalid, control.ErrClosed, control.ErrOffline, control.ErrBusy, ownership.ErrBusy} {
+	for _, permanent := range []error{context.Canceled, context.DeadlineExceeded, control.ErrInvalid, control.ErrClosed, control.ErrOffline, control.ErrBusy, ownership.ErrBusy, errFlashPartialReply} {
 		if errors.Is(err, permanent) {
 			return false
 		}
@@ -172,11 +172,14 @@ func transientMK2Transport(err error) bool {
 // complete query transactions. It is never installed below the SDK and cannot
 // retry raw commands, pattern writes, flash programming or legacy CLI actions.
 // Backoff bounds additional waiting, not the duration of synchronous native I/O.
-func retryMK2(tracker *retryTracker, pause func(time.Duration), kind, operation string, call func() error) error {
-	return retryMK2Traced(tracker, pause, kind, operation, call, nil)
+func retryMK2(ctx context.Context, tracker *retryTracker, pause func(time.Duration), kind, operation string, call func() error) error {
+	return retryMK2Traced(ctx, tracker, pause, kind, operation, call, nil)
 }
 
-func retryMK2Traced(tracker *retryTracker, pause func(time.Duration), kind, operation string, call func() error, trace *transporttrace.OperationTrace) error {
+func retryMK2Traced(ctx context.Context, tracker *retryTracker, pause func(time.Duration), kind, operation string, call func() error, trace *transporttrace.OperationTrace) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	if pause == nil {
 		pause = time.Sleep
 	}
@@ -230,7 +233,18 @@ func retryMK2Traced(tracker *retryTracker, pause func(time.Duration), kind, oper
 			backoffMS = 0
 		}
 		attemptTrace.End(err, eligible, willRetry, backoffMS)
-		if !eligible || attempt == mk2MaxAttempts {
+		if willRetry {
+			if ctx.Err() == nil {
+				pause(time.Duration(backoffMS) * time.Millisecond)
+			}
+			if canceled := ctx.Err(); canceled != nil {
+				// No next SDK call was issued. Keep the native cause and count
+				// only the attempts actually submitted to the device.
+				err = errors.Join(err, canceled)
+				willRetry = false
+			}
+		}
+		if !willRetry {
 			failure := &OperationError{Operation: operation, Attempts: attempt, Err: err}
 			if tracker != nil {
 				tracker.mu.Lock()
@@ -252,22 +266,17 @@ func retryMK2Traced(tracker *retryTracker, pause func(time.Duration), kind, oper
 			tracker.data.LastRetryAt = time.Now().UTC()
 			tracker.mu.Unlock()
 		}
-		delay := 5 * time.Millisecond
-		if attempt == 2 {
-			delay = 15 * time.Millisecond
-		}
-		pause(delay)
 	}
 }
 
 func (b *backend) operation(kind, stage string, call func() error, target ...transporttrace.Target) error {
 	if b.trace == nil {
-		return retryMK2(b.metrics, b.pause, kind, stage, call)
+		return retryMK2(context.Background(), b.metrics, b.pause, kind, stage, call)
 	}
 	var value transporttrace.Target
 	if len(target) > 0 {
 		value = target[0]
 	}
 	op := b.trace.recorder.Operation(b.info.Serial, b.trace.scope, transporttrace.OperationFor(kind), value)
-	return retryMK2Traced(b.metrics, b.pause, kind, stage, call, op)
+	return retryMK2Traced(context.Background(), b.metrics, b.pause, kind, stage, call, op)
 }

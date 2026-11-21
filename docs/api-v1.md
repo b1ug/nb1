@@ -180,6 +180,8 @@ These operations are the current runtime's API v1 route table. Success bodies ar
 | `GET /v1/triggers/check` | No body or query. | None. | `200`, `{"items":[...]}` with saved Pattern and device binding diagnostics. An absent mapping file yields an empty `items` array. |
 | `GET /v1/devices` | No body. | None. | `200`, configured device states, sorted by serial; `[]` when none are configured. Does not discover USB. |
 | `GET /v1/devices/{serial}` | Configured serial in the path; no body. | None. | `200`, one cached Device object. An unmatched serial returns `404`. |
+| `GET /v1/devices/{serial}/flash/reset-ticket` | Explicit eight-hex-digit serial. | No body or query. | `200`, one-use ticket. |
+| `POST /v1/devices/{serial}/flash/reset` | Same serial, `X-NB1-Flash-Ticket` header and a JSON object. | Omit `preset` for `off`, or choose `off`, `rainbow`, `starlight`, `fireflies`. | `200`, [Flash reset receipt](#device-flash-reset). |
 | `GET /v1/presence` | No fields. | None. | `200`, `{"service":"nb1","api_version":"v1"}`. Constant marker, independent of connected devices. |
 | `GET /v1/service-status` | No fields. | None. | `200`, `{"service":"nb1","api_version":"v1","health":"ok","devices":{"configured":2,"online":1}}`. The `devices` value can also be `null`. |
 | `GET /healthz` | No fields. | None. | `200`, `{"status":"ok","api_version":"v1"}`. HTTP health does not imply device availability. |
@@ -276,6 +278,10 @@ An HTTP error is `{"error":{"code":"...","message":"..."}}`. Invalid Action comp
 | `415` | `json_required` | Missing, malformed or non-`application/json` Content-Type on a body-bearing operation. |
 | `422` | `unsupported_capability` | Submission needs capabilities absent from the device's cached profile. |
 | `429` | `library_capacity` | Library record count exceeds its limit, or adding a new color/Pattern would exceed capacity. Replacing an existing record at capacity is allowed. |
+| `501` | `flash_reset_unsupported` | The service does not implement Flash reset. A daemon predating this route returns `404 not_found`. |
+| `502` | `flash_staging_failed` | The `result` field contains the RAM progress. A failed RAM write may have changed the next row. The daemon did not send the Flash save command. |
+| `502` | `flash_unconfirmed` | The `result` field contains the fully staged and verified RAM counts. The Flash save was attempted once and may have succeeded. Verify after a cold power cycle. |
+| `503` | `flash_outcome_unknown` | The request ended before the result was available. Do not resend automatically. |
 | `503` | `unavailable` | Runtime closed/offline, sequence execution unsupported by the service, request context ended, or local library unavailable/unreadable/unsafe/locked. |
 | `400` | `target_required` | Implicit request with multiple managed devices and no default or trigger binding. |
 | `404` | `trigger_not_found` / `device_not_managed` | An unknown trigger or a routed target outside the managed set. |
@@ -360,3 +366,43 @@ Existing recovered I/O retries remain a documented limitation. A tagged source o
 The source delivery includes the core execution path, local library, HTTP operations above, CLI commands, explicit direct run, embedded Web controls and MCP adapter. Software checks cover the integrated routes, direct lifecycle and Agent workflows. Recorded finite daemon CLI/HTTP checks on macOS 27.2 / MK2 FW204 cover serial and interval playback, Orbit, Job replay, busy rejection, cancellation, final RGB readback and ownership. Other recorded checks cover direct set/hold, explicit timeout and SIGINT cleanup, real stdio MCP preview/submission/Job lookup after session closure, and embedded Web behavior. Those observations retain their exact source and binary identities; they are not automatically requalified by a new release version. DeviceSequence routes remain planned. The [terminology table](api-v1-terminology.md) governs names across those surfaces.
 
 macOS/Linux user-service installation pins `XDG_CONFIG_HOME` to the verified configuration root used for that installation. A different login-manager environment cannot redirect the selected profile or default library. Device locks continue to follow the native OS coordination policy described above. Rendering alone can set the target configuration root with `service render --user-config-root`; it does not grant filesystem access.
+
+
+## Device Flash reset
+
+In the embedded Debugger, select the lamp by serial, open **Device Flash**, choose a startup preset and press **Reset Flash**. Selecting a preset leaves the lamp untouched. On the command line, `nb1 device reset 20000001` uses Off. Add a preset name to change it, or add `--json` to print the receipt.
+
+| Preset | Stored effect on both LEDs |
+| --- | --- |
+| `off` (default) | Black in every slot, with a positive duration so the firmware actually plays black. |
+| `rainbow` | Eight colors around the color wheel, red through magenta. |
+| `starlight` | Brief blue-white, violet and warm glints over a dark blue background. |
+| `fireflies` | Yellow-green and amber glows separated by dark rests. |
+
+Off is nb1's default for the saved pattern. The reset preserves factory settings and the host Pattern library. For immediate darkness, use the regular Off action. The legacy direct `write --reset` clears 32 RAM rows before a file write. After a cold start the MK2 firmware can briefly light the lamp before its stored pattern runs. A power-only USB supply lets you observe that pattern without a computer application taking control.
+
+The CLI and Debugger acquire a one-use ticket for each explicit reset. HTTP clients first GET `/v1/devices/{serial}/flash/reset-ticket`, then POST an `application/json` object to `/v1/devices/{serial}/flash/reset` with the same serial and the ticket in the `X-NB1-Flash-Ticket` header. The only optional body field is `preset`; `{}` selects Off. Use the same authorization on both requests when local API authentication is enabled.
+
+```sh
+device_url=http://127.0.0.1:5885/v1/devices/20000001/flash
+ticket=$(curl -fsS "$device_url/reset-ticket" | jq -er '.ticket') &&
+  curl -sS -H "X-NB1-Flash-Ticket: $ticket" -H 'Content-Type: application/json' \
+    -d '{"preset":"starlight"}' "$device_url/reset"
+```
+
+The ticket expires in 60 seconds and is consumed before device execution. Replaying the POST cannot trigger another save. A `409 flash_ticket_used_or_expired` after a lost response can mean the original operation already ran. Verify the lamp before requesting a fresh ticket.
+
+The daemon reserves the selected idle device. For matched MK2 firmware 204 and 205 it replaces persistent rows 0–15, reads each staged row back, then sends one Flash save. RAM-only rows 16–31 remain available. An active native or host playback needs to finish or stop first. Active portable transport tracing cannot record the complete native operation. MK3 firmware 304 saves startup parameters along with its rows, so this pattern-only operation is unavailable there. Check for the `flash-reset` capability in the device response.
+
+During reset, a recognized transient USB error can repeat the complete playback-state query (`S`) or RAM-row query (`R`), up to three total attempts per query. Transport metrics count these attempts. An unexpected response or a mismatch in the stored color, timing or LED stops verification. The daemon submits each row write and the final Flash save at most once. Independent native inspection still reports each read on its first attempt.
+
+| HTTP result | Meaning and next action |
+| --- | --- |
+| 200 with `acknowledged` | The save request returned successfully. Power-cycle the lamp to verify retention. |
+| 502 `flash_staging_failed` | Staging or its check failed before the Flash save. RAM may contain part of the new image. |
+| 502 `flash_unconfirmed` | The device may have persisted the preset despite the transport error. Check after a power cycle before considering another write. |
+| 400, 404, 409, 422 or 503 | Invalid request or read-only session, unknown device, device busy, unsupported hardware, or device offline. Read the response's error code and message. |
+
+A receipt identifies the `serial`, `preset`, `firmware` and `status`. The `lines` count is the size of the persistent region. The `staged` and `verified` counts record acknowledged RAM writes and matched readbacks. A 502 response includes this receipt under `result` alongside the API error. A lost HTTP response leaves the outcome unknown. Automatic replay is inappropriate for a Flash save. The ordinary API access rules apply, including a Bearer token if configured.
+
+Firmware references: [MK2 204](https://github.com/todbot/blink1/blob/f4bf437fa016b2975675fecc2ad18fd04c955fa8/hardware/firmware_mk2/main.c), [MK2 205](https://github.com/todbot/blink1/blob/101abe3599c661c4dd4d1204b4d50fb592293143/hardware/firmware_mk2/main.c), [MK3 304](https://github.com/todbot/blink1mk3/blob/ccf04e26726a4a41ef9689653ae12baa73dbc456/firmware/firmware-v30x/main.c).

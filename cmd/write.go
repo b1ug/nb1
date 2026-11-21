@@ -17,7 +17,8 @@ var writeCmd = &cobra.Command{
 	Long: hdoc(`
 		Write given pattern to the blink(1) device.
 
-		Use --reset flag to erase the pattern stored on the blink(1) device before writing the pattern.
+		Use --reset to clear 32 RAM rows before writing your file.
+		To install a built-in startup preset through the daemon, use nb1 device reset SERIAL [PRESET].
 		Use --flash flag to write the pattern to the Flash memory as well, otherwise the pattern is written to the RAM only.
 	`),
 	Args: cobra.MaximumNArgs(1),
@@ -102,7 +103,7 @@ func init() {
 	// Cobra supports Persistent Flags which will work for this command and all subcommands, e.g.:
 	// writeCmd.PersistentFlags().String("foo", "", "A help for foo")
 	writeCmd.PersistentFlags().BoolVarP(&writeSaveFlash, "flash", "f", false, "Save the pattern to the Flash memory as well")
-	writeCmd.PersistentFlags().BoolVarP(&writeResetAll, "reset", "r", false, "Reset the blink(1) device before writing the pattern")
+	writeCmd.PersistentFlags().BoolVarP(&writeResetAll, "reset", "r", false, "Clear 32 RAM rows before writing the pattern")
 	writeCmd.PersistentFlags().BoolVarP(&writePreviewPattern, "preview", "p", false, "Preview the pattern to be written")
 	writeCmd.PersistentFlags().IntVarP(&writeStartPos, "start", "s", 0, "Start position of the pattern to be written")
 	writeCmd.PersistentFlags().IntVarP(&writeEndPos, "end", "e", 0, "End position of the pattern to be written")

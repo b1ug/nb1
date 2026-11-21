@@ -57,7 +57,7 @@ jobs:
           if [[ "$RUNNER_OS" == Windows ]]; then binary=nb1.exe; fi
           mkdir -p build
           go build -mod=readonly -trimpath -buildvcs=true \
-            -ldflags "-X github.com/b1ug/nb1/config.GitCommit=$GITHUB_SHA -X github.com/b1ug/nb1/config.CIBuildNum=gh$GITHUB_RUN_NUMBER" \
+            -ldflags "-X github.com/b1ug/nb1/config.GitCommit=$GITHUB_SHA -X github.com/b1ug/nb1/config.CIBuildNum=gh$GITHUB_RUN_NUMBER -X github.com/b1ug/nb1/internal/buildmeta.GitCommit=$GITHUB_SHA -X github.com/b1ug/nb1/internal/buildmeta.GitSummary=candidate-$GITHUB_SHA" \
             -o "build/$binary" .
           go version -m "build/$binary" > build/build-info.txt
       - name: Test software paths without listing or opening hardware

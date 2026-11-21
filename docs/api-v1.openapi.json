@@ -4,7 +4,7 @@
   "info": {
     "title": "nb1 API v1",
     "version": "1.0.0-dev",
-    "description": "Implementation contract for this source checkout. x-source lists the original route baseline and the current implementation files. The candidate supports daemon-side target selection, named triggers, trigger checks, device-guarded Job cancellation and serial-targeted Flash preset reset. The installed local runtime has its own version and validation state. All example devices are virtual. JSON request bodies are bounded to 1 MiB. The runtime rejects duplicate fields, unknown fields, explicit null, invalid Unicode, and unsupported number spellings. Cross-field execution budgets are validated by the core."
+    "description": "Implementation contract for the sequence-v1 daemon in this source checkout. GET / returns runtime build identity and endpoint discovery. The API includes daemon-side target selection, named triggers, trigger checks, device-guarded Job cancellation and serial-targeted Flash preset reset. x-source lists route and implementation files. Examples use software fixtures or sample metadata. JSON request bodies are bounded to 1 MiB. The runtime rejects duplicate fields, unknown fields, explicit null, invalid Unicode, and unsupported number spellings. Cross-field execution budgets are validated by the core."
   },
   "servers": [
     {
@@ -35,7 +35,7 @@
     }
   ],
   "x-source": {
-    "scope": "WithSequenceAPI, daemon target and Trigger routing, and optional authenticated HTTPS",
+    "scope": "Sequence API, daemon target and Trigger routing, root discovery, serial-targeted Flash reset, and optional authenticated HTTPS",
     "files": [
       "internal/httpapi/sequence_api.go",
       "internal/httpapi/sequence_library.go",
@@ -57,6 +57,7 @@
       "internal/triggerv1/store.go",
       "cmd/server_remote.go",
       "internal/remoteaccess/http.go",
+      "internal/httpapi/root_welcome.go",
       "internal/httpapi/flash_reset.go"
     ],
     "route_baseline_commit": "8a348d3746be01311c957fe16a916c6be121db07"
@@ -126,6 +127,227 @@
     }
   ],
   "paths": {
+    "/": {
+      "get": {
+        "operationId": "getWelcome",
+        "summary": "Discover the running nb1 service and its HTTP API",
+        "description": "Returns this executable's build identity, selected API profile, endpoint directory, configured default device and cached device states. It performs no USB query. The embedded browser console is named nb1 Workbench and currently remains at `/demo/`; that console route is not an API endpoint.",
+        "tags": [
+          "Runtime"
+        ],
+        "responses": {
+          "200": {
+            "description": "Service welcome, API directory and cached status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RootWelcome"
+                },
+                "examples": {
+                  "local_service": {
+                    "summary": "Versioned local daemon response",
+                    "value": {
+                      "service": "nb1",
+                      "welcome": "Welcome to nb1, the local blink(1) control service.",
+                      "status": "running",
+                      "build": {
+                        "version": "v0.1.3+dirty",
+                        "revision": "48895be5babc11d6f3b2a7ab16e316bd564e726e",
+                        "modified": "true"
+                      },
+                      "api_profile": "sequence-v1",
+                      "api_version": "v1",
+                      "console_name": "nb1 Workbench",
+                      "console_url": "/demo/",
+                      "health_url": "/healthz",
+                      "device_state_source": "cached",
+                      "device_summary": {
+                        "configured": 2,
+                        "online": 1,
+                        "not_online": 1
+                      },
+                      "default_device": "20005601",
+                      "device_fallback": "error",
+                      "devices": [
+                        {
+                          "serial": "20005601",
+                          "product": "blink(1) mk2",
+                          "firmware": 204,
+                          "connection": "online",
+                          "capabilities": [
+                            "set",
+                            "sequence",
+                            "cancel",
+                            "hold",
+                            "observe",
+                            "raw-rgb",
+                            "mk2-basic"
+                          ],
+                          "queue_depth": 0,
+                          "observed": {
+                            "led1": "#000000",
+                            "led2": "#000000",
+                            "sampled_at": "2026-11-21T09:30:15.254739Z"
+                          }
+                        },
+                        {
+                          "serial": "20006105",
+                          "connection": "offline",
+                          "queue_depth": 0,
+                          "last_error": "device offline: serial 20006105 has 0 matching interfaces",
+                          "observed": null
+                        }
+                      ],
+                      "endpoints": [
+                        {
+                          "method": "GET",
+                          "path": "/",
+                          "description": "Service welcome, build version, API directory, default device and cached device status."
+                        },
+                        {
+                          "method": "GET",
+                          "path": "/healthz",
+                          "description": "Confirm the local HTTP service is responding."
+                        },
+                        {
+                          "method": "GET",
+                          "path": "/v1/presence",
+                          "description": "Identify the service and API version; this does not query devices."
+                        },
+                        {
+                          "method": "GET",
+                          "path": "/v1/service-status",
+                          "description": "Read service status and configured/online device counts."
+                        },
+                        {
+                          "method": "GET",
+                          "path": "/v1/transport-metrics",
+                          "description": "Read accumulated host-side device I/O call and retry counts."
+                        },
+                        {
+                          "method": "GET",
+                          "path": "/v1/devices",
+                          "description": "List configured blink(1) devices and their cached status."
+                        },
+                        {
+                          "method": "GET",
+                          "path": "/v1/devices/{serial}",
+                          "description": "Read one configured blink(1) device and its cached status."
+                        },
+                        {
+                          "method": "POST",
+                          "path": "/v1/preview",
+                          "description": "Validate and compile an Action, Sequence, or saved Pattern without playing it."
+                        },
+                        {
+                          "method": "POST",
+                          "path": "/v1/jobs",
+                          "description": "Submit a Sequence Job. Omit serial to use the configured default; provide it to target a specific device."
+                        },
+                        {
+                          "method": "GET",
+                          "path": "/v1/jobs/{job_id}",
+                          "description": "Read the current in-memory status of a Sequence Job."
+                        },
+                        {
+                          "method": "POST",
+                          "path": "/v1/jobs/{job_id}/cancel",
+                          "description": "Request cancellation of a Sequence Job."
+                        },
+                        {
+                          "method": "GET",
+                          "path": "/v1/colors",
+                          "description": "List named colors saved in the local library."
+                        },
+                        {
+                          "method": "PUT",
+                          "path": "/v1/colors/{name}",
+                          "description": "Save or replace a named color in the local library."
+                        },
+                        {
+                          "method": "POST",
+                          "path": "/v1/colors/resolve",
+                          "description": "Resolve a CSS name, hex value, RGB, or HSV color input."
+                        },
+                        {
+                          "method": "GET",
+                          "path": "/v1/patterns",
+                          "description": "List saved Patterns available to the Sequence API."
+                        },
+                        {
+                          "method": "GET",
+                          "path": "/v1/patterns/{id}",
+                          "description": "Read one saved Pattern."
+                        },
+                        {
+                          "method": "PUT",
+                          "path": "/v1/patterns/{id}",
+                          "description": "Save or replace a Pattern in the local library."
+                        },
+                        {
+                          "method": "GET",
+                          "path": "/v1/triggers",
+                          "description": "List local trigger names and their Pattern/device bindings."
+                        },
+                        {
+                          "method": "GET",
+                          "path": "/v1/triggers/check",
+                          "description": "Check saved trigger bindings against the Pattern library and managed devices."
+                        }
+                      ],
+                      "generated_at": "2026-11-21T09:30:15.437970Z"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Unexpected request body or query",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "Loopback host or same-origin policy rejected the request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "HTTP method is not GET",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Allow": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Supported HTTP method(s)."
+              }
+            }
+          }
+        },
+        "x-query-policy": "none",
+        "x-body-policy": "none"
+      }
+    },
     "/healthz": {
       "get": {
         "operationId": "getHealth",
@@ -744,358 +966,6 @@
             "example": "fixture-0001"
           }
         ]
-      }
-    },
-    "/v1/devices/{serial}/flash/reset-ticket": {
-      "get": {
-        "operationId": "getFlashResetTicket",
-        "summary": "Obtain a one-use Flash reset ticket",
-        "description": "Obtains a ticket scoped to this daemon process and the specified managed serial. No device I/O is issued. A fresh daemon rejects tickets from the previous process.",
-        "tags": [
-          "Runtime"
-        ],
-        "parameters": [
-          {
-            "name": "serial",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "minLength": 8,
-              "maxLength": 8,
-              "pattern": "^[0-9A-Fa-f]{8}$"
-            },
-            "example": "20000001"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Opaque ticket for one Flash reset on the specified device during the next 60 seconds.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "additionalProperties": false,
-                  "required": [
-                    "ticket"
-                  ],
-                  "properties": {
-                    "ticket": {
-                      "type": "string",
-                      "minLength": 32,
-                      "maxLength": 32,
-                      "pattern": "^[0-9a-f]{32}$"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid serial, query or body.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "description": "Host or Origin rejected.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Unknown device or API resource.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "405": {
-            "description": "GET required.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            },
-            "headers": {
-              "Allow": {
-                "schema": {
-                  "type": "string"
-                },
-                "description": "Supported HTTP method(s)."
-              }
-            }
-          },
-          "429": {
-            "description": "All 256 ticket slots are currently occupied. Unused tickets expire in 60 seconds.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Unexpected internal error. The caller may not know the outcome.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "501": {
-            "description": "The running service does not implement Flash reset.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "Service unavailable.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        },
-        "x-body-policy": "rejected",
-        "x-query-policy": "rejected"
-      }
-    },
-    "/v1/devices/{serial}/flash/reset": {
-      "post": {
-        "operationId": "resetDeviceFlash",
-        "summary": "Replace one device’s persistent pattern with a built-in preset",
-        "description": "Uses the idle worker for the exact serial. The request stages and reads back every persistent row before one Flash save attempt. Acknowledgement reports the transport result; persistence requires checking after a cold power cycle. First obtain a reset ticket for this serial. The server consumes it before attempting the operation; reusing the ticket cannot write twice. A lost response can still leave the original save outcome unknown. Do not resend after a lost response or an unconfirmed save.",
-        "tags": [
-          "Runtime"
-        ],
-        "parameters": [
-          {
-            "name": "serial",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "minLength": 8,
-              "maxLength": 8,
-              "pattern": "^[0-9A-Fa-f]{8}$"
-            },
-            "example": "20000001"
-          },
-          {
-            "name": "X-NB1-Flash-Ticket",
-            "in": "header",
-            "required": true,
-            "description": "Single-use ticket from GET /v1/devices/{serial}/flash/reset-ticket on this daemon.",
-            "schema": {
-              "type": "string",
-              "minLength": 32,
-              "maxLength": 32,
-              "pattern": "^[0-9a-f]{32}$"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/FlashResetRequest"
-              },
-              "examples": {
-                "defaultOff": {
-                  "value": {}
-                },
-                "rainbow": {
-                  "value": {
-                    "preset": "rainbow"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "All rows verified in RAM and device acknowledged the Flash save.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "allOf": [
-                    {
-                      "$ref": "#/components/schemas/FlashResetResult"
-                    },
-                    {
-                      "properties": {
-                        "status": {
-                          "const": "acknowledged"
-                        }
-                      }
-                    }
-                  ]
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid JSON object, preset, query or device serial.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "description": "Host or Origin rejected.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Unknown device or API resource.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "405": {
-            "description": "POST required.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            },
-            "headers": {
-              "Allow": {
-                "schema": {
-                  "type": "string"
-                },
-                "description": "Supported HTTP method(s)."
-              }
-            }
-          },
-          "409": {
-            "description": "The device is busy or the supplied ticket is missing, invalid, already used or expired. A replayed request may have written previously.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "413": {
-            "description": "Request exceeds 1 MiB.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "415": {
-            "description": "Content-Type must be application/json.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "The device, firmware or runtime mode does not support this reset.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Unexpected internal error. The caller may not know the outcome.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "501": {
-            "description": "The running service does not implement Flash reset.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "502": {
-            "description": "The device transaction failed. flash_staging_failed means no Flash save was sent; staging may have modified RAM. flash_unconfirmed means a save was attempted and its persistent effect is unknown.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/FlashResetFailure"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "Device offline or service unavailable. flash_outcome_unknown indicates that the operation did not return before the request ended.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        },
-        "x-query-policy": "rejected"
       }
     },
     "/v1/preview": {
@@ -3931,6 +3801,358 @@
           }
         }
       }
+    },
+    "/v1/devices/{serial}/flash/reset-ticket": {
+      "get": {
+        "operationId": "getFlashResetTicket",
+        "summary": "Obtain a one-use Flash reset ticket",
+        "description": "Obtains a ticket scoped to this daemon process and the specified managed serial. No device I/O is issued. A fresh daemon rejects tickets from the previous process.",
+        "tags": [
+          "Runtime"
+        ],
+        "parameters": [
+          {
+            "name": "serial",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 8,
+              "pattern": "^[0-9A-Fa-f]{8}$"
+            },
+            "example": "20000001"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Opaque ticket for one Flash reset on the specified device during the next 60 seconds.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "ticket"
+                  ],
+                  "properties": {
+                    "ticket": {
+                      "type": "string",
+                      "minLength": 32,
+                      "maxLength": 32,
+                      "pattern": "^[0-9a-f]{32}$"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid serial, query or body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "Host or Origin rejected.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown device or API resource.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "GET required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Allow": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Supported HTTP method(s)."
+              }
+            }
+          },
+          "429": {
+            "description": "All 256 ticket slots are currently occupied. Unused tickets expire in 60 seconds.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected internal error. The caller may not know the outcome.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "The running service does not implement Flash reset.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-body-policy": "rejected",
+        "x-query-policy": "rejected"
+      }
+    },
+    "/v1/devices/{serial}/flash/reset": {
+      "post": {
+        "operationId": "resetDeviceFlash",
+        "summary": "Replace one device’s persistent pattern with a built-in preset",
+        "description": "Uses the idle worker for the exact serial. The request stages and reads back every persistent row before one Flash save attempt. Acknowledgement reports the transport result; persistence requires checking after a cold power cycle. First obtain a reset ticket for this serial. The server consumes it before attempting the operation; reusing the ticket cannot write twice. A lost response can still leave the original save outcome unknown. Do not resend after a lost response or an unconfirmed save.",
+        "tags": [
+          "Runtime"
+        ],
+        "parameters": [
+          {
+            "name": "serial",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 8,
+              "pattern": "^[0-9A-Fa-f]{8}$"
+            },
+            "example": "20000001"
+          },
+          {
+            "name": "X-NB1-Flash-Ticket",
+            "in": "header",
+            "required": true,
+            "description": "Single-use ticket from GET /v1/devices/{serial}/flash/reset-ticket on this daemon.",
+            "schema": {
+              "type": "string",
+              "minLength": 32,
+              "maxLength": 32,
+              "pattern": "^[0-9a-f]{32}$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FlashResetRequest"
+              },
+              "examples": {
+                "defaultOff": {
+                  "value": {}
+                },
+                "rainbow": {
+                  "value": {
+                    "preset": "rainbow"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "All rows verified in RAM and device acknowledged the Flash save.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/FlashResetResult"
+                    },
+                    {
+                      "properties": {
+                        "status": {
+                          "const": "acknowledged"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid JSON object, preset, query or device serial.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "Host or Origin rejected.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown device or API resource.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "POST required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Allow": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Supported HTTP method(s)."
+              }
+            }
+          },
+          "409": {
+            "description": "The device is busy or the supplied ticket is missing, invalid, already used or expired. A replayed request may have written previously.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request exceeds 1 MiB.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Content-Type must be application/json.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The device, firmware or runtime mode does not support this reset.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected internal error. The caller may not know the outcome.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "The running service does not implement Flash reset.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "The device transaction failed. flash_staging_failed means no Flash save was sent; staging may have modified RAM. flash_unconfirmed means a save was attempted and its persistent effect is unknown.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FlashResetFailure"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Device offline or service unavailable. flash_outcome_unknown indicates that the operation did not return before the request ended.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-query-policy": "rejected"
+      }
     }
   },
   "components": {
@@ -5977,6 +6199,231 @@
             ]
           }
         ]
+      },
+      "RootBuild": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "version",
+          "modified"
+        ],
+        "properties": {
+          "version": {
+            "type": "string",
+            "description": "Build identity from this executable; a local source build may include +dirty."
+          },
+          "revision": {
+            "type": "string",
+            "description": "Full VCS revision when available."
+          },
+          "modified": {
+            "type": "string",
+            "enum": [
+              "true",
+              "false",
+              "unknown"
+            ]
+          }
+        }
+      },
+      "RootDeviceSummary": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "configured",
+          "online",
+          "not_online"
+        ],
+        "properties": {
+          "configured": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "online": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "not_online": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "RootDevice": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "serial",
+          "connection",
+          "queue_depth",
+          "observed"
+        ],
+        "properties": {
+          "serial": {
+            "$ref": "#/components/schemas/Serial"
+          },
+          "product": {
+            "type": "string"
+          },
+          "firmware": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "connection": {
+            "type": "string",
+            "enum": [
+              "connecting",
+              "online",
+              "busy",
+              "offline",
+              "error",
+              "closing",
+              "closed"
+            ]
+          },
+          "capabilities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "active_job": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "queue_depth": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "last_error": {
+            "type": "string",
+            "description": "Last cached local connection error, when present."
+          },
+          "observed": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Observation"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "RootEndpoint": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "method",
+          "path",
+          "description"
+        ],
+        "properties": {
+          "method": {
+            "type": "string",
+            "enum": [
+              "GET",
+              "POST",
+              "PUT"
+            ]
+          },
+          "path": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        }
+      },
+      "RootWelcome": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "service",
+          "welcome",
+          "status",
+          "build",
+          "api_profile",
+          "api_version",
+          "console_name",
+          "console_url",
+          "health_url",
+          "device_state_source",
+          "device_summary",
+          "device_fallback",
+          "devices",
+          "endpoints",
+          "generated_at"
+        ],
+        "properties": {
+          "service": {
+            "type": "string",
+            "const": "nb1"
+          },
+          "welcome": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "const": "running"
+          },
+          "build": {
+            "$ref": "#/components/schemas/RootBuild"
+          },
+          "api_profile": {
+            "type": "string",
+            "const": "sequence-v1"
+          },
+          "api_version": {
+            "type": "string",
+            "const": "v1"
+          },
+          "console_name": {
+            "type": "string",
+            "const": "nb1 Workbench"
+          },
+          "console_url": {
+            "type": "string",
+            "const": "/demo/"
+          },
+          "health_url": {
+            "type": "string",
+            "const": "/healthz"
+          },
+          "device_state_source": {
+            "type": "string",
+            "const": "cached"
+          },
+          "device_summary": {
+            "$ref": "#/components/schemas/RootDeviceSummary"
+          },
+          "default_device": {
+            "$ref": "#/components/schemas/Serial"
+          },
+          "device_fallback": {
+            "type": "string",
+            "enum": [
+              "error",
+              "single_online"
+            ]
+          },
+          "devices": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RootDevice"
+            }
+          },
+          "endpoints": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RootEndpoint"
+            }
+          },
+          "generated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
       },
       "FlashResetRequest": {
         "type": "object",

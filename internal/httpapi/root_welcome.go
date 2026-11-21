@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/b1ug/nb1/config"
+	"github.com/b1ug/nb1/internal/buildmeta"
 	"github.com/b1ug/nb1/internal/control"
 )
 
@@ -138,13 +138,13 @@ func readRootBuild() rootBuild {
 	if ok && info != nil {
 		version = info.Main.Version
 	}
-	if (version == "" || version == "(devel)") && strings.TrimSpace(config.GitSummary) != "" {
-		version = strings.TrimSpace(config.GitSummary)
+	if (version == "" || version == "(devel)") && strings.TrimSpace(buildmeta.GitSummary) != "" {
+		version = strings.TrimSpace(buildmeta.GitSummary)
 	}
 	if version == "" || version == "(devel)" {
 		version = "development"
 	}
-	build := rootBuild{Version: version, Revision: strings.TrimSpace(config.GitCommit), Modified: "unknown"}
+	build := rootBuild{Version: version, Revision: strings.TrimSpace(buildmeta.GitCommit), Modified: "unknown"}
 	if ok && info != nil {
 		for _, setting := range info.Settings {
 			switch setting.Key {

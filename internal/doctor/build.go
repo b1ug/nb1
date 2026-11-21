@@ -7,7 +7,7 @@ import (
 	"runtime/debug"
 	"strings"
 
-	"github.com/b1ug/nb1/config"
+	"github.com/b1ug/nb1/internal/buildmeta"
 )
 
 type Module struct {
@@ -36,7 +36,7 @@ type Build struct {
 func ReadBuild(nativeHIDSupported bool) Build {
 	info, ok := debug.ReadBuildInfo()
 	build := buildFromInfo(info, ok, nativeHIDSupported)
-	return withLinkerMetadata(build, config.GitCommit, config.GitSummary)
+	return withLinkerMetadata(build, buildmeta.GitCommit, buildmeta.GitSummary)
 }
 
 func withLinkerMetadata(build Build, gitCommit, gitSummary string) Build {

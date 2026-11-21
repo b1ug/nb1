@@ -104,7 +104,7 @@ jobs:
         run: |
           mkdir -p "$NB1_RELEASE_BUILD"
           go build -mod=readonly -trimpath -buildvcs=true \
-            -ldflags "-X github.com/b1ug/nb1/config.GitSummary=$NB1_RELEASE_VERSION -X github.com/b1ug/nb1/config.GitCommit=$NB1_RELEASE_SOURCE -X github.com/b1ug/nb1/config.CIBuildNum=gh$GITHUB_RUN_NUMBER" \
+            -ldflags "-X github.com/b1ug/nb1/config.GitSummary=$NB1_RELEASE_VERSION -X github.com/b1ug/nb1/config.GitCommit=$NB1_RELEASE_SOURCE -X github.com/b1ug/nb1/config.CIBuildNum=gh$GITHUB_RUN_NUMBER -X github.com/b1ug/nb1/internal/buildmeta.GitSummary=$NB1_RELEASE_VERSION -X github.com/b1ug/nb1/internal/buildmeta.GitCommit=$NB1_RELEASE_SOURCE" \
             -o "$NB1_RELEASE_BUILD/nb1${{ matrix.extension }}" .
       - name: Inspect native dependencies and verify actual extracted archives
         env:

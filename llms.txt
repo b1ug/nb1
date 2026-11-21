@@ -12,7 +12,7 @@ Discover actual CLI help or MCP tools/list before use; source support does not p
 
 ## Execution
 
-HTTP POST /v1/preview compiles action, sequence or pattern_id without playing. POST /v1/jobs accepts the same expression plus serial and optional id. GET /v1/jobs/{id} tracks it; POST /v1/jobs/{id}/cancel requests cancellation.
+HTTP POST /v1/preview compiles action, sequence or pattern_id without playing. POST /v1/jobs accepts one action, sequence, pattern_id or trigger. Optional serial selects the light. Preserve the Job id for recovery. On a daemon with Job policy support, omit policy for default busy rejection, use queue to wait in order, or preempt to interrupt the selected light and run next. GET /v1/jobs/{id} tracks it; POST /v1/jobs/{id}/cancel requests cancellation.
 
 Preview is optional, not a prerequisite for playback or Pattern saving. When playback is requested, run the validated expression directly and track its Job.
 

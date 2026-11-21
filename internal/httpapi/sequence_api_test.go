@@ -589,6 +589,108 @@ func TestSequenceAPISolidPairIsOnePersistentHoldJob(t *testing.T) {
 	}
 }
 
+func TestSequenceAPIQueueAndPreemptionStayOnTheAcceptedDevice(t *testing.T) {
+	const a, b = "20000001", "20000002"
+	devices := routedSequenceDriver{a: {}, b: {}}
+	server, dir := routedSequenceServer(t, []string{a, b}, devices, a, false)
+	sequenceLibraryResponse(t, server, "PUT", "/v1/patterns/green", `{"action":{"kind":"set","color":"lime"}}`, 200)
+	if err := os.WriteFile(filepath.Join(dir, "triggers.json"), []byte(`{"schema_version":1,"triggers":{"urgent":{"pattern_id":"green","serial":"20000001"}}}`), 0600); err != nil {
+		t.Fatal(err)
+	}
+	post := func(body string, status int, code string) {
+		t.Helper()
+		data := sequenceLibraryResponse(t, server, "POST", "/v1/jobs", body, status)
+		if code != "" && !strings.Contains(string(data), `"code":"`+code+`"`) {
+			t.Fatalf("expected %s: %s", code, data)
+		}
+	}
+	await := func(id, state string) control.SequenceJob {
+		t.Helper()
+		deadline := time.Now().Add(3 * time.Second)
+		for {
+			var job control.SequenceJob
+			data := sequenceLibraryResponse(t, server, "GET", "/v1/jobs/"+id, "", 200)
+			if err := json.Unmarshal(data, &job); err != nil {
+				t.Fatal(err)
+			}
+			if job.Status == state {
+				return job
+			}
+			if job.FinishedAt != nil || time.Now().After(deadline) {
+				t.Fatalf("waiting for %s to be %s: %s", id, state, data)
+			}
+			time.Sleep(time.Millisecond)
+		}
+	}
+	const first = `{"id":"first","sequence":{"timing":"serial","steps":[{"targets":[{"led":0,"color":"red"}],"hold_ms":8000}]}}`
+	const independent = `{"id":"independent","serial":"20000002","action":{"kind":"blink","color":"blue","on_ms":8000}}`
+	const urgent = `{"id":"fourth","trigger":"urgent","policy":"preempt"}`
+	post(first, 202, "")
+	post(strings.Replace(first, `"id"`, `"policy":"reject","id"`, 1), 200, "")
+	post(independent, 202, "")
+	await("first", "running")
+	await("independent", "running")
+	post(`{"id":"second","serial":"20000001","policy":"queue","action":{"kind":"off"}}`, 202, "")
+	post(`{"id":"third","policy":"queue","pattern_id":"green"}`, 202, "")
+	post(`{"id":"bad-source","policy":"preempt","pattern_id":"missing"}`, 404, "not_found")
+	await("first", "running")
+
+	// Block the fake device's cleanup so both HTTP requests observe the same handover.
+	func() {
+		devices[a].mu.Lock()
+		defer devices[a].mu.Unlock()
+		post(urgent, 202, "")
+		post(urgent, 200, "")
+		post(strings.Replace(urgent, "fourth", "another", 1), 409, "preemption_pending")
+		post(strings.Replace(urgent, "preempt", "queue", 1), 409, "job_conflict")
+		await("first", "cancelling")
+		await("fourth", "queued")
+	}()
+
+	previous := await("first", "cancelled")
+	for _, id := range []string{"fourth", "second", "third"} {
+		next := await(id, "succeeded")
+		if next.Serial != a || next.StartedAt == nil || next.StartedAt.Before(*previous.FinishedAt) {
+			t.Fatalf("incorrect execution order on %s: %+v then %+v", a, previous, next)
+		}
+		previous = next
+	}
+	post(strings.Replace(first, "first", "later", 1), 202, "")
+	await("later", "running")
+	post(urgent, 200, "")
+	await("later", "running")
+	if job := await("independent", "running"); job.Serial != b {
+		t.Fatalf("independent Job changed target: %+v", job)
+	}
+}
+
+func TestSequenceAPIRejectsFullQueueBeforeInterrupting(t *testing.T) {
+	server, _ := sequenceRouteServer(t)
+	const held = `{"serial":"20000001","id":"held","action":{"kind":"blink","color":"red","on_ms":8000}}`
+	sequenceLibraryResponse(t, server, "POST", "/v1/jobs", held, 202)
+	deadline := time.Now().Add(3 * time.Second)
+	for !strings.Contains(string(sequenceLibraryResponse(t, server, "GET", "/v1/jobs/held", "", 200)), `"status":"running"`) {
+		if time.Now().After(deadline) {
+			t.Fatal("first Job never started")
+		}
+		time.Sleep(time.Millisecond)
+	}
+	const waiting = `{"serial":"20000001","action":{"kind":"off"},"policy":"queue"}`
+	for range 8 {
+		sequenceLibraryResponse(t, server, "POST", "/v1/jobs", waiting, 202)
+	}
+	for _, body := range []string{waiting, strings.Replace(waiting, "queue", "preempt", 1)} {
+		rejected := sequenceLibraryResponse(t, server, "POST", "/v1/jobs", body, 409)
+		if !strings.Contains(string(rejected), `"code":"queue_full"`) {
+			t.Fatalf("full queue: %s", rejected)
+		}
+	}
+	active := sequenceLibraryResponse(t, server, "GET", "/v1/jobs/held", "", 200)
+	if !strings.Contains(string(active), `"status":"running"`) {
+		t.Fatalf("unsuccessful preemption changed active Job: %s", active)
+	}
+}
+
 func TestSequenceAPIRealEngineAdmissionReplayAndCancel(t *testing.T) {
 	server, backend := sequenceRouteServer(t)
 	code, data, _ := sequenceRouteDo(t, server, "POST", "/v1/preview", `{"serial":"20000001","action":{"kind":"orbit","colors":["red","blue"],"period_ms":400}}`)
@@ -656,11 +758,19 @@ func TestSequenceAPIStrictInputsAndGeneratedIDs(t *testing.T) {
 		`{"action":{"kind":"set","color":"red"},"sequence":{}}`,
 		`{"action":{"kind":"alternate","colors":["red","blue"],"transition":"cut"}}`,
 		`{"action":{"kind":"off"},"id":"unexpected-in-preview"}`,
+		`{"action":{"kind":"off"},"policy":"preempt"}`,
 		`{"sequence":{"timing":"serial","steps":[],"frames":[]}}`,
 	} {
 		code, data, _ := sequenceRouteDo(t, server, "POST", "/v1/preview", body)
 		if code != 400 {
 			t.Fatalf("strict input accepted: %d %s", code, data)
+		}
+	}
+	for _, value := range []string{`"replace"`, `""`, `"Preempt"`, `null`, `false`} {
+		data := sequenceLibraryResponse(t, server, "POST", "/v1/jobs",
+			`{"action":{"kind":"off"},"serial":"20000001","policy":`+value+`}`, 400)
+		if !strings.Contains(string(data), `"code":"invalid_request"`) {
+			t.Fatalf("invalid policy %s: %s", value, data)
 		}
 	}
 	code, data, _ := sequenceRouteDo(t, server, "POST", "/v1/preview", `{"action":{"kind":"fade","color":"red","duration_ms":-1}}`)

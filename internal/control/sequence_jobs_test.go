@@ -356,3 +356,221 @@ func TestSequenceJobIDCollisionProtection(t *testing.T) {
 		t.Fatalf("random collision did not try an unused ID: %+v, %v", generated, err)
 	}
 }
+
+func submitScheduledColor(t *testing.T, e *Engine, serial, id, policy, color string) {
+	t.Helper()
+	job, replay, err := e.SubmitSequenceWithPolicy(t.Context(), serial, id, [32]byte{}, policy, func() (sequence.Sequence, error) {
+		input := sequenceTestInput()
+		input.Steps[0].Targets[0].Color = color
+		return input, nil
+	})
+	if err != nil || replay || job.ID != id || job.Serial != serial || job.Status != "queued" {
+		t.Fatalf("submit %s on %s with %s: %+v, replay=%t err=%v", id, serial, policy, job, replay, err)
+	}
+}
+
+func TestSequencePreemptionPreservesFIFOAndDeviceIsolation(t *testing.T) {
+	driver := sequenceCacheDriver{
+		"a": {engineBackend: newEngineBackend("a"), capabilities: []string{"set", "program", "raw-rgb"}},
+		"b": {engineBackend: newEngineBackend("b"), capabilities: []string{"set", "program", "raw-rgb"}},
+	}
+	e, err := New(driver, Options{Serials: []string{"a", "b"}, PollInterval: time.Hour})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := e.Start(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+		if err := e.Close(ctx); err != nil {
+			t.Error(err)
+		}
+	})
+	awaitEngineCondition(t, func() bool {
+		a, _ := e.Device("a")
+		b, _ := e.Device("b")
+		return a.Connection == "online" && b.Connection == "online"
+	})
+	write, off := newEngineGate(), newEngineGate()
+	defer write.open()
+	defer off.open()
+	driver["a"].hooks(func(Step) error { return write.block() }, func(mode string) error {
+		if mode == "off" {
+			return off.block()
+		}
+		return nil
+	}, nil)
+
+	submitScheduledColor(t, e, "a", "old", "reject", "#110000")
+	awaitEngineSignal(t, write.entered)
+	submitScheduledColor(t, e, "a", "first", "queue", "#220000")
+	submitScheduledColor(t, e, "a", "second", "queue", "#330000")
+	// Resolve an implicit trigger binding only once, even if it changes while
+	// hardware cleanup is pending and the original request is retried.
+	route := func() (sequence.Sequence, SequenceRoute, error) {
+		input := sequenceTestInput()
+		input.Steps[0].Targets[0].Color = "#440000"
+		return input, SequenceRoute{Serial: "a", Source: "trigger"}, nil
+	}
+	urgent, replay, err := e.SubmitRoutedSequenceWithPolicy(t.Context(), "", "urgent", [32]byte{}, "preempt", route)
+	if err != nil || replay || urgent.Serial != "a" || urgent.TargetSource != "trigger" {
+		t.Fatalf("admit urgent: %+v, replay=%t err=%v", urgent, replay, err)
+	}
+	urgent, replay, err = e.SubmitRoutedSequenceWithPolicy(t.Context(), "", "urgent", [32]byte{}, "preempt", nil)
+	if err != nil || !replay || urgent.Serial != "a" || urgent.Status != "queued" {
+		t.Fatalf("replay pending urgent: %+v, replay=%t err=%v", urgent, replay, err)
+	}
+	if _, _, err := e.SubmitRoutedSequenceWithPolicy(t.Context(), "", "urgent", [32]byte{}, "queue", nil); !errors.Is(err, ErrSequenceJobConflict) {
+		t.Fatalf("reuse same ID with a different scheduling policy: %v", err)
+	}
+	write.open()
+	awaitEngineSignal(t, off.entered)
+	old, err := e.SequenceJob("old")
+	if err != nil || old.Status != "cancelling" || old.FinishedAt != nil {
+		t.Fatalf("old job while native off is blocked: %+v %v", old, err)
+	}
+	submitScheduledColor(t, e, "a", "third", "queue", "#550000")
+	submitScheduledColor(t, e, "b", "independent", "reject", "#0000bb")
+	awaitSequenceTerminal(t, e, "independent", "succeeded")
+	if calls, _, _, _, _, _ := driver["a"].snapshot(); !reflect.DeepEqual(engineSetColors(calls), []string{"#110000"}) {
+		t.Fatalf("A wrote while its cleanup was blocked: %+v", calls)
+	}
+
+	off.open()
+	old = awaitSequenceTerminal(t, e, "old", "cancelled")
+	for _, id := range []string{"urgent", "first", "second", "third"} {
+		next := awaitSequenceTerminal(t, e, id, "succeeded")
+		if next.StartedAt.Before(*old.FinishedAt) {
+			t.Fatalf("%s started before %s completed", next.ID, old.ID)
+		}
+		old = next
+	}
+	calls, _, _, simultaneous, _, _ := driver["a"].snapshot()
+	want := []string{"#110000", "#440000", "#220000", "#330000", "#550000"}
+	if got := engineSetColors(calls); !reflect.DeepEqual(got, want) || simultaneous != 1 {
+		t.Fatalf("serialized device A writes = %v, want %v (max in flight %d)", got, want, simultaneous)
+	}
+}
+
+func TestSequencePreemptionRefusalLeavesRunningJobIntact(t *testing.T) {
+	e, b, _ := startFrameIntegration(t, Options{QueueSize: 1}, "set", "program", "raw-rgb")
+	gate := newEngineGate()
+	defer gate.open()
+	b.hooks(func(Step) error { return gate.block() }, nil, nil)
+	submitScheduledColor(t, e, "a", "running", "reject", "#110000")
+	awaitEngineSignal(t, gate.entered)
+	ctx := t.Context()
+	checkRefused := func(id, policy string, prepare func() (sequence.Sequence, error), want error) {
+		t.Helper()
+		if _, _, err := e.SubmitSequenceWithPolicy(ctx, "a", id, [32]byte{}, policy, prepare); !errors.Is(err, want) {
+			t.Fatalf("submit %q: %v, want %v", policy, err, want)
+		}
+		if _, err := e.SequenceJob(id); !errors.Is(err, ErrNotFound) {
+			t.Fatalf("rejected ID %s was registered", id)
+		}
+	}
+	checkRefused("legacy", "replace", prepareSequenceTest, ErrInvalid)
+	checkRefused("normal", "reject", prepareSequenceTest, ErrBusy)
+	checkRefused("invalid", "preempt", func() (sequence.Sequence, error) { return sequence.Sequence{}, nil }, ErrInvalid)
+	checkRefused("missing-hold", "preempt", func() (sequence.Sequence, error) {
+		input := sequenceTestInput()
+		input.OnFinish = "hold"
+		return input, nil
+	}, ErrSequenceCapability)
+	submitScheduledColor(t, e, "a", "waiting", "queue", "#220000")
+	checkRefused("full-queue", "queue", prepareSequenceTest, ErrQueueFull)
+	checkRefused("full-urgent", "preempt", prepareSequenceTest, ErrQueueFull)
+	old, err := e.SequenceJob("running")
+	if err != nil || old.Status != "running" {
+		t.Fatalf("refusal disrupted active Job: %+v %v", old, err)
+	}
+	gate.open()
+	awaitSequenceTerminal(t, e, "running", "succeeded")
+	awaitSequenceTerminal(t, e, "waiting", "succeeded")
+}
+
+func TestSequenceConcurrentPreemptionAndCancellationDuringCleanup(t *testing.T) {
+	e, b := startSequenceTest(t, Options{QueueSize: 2})
+	gate := newEngineGate()
+	defer gate.open()
+	b.hooks(func(Step) error { return gate.block() }, nil, nil)
+	submitScheduledColor(t, e, "a", "old", "reject", "#110000")
+	awaitEngineSignal(t, gate.entered)
+	submitScheduledColor(t, e, "a", "waiting", "queue", "#220000")
+	type result struct {
+		id  string
+		err error
+	}
+	start := make(chan struct{})
+	results := make(chan result, 2)
+	for _, id := range []string{"urgent1", "urgent2"} {
+		go func() {
+			<-start
+			_, _, err := e.SubmitSequenceWithPolicy(t.Context(), "a", id, [32]byte{}, "preempt", prepareSequenceTest)
+			results <- result{id, err}
+		}()
+	}
+	close(start)
+	first, second := <-results, <-results
+	if first.err != nil {
+		first, second = second, first
+	}
+	if first.err != nil || !errors.Is(second.err, ErrPreemptionPending) {
+		t.Fatalf("competing preemptions: %+v, %+v", first, second)
+	}
+	cancelled, err := e.CancelSequence(t.Context(), first.id)
+	if err != nil || cancelled.Status != "cancelled" || cancelled.StartedAt != nil {
+		t.Fatalf("cancel waiting urgent: %+v, %v", cancelled, err)
+	}
+	if _, _, err := e.SubmitSequenceWithPolicy(t.Context(), "a", second.id, [32]byte{}, "preempt", prepareSequenceTest); !errors.Is(err, ErrPreemptionPending) {
+		t.Fatalf("preempted Job still owns the device: %v", err)
+	}
+	gate.open()
+	awaitSequenceTerminal(t, e, "old", "cancelled")
+	awaitSequenceTerminal(t, e, "waiting", "succeeded")
+	submitScheduledColor(t, e, "a", second.id, "preempt", "#330000")
+	awaitSequenceTerminal(t, e, second.id, "succeeded")
+	calls, _, _, _, _, _ := b.snapshot()
+	if got := engineSetColors(calls); !reflect.DeepEqual(got, []string{"#110000", "#220000", "#330000"}) {
+		t.Fatalf("cancelled urgent job changed the output: %v", got)
+	}
+}
+
+func TestSequencePreemptionCleanupFailureAndShutdown(t *testing.T) {
+	for _, shutdown := range []bool{false, true} {
+		name := "cleanup readback fails"
+		if shutdown {
+			name = "shutdown during preemption"
+		}
+		t.Run(name, func(t *testing.T) {
+			e, b := startSequenceTest(t, Options{ShutdownMode: "hold"})
+			gate := newEngineGate()
+			defer gate.open()
+			b.hooks(func(Step) error { return gate.block() }, nil, nil)
+			submitScheduledColor(t, e, "a", "old", "reject", "#110000")
+			awaitEngineSignal(t, gate.entered)
+			submitScheduledColor(t, e, "a", "waiting", "queue", "#220000")
+			submitScheduledColor(t, e, "a", "urgent", "preempt", "#330000")
+			wantActive, wantPending := "failed", "failed"
+			if shutdown {
+				e.beginClose()
+				wantActive, wantPending = "cancelled", "cancelled"
+			} else {
+				b.hooks(nil, nil, func() error { return errors.New("lost during cleanup") })
+			}
+			gate.open()
+			awaitSequenceTerminal(t, e, "old", wantActive)
+			for _, id := range []string{"urgent", "waiting"} {
+				if job := awaitSequenceTerminal(t, e, id, wantPending); job.StartedAt != nil {
+					t.Fatalf("%s began after %s", id, name)
+				}
+			}
+			calls, _, _, simultaneous, _, _ := b.snapshot()
+			if colors := engineSetColors(calls); !reflect.DeepEqual(colors, []string{"#110000"}) || simultaneous != 1 {
+				t.Fatalf("unexpected hardware writes %v, max in flight %d", colors, simultaneous)
+			}
+		})
+	}
+}

@@ -56,7 +56,7 @@ All Action durations are integer milliseconds. Use nonnegative integer JSON nota
 | Action | Required beyond `kind` | Timing fields: omission default; inclusive range | Compiled Steps per cycle / maximum `cycles` |
 | --- | --- | --- | --- |
 | `set` | `color` | No timing fields. One immediate update, then hold. | 1 / not accepted |
-| `off` | None | No timing fields. Sets the selected output to black, then holds. This does not cancel another Job. | 1 / not accepted |
+| `off` | None | No timing fields. Sets the selected output to black, then holds. The Job admission policy controls any interruption. | 1 / not accepted |
 | `fade` | `color`, `duration_ms` | `duration_ms`: required, 10–600,000, multiple of 10. Starts from the current device color, then holds the target. | 1 / not accepted |
 | `blink` | `color` | `on_ms`: 250; 10–3,600,010. `off_ms`: 250; same range. These include each update's 10ms allowance. | 2 / 512 |
 | `breathe` | `color` | `period_ms`: 2,000; 330–9,600,314. A symmetric envelope, currently 16 fades plus the initial black Step. | 17 / 60 |
@@ -125,7 +125,7 @@ For `control run [SERIAL] FILE` and `control state [SERIAL]`, select the device 
 
 With no selected target, the client reads the daemon's cached configured-device list, sorts it by serial and chooses the first device whose cached `connection` is `"online"`. If none is online, it chooses the first serial so `state` can show its actual status and `run` can report the daemon's submission error. Unknown or missing connection states are not treated as online. An empty list reports an error. With two or more configured devices, a short English notice on stderr identifies the count, selected serial and `--device SERIAL` override; stdout remains the same JSON result. The choice is made once per invocation. A later connection failure, busy device or uncertain submission never triggers a second-device attempt.
 
-This lookup uses the running daemon’s cached device list. Direct execution still requires its own explicit or preferred serial. `control run FILE --daemon-default` delegates routing to the daemon. A positional serial, `--device` or `NB1_DEVICE` still takes precedence. In HTTP and MCP playback requests, omit `serial` to use the daemon’s configured `device`; with no configured default, the sole managed device is selected, while multiple managed devices require a target or trigger binding. `server.default_device_fallback: single_online` is an explicit opt-in when a configured default is unavailable. See [Trigger routing and default devices](trigger-routing.md) for precedence and recovery behavior.
+This lookup uses the running daemon’s cached device list. Direct execution still requires its own explicit or preferred serial. Use `control run FILE --daemon-default` to delegate routing to the daemon. A positional serial, `--device` or `NB1_DEVICE` still takes precedence. In HTTP and MCP playback requests, omit `serial` to use the daemon’s configured `device`; with no configured default, the sole managed device is selected, while multiple managed devices require a target or trigger binding. `server.default_device_fallback: single_online` is an explicit opt-in when a configured default is unavailable. See the [Trigger routing and default devices](trigger-routing.md) guide for precedence and recovery behavior.
 
 `control preview FILE` leaves `serial` absent by default, including when the profile has a preferred device. Add `--serial SERIAL` explicitly for the selected device's cached capability check.
 
@@ -167,7 +167,7 @@ These operations are the current runtime's API v1 route table. Success bodies ar
 | --- | --- | --- | --- |
 | `GET /` | No body or query. | None. | `200`, service/build identity, current API directory and cached device summary. |
 | `POST /v1/preview` | Exactly one of `action`, `sequence`, `pattern_id`. | `serial`: omitted means compile without a device check. | `200`, Preview object. |
-| `POST /v1/jobs` | Exactly one of `action`, `sequence`, `pattern_id`, `trigger`. | `serial`: omitted delegates target selection to the daemon. `id`: omitted or `""` generates an ID. | `202` for new acceptance; `200` for matching replay. Both return a Job and `Location: /v1/jobs/{id}`. |
+| `POST /v1/jobs` | Exactly one of `action`, `sequence`, `pattern_id`, `trigger`. | `serial`: omitted delegates target selection to the daemon. `id`: omitted or `""` generates an ID. `policy`: omitted means `reject`. | `202` for new acceptance; `200` for matching replay. Both return a Job and `Location: /v1/jobs/{id}`. |
 | `GET /v1/jobs/{id}` | Job ID in the path; no body. | None. | `200`, Job object, including when that Job failed. |
 | `POST /v1/jobs/{id}/cancel` | Job ID in the path; no body. | Query `serial`: require the accepted Job's serial to match. Omit it for ID-only cancellation. | `202` while cancellation remains in progress; `200` when already terminal or cancelled before execution. Returns the current Job. |
 | `POST /v1/colors/resolve` | `color`: one ColorInput. | None. | `200`, `{"color":"#rrggbb"}`. Does not save or play. |
@@ -190,6 +190,27 @@ There are no body fields beyond those listed for each operation. For example, Pa
 Job IDs and Pattern IDs are case-sensitive strings of 1–64 ASCII letters, digits, hyphens or underscores. Saved color names are case-sensitive lowercase strings matching `[a-z][a-z0-9-]{0,31}`. Preview/submission `serial` is optional; when present it must be a nonempty string of 1–128 ASCII letters, digits, hyphens or underscores. It must exactly match a configured device to execute. This HTTP grammar is wider than the profile's eight-hex-digit device setting. The device GET performs a direct cached lookup; an unmatched path value returns `404`, rather than a separate serial-format error.
 
 An execution input can refer to a locally saved Pattern with `{"pattern_id":"gentle-pulse"}`. That reference is required to exist when compiling a new input. Pattern PUT instead requires an Action or Sequence and freezes its resolved Sequence. A matching replay of a retained Job returns the original Job before reading the current library.
+
+### Choosing what happens on a busy device
+
+The optional Job field `policy` applies to Actions, Sequences, saved Patterns and Triggers. The daemon resolves and validates the new Job before changing playback on its selected serial.
+
+| Policy | Effect on the selected device |
+| --- | --- |
+| `reject` (default) | Start on an idle device. Return `409 device_busy` when another Job is active or waiting. |
+| `queue` | Join the end of this device’s waiting list. Jobs with this policy play in admission order. |
+| `preempt` | Request cancellation of the active Job and put the new Job first in line. Existing waiting Jobs keep their relative order. |
+
+For example, if A is playing and B and C are waiting, submitting D with `preempt` gives playback order D, B, C once A finishes its cleanup. A cancelled Job never resumes. An in-flight USB call can delay handover. A cleanup failure marks affected waiting Jobs failed. Use `GET /v1/jobs/{id}` for each outcome. Other serials have independent workers.
+
+Each device has room for eight waiting Jobs by default, including a waiting preemption. A full queue rejects new waiting Jobs. While a preemption is pending, a second preemption is rejected before it can affect playback. Use a stable ID to retry after a lost response. A matching replay never triggers a second interruption.
+
+```sh
+nb1 control run 20000001 notice.json --policy queue --id notice-1
+nb1 control emit build.failed --policy preempt --id build-42
+```
+
+`--policy` is a daemon option. Direct USB execution has no shared Job queue. Released v0.1.3 accepts Job requests with the policy field omitted. Explicit policies require a build containing this feature.
 
 ### Preview and Job responses
 
@@ -246,9 +267,11 @@ An HTTP error is `{"error":{"code":"...","message":"..."}}`. Invalid Action comp
 | `403` | `invalid_host`, `invalid_origin` | The HTTPS authority or browser Origin does not match the configured remote listener. |
 | `404` | `not_found` | Unknown route, configured device, retained Job or saved Pattern. Expired/evicted Jobs also return this code; absence does not prove they never ran. |
 | `405` | `method_not_allowed` | Unsupported method. `Allow` lists the route's supported method(s); HEAD is not an implicit GET. |
-| `409` | `job_conflict` | Retained ID is bound to a different device or JSON input. Query the original ID; do not invent a new ID to retry uncertain work. |
+| `409` | `job_conflict` | Retained ID is bound to a different device, policy or author input. Query the original ID; do not invent a new ID to retry uncertain work. |
 | `409` | `job_target_mismatch` | The cancellation serial differs from the retained Job's accepted serial. The Job remains unchanged. |
-| `409` | `device_busy` | Device is owned/busy, an execution or inspection is active, or admission cannot enqueue it. These v1 submissions reject competing work; no replace/queue policy field is accepted. |
+| `409` | `device_busy` | The selected device already has work under the default policy, or exclusive maintenance prevents playback. |
+| `409` | `queue_full` | All waiting slots on this serial are occupied. The submitted Job was rejected and active playback continues. |
+| `409` | `preemption_pending` | The previous handover is still pending on this serial. Even if the urgent Job was cancelled before it ran, the interrupted Job must finish cleanup. |
 | `413` | `body_too_large` | HTTP body exceeds 1 MiB. A smaller ColorInput or compiled-Pattern limit violation instead uses `400 invalid_request`. |
 | `415` | `json_required` | Missing, malformed or non-`application/json` Content-Type on a body-bearing operation. |
 | `422` | `unsupported_capability` | Submission needs capabilities absent from the device's cached profile. |
@@ -302,7 +325,7 @@ Cross-platform `service render` still requires an explicit target `--binary` pat
 
 An omitted or empty `id` generates `j_` followed by ten random Crockford Base32 characters. Custom IDs accept 1–64 ASCII letters, digits, hyphens and underscores. The CLI generates its ID before submission so it can report that ID when a response is lost.
 
-The daemon keeps each active Job. Terminal Jobs use a configurable soft TTL measured from terminal completion, defaulting to thirty minutes. LRU pressure or a daemon restart can remove records sooner. Job lookups, matching duplicate submissions and terminal cancellation queries update their LRU order while leaving the original expiration time intact. A duplicate ID with the same device and JSON input returns the existing Job with HTTP 200. Different input or device returns HTTP 409. Input identity ignores object-key ordering and preserves array order and number spelling. It compares author input, not just the compiled result: omitting a default versus supplying it, changing a color name's case or switching to an equivalent Hex value can therefore conflict even when the resulting light would be the same.
+The daemon keeps each active Job. Terminal Jobs use a configurable soft TTL measured from terminal completion, defaulting to thirty minutes. LRU pressure or a daemon restart can remove records sooner. Job lookups, matching duplicate submissions and terminal cancellation queries update their LRU order while leaving the original expiration time intact. A duplicate ID with the same requested target, policy and JSON input returns the existing Job with HTTP 200. Omitted policy and explicit `reject` are equivalent. A different input, target or policy returns HTTP 409. Input identity ignores object-key ordering and preserves array order and number spelling. It compares author input, not just the compiled result: omitting an Action or Sequence default versus supplying it, changing a color name's case or switching to an equivalent Hex value can therefore conflict even when the resulting light would be the same.
 
 The terminal cache defaults to 16,384 Jobs. Set its positive capacity with profile `jobs.terminal_limit` or server `--job-cache-size`, and set its positive TTL with `jobs.terminal_ttl` or `--job-cache-ttl`. Explicit server flags override profile values. Restart the daemon to apply changes. When the selected limit is exceeded, the least recently used terminal record is evicted. Active Jobs stay pinned and release their execution plans when they become terminal. Device ownership and per-Sequence limits govern new execution. Cache capacity does not reject new Jobs.
 

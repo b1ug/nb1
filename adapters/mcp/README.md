@@ -27,7 +27,7 @@ The implementation uses the official `github.com/modelcontextprotocol/go-sdk v1.
 | `get_device_state` | `serial` | `GET /v1/devices/{serial}` |
 | `resolve_color` | `color` | `POST /v1/colors/resolve` |
 | `preview_light` | One of `action`, `sequence`, `pattern_id`; optional `serial` | `POST /v1/preview` |
-| `run_light` | One of `action`, `sequence`, `pattern_id`, `trigger`; optional `id` and `serial` on a matching candidate daemon | `POST /v1/jobs` |
+| `run_light` | One of `action`, `sequence`, `pattern_id`, `trigger`; optional `id`, `serial` and `policy` | `POST /v1/jobs` |
 | `get_job` | `id` | `GET /v1/jobs/{id}` |
 | `cancel_job` | `id`, optional `serial` | `POST /v1/jobs/{id}/cancel`, with `?serial=…` for candidate device-guarded cancellation |
 | `list_colors` | `{}` | `GET /v1/colors` |
@@ -39,6 +39,8 @@ The implementation uses the official `github.com/modelcontextprotocol/go-sdk v1.
 Tool schemas describe the same Action kinds, Sequence timing rules, and color forms as the [API reference](../../docs/api-v1.md). Both Action colors and authored Sequence target colors accept Hex3/Hex6, names, RGB8/HSV objects and `@local-name`; normalized Sequences and saved Patterns contain resolved lowercase Hex6 values. Input validation rejects unknown fields, duplicate keys and explicit null values. Raw color numbers and source objects retain their original JSON meaning through HTTP. The daemon owns palette resolution and authoritative compilation.
 
 Examples below show the arguments supplied to `tools/call`.
+
+On a daemon supporting playback policies, `run_light` accepts `"policy":"queue"` to wait in order, or `"policy":"preempt"` to interrupt the current Job on the selected light and run before its existing queue. Omitting the field uses the default busy rejection. After an uncertain submission, query the original Job ID.
 
 Preview is optional. `run_light` validates and submits the expression directly; it does not require a prior `preview_light` call. Use preview when you want to inspect the plan without playback.
 

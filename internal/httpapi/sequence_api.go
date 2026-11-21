@@ -313,6 +313,7 @@ func (h *handler) submitSequence(w http.ResponseWriter, r *http.Request) {
 		Trigger   *string         `json:"trigger,omitempty"`
 		Serial    *string         `json:"serial,omitempty"`
 		ID        string          `json:"id,omitempty"`
+		Policy    *string         `json:"policy,omitempty"`
 	}
 	if !readSequenceJSON(w, r, &body) {
 		return
@@ -329,6 +330,14 @@ func (h *handler) submitSequence(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	policy := "reject"
+	if body.Policy != nil {
+		policy = *body.Policy
+		if !control.ValidSequencePolicy(policy) {
+			writeError(w, http.StatusBadRequest, "invalid_request", "policy must be reject, queue or preempt")
+			return
+		}
+	}
 	fingerprint, err := input.fingerprint()
 	if err != nil {
 		writeError(w, http.StatusBadRequest, "invalid_request", "invalid action, sequence or pattern_id")
@@ -337,9 +346,9 @@ func (h *handler) submitSequence(w http.ResponseWriter, r *http.Request) {
 	var job control.SequenceJob
 	var replayed bool
 	if input.Serial == nil || input.Trigger != nil {
-		job, replayed, err = h.submitRoutedSequence(r.Context(), input, body.ID, fingerprint)
+		job, replayed, err = h.submitRoutedSequence(r.Context(), input, body.ID, fingerprint, policy)
 	} else {
-		job, replayed, err = service.SubmitSequence(r.Context(), *input.Serial, body.ID, fingerprint, func() (sequence.Sequence, error) {
+		job, replayed, err = service.SubmitSequenceWithPolicy(r.Context(), *input.Serial, body.ID, fingerprint, policy, func() (sequence.Sequence, error) {
 			return h.compileSequenceInput(input)
 		})
 	}
@@ -482,7 +491,11 @@ func sequenceAPIError(w http.ResponseWriter, err error) {
 		writeError(w, http.StatusConflict, "job_target_mismatch", err.Error())
 	case errors.Is(err, control.ErrSequenceCapability):
 		writeError(w, http.StatusUnprocessableEntity, "unsupported_capability", "required device capabilities missing")
-	case errors.Is(err, control.ErrBusy), errors.Is(err, control.ErrQueueFull):
+	case errors.Is(err, control.ErrQueueFull):
+		writeError(w, http.StatusConflict, "queue_full", err.Error())
+	case errors.Is(err, control.ErrPreemptionPending):
+		writeError(w, http.StatusConflict, "preemption_pending", err.Error())
+	case errors.Is(err, control.ErrBusy):
 		writeError(w, http.StatusConflict, "device_busy", err.Error())
 	case errors.Is(err, sequence.ErrInvalid), errors.Is(err, control.ErrInvalid):
 		writeError(w, http.StatusBadRequest, "invalid_request", err.Error())

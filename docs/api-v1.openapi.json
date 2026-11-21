@@ -2157,7 +2157,7 @@
             }
           },
           "409": {
-            "description": "HTTP 409 error",
+            "description": "Conflicting Job ID, busy device, full waiting queue or another pending preemption.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2308,14 +2308,26 @@
                   "summary": "Run a daemon-configured trigger",
                   "value": {
                     "id": "trigger-example",
-                    "trigger": "build.done"
+                    "trigger": "build.done",
+                    "policy": "preempt"
+                  }
+                },
+                "queue_action": {
+                  "summary": "Queue an Action on a selected device",
+                  "value": {
+                    "id": "queued-notice",
+                    "serial": "fixture-0001",
+                    "policy": "queue",
+                    "action": {
+                      "kind": "off"
+                    }
                   }
                 }
               }
             }
           }
         },
-        "description": "The device must be idle and support the compiled Sequence. The daemon owns timing after admission. A lost HTTP response or client timeout can leave an accepted Job running. Query the original ID. Retained matching IDs replay before resolving mutable color or Pattern references. A changed source or serial conflicts. Terminal records use configurable LRU capacity and a soft TTL from completion, defaulting to 16,384 entries and 30 minutes. Profile jobs.terminal_limit / jobs.terminal_ttl or server --job-cache-size / --job-cache-ttl select these values at daemon startup. Restart is required for changes. LRU eviction or restart may remove records earlier; the TTL does not guarantee a deduplication window. Active Jobs stay pinned. Cache pressure evicts terminal records and does not reject new execution. After expiration or eviction the same ID can execute again. Omit serial to use daemon-side routing. Explicit serials and trigger bindings do not substitute another target. A configured default can opt into substitution when exactly one other managed device is online. Replays keep the accepted plan, target and target_source."
+        "description": "The device must support the compiled Sequence. The default policy rejects competing playback. queue appends to the selected device’s waiting list. preempt requests cancellation of the active Job and runs before earlier waiting Jobs after successful cleanup. The daemon owns timing after admission. A lost HTTP response or client timeout can leave an accepted Job running. Query the original ID. Retained matching IDs replay before resolving mutable color or Pattern references. A changed source, policy or requested serial conflicts. Omitting policy is equivalent to reject. Terminal records use configurable LRU capacity and a soft TTL from completion, defaulting to 16,384 entries and 30 minutes. Profile jobs.terminal_limit / jobs.terminal_ttl or server --job-cache-size / --job-cache-ttl select these values at daemon startup. Restart is required for changes. LRU eviction or restart may remove records earlier; the TTL does not guarantee a deduplication window. Active Jobs stay pinned. Cache pressure evicts terminal records and does not reject new execution. After expiration or eviction the same ID can execute again. Omit serial to use daemon-side routing. Explicit serials and trigger bindings do not substitute another target. A configured default can opt into substitution when exactly one other managed device is online. Replays keep the accepted plan, target and target_source."
       }
     },
     "/v1/jobs/{id}": {
@@ -5215,6 +5227,16 @@
           },
           "trigger": {
             "$ref": "#/components/schemas/TriggerName"
+          },
+          "policy": {
+            "type": "string",
+            "enum": [
+              "reject",
+              "queue",
+              "preempt"
+            ],
+            "default": "reject",
+            "description": "On the selected device, reject competing work, wait in FIFO order, or request active cancellation and take the next waiting slot. Accepted Jobs retain the resolved device and plan."
           }
         },
         "additionalProperties": false,
@@ -5662,6 +5684,8 @@
                   "job_conflict",
                   "job_target_mismatch",
                   "device_busy",
+                  "queue_full",
+                  "preemption_pending",
                   "local_only",
                   "method_not_allowed",
                   "body_too_large",

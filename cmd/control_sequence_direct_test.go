@@ -134,6 +134,7 @@ func TestSequenceDirectPreflightNeverOpensDevice(t *testing.T) {
 		{"--direct", "run", alias},
 		{"--direct", "run", pattern},
 		{"--direct", "run", valid, "--id", ""},
+		{"--direct", "run", valid, "--policy", "preempt"},
 		{"--direct", "run", valid, "--id", "j_7K3XJNY9ZM"},
 		{"--direct", "run", valid, "--lock-dir", "relative"},
 		{"--direct", "run", valid, "--shutdown-timeout", "0"},

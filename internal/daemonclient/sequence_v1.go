@@ -108,19 +108,24 @@ func (c *Client) PreviewSequence(ctx context.Context, input SequenceInput, seria
 }
 
 func (c *Client) SubmitSequence(ctx context.Context, input SequenceInput, serial, id string) (control.SequenceJob, error) {
+	return c.SubmitSequenceWithPolicy(ctx, input, serial, id, "")
+}
+
+func (c *Client) SubmitSequenceWithPolicy(ctx context.Context, input SequenceInput, serial, id, policy string) (control.SequenceJob, error) {
 	if err := input.validate(); err != nil {
 		return control.SequenceJob{}, err
 	}
 	if !control.ValidDeviceSerial(serial) || !control.ValidSequenceJobID(id) {
 		return control.SequenceJob{}, fmt.Errorf("a valid device serial and explicit job ID are required")
 	}
-	return c.submitSequence(ctx, sequenceSubmission{ID: id, Serial: serial, SequenceInput: input})
+	return c.submitSequence(ctx, sequenceSubmission{ID: id, Policy: policy, Serial: serial, SequenceInput: input})
 }
 
 type sequenceSubmission struct {
 	ID      string `json:"id"`
 	Serial  string `json:"serial,omitempty"`
 	Trigger string `json:"trigger,omitempty"`
+	Policy  string `json:"policy,omitempty"`
 	SequenceInput
 }
 
@@ -136,20 +141,28 @@ func SequenceSubmissionRejected(err error) bool {
 }
 
 func (c *Client) SubmitDefaultSequence(ctx context.Context, input SequenceInput, id string) (control.SequenceJob, error) {
+	return c.SubmitDefaultSequenceWithPolicy(ctx, input, id, "")
+}
+
+func (c *Client) SubmitDefaultSequenceWithPolicy(ctx context.Context, input SequenceInput, id, policy string) (control.SequenceJob, error) {
 	if err := input.validate(); err != nil {
 		return control.SequenceJob{}, err
 	}
-	return c.submitSequence(ctx, sequenceSubmission{ID: id, SequenceInput: input})
+	return c.submitSequence(ctx, sequenceSubmission{ID: id, Policy: policy, SequenceInput: input})
 }
 
 func (c *Client) SubmitTrigger(ctx context.Context, name, serial, id string) (control.SequenceJob, error) {
+	return c.SubmitTriggerWithPolicy(ctx, name, serial, id, "")
+}
+
+func (c *Client) SubmitTriggerWithPolicy(ctx context.Context, name, serial, id, policy string) (control.SequenceJob, error) {
 	if !triggerv1.ValidName(name) {
 		return control.SequenceJob{}, fmt.Errorf("invalid trigger name")
 	}
 	if serial != "" && !control.ValidDeviceSerial(serial) {
 		return control.SequenceJob{}, fmt.Errorf("invalid device serial")
 	}
-	return c.submitSequence(ctx, sequenceSubmission{ID: id, Serial: serial, Trigger: name})
+	return c.submitSequence(ctx, sequenceSubmission{ID: id, Policy: policy, Serial: serial, Trigger: name})
 }
 
 func (c *Client) SequenceTriggers(ctx context.Context) ([]triggerv1.Trigger, error) {
@@ -177,6 +190,9 @@ func (c *Client) CheckSequenceTriggers(ctx context.Context) (triggerv1.CheckRepo
 }
 
 func (c *Client) submitSequence(ctx context.Context, request sequenceSubmission) (control.SequenceJob, error) {
+	if request.Policy != "" && !control.ValidSequencePolicy(request.Policy) {
+		return control.SequenceJob{}, fmt.Errorf("policy must be reject, queue or preempt")
+	}
 	if !control.ValidSequenceJobID(request.ID) {
 		return control.SequenceJob{}, fmt.Errorf("a valid explicit job ID is required")
 	}

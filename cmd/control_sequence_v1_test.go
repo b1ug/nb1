@@ -118,6 +118,57 @@ func TestSequenceControlV1PreviewPreservesActionAndSerial(t *testing.T) {
 	}
 }
 
+func TestSequenceControlV1SubmissionPolicies(t *testing.T) {
+	t.Setenv("NB1_DEVICE", "")
+	path := sequenceControlFile(t, sequenceControlInput)
+	for _, tc := range []struct {
+		name, policy, serial, source string
+		args                         []string
+	}{
+		{"implicit reject", "", "20000001", "sequence", []string{"run", "20000001", path}},
+		{"explicit target", "queue", "20000001", "sequence", []string{"run", "20000001", path, "--policy", "queue"}},
+		{"daemon target", "preempt", "", "sequence", []string{"run", path, "--daemon-default", "--policy", "preempt"}},
+		{"trigger", "preempt", "", "trigger", []string{"emit", "build.failed", "--policy", "preempt"}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var calls atomic.Int32
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				calls.Add(1)
+				var body map[string]json.RawMessage
+				if r.Method != "POST" || r.URL.Path != "/v1/jobs" || json.NewDecoder(r.Body).Decode(&body) != nil {
+					t.Errorf("unexpected submission: %s %s", r.Method, r.URL.Path)
+				}
+				for key, want := range map[string]string{"policy": tc.policy, "serial": tc.serial} {
+					if want == "" {
+						if body[key] != nil {
+							t.Errorf("unexpected %s: %s", key, body[key])
+						}
+					} else if string(body[key]) != `"`+want+`"` {
+						t.Errorf("%s = %s, want %s", key, body[key], want)
+					}
+				}
+				if body[tc.source] == nil {
+					t.Errorf("missing %s", tc.source)
+				}
+				sequenceControlJSON(w, http.StatusAccepted, sequenceControlJob("notice", "queued"))
+			}))
+			defer server.Close()
+			_, err := executeSequenceControl(t, server.URL, append(tc.args, "--id", "notice")...)
+			if err != nil || calls.Load() != 1 {
+				t.Fatalf("submit: %v (%d requests)", err, calls.Load())
+			}
+		})
+	}
+	for _, args := range [][]string{
+		{"run", "20000001", path, "--policy="}, {"emit", "build.failed", "--policy", "replace"},
+	} {
+		_, err := executeSequenceControl(t, "http://127.0.0.1:1", args...)
+		if err == nil || !strings.Contains(err.Error(), "--policy must be") {
+			t.Errorf("invalid policy %v: %v", args, err)
+		}
+	}
+}
+
 func TestSequenceControlV1RunGeneratesIDAndPollsSameJob(t *testing.T) {
 	var posts, gets int32
 	var submittedID string

@@ -39,6 +39,7 @@ type toolArgs struct {
 	Action    json.RawMessage `json:"action,omitempty"`
 	Sequence  json.RawMessage `json:"sequence,omitempty"`
 	PatternID *string         `json:"pattern_id,omitempty"`
+	Policy    string          `json:"policy,omitempty"`
 	Trigger   *string         `json:"trigger,omitempty"`
 	input     daemonclient.SequenceInput
 }
@@ -99,6 +100,9 @@ func decodeArguments(name string, raw json.RawMessage) (toolArgs, error) {
 	if name == "save_color" && !daemonclient.ValidSequenceColorName(args.Name) {
 		return toolArgs{}, fmt.Errorf("invalid color name")
 	}
+	if fields["policy"] != nil && !control.ValidSequencePolicy(args.Policy) {
+		return toolArgs{}, fmt.Errorf("policy must be reject, queue or preempt")
+	}
 	if args.Trigger != nil {
 		if !triggerv1.ValidName(*args.Trigger) || args.Action != nil || args.Sequence != nil || args.PatternID != nil {
 			return toolArgs{}, fmt.Errorf("trigger must be a valid name and the only content selector")
@@ -145,11 +149,11 @@ func invoke(ctx context.Context, d *daemon, recoveryEndpoint, name string, args 
 		}
 		switch {
 		case args.Trigger != nil:
-			out.Data, err = d.core.SubmitTrigger(ctx, *args.Trigger, args.Serial, out.ID)
+			out.Data, err = d.core.SubmitTriggerWithPolicy(ctx, *args.Trigger, args.Serial, out.ID, args.Policy)
 		case args.Serial == "":
-			out.Data, err = d.core.SubmitDefaultSequence(ctx, args.input, out.ID)
+			out.Data, err = d.core.SubmitDefaultSequenceWithPolicy(ctx, args.input, out.ID, args.Policy)
 		default:
-			out.Data, err = d.core.SubmitSequence(ctx, args.input, args.Serial, out.ID)
+			out.Data, err = d.core.SubmitSequenceWithPolicy(ctx, args.input, args.Serial, out.ID, args.Policy)
 		}
 	case "get_job":
 		out.Data, err = d.core.SequenceJob(ctx, args.ID)

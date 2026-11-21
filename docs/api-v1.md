@@ -1,6 +1,6 @@
 # API v1 implementation
 
-This development candidate provides the Action → Sequence → Job execution path through HTTP and `nb1 control`. The running local installation has its own separately tested source version.
+This page documents the daemon’s sequence-v1 HTTP contract and the matching `nb1 control` operations. `GET /` identifies the running executable and lists its live route profile; `api_version` identifies the wire contract, while `build.version` identifies the binary.
 
 The [OpenAPI 3.1 contract](api-v1.openapi.json) describes the current HTTP operations, request and response schemas, constraints and software-fixture examples. The valid saved-color name `resolve` has a concrete PUT operation alongside POST color resolution.
 
@@ -125,7 +125,7 @@ For `control run [SERIAL] FILE` and `control state [SERIAL]`, select the device 
 
 With no selected target, the client reads the daemon's cached configured-device list, sorts it by serial and chooses the first device whose cached `connection` is `"online"`. If none is online, it chooses the first serial so `state` can show its actual status and `run` can report the daemon's submission error. Unknown or missing connection states are not treated as online. An empty list reports an error. With two or more configured devices, a short English notice on stderr identifies the count, selected serial and `--device SERIAL` override; stdout remains the same JSON result. The choice is made once per invocation. A later connection failure, busy device or uncertain submission never triggers a second-device attempt.
 
-This lookup uses the running daemon’s cached device list. Direct execution still requires its own explicit or preferred serial. Use `control run FILE --daemon-default` to delegate routing to the daemon in this candidate. A positional serial, `--device` or `NB1_DEVICE` still takes precedence. Published v0.1.2 expects an explicit serial in HTTP and MCP playback requests. See the [candidate routing guide](trigger-routing.md) for configuration, precedence and examples.
+This lookup uses the running daemon’s cached device list. Direct execution still requires its own explicit or preferred serial. `control run FILE --daemon-default` delegates routing to the daemon. A positional serial, `--device` or `NB1_DEVICE` still takes precedence. In HTTP and MCP playback requests, omit `serial` to use the daemon’s configured `device`; with no configured default, the sole managed device is selected, while multiple managed devices require a target or trigger binding. `server.default_device_fallback: single_online` is an explicit opt-in when a configured default is unavailable. See [Trigger routing and default devices](trigger-routing.md) for precedence and recovery behavior.
 
 `control preview FILE` leaves `serial` absent by default, including when the profile has a preferred device. Add `--serial SERIAL` explicitly for the selected device's cached capability check.
 
@@ -147,6 +147,8 @@ Action/Sequence run; it does not replay an uncertain daemon submission.
 
 These operations are the current runtime's API v1 route table. Success bodies are the values described below, without a surrounding `result` wrapper. They use JSON with `Cache-Control: no-store`. Preview compiles and optionally checks cached capabilities; it never starts playback.
 
+`GET /` returns a JSON welcome and discovery document with the executable version, API profile, endpoint directory, configured default device and cached device states. This is a snapshot; it performs no USB I/O. The page at `console_url` is the embedded **nb1 Workbench**, currently served at `/demo/`. `/demo/` is a browser console/static-resource route, not an HTTP API endpoint. Use `GET /healthz` for a minimal liveness check and `/v1/service-status` for cached device counts.
+
 ### Common request rules
 
 - Body-bearing operations require `Content-Type: application/json`; media-type parameters such as `charset=utf-8` are accepted. The entire body, including whitespace, is limited to 1,048,576 bytes. Each embedded ColorInput has its smaller 4,096-byte limit.
@@ -163,6 +165,7 @@ These operations are the current runtime's API v1 route table. Success bodies ar
 
 | Request | Required input | Optional input / omission default | Success |
 | --- | --- | --- | --- |
+| `GET /` | No body or query. | None. | `200`, service/build identity, current API directory and cached device summary. |
 | `POST /v1/preview` | Exactly one of `action`, `sequence`, `pattern_id`. | `serial`: omitted means compile without a device check. | `200`, Preview object. |
 | `POST /v1/jobs` | Exactly one of `action`, `sequence`, `pattern_id`, `trigger`. | `serial`: omitted delegates target selection to the daemon. `id`: omitted or `""` generates an ID. | `202` for new acceptance; `200` for matching replay. Both return a Job and `Location: /v1/jobs/{id}`. |
 | `GET /v1/jobs/{id}` | Job ID in the path; no body. | None. | `200`, Job object, including when that Job failed. |
@@ -184,7 +187,7 @@ These operations are the current runtime's API v1 route table. Success bodies ar
 
 There are no body fields beyond those listed for each operation. For example, Pattern PUT accepts no body `id` or `pattern_id`; Color PUT accepts no body `name`. `PUT /v1/colors/resolve` saves a color whose valid name is `resolve`; `POST` at that same path resolves a color without saving.
 
-Job IDs and Pattern IDs are case-sensitive strings of 1–64 ASCII letters, digits, hyphens or underscores. Saved color names are case-sensitive lowercase strings matching `[a-z][a-z0-9-]{0,31}`. Preview/submission `serial` is a required nonempty string when present, with 1–128 ASCII letters, digits, hyphens or underscores. It must exactly match a configured device to execute. This HTTP grammar is wider than the profile's eight-hex-digit device setting. The device GET performs a direct cached lookup; an unmatched path value returns `404`, rather than a separate serial-format error.
+Job IDs and Pattern IDs are case-sensitive strings of 1–64 ASCII letters, digits, hyphens or underscores. Saved color names are case-sensitive lowercase strings matching `[a-z][a-z0-9-]{0,31}`. Preview/submission `serial` is optional; when present it must be a nonempty string of 1–128 ASCII letters, digits, hyphens or underscores. It must exactly match a configured device to execute. This HTTP grammar is wider than the profile's eight-hex-digit device setting. The device GET performs a direct cached lookup; an unmatched path value returns `404`, rather than a separate serial-format error.
 
 An execution input can refer to a locally saved Pattern with `{"pattern_id":"gentle-pulse"}`. That reference is required to exist when compiling a new input. Pattern PUT instead requires an Action or Sequence and freezes its resolved Sequence. A matching replay of a retained Job returns the original Job before reading the current library.
 

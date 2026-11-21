@@ -5,6 +5,9 @@ package doctor
 import (
 	"runtime"
 	"runtime/debug"
+	"strings"
+
+	"github.com/b1ug/nb1/config"
 )
 
 type Module struct {
@@ -32,7 +35,19 @@ type Build struct {
 // are deliberately omitted. nativeHIDSupported must be a non-I/O build check.
 func ReadBuild(nativeHIDSupported bool) Build {
 	info, ok := debug.ReadBuildInfo()
-	return buildFromInfo(info, ok, nativeHIDSupported)
+	build := buildFromInfo(info, ok, nativeHIDSupported)
+	return withLinkerMetadata(build, config.GitCommit, config.GitSummary)
+}
+
+func withLinkerMetadata(build Build, gitCommit, gitSummary string) Build {
+	if build.Revision == "" && strings.TrimSpace(gitCommit) != "" {
+		build.Revision = strings.TrimSpace(gitCommit)
+	}
+	if (build.Main.Version == "" || build.Main.Version == "(devel)") && strings.TrimSpace(gitSummary) != "" {
+		build.Main.Version = strings.TrimSpace(gitSummary)
+		build.Main.Source = "linker"
+	}
+	return build
 }
 
 func buildFromInfo(info *debug.BuildInfo, ok, supported bool) Build {

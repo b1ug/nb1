@@ -245,6 +245,25 @@ func TestBuildMetadataReflectsResolvedModulesWithoutLocalPaths(t *testing.T) {
 	}
 }
 
+func TestBuildMetadataUsesReleaseLinkerValuesForSourceArchives(t *testing.T) {
+	info := &debug.BuildInfo{GoVersion: "go1.27.4", Main: debug.Module{Path: "github.com/b1ug/nb1", Version: "(devel)"}}
+	build := withLinkerMetadata(buildFromInfo(info, true, true), "release-commit-1234", "v0.1.3")
+	if build.Main.Version != "v0.1.3" || build.Main.Source != "linker" || build.Main.RequestedVersion != "(devel)" {
+		t.Fatalf("release version not reflected accurately: %+v", build.Main)
+	}
+	if build.Revision != "release-commit-1234" || build.Modified != "unknown" {
+		t.Fatalf("release revision/unknown dirty state misreported: revision=%q modified=%q", build.Revision, build.Modified)
+	}
+
+	// VCS metadata from a checkout wins for the revision and dirty state, while
+	// the release linker value supplies the package version missing from (devel).
+	info.Settings = []debug.BuildSetting{{Key: "vcs.revision", Value: "checkout-commit"}, {Key: "vcs.modified", Value: "false"}}
+	build = withLinkerMetadata(buildFromInfo(info, true, true), "release-commit-1234", "v0.1.3")
+	if build.Main.Version != "v0.1.3" || build.Revision != "checkout-commit" || build.Modified != "false" {
+		t.Fatalf("VCS and release metadata precedence: %+v", build)
+	}
+}
+
 func TestReportJSONAndTextOnAttention(t *testing.T) {
 	server, _ := fakeDaemon(t, `{"status":"ok","api_version":"v1"}`, []control.DeviceState{{DeviceInfo: control.DeviceInfo{Serial: "offline"}, Connection: "offline"}})
 	report, err := collect(context.Background(), Options{Endpoint: server.URL}, testBuild(), func() time.Time { return testTime })

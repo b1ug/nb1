@@ -112,6 +112,10 @@ func setResponseHeaders(w http.ResponseWriter) {
 
 func (h *handler) serveRoutes(w http.ResponseWriter, r *http.Request) {
 	setResponseHeaders(w)
+	if h.sequenceAPI && r.URL.Path == "/" {
+		h.serveWelcome(w, r)
+		return
+	}
 	if h.sequenceAPI && h.serveSequenceAPI(w, r) {
 		return
 	}

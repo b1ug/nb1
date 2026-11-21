@@ -4,7 +4,7 @@
   "info": {
     "title": "nb1 API v1",
     "version": "1.0.0-dev",
-    "description": "Implementation contract for this source checkout. x-source lists the original route baseline and the current implementation files. The candidate supports daemon-side target selection, named triggers, trigger checks and device-guarded Job cancellation. The installed local runtime has its own version and validation state. All example devices are virtual. JSON request bodies are bounded to 1 MiB. The runtime rejects duplicate fields, unknown fields, explicit null, invalid Unicode, and unsupported number spellings. Cross-field execution budgets are validated by the core."
+    "description": "Implementation contract for the sequence-v1 daemon in this source checkout. GET / returns runtime build identity and endpoint discovery; x-source lists the route and implementation files. All examples use software fixtures or sample metadata. JSON request bodies are bounded to 1 MiB. The runtime rejects duplicate fields, unknown fields, explicit null, invalid Unicode, and unsupported number spellings. Cross-field execution budgets are validated by the core."
   },
   "servers": [
     {
@@ -56,7 +56,8 @@
       "internal/control/sequence_routing.go",
       "internal/triggerv1/store.go",
       "cmd/server_remote.go",
-      "internal/remoteaccess/http.go"
+      "internal/remoteaccess/http.go",
+      "internal/httpapi/root_welcome.go"
     ],
     "route_baseline_commit": "8a348d3746be01311c957fe16a916c6be121db07"
   },
@@ -125,6 +126,227 @@
     }
   ],
   "paths": {
+    "/": {
+      "get": {
+        "operationId": "getWelcome",
+        "summary": "Discover the running nb1 service and its HTTP API",
+        "description": "Returns this executable's build identity, selected API profile, endpoint directory, configured default device and cached device states. It performs no USB query. The embedded browser console is named nb1 Workbench and currently remains at `/demo/`; that console route is not an API endpoint.",
+        "tags": [
+          "Runtime"
+        ],
+        "responses": {
+          "200": {
+            "description": "Service welcome, API directory and cached status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RootWelcome"
+                },
+                "examples": {
+                  "local_service": {
+                    "summary": "Versioned local daemon response",
+                    "value": {
+                      "service": "nb1",
+                      "welcome": "Welcome to nb1, the local blink(1) control service.",
+                      "status": "running",
+                      "build": {
+                        "version": "v0.1.3+dirty",
+                        "revision": "48895be5babc11d6f3b2a7ab16e316bd564e726e",
+                        "modified": "true"
+                      },
+                      "api_profile": "sequence-v1",
+                      "api_version": "v1",
+                      "console_name": "nb1 Workbench",
+                      "console_url": "/demo/",
+                      "health_url": "/healthz",
+                      "device_state_source": "cached",
+                      "device_summary": {
+                        "configured": 2,
+                        "online": 1,
+                        "not_online": 1
+                      },
+                      "default_device": "20005601",
+                      "device_fallback": "error",
+                      "devices": [
+                        {
+                          "serial": "20005601",
+                          "product": "blink(1) mk2",
+                          "firmware": 204,
+                          "connection": "online",
+                          "capabilities": [
+                            "set",
+                            "sequence",
+                            "cancel",
+                            "hold",
+                            "observe",
+                            "raw-rgb",
+                            "mk2-basic"
+                          ],
+                          "queue_depth": 0,
+                          "observed": {
+                            "led1": "#000000",
+                            "led2": "#000000",
+                            "sampled_at": "2026-11-21T09:30:15.254739Z"
+                          }
+                        },
+                        {
+                          "serial": "20006105",
+                          "connection": "offline",
+                          "queue_depth": 0,
+                          "last_error": "device offline: serial 20006105 has 0 matching interfaces",
+                          "observed": null
+                        }
+                      ],
+                      "endpoints": [
+                        {
+                          "method": "GET",
+                          "path": "/",
+                          "description": "Service welcome, build version, API directory, default device and cached device status."
+                        },
+                        {
+                          "method": "GET",
+                          "path": "/healthz",
+                          "description": "Confirm the local HTTP service is responding."
+                        },
+                        {
+                          "method": "GET",
+                          "path": "/v1/presence",
+                          "description": "Identify the service and API version; this does not query devices."
+                        },
+                        {
+                          "method": "GET",
+                          "path": "/v1/service-status",
+                          "description": "Read service status and configured/online device counts."
+                        },
+                        {
+                          "method": "GET",
+                          "path": "/v1/transport-metrics",
+                          "description": "Read accumulated host-side device I/O call and retry counts."
+                        },
+                        {
+                          "method": "GET",
+                          "path": "/v1/devices",
+                          "description": "List configured blink(1) devices and their cached status."
+                        },
+                        {
+                          "method": "GET",
+                          "path": "/v1/devices/{serial}",
+                          "description": "Read one configured blink(1) device and its cached status."
+                        },
+                        {
+                          "method": "POST",
+                          "path": "/v1/preview",
+                          "description": "Validate and compile an Action, Sequence, or saved Pattern without playing it."
+                        },
+                        {
+                          "method": "POST",
+                          "path": "/v1/jobs",
+                          "description": "Submit a Sequence Job. Omit serial to use the configured default; provide it to target a specific device."
+                        },
+                        {
+                          "method": "GET",
+                          "path": "/v1/jobs/{job_id}",
+                          "description": "Read the current in-memory status of a Sequence Job."
+                        },
+                        {
+                          "method": "POST",
+                          "path": "/v1/jobs/{job_id}/cancel",
+                          "description": "Request cancellation of a Sequence Job."
+                        },
+                        {
+                          "method": "GET",
+                          "path": "/v1/colors",
+                          "description": "List named colors saved in the local library."
+                        },
+                        {
+                          "method": "PUT",
+                          "path": "/v1/colors/{name}",
+                          "description": "Save or replace a named color in the local library."
+                        },
+                        {
+                          "method": "POST",
+                          "path": "/v1/colors/resolve",
+                          "description": "Resolve a CSS name, hex value, RGB, or HSV color input."
+                        },
+                        {
+                          "method": "GET",
+                          "path": "/v1/patterns",
+                          "description": "List saved Patterns available to the Sequence API."
+                        },
+                        {
+                          "method": "GET",
+                          "path": "/v1/patterns/{id}",
+                          "description": "Read one saved Pattern."
+                        },
+                        {
+                          "method": "PUT",
+                          "path": "/v1/patterns/{id}",
+                          "description": "Save or replace a Pattern in the local library."
+                        },
+                        {
+                          "method": "GET",
+                          "path": "/v1/triggers",
+                          "description": "List local trigger names and their Pattern/device bindings."
+                        },
+                        {
+                          "method": "GET",
+                          "path": "/v1/triggers/check",
+                          "description": "Check saved trigger bindings against the Pattern library and managed devices."
+                        }
+                      ],
+                      "generated_at": "2026-11-21T09:30:15.437970Z"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Unexpected request body or query",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "Loopback host or same-origin policy rejected the request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "HTTP method is not GET",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Allow": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Supported HTTP method(s)."
+              }
+            }
+          }
+        },
+        "x-query-policy": "none",
+        "x-body-policy": "none"
+      }
+    },
     "/healthz": {
       "get": {
         "operationId": "getHealth",
@@ -5596,6 +5818,231 @@
             ]
           }
         ]
+      },
+      "RootBuild": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "version",
+          "modified"
+        ],
+        "properties": {
+          "version": {
+            "type": "string",
+            "description": "Build identity from this executable; a local source build may include +dirty."
+          },
+          "revision": {
+            "type": "string",
+            "description": "Full VCS revision when available."
+          },
+          "modified": {
+            "type": "string",
+            "enum": [
+              "true",
+              "false",
+              "unknown"
+            ]
+          }
+        }
+      },
+      "RootDeviceSummary": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "configured",
+          "online",
+          "not_online"
+        ],
+        "properties": {
+          "configured": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "online": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "not_online": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "RootDevice": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "serial",
+          "connection",
+          "queue_depth",
+          "observed"
+        ],
+        "properties": {
+          "serial": {
+            "$ref": "#/components/schemas/Serial"
+          },
+          "product": {
+            "type": "string"
+          },
+          "firmware": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "connection": {
+            "type": "string",
+            "enum": [
+              "connecting",
+              "online",
+              "busy",
+              "offline",
+              "error",
+              "closing",
+              "closed"
+            ]
+          },
+          "capabilities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "active_job": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "queue_depth": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "last_error": {
+            "type": "string",
+            "description": "Last cached local connection error, when present."
+          },
+          "observed": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Observation"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "RootEndpoint": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "method",
+          "path",
+          "description"
+        ],
+        "properties": {
+          "method": {
+            "type": "string",
+            "enum": [
+              "GET",
+              "POST",
+              "PUT"
+            ]
+          },
+          "path": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        }
+      },
+      "RootWelcome": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "service",
+          "welcome",
+          "status",
+          "build",
+          "api_profile",
+          "api_version",
+          "console_name",
+          "console_url",
+          "health_url",
+          "device_state_source",
+          "device_summary",
+          "device_fallback",
+          "devices",
+          "endpoints",
+          "generated_at"
+        ],
+        "properties": {
+          "service": {
+            "type": "string",
+            "const": "nb1"
+          },
+          "welcome": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "const": "running"
+          },
+          "build": {
+            "$ref": "#/components/schemas/RootBuild"
+          },
+          "api_profile": {
+            "type": "string",
+            "const": "sequence-v1"
+          },
+          "api_version": {
+            "type": "string",
+            "const": "v1"
+          },
+          "console_name": {
+            "type": "string",
+            "const": "nb1 Workbench"
+          },
+          "console_url": {
+            "type": "string",
+            "const": "/demo/"
+          },
+          "health_url": {
+            "type": "string",
+            "const": "/healthz"
+          },
+          "device_state_source": {
+            "type": "string",
+            "const": "cached"
+          },
+          "device_summary": {
+            "$ref": "#/components/schemas/RootDeviceSummary"
+          },
+          "default_device": {
+            "$ref": "#/components/schemas/Serial"
+          },
+          "device_fallback": {
+            "type": "string",
+            "enum": [
+              "error",
+              "single_online"
+            ]
+          },
+          "devices": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RootDevice"
+            }
+          },
+          "endpoints": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RootEndpoint"
+            }
+          },
+          "generated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
       }
     },
     "securitySchemes": {

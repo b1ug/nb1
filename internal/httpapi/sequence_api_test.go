@@ -138,6 +138,88 @@ func TestSequenceRoutingDefaultAndFallback(t *testing.T) {
 	}
 }
 
+func TestSequenceAPIWelcomeDirectory(t *testing.T) {
+	server, _ := routedSequenceServer(t, []string{"20000001", "20000002"}, routedSequenceDriver{
+		"20000001": &sequenceRouteBackend{},
+	}, "20000001", false)
+	response, err := http.Get(server.URL + "/")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer response.Body.Close()
+	if response.StatusCode != http.StatusOK {
+		t.Fatalf("GET /: HTTP %d", response.StatusCode)
+	}
+	var welcome struct {
+		Service        string `json:"service"`
+		Status         string `json:"status"`
+		ConsoleName    string `json:"console_name"`
+		ConsoleURL     string `json:"console_url"`
+		DefaultDevice  string `json:"default_device"`
+		DeviceFallback string `json:"device_fallback"`
+		Build          struct {
+			Version  string `json:"version"`
+			Revision string `json:"revision"`
+			Modified string `json:"modified"`
+		} `json:"build"`
+		Endpoints []struct {
+			Method string `json:"method"`
+			Path   string `json:"path"`
+		} `json:"endpoints"`
+	}
+	if err := json.NewDecoder(response.Body).Decode(&welcome); err != nil {
+		t.Fatal(err)
+	}
+	if welcome.Service != "nb1" || welcome.Status != "running" || welcome.ConsoleName != "nb1 Workbench" || welcome.ConsoleURL != "/demo/" {
+		t.Fatalf("unexpected welcome: %+v", welcome)
+	}
+	if welcome.DefaultDevice != "20000001" || welcome.DeviceFallback != "error" {
+		t.Fatalf("unexpected routing directory: default=%q fallback=%q", welcome.DefaultDevice, welcome.DeviceFallback)
+	}
+	if welcome.Build.Version == "" {
+		t.Fatalf("missing build version: %+v", welcome.Build)
+	}
+	if len(welcome.Endpoints) != 19 {
+		t.Fatalf("directory has %d endpoints, want 19", len(welcome.Endpoints))
+	}
+	want := map[string]bool{
+		"GET /": true, "GET /v1/triggers": true, "GET /v1/triggers/check": true,
+		"POST /v1/jobs": true, "GET /v1/devices/{serial}": true,
+	}
+	for _, endpoint := range welcome.Endpoints {
+		delete(want, endpoint.Method+" "+endpoint.Path)
+	}
+	if len(want) != 0 {
+		t.Fatalf("missing directory endpoints: %v", want)
+	}
+	response, err = http.Post(server.URL+"/", "application/json", strings.NewReader(`{}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if response.StatusCode != http.StatusMethodNotAllowed {
+		t.Fatalf("POST /: HTTP %d, want 405", response.StatusCode)
+	}
+	response.Body.Close()
+	for _, target := range []string{server.URL + "/?unexpected=1", server.URL + "/"} {
+		var body io.Reader
+		if target == server.URL+"/" {
+			body = strings.NewReader(`{}`)
+		}
+		request, err := http.NewRequest(http.MethodGet, target, body)
+		if err != nil {
+			t.Fatal(err)
+		}
+		response, err = http.DefaultClient.Do(request)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if response.StatusCode != http.StatusBadRequest {
+			t.Fatalf("GET %s: HTTP %d, want 400", request.URL, response.StatusCode)
+		}
+		response.Body.Close()
+	}
+}
+
 func TestSequenceRoutingUnavailableBindingNeverSubstitutes(t *testing.T) {
 	const a, b = "20000001", "20000002"
 	alternate := &sequenceRouteBackend{}

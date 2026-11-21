@@ -99,7 +99,7 @@ for path, item in document['paths'].items():
                 requests.append(dict(request, name=request['name'] + '/query', path=concrete + '?' + urlencode(query)))
 
 expected_operations = {
-    'getHealth', 'getPresence', 'getServiceStatus', 'getTransportMetrics',
+    'getWelcome', 'getHealth', 'getPresence', 'getServiceStatus', 'getTransportMetrics',
     'listDevices', 'getDevice', 'preview', 'submitJob', 'getJob', 'cancelJob',
     'listColors', 'resolveColor', 'saveColor', 'saveColorNamedResolve',
     'listPatterns', 'getPattern', 'savePattern', 'listTriggers', 'checkTriggers',

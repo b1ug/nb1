@@ -233,7 +233,7 @@ func TestRetryMetricsAreConcurrentDetachedAndPersistAcrossReopens(t *testing.T) 
 	}()
 	for i := 0; i < 100; i++ {
 		attempts := 0
-		if err := retryMK2(d.metrics.device("a"), func(time.Duration) {}, "query_rgb", "query r led=1", func() error {
+		if err := retryMK2(t.Context(), d.metrics.device("a"), func(time.Duration) {}, "query_rgb", "query r led=1", func() error {
 			attempts++
 			if attempts == 1 {
 				return errors.New("general error")

@@ -13,6 +13,8 @@ import (
 	"testing"
 
 	"github.com/b1ug/nb1/internal/devicesequence"
+	"github.com/b1ug/nb1/internal/flashreset"
+	"github.com/b1ug/nb1/internal/httpapi"
 	"github.com/b1ug/nb1/internal/nativeinspection"
 )
 
@@ -331,5 +333,78 @@ func TestNativeClientTransportFailureDoesNotRetry(t *testing.T) {
 	defer client.Close()
 	if out, err := client.InspectNative(context.Background(), "20000001", nativeinspection.Request{Kind: nativeinspection.Playback}); err == nil || out.Contract != "" || atomic.LoadInt32(&calls) != 1 {
 		t.Fatalf("transport failure retried: %v calls=%d", err, calls)
+	}
+}
+
+func TestFlashResetClientSinglePostAndBoundResult(t *testing.T) {
+	const serial, preset = "20000002", "rainbow"
+	complete := flashreset.Result{Serial: serial, Preset: preset, Firmware: 204, Lines: 16, Staged: 16, Verified: 16, Status: flashreset.Acknowledged}
+	unconfirmed := complete
+	unconfirmed.Status = flashreset.Unconfirmed
+	partial := complete
+	partial.Status, partial.Staged, partial.Verified = flashreset.StagingFailed, 3, 0
+	wrong := complete
+	wrong.Serial = "20000001"
+	for _, tc := range []struct {
+		name    string
+		status  int
+		wire    any
+		want    flashreset.Result
+		wantErr string
+	}{
+		{"acknowledged", 200, complete, complete, ""},
+		{"staging failure", 502, httpapi.FlashResetFailure{Error: httpapi.ErrorBody{Code: "flash_staging_failed", Message: "RAM staging failed"}, Result: partial}, partial, "flash_staging_failed"},
+		{"unconfirmed", 502, httpapi.FlashResetFailure{Error: httpapi.ErrorBody{Code: "flash_unconfirmed", Message: "Flash save outcome unconfirmed"}, Result: unconfirmed}, unconfirmed, "flash_unconfirmed"},
+		{"consumed", 409, httpapi.ErrorResponse{Error: httpapi.ErrorBody{Code: "flash_ticket_used_or_expired", Message: "used or expired"}}, flashreset.Result{}, "outcome unknown"},
+		{"unsupported", 422, httpapi.ErrorResponse{Error: httpapi.ErrorBody{Code: "unsupported_capability", Message: "unsupported"}}, flashreset.Result{}, "unsupported_capability"},
+		{"wrong target", 200, wrong, flashreset.Result{}, "outcome unknown"},
+		{"malformed", 200, map[string]string{"status": "acknowledged"}, flashreset.Result{}, "outcome unknown"},
+		{"redirect", 307, map[string]string{}, flashreset.Result{}, "outcome unknown"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			const ticket = "0123456789abcdef0123456789abcdef"
+			var calls, tickets atomic.Int32
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.Method == http.MethodGet && r.URL.Path == "/v1/devices/"+serial+"/flash/reset-ticket" {
+					tickets.Add(1)
+					if r.Header.Get("Authorization") != "Bearer "+testClientToken {
+						t.Error("missing ticket credential")
+					}
+					w.Header().Set("Content-Type", "application/json")
+					_ = json.NewEncoder(w).Encode(httpapi.FlashResetTicket{Ticket: ticket})
+					return
+				}
+				calls.Add(1)
+				if r.Header.Get(httpapi.FlashTicketHeader) != ticket || r.Method != "POST" || r.URL.Path != "/v1/devices/"+serial+"/flash/reset" || r.Header.Get("Authorization") != "Bearer "+testClientToken {
+					t.Errorf("unexpected request %s %s", r.Method, r.URL)
+				}
+				content, _ := io.ReadAll(r.Body)
+				if string(content) != `{"preset":"rainbow"}` {
+					t.Errorf("body %s", content)
+				}
+				if tc.status == 307 {
+					w.Header().Set("Location", "/other")
+				}
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(tc.status)
+				_ = json.NewEncoder(w).Encode(tc.wire)
+			}))
+			defer server.Close()
+			c, err := NewWithToken(server.URL, testClientToken)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer c.Close()
+			if _, err := c.ResetFlash(t.Context(), "invalid", preset); err == nil {
+				t.Fatal("accepted invalid serial")
+			}
+			if _, err := c.ResetFlash(t.Context(), serial, "typo"); err == nil {
+				t.Fatal("accepted invalid preset")
+			}
+			got, err := c.ResetFlash(t.Context(), serial, preset)
+			if got != tc.want || (tc.wantErr == "") != (err == nil) || (err != nil && !strings.Contains(err.Error(), tc.wantErr)) || calls.Load() != 1 || tickets.Load() != 1 {
+				t.Fatalf("result %+v, err %v, calls %d", got, err, calls.Load())
+			}
+		})
 	}
 }

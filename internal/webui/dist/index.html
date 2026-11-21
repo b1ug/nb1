@@ -68,6 +68,19 @@
     <p class="footnote observation-note">Cached device values, not a measurement of physical light.</p>
   </details>
 
+<details class="panel observation-card" id="flash-panel">
+  <summary class="section-title"><span class="section-heading"><span>Device Flash</span></span></summary>
+  <p class="footnote"><span id="flash-target"></span> <span id="flash-availability"></span></p>
+  <div class="flash-controls">
+    <label for="flash-preset">Startup preset</label>
+    <select id="flash-preset">
+      <option value="off">Off</option><option value="rainbow">Rainbow</option>
+      <option value="starlight">Starlight</option><option value="fireflies">Fireflies</option>
+    </select>
+    <button id="flash-reset" class="danger" type="button" aria-describedby="flash-target flash-availability flash-status" disabled>Reset Flash</button>
+  </div>
+  <p id="flash-status" class="footnote" role="status"><span id="flash-last-preset"></span><span id="flash-message"></span></p>
+</details>
 </aside>
 </div>
 <section class="panel preview-panel">

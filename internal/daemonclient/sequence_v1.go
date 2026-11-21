@@ -265,12 +265,12 @@ func validateSequenceJob(job control.SequenceJob, id string) error {
 }
 
 func (c *Client) sequenceV1Request(ctx context.Context, method, path string, input, output interface{}, statuses ...int) error {
-	return c.sequenceV1Response(ctx, method, path, input, func(response *http.Response) error {
+	return c.sequenceV1Response(ctx, method, path, input, nil, func(response *http.Response) error {
 		return decodeCompilerResponse(response, output)
 	}, statuses...)
 }
 
-func (c *Client) sequenceV1Response(ctx context.Context, method, path string, input interface{}, decode func(*http.Response) error, statuses ...int) error {
+func (c *Client) sequenceV1Response(ctx context.Context, method, path string, input interface{}, headers map[string]string, decode func(*http.Response) error, statuses ...int) error {
 	var body []byte
 	if input != nil {
 		var err error
@@ -289,20 +289,23 @@ func (c *Client) sequenceV1Response(ctx context.Context, method, path string, in
 	if input != nil {
 		request.Header.Set("Content-Type", "application/json")
 	}
+	for name, value := range headers {
+		request.Header.Set(name, value)
+	}
 	request.GetBody = nil
 	response, err := c.http.Do(request)
 	if err != nil {
 		return fmt.Errorf("contact daemon: %w", err)
 	}
 	defer response.Body.Close()
-	if response.StatusCode < 200 || response.StatusCode >= 300 {
-		return decodeLightAPIError(response)
-	}
 	allowed := false
 	for _, status := range statuses {
 		allowed = allowed || response.StatusCode == status
 	}
 	if !allowed {
+		if response.StatusCode < 200 || response.StatusCode >= 300 {
+			return decodeLightAPIError(response)
+		}
 		return &DecodeError{Status: response.StatusCode, Err: fmt.Errorf("unexpected response status")}
 	}
 	if err := decode(response); err != nil {

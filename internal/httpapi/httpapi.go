@@ -38,6 +38,7 @@ type ErrorResponse struct {
 }
 
 type handler struct {
+	flashTickets flashTicketStore
 	service      control.Service
 	sequenceAPI  bool
 	routing      *sequenceRouting

@@ -238,3 +238,64 @@ func TestControlNativeInspectionCLIUsesDecimalRange(t *testing.T) {
 		t.Fatalf("explicit decimal failed: %v calls=%d output=%s", err, calls, output)
 	}
 }
+
+func TestDeviceResetPresetsAndTarget(t *testing.T) {
+	var calls int
+	const ticket = "0123456789abcdef0123456789abcdef"
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls++
+		if r.Method == http.MethodGet && r.URL.Path == "/v1/devices/20000001/flash/reset-ticket" {
+			sequenceControlJSON(w, http.StatusOK, map[string]string{"ticket": ticket})
+			return
+		}
+		if r.Header.Get("X-NB1-Flash-Ticket") != ticket {
+			t.Error("missing Flash ticket")
+		}
+		if r.Method != http.MethodPost || r.URL.Path != "/v1/devices/20000001/flash/reset" {
+			t.Errorf("unexpected request %s %s", r.Method, r.URL)
+		}
+		var input struct {
+			Preset string `json:"preset"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+			t.Error(err)
+		}
+		sequenceControlJSON(w, http.StatusOK, map[string]any{
+			"serial": "20000001", "preset": input.Preset, "firmware": 204,
+			"status": "acknowledged", "lines": 16, "staged": 16, "verified": 16,
+		})
+	}))
+	defer server.Close()
+	for _, tc := range []struct {
+		name string
+		args []string
+		want string
+	}{
+		{"default", []string{"20000001"}, "20000001 · off"},
+		{"named", []string{"20000001", "starlight", "--json"}, `"starlight"`},
+		{"missing target", nil, ""},
+		{"malformed target", []string{"xyz", "off"}, ""},
+		{"unknown preset", []string{"20000001", "factory"}, ""},
+		{"conflicting target", []string{"20000001", "--device", "20000002"}, ""},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			cmd := newDeviceCommand()
+			cmd.SilenceErrors, cmd.SilenceUsage = true, true
+			cmd.PersistentFlags().String("device", "", "test preferred device")
+			cmd.SetArgs(append([]string{"reset", "--endpoint", server.URL}, tc.args...))
+			var out bytes.Buffer
+			cmd.SetOut(&out)
+			before := calls
+			err := cmd.Execute()
+			if tc.want == "" {
+				if err == nil || calls != before {
+					t.Fatalf("unsafe submission: err=%v calls=%d", err, calls-before)
+				}
+				return
+			}
+			if err != nil || calls-before != 2 || !strings.Contains(out.String(), tc.want) {
+				t.Fatalf("err=%v, calls=%d, output=%q", err, calls-before, out.String())
+			}
+		})
+	}
+}

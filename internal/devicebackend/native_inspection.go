@@ -91,19 +91,19 @@ func rawReply(value b1.RawFeatureResponse) nativeinspection.Reply {
 
 func (r *nativeSDKReader) ReadLine(position int) (nativeinspection.LineRead, error) {
 	var value b1.RawPatternLine
-	err := singleNativeQuery(r.metrics, "query_pattern_line_raw", func() error { var err error; value, err = r.lamp.ReadPatternLineRaw(uint(position)); return err })
+	err := singleNativeOperation(r.metrics, "query_pattern_line_raw", func() error { var err error; value, err = r.lamp.ReadPatternLineRaw(uint(position)); return err })
 	return nativeinspection.LineRead{Position: int(value.Position), RGB8: value.RGB8, DurationTicks: value.DurationTicks, LEDCode: value.LEDCode, Reply: rawReply(value.Response)}, err
 }
 
 func (r *nativeSDKReader) ReadPlayback() (nativeinspection.PlaybackRead, error) {
 	var value b1.RawPlaystate
-	err := singleNativeQuery(r.metrics, "query_playback_raw", func() error { var err error; value, err = r.lamp.ReadPlaystateRaw(); return err })
+	err := singleNativeOperation(r.metrics, "query_playback_raw", func() error { var err error; value, err = r.lamp.ReadPlaystateRaw(); return err })
 	return nativeinspection.PlaybackRead{Fields: devicesequence.PlaybackFields{Mode: value.Mode, Start: value.Start, End: value.End, Count: value.Count, NextPosition: value.NextPosition}, Reply: rawReply(value.Response)}, err
 }
 
-// These raw methods deliberately do not use retryMK2. Each query is counted
-// once even for an eligible Darwin error, retaining its partial observation.
-func singleNativeQuery(tracker *retryTracker, kind string, query func() error) error {
+// Count each SDK operation exactly once. A read preserves its partial
+// observation on failure, and Flash operations must never be replayed.
+func singleNativeOperation(tracker *retryTracker, kind string, operation func() error) error {
 	if tracker != nil {
 		tracker.mu.Lock()
 		tracker.data.Operations++
@@ -118,7 +118,7 @@ func singleNativeQuery(tracker *retryTracker, kind string, query func() error) e
 		tracker.operations[kind].Attempts++
 		tracker.mu.Unlock()
 	}
-	err := query()
+	err := operation()
 	if err != nil && tracker != nil {
 		tracker.mu.Lock()
 		tracker.data.FailedOperations++

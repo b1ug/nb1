@@ -39,10 +39,11 @@ type worker struct {
 	state  DeviceState
 	queue  []*record
 	active *record
-	// Inspection reserves admission while pending or in synchronous native I/O.
+	// Idle device operations reserve admission until their native I/O returns.
 	// These fields are protected by engine.mu; only this worker calls the backend.
-	inspection                *nativeInspectionCall
+	idle                      *idleCall
 	nativeInspectionSupported bool
+	flashResetSupported       bool
 	deviceSessionID           string
 	// Only this worker goroutine touches its native backend.
 	backend         Backend
@@ -171,7 +172,7 @@ func (e *Engine) beginClose() {
 	e.closed = true
 	close(e.stop)
 	for _, w := range e.workers {
-		w.cancelPendingInspectionLocked(ErrClosed)
+		w.cancelIdleLocked(ErrClosed)
 		w.connectionLocked("closing")
 		if w.active != nil {
 			e.cancelLocked(w.active)
@@ -348,7 +349,7 @@ func (e *Engine) canAdmitLocked(serial, policy string) (*worker, error) {
 		}
 		return nil, fmt.Errorf("%w: %s", ErrOffline, w.state.LastError)
 	}
-	if w.inspection != nil {
+	if w.idle != nil {
 		return nil, ErrBusy
 	}
 	// One urgent Job may wait for this worker. If it is cancelled first,
@@ -478,9 +479,10 @@ func (w *worker) markOfflineLocked(err error) {
 		connection = "busy"
 	}
 	w.state.LastError = err.Error()
-	w.cancelPendingInspectionLocked(fmt.Errorf("%w: %v", ErrOffline, err))
+	w.cancelIdleLocked(fmt.Errorf("%w: %v", ErrOffline, err))
 	w.deviceSessionID = ""
 	w.nativeInspectionSupported = false
+	w.flashResetSupported = false
 	if !e.closed {
 		w.connectionLocked(connection)
 	}
@@ -518,12 +520,19 @@ func (w *worker) connect() bool {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	w.state.DeviceInfo = b.Info()
+	if e.options.ReadOnly {
+		caps := w.state.Capabilities
+		if i := slices.Index(caps, "flash-reset"); i >= 0 {
+			w.state.Capabilities = slices.Delete(slices.Clone(caps), i, i+1)
+		}
+	}
 	w.state.Serial = w.serial
 	w.state.Observed = &obs
 	w.state.LastError = ""
 	e.deviceSessions++
 	w.deviceSessionID = fmt.Sprintf("session_%016x", e.deviceSessions)
 	_, w.nativeInspectionSupported = b.(NativeInspectionBackend)
+	_, w.flashResetSupported = b.(FlashResetBackend)
 	if !e.closed {
 		w.connectionLocked("online")
 	} else {
@@ -573,10 +582,10 @@ func (w *worker) loop() {
 			e.mu.Unlock()
 			continue
 		}
-		if call := w.inspection; call != nil {
+		if call := w.idle; call != nil {
 			call.started = true
 			e.mu.Unlock()
-			w.inspectNative(call)
+			call.run()
 			continue
 		}
 		if len(w.queue) > 0 {

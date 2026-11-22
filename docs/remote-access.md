@@ -72,7 +72,7 @@ The server URL and the variable name are the only settings needed here.
 
 Preview is optional. A lost connection can leave an accepted Job running.
 Reconnect to the same HTTPS `/mcp` URL and query the original Job ID.
-The remote tool result includes that URL in `endpoint`. [All twelve tools](../adapters/mcp/README.md#tools)
+The remote tool result includes that URL in `endpoint`. [All sixteen tools](../adapters/mcp/README.md#tools)
 
 The same listener also serves the device HTTP API at `/v1`. For example,
 `GET /v1/devices` lists the devices for a REST client. Send the same Bearer

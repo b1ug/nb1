@@ -120,7 +120,7 @@ func newServerCommand() *cobra.Command {
 				recorder = transporttrace.New()
 				driver = devicebackend.NewWithTrace(lockDir, recorder)
 			}
-			engine, err := control.New(driver, control.Options{Serials: serials, ShutdownMode: "off", TerminalJobLimit: jobCacheSize, TerminalJobTTL: jobCacheTTL})
+			engine, err := control.New(driver, control.Options{Serials: serials, ShutdownMode: "off", TerminalJobLimit: jobCacheSize, TerminalJobTTL: jobCacheTTL, PlaybackPolicy: settings.Playback})
 			if err != nil {
 				listener.Close()
 				return err

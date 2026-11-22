@@ -194,6 +194,10 @@ func (e *Engine) SubmitWithReceipt(ctx context.Context, serial string, program P
 	if err := s.checkNewDeadline(deadline, now); err != nil {
 		return ReceiptResult{}, err
 	}
+	nowTime := e.now()
+	if err := e.requirePlaybackLocked("program", serial, input.RequestID, "", nowTime); err != nil {
+		return ReceiptResult{}, err
+	}
 	if len(s.entries) >= s.maxEntries || len(p.Steps) > s.maxSteps-s.steps {
 		return ReceiptResult{}, ErrReceiptCapacity
 	}
@@ -206,6 +210,7 @@ func (e *Engine) SubmitWithReceipt(ctx context.Context, serial string, program P
 		return ReceiptResult{}, err
 	}
 	entry := &receiptEntry{digest: digest, record: r, acceptUntilMS: deadline}
+	e.recordPlaybackAllowedLocked("program", serial, input.RequestID, r.state.ID, nowTime)
 	r.receipt = entry
 	s.entries[key] = entry
 	s.steps += len(p.Steps)

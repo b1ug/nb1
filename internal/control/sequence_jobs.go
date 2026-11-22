@@ -207,6 +207,10 @@ func (e *Engine) submitSequence(ctx context.Context, requestedSerial, id string,
 	if err != nil {
 		return SequenceJob{}, false, err
 	}
+	now := e.now()
+	if err := e.requirePlaybackLocked("sequence", serial, "", id, now); err != nil {
+		return SequenceJob{}, false, err
+	}
 	w, err := e.canAdmitLocked(serial, policy)
 	if err != nil {
 		return SequenceJob{}, false, err
@@ -223,6 +227,7 @@ func (e *Engine) submitSequence(ctx context.Context, requestedSerial, id string,
 	candidate.state = recordState{ID: id, Device: serial, Status: "queued", CreatedAt: store.now().UTC()}
 	candidate.targetSource = targetSource
 	candidate.sequencePolicy = policy
+	e.recordPlaybackAllowedLocked("sequence", serial, "", id, now)
 	store.entries[id] = &sequenceJobEntry{fingerprint: fingerprint, record: candidate}
 	e.publishLocked(w, candidate, policy)
 	return candidate.sequenceSnapshot(), false, nil

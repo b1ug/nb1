@@ -320,7 +320,7 @@ func TestRemoteHTTPSharesDaemonAndRequiresBearer(t *testing.T) {
 		t.Fatal(err)
 	}
 	tools, err := session.ListTools(ctx, nil)
-	if err != nil || len(tools.Tools) != 12 {
+	if err != nil || len(tools.Tools) != 16 {
 		t.Fatalf("MCP discovery: tools=%v err=%v", tools, err)
 	}
 	devices, err := session.CallTool(ctx, &mcp.CallToolParams{Name: "list_devices"})

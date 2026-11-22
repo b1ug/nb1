@@ -33,6 +33,17 @@ type ErrorBody struct {
 	Message string `json:"message"`
 }
 
+type playbackOverrideRequest struct {
+	Mode       string `json:"mode"`
+	DurationMS int64  `json:"duration_ms"`
+}
+
+type playbackRequestsResponse struct {
+	Requests []control.PlaybackRequest `json:"requests"`
+	Limit    int                       `json:"limit"`
+	Count    int                       `json:"count"`
+}
+
 type ErrorResponse struct {
 	Error ErrorBody `json:"error"`
 }
@@ -113,6 +124,9 @@ func setResponseHeaders(w http.ResponseWriter) {
 
 func (h *handler) serveRoutes(w http.ResponseWriter, r *http.Request) {
 	setResponseHeaders(w)
+	if h.sequenceAPI && h.servePlayback(w, r) {
+		return
+	}
 	if h.sequenceAPI && r.URL.Path == "/" {
 		h.serveWelcome(w, r)
 		return
@@ -463,6 +477,8 @@ func jsonError(w http.ResponseWriter, err error) bool {
 
 func serviceError(w http.ResponseWriter, err error) {
 	switch {
+	case errors.Is(err, control.ErrPlaybackSuppressed):
+		writeError(w, http.StatusLocked, "playback_suppressed", err.Error())
 	case errors.Is(err, control.ErrRequestConflict):
 		writeError(w, http.StatusConflict, "idempotency_conflict", err.Error())
 	case errors.Is(err, control.ErrInstanceChanged):

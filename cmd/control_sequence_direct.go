@@ -93,6 +93,7 @@ func (options *sequenceControlFlags) runSequenceDirect(cmd *cobra.Command, expli
 	}
 	engine, err := control.New(options.driver(lockDir), control.Options{
 		Serials: []string{serial}, ShutdownMode: "hold", PollInterval: time.Hour,
+		PlaybackPolicy: options.settings.Playback,
 	})
 	if err != nil {
 		return err

@@ -5,15 +5,18 @@ import (
 	"context"
 	"errors"
 	"time"
+
+	"github.com/b1ug/nb1/internal/playback"
 )
 
 var (
-	ErrInvalid   = errors.New("invalid request")
-	ErrNotFound  = errors.New("not found")
-	ErrBusy      = errors.New("device busy")
-	ErrOffline   = errors.New("device offline")
-	ErrClosed    = errors.New("runtime closed")
-	ErrQueueFull = errors.New("device queue full")
+	ErrInvalid            = errors.New("invalid request")
+	ErrNotFound           = errors.New("not found")
+	ErrBusy               = errors.New("device busy")
+	ErrOffline            = errors.New("device offline")
+	ErrClosed             = errors.New("runtime closed")
+	ErrQueueFull          = errors.New("device queue full")
+	ErrPlaybackSuppressed = errors.New("playback suppressed by policy")
 )
 
 type DeviceInfo struct {
@@ -97,6 +100,9 @@ type Options struct {
 	ShutdownMode string
 	// ReadOnly permits monitoring without freezing or changing device output.
 	ReadOnly bool
+	// PlaybackPolicy applies at the shared daemon admission boundary. A zero
+	// value selects always-allow behavior for existing Engine callers.
+	PlaybackPolicy playback.Policy
 }
 
 // Service is the common interface used by HTTP and local clients. Cancel only

@@ -8,6 +8,8 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/b1ug/nb1/internal/playback"
 )
 
 type engineCall struct {
@@ -777,5 +779,48 @@ func TestEngineInvalidProgramsDoNotReachHardware(t *testing.T) {
 		if call.kind == "set" || call.kind == "stop" {
 			t.Fatalf("invalid request touched device: %+v", call)
 		}
+	}
+}
+
+func TestPlaybackPolicySuppressesAdmissionsAndTemporaryOverridesExpire(t *testing.T) {
+	b := newEngineBackend("a")
+	policy := playback.Policy{Mode: playback.ModeNever, HistoryLimit: 2}
+	e := startEngineTest(t, Options{PlaybackPolicy: policy}, b)
+	clock := time.Date(2026, time.January, 5, 12, 0, 0, 0, time.UTC)
+	e.mu.Lock()
+	e.now = func() time.Time { return clock }
+	e.mu.Unlock()
+	before, _, _, _, _, _ := b.snapshot()
+	if _, err := e.Submit(context.Background(), "a", engineProgram("#ff0000", "off"), "queue"); !errors.Is(err, ErrPlaybackSuppressed) {
+		t.Fatalf("never policy submit error=%v", err)
+	}
+	after, _, _, _, _, _ := b.snapshot()
+	if len(after) != len(before) {
+		t.Fatalf("suppressed request reached backend: before=%+v after=%+v", before, after)
+	}
+	state, err := e.SetPlaybackOverride(PlaybackOverridePermit, time.Hour)
+	if err != nil || state.Status != "allowed" || state.Override == nil {
+		t.Fatalf("permit override state=%+v err=%v", state, err)
+	}
+	job := submitEngineJob(t, e, "a", engineProgram("#00ff00", "hold"), "queue")
+	awaitEngineJob(t, e, job.ID, "succeeded")
+	state, err = e.SetPlaybackOverride(PlaybackOverrideSuppress, time.Hour)
+	if err != nil || state.Status != "suppressed" {
+		t.Fatalf("suppress override state=%+v err=%v", state, err)
+	}
+	clock = clock.Add(2 * time.Hour)
+	state = e.PlaybackStatus()
+	if state.Status != "suppressed" || state.Override != nil {
+		t.Fatalf("expired override state=%+v", state)
+	}
+	requests, err := e.PlaybackRequests(10)
+	if err != nil || len(requests) != 2 || requests[0].Decision != "allowed" || requests[1].Decision != "suppressed" {
+		t.Fatalf("bounded decision history=%+v err=%v", requests, err)
+	}
+	if _, err := e.ClearPlaybackOverride(); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := e.Submit(context.Background(), "a", engineProgram("#0000ff", "hold"), "queue"); !errors.Is(err, ErrPlaybackSuppressed) {
+		t.Fatalf("clearing override did not restore never policy: %v", err)
 	}
 }

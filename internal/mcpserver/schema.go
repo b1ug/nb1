@@ -12,6 +12,10 @@ func toolSpecifications() []*mcp.Tool { return specifications }
 func makeToolSpecifications() []*mcp.Tool {
 	return []*mcp.Tool{
 		newTool("list_devices", "List the devices configured in the local daemon and their cached state.", object(nil), true, true),
+		newTool("get_playback_status", "Read the daemon's effective Playback policy and current temporary override.", object(nil), true, true),
+		newTool("list_playback_requests", "Read recent in-memory Playback policy decisions without request bodies or user content.", object(map[string]any{"limit": integer(1, 10000)}), true, true),
+		newTool("set_playback_override", "Temporarily suppress or permit new playback requests for a bounded duration. A new override replaces the previous one.", object(map[string]any{"mode": map[string]any{"type": "string", "enum": []string{"suppress", "permit"}}, "duration_ms": integer(1, 2592000000)}, "mode", "duration_ms"), false, false),
+		newTool("clear_playback_override", "Remove the temporary Playback override and return to the configured policy.", object(nil), false, false),
 		newTool("get_device_state", "Read a device's cached RGB observation and sampled_at timestamp.", object(map[string]any{"serial": serialSchema()}, "serial"), true, true),
 		newTool("resolve_color", "Resolve a hex color, name, RGB8/HSV object or @local-name through the daemon. Returns an exact lowercase Hex6 color.", object(map[string]any{"color": colorSchema()}, "color"), true, true),
 		newTool("preview_light", "Preview exactly one Action, Sequence or saved pattern_id. Returns the normalized Sequence, duration, step count and device capability check. Optional serial selects a cached device profile.", authorSchema(true, false), true, true),

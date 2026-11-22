@@ -63,6 +63,7 @@ func addProfileCommands(parent *cobra.Command) {
 				"device": device, "server": settings.Server, "library_dir": settings.LibraryDir,
 				"device_lock_dir": locks,
 				"jobs":            map[string]interface{}{"terminal_limit": settings.Jobs.TerminalLimit, "terminal_ttl": settings.Jobs.TerminalTTL.String()},
+				"playback":        settings.Playback,
 			})
 		}})
 }

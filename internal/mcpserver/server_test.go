@@ -253,7 +253,7 @@ func TestOfficialStdioCanonicalToolsAndLocalLibrary(t *testing.T) {
 		names = append(names, tool.Name)
 	}
 	sort.Strings(names)
-	want := []string{"cancel_job", "get_device_state", "get_job", "get_pattern", "list_colors", "list_devices", "list_patterns", "preview_light", "resolve_color", "run_light", "save_color", "save_pattern"}
+	want := []string{"cancel_job", "clear_playback_override", "get_device_state", "get_job", "get_pattern", "get_playback_status", "list_colors", "list_devices", "list_patterns", "list_playback_requests", "preview_light", "resolve_color", "run_light", "save_color", "save_pattern", "set_playback_override"}
 	if !reflect.DeepEqual(names, want) {
 		t.Fatalf("tool set=%v", names)
 	}
@@ -261,6 +261,32 @@ func TestOfficialStdioCanonicalToolsAndLocalLibrary(t *testing.T) {
 	requireSuccess(t, call(t, session, "list_devices", `{}`), &devices)
 	if len(devices) != 1 || devices[0].Serial != "20000001" {
 		t.Fatalf("device list=%+v", devices)
+	}
+	var playbackStatus control.PlaybackState
+	requireSuccess(t, call(t, session, "get_playback_status", `{}`), &playbackStatus)
+	if playbackStatus.Mode != "always" || playbackStatus.Status != "allowed" {
+		t.Fatalf("initial Playback status=%+v", playbackStatus)
+	}
+	requireSuccess(t, call(t, session, "set_playback_override", `{"mode":"suppress","duration_ms":60000}`), &playbackStatus)
+	if playbackStatus.Status != "suppressed" || playbackStatus.Override == nil || playbackStatus.Override.Mode != "suppress" {
+		t.Fatalf("suppressed Playback status=%+v", playbackStatus)
+	}
+	blocked := call(t, session, "run_light", `{"serial":"20000001","id":"suppressed-job","action":{"kind":"off"}}`)
+	if blocked.Error == nil || blocked.Error.Code != "playback_suppressed" || blocked.Error.HTTPStatus != 423 {
+		t.Fatalf("suppressed playback result=%+v", blocked)
+	}
+	if count := backend.setCount(); count != 0 {
+		t.Fatalf("suppressed playback issued %d Set calls", count)
+	}
+	var history daemonclient.PlaybackRequests
+	requireSuccess(t, call(t, session, "list_playback_requests", `{}`), &history)
+	if len(history.Requests) != 1 || history.Requests[0].Decision != "suppressed" || history.Requests[0].JobID != "suppressed-job" {
+		t.Fatalf("suppressed playback history=%+v", history)
+	}
+	playbackStatus = control.PlaybackState{}
+	requireSuccess(t, call(t, session, "clear_playback_override", `{}`), &playbackStatus)
+	if playbackStatus.Status != "allowed" || playbackStatus.Override != nil {
+		t.Fatalf("cleared Playback status=%+v", playbackStatus)
 	}
 	requireSuccess(t, call(t, session, "get_device_state", `{"serial":"20000001"}`), nil)
 	var saved daemonclient.SequenceColor
@@ -432,8 +458,8 @@ func testTriggerRoutingPreservesJobTargetAndIdentity(t *testing.T, remote bool) 
 	endpoint, connect := testMCPTransport(t, server.URL, 3*time.Second, remote)
 	session := connect()
 	listed, err := session.ListTools(context.Background(), nil)
-	if err != nil || len(listed.Tools) != 12 {
-		t.Fatalf("routing changed the twelve-tool surface: %+v, %v", listed, err)
+	if err != nil || len(listed.Tools) != 16 {
+		t.Fatalf("routing changed the sixteen-tool surface: %+v, %v", listed, err)
 	}
 	saved := call(t, session, "save_pattern", `{"id":"gentle","action":{"kind":"set","color":"red"}}`)
 	if saved.Error != nil {
@@ -566,8 +592,8 @@ func TestStreamableHTTPUsesSameTools(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(listed.Tools) != len(toolSpecifications()) || len(listed.Tools) != 12 {
-		t.Fatalf("tool count=%d, want 12", len(listed.Tools))
+	if len(listed.Tools) != len(toolSpecifications()) || len(listed.Tools) != 16 {
+		t.Fatalf("tool count=%d, want 16", len(listed.Tools))
 	}
 	var devices []control.DeviceState
 	result := call(t, session, "list_devices", `{}`)

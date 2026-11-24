@@ -1,0 +1,29 @@
+{
+  "instructions": "Control the devices selected by the local nb1 daemon. Preview is optional. run_light validates and submits one Action, Sequence, saved pattern_id or trigger without a preceding preview. Omit serial to use routing on a daemon that supports it. Playback policy is shared across HTTP, MCP and managed CLI requests; get_playback_status explains the current decision and list_playback_requests shows bounded in-memory policy history. A suppress override rejects new playback; permit overrides the persistent policy until expiry. Only the daemon's configured Playback mode and weekly windows persist through restart; runtime overrides and request history are cleared when it restarts. {{transport}} Foreground CLI direct Jobs are separate process-local work and cannot be queried through these HTTP tools.",
+  "tool_descriptions": {
+    "list_devices": "List the devices configured in the local daemon and their cached state.",
+    "get_playback_status": "Read the daemon's effective Playback policy and current temporary override.",
+    "list_playback_requests": "Read recent in-memory Playback policy decisions without request bodies or user content.",
+    "set_playback_override": "Temporarily suppress or permit new playback requests for a bounded duration. A new override replaces the previous one.",
+    "clear_playback_override": "Remove the temporary Playback override and return to the configured policy.",
+    "get_device_state": "Read a device's cached RGB observation and sampled_at timestamp.",
+    "resolve_color": "Resolve a hex color, name, RGB8/HSV object or @local-name through the daemon. Returns an exact lowercase Hex6 color.",
+    "preview_light": "Preview exactly one Action, Sequence or saved pattern_id. Returns the normalized Sequence, duration, step count and device capability check. Optional serial selects a cached device profile.",
+    "run_light": "Submit exactly one Action, Sequence, saved pattern_id or trigger once. Set serial for a specific device. Omit serial to use routing on a daemon that supports it. Preserve the returned Job ID and endpoint and use get_job after an unknown outcome.",
+    "get_job": "Read the original Job by ID. Missing records may have expired or belong to an earlier daemon lifetime.",
+    "cancel_job": "Request cancellation of a Job by ID. Include the accepted serial to require device matching on a daemon that supports guarded cancellation. A cancelling result requires get_job polling until cleanup reaches a terminal state.",
+    "list_colors": "List locally saved color names and exact lowercase Hex6 values.",
+    "save_color": "Resolve and save a local named color. Names start with a lowercase letter and contain up to 32 lowercase letters, digits or hyphens. Existing names are replaced.",
+    "list_patterns": "List locally saved Pattern ID and title summaries.",
+    "get_pattern": "Read a local Pattern's ID, optional title and frozen Sequence.",
+    "save_pattern": "Compile and save one Action or Sequence as a local Pattern. Optional title accepts up to 256 Unicode characters. The saved Pattern fixes resolved RGB values. Existing IDs are replaced."
+  },
+  "schema_descriptions": {
+    "color_string": "Hex3, Hex6, CSS color name or @local-name.",
+    "color_hsv": "HSV decimals allow at most six fractional digits. The daemon resolves exact RGB without implicit gamma.",
+    "job_id": "Omit or use an empty string to generate j_ plus ten Crockford Base32 characters.",
+    "job_policy": "Busy-device policy. The default is reject. queue waits in order. preempt cancels the active Job on the selected device and runs next, preserving waiting Jobs.",
+    "action_period_ms": "The compiler validates the full cycle against step, timing and duration limits.",
+    "sequence": "At most 1024 executed Steps including repeat and 24 hours nominal duration. Interval Steps retain initial LED order and use fade_ms <= interval_ms."
+  }
+}

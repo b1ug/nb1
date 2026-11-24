@@ -84,7 +84,11 @@ func RunStdioCommand(name string, args []string, version string, diagnostics io.
 	defer d.close()
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	server := newServer(d, version, d.endpoint, "This stdio adapter selects its local HTTP endpoint with --endpoint (default "+defaultEndpoint+"). Use --token-file for an authenticated loopback API. It does not read nb1 YAML, open USB, or execute the CLI.")
+	server, err := newServer(d, version, d.endpoint, "This stdio adapter selects its local HTTP endpoint with --endpoint (default "+defaultEndpoint+"). Use --token-file for an authenticated loopback API. It does not read nb1 YAML, open USB, or execute the CLI.")
+	if err != nil {
+		fmt.Fprintf(diagnostics, "initialize MCP text: %v\n", err)
+		return 2
+	}
 	if err := server.Run(ctx, &mcp.StdioTransport{MaxLineLength: maxMessageBytes}); err != nil && ctx.Err() == nil {
 		fmt.Fprintln(diagnostics, err)
 		return 1
@@ -104,7 +108,11 @@ func NewHTTPHandler(endpoint, publicEndpoint string, timeout time.Duration, vers
 	if err != nil {
 		return nil, nil, err
 	}
-	server := newServer(d, version, publicEndpoint, "This remote service uses Streamable HTTP.")
+	server, err := newServer(d, version, publicEndpoint, "This remote service uses Streamable HTTP.")
+	if err != nil {
+		d.close()
+		return nil, nil, err
+	}
 	handler := mcp.NewStreamableHTTPHandler(func(*http.Request) *mcp.Server { return server }, &mcp.StreamableHTTPOptions{
 		Stateless:                  true,
 		JSONResponse:               true,

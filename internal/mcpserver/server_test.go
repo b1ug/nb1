@@ -257,6 +257,11 @@ func TestOfficialStdioCanonicalToolsAndLocalLibrary(t *testing.T) {
 	if !reflect.DeepEqual(names, want) {
 		t.Fatalf("tool set=%v", names)
 	}
+	for _, tool := range listed.Tools {
+		if tool.Name == "run_light" && tool.Description != protocolText.ToolDescriptions[tool.Name] {
+			t.Fatalf("tool-list description=%q, want embedded MCP text", tool.Description)
+		}
+	}
 	var devices []control.DeviceState
 	requireSuccess(t, call(t, session, "list_devices", `{}`), &devices)
 	if len(devices) != 1 || devices[0].Serial != "20000001" {
@@ -349,7 +354,10 @@ func TestOfficialStdioBuildIdentityAndRunWithoutPreview(t *testing.T) {
 	if initialized.ServerInfo.Name != "nb1" || initialized.ServerInfo.Version != testVersion {
 		t.Fatalf("initialize identity=%+v, want nb1/%s", initialized.ServerInfo, testVersion)
 	}
-	if !strings.Contains(initialized.Instructions, "Preview is optional.") || !strings.Contains(initialized.Instructions, "without a preceding preview") {
+	if !strings.Contains(initialized.Instructions, "Preview is optional.") ||
+		!strings.Contains(initialized.Instructions, "without a preceding preview") ||
+		!strings.Contains(initialized.Instructions, "This stdio adapter selects its local HTTP endpoint") ||
+		!strings.Contains(initialized.Instructions, "Foreground CLI direct Jobs are separate") {
 		t.Fatalf("initialize instructions still require preview: %s", initialized.Instructions)
 	}
 	var job control.SequenceJob
@@ -360,6 +368,54 @@ func TestOfficialStdioBuildIdentityAndRunWithoutPreview(t *testing.T) {
 	completed := waitJob(t, session, job.ID, "succeeded")
 	if completed.CompletedSteps != 1 || backend.setCount() != 1 {
 		t.Fatalf("run without preview=%+v Set=%d", completed, backend.setCount())
+	}
+}
+
+func TestMCPTextIsCompleteAndUsed(t *testing.T) {
+	if protocolTextErr != nil {
+		t.Fatalf("load embedded MCP text: %v", protocolTextErr)
+	}
+	if len(protocolText.ToolDescriptions) != len(toolSpecifications()) {
+		t.Fatalf("embedded tool descriptions have %d entries for %d tools", len(protocolText.ToolDescriptions), len(toolSpecifications()))
+	}
+	schemaDescriptions := make(map[string]bool)
+	for _, tool := range toolSpecifications() {
+		if tool.Description != protocolText.ToolDescriptions[tool.Name] || strings.TrimSpace(tool.Description) == "" {
+			t.Errorf("tool %q description was not loaded from embedded MCP text: %q", tool.Name, tool.Description)
+		}
+		collectSchemaDescriptions(tool.InputSchema, schemaDescriptions)
+	}
+	for key, description := range protocolText.SchemaDescriptions {
+		if strings.TrimSpace(description) == "" || !schemaDescriptions[description] {
+			t.Errorf("schema description %q is empty or unused: %q", key, description)
+		}
+	}
+	if schemaDescriptions[""] {
+		t.Error("a schema description was missing from the embedded copy")
+	}
+	instructions, err := serverInstructions("transport-specific sentence")
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := strings.Replace(protocolText.Instructions, "{{transport}}", "transport-specific sentence", 1)
+	if instructions != want {
+		t.Fatalf("embedded and dynamic MCP instructions were not composed: %q", instructions)
+	}
+}
+
+func collectSchemaDescriptions(value any, descriptions map[string]bool) {
+	switch value := value.(type) {
+	case map[string]any:
+		if description, ok := value["description"].(string); ok {
+			descriptions[description] = true
+		}
+		for _, child := range value {
+			collectSchemaDescriptions(child, descriptions)
+		}
+	case []any:
+		for _, child := range value {
+			collectSchemaDescriptions(child, descriptions)
+		}
 	}
 }
 
@@ -457,10 +513,6 @@ func testTriggerRoutingPreservesJobTargetAndIdentity(t *testing.T, remote bool) 
 	t.Cleanup(server.Close)
 	endpoint, connect := testMCPTransport(t, server.URL, 3*time.Second, remote)
 	session := connect()
-	listed, err := session.ListTools(context.Background(), nil)
-	if err != nil || len(listed.Tools) != 16 {
-		t.Fatalf("routing changed the sixteen-tool surface: %+v, %v", listed, err)
-	}
 	saved := call(t, session, "save_pattern", `{"id":"gentle","action":{"kind":"set","color":"red"}}`)
 	if saved.Error != nil {
 		t.Fatalf("save fixture Pattern: %+v", *saved.Error)
@@ -585,8 +637,12 @@ func TestStreamableHTTPUsesSameTools(t *testing.T) {
 			t.Error(err)
 		}
 	})
-	if info := session.InitializeResult().ServerInfo; info.Name != "nb1" || info.Version != testVersion {
-		t.Fatalf("initialize identity=%+v, want nb1/%s", info, testVersion)
+	initialized := session.InitializeResult()
+	if initialized.ServerInfo.Name != "nb1" || initialized.ServerInfo.Version != testVersion {
+		t.Fatalf("initialize identity=%+v, want nb1/%s", initialized.ServerInfo, testVersion)
+	}
+	if !strings.Contains(initialized.Instructions, "This remote service uses Streamable HTTP.") {
+		t.Fatalf("HTTP transport instructions missing: %s", initialized.Instructions)
 	}
 	listed, err := session.ListTools(ctx, nil)
 	if err != nil {

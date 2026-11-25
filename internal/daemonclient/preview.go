@@ -70,17 +70,20 @@ func compilerRouteError(err error, route string) error {
 }
 
 func decodeCompilerResponse(response *http.Response, output interface{}) error {
+	return decodeBoundedResponse(response, output, "compiler", 2<<20)
+}
+
+func decodeBoundedResponse(response *http.Response, output interface{}, name string, maxBytes int64) error {
 	contentType, _, err := mime.ParseMediaType(response.Header.Get("Content-Type"))
 	if err != nil || contentType != "application/json" {
-		return fmt.Errorf("compiler response requires application/json")
+		return fmt.Errorf("%s response requires application/json", name)
 	}
-	const maxResponseBytes = 2 << 20
-	data, err := io.ReadAll(io.LimitReader(response.Body, maxResponseBytes+1))
+	data, err := io.ReadAll(io.LimitReader(response.Body, maxBytes+1))
 	if err != nil {
 		return err
 	}
-	if len(data) > maxResponseBytes {
-		return fmt.Errorf("compiler response exceeds 2 MiB")
+	if int64(len(data)) > maxBytes {
+		return fmt.Errorf("%s response exceeds %d MiB", name, maxBytes>>20)
 	}
 	if err := jsoninput.DecodeObject(data, output); err != nil {
 		return err
@@ -107,7 +110,7 @@ func decodeCompilerResponse(response *http.Response, output interface{}) error {
 		return err
 	}
 	if !reflect.DeepEqual(actual, expected) {
-		return fmt.Errorf("compiler response has missing or noncanonical fields")
+		return fmt.Errorf("%s response has missing or noncanonical fields", name)
 	}
 	return nil
 }

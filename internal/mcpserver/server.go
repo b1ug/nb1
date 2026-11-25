@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/b1ug/nb1/internal/control"
@@ -49,9 +50,16 @@ type toolArgs struct {
 	input      daemonclient.SequenceInput
 }
 
-func newServer(d *daemon, version, recoveryEndpoint, transportInstructions string) *mcp.Server {
-	server := mcp.NewServer(&mcp.Implementation{Name: "nb1", Version: version}, &mcp.ServerOptions{Instructions: "Control the devices selected by the local nb1 daemon. Preview is optional. run_light validates and submits one Action, Sequence, saved pattern_id or trigger without a preceding preview. Omit serial to use routing on a daemon that supports it. Playback tools require a daemon with Playback policy support. Playback policy is shared across HTTP, MCP and managed CLI requests; get_playback_status explains the current decision and list_playback_requests shows bounded in-memory policy history. A suppress override rejects new playback; permit overrides the persistent policy until expiry. The daemon reloads its configured Playback mode, timezone, weekly windows and history limit on restart. Temporary overrides and request history are cleared. " + transportInstructions + " Foreground CLI direct Jobs are separate process-local work and cannot be queried through these HTTP tools."})
+func newServer(d *daemon, version, recoveryEndpoint, transportInstructions string) (*mcp.Server, error) {
+	instructions, err := serverInstructions(transportInstructions)
+	if err != nil {
+		return nil, fmt.Errorf("load embedded MCP instructions: %w", err)
+	}
+	server := mcp.NewServer(&mcp.Implementation{Name: "nb1", Version: version}, &mcp.ServerOptions{Instructions: instructions})
 	for _, spec := range toolSpecifications() {
+		if strings.TrimSpace(spec.Description) == "" {
+			return nil, fmt.Errorf("embedded MCP text is missing tool description %q", spec.Name)
+		}
 		name := spec.Name
 		server.AddTool(spec, func(ctx context.Context, request *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			args, err := decodeArguments(name, request.Params.Arguments)
@@ -63,7 +71,7 @@ func newServer(d *daemon, version, recoveryEndpoint, transportInstructions strin
 			return toolResult(invoke(ctx, d, recoveryEndpoint, name, args))
 		})
 	}
-	return server
+	return server, nil
 }
 
 func decodeArguments(name string, raw json.RawMessage) (toolArgs, error) {

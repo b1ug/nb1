@@ -5,28 +5,26 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
-var specifications = makeToolSpecifications()
-
 func toolSpecifications() []*mcp.Tool { return specifications }
 
-func makeToolSpecifications() []*mcp.Tool {
+func makeToolSpecifications(text mcpText) []*mcp.Tool {
 	return []*mcp.Tool{
-		newTool("list_devices", "List the devices configured in the local daemon and their cached state.", object(nil), true, true),
-		newTool("get_playback_status", "Read the daemon's effective Playback policy and current temporary override.", object(nil), true, true),
-		newTool("list_playback_requests", "Read recent in-memory Playback policy decisions without request bodies or user content.", object(map[string]any{"limit": integer(1, 10000)}), true, true),
-		newTool("set_playback_override", "Temporarily suppress or permit new playback requests for a bounded duration. A new override replaces the previous one.", object(map[string]any{"mode": map[string]any{"type": "string", "enum": []string{"suppress", "permit"}}, "duration_ms": integer(1, 2592000000)}, "mode", "duration_ms"), false, false),
-		newTool("clear_playback_override", "Remove the temporary Playback override and return to the configured policy.", object(nil), false, false),
-		newTool("get_device_state", "Read a device's cached RGB observation and sampled_at timestamp.", object(map[string]any{"serial": serialSchema()}, "serial"), true, true),
-		newTool("resolve_color", "Resolve a hex color, name, RGB8/HSV object or @local-name through the daemon. Returns an exact lowercase Hex6 color.", object(map[string]any{"color": colorSchema()}, "color"), true, true),
-		newTool("preview_light", "Preview exactly one Action, Sequence or saved pattern_id. Returns the normalized Sequence, duration, step count and device capability check. Optional serial selects a cached device profile.", authorSchema(true, false), true, true),
-		newTool("run_light", "Submit exactly one Action, Sequence, saved pattern_id or trigger once. Set serial for a specific device. Omit serial to use routing on a daemon that supports it. Preserve the returned Job ID and endpoint and use get_job after an unknown outcome.", authorSchema(true, true), false, false),
-		newTool("get_job", "Read the original Job by ID. Missing records may have expired or belong to an earlier daemon lifetime.", object(map[string]any{"id": idSchema()}, "id"), true, true),
-		newTool("cancel_job", "Request cancellation of a Job by ID. Include the accepted serial to require device matching on a daemon that supports guarded cancellation. A cancelling result requires get_job polling until cleanup reaches a terminal state.", object(map[string]any{"id": idSchema(), "serial": serialSchema()}, "id"), false, true),
-		newTool("list_colors", "List locally saved color names and exact lowercase Hex6 values.", object(nil), true, true),
-		newTool("save_color", "Resolve and save a local named color. Names start with a lowercase letter and contain up to 32 lowercase letters, digits or hyphens. Existing names are replaced.", object(map[string]any{"name": map[string]any{"type": "string", "pattern": "^[a-z][a-z0-9-]{0,31}$"}, "color": colorSchema()}, "name", "color"), false, false),
-		newTool("list_patterns", "List locally saved Pattern ID and title summaries.", object(nil), true, true),
-		newTool("get_pattern", "Read a local Pattern's ID, optional title and frozen Sequence.", object(map[string]any{"id": idSchema()}, "id"), true, true),
-		newTool("save_pattern", "Compile and save one Action or Sequence as a local Pattern. Optional title accepts up to 256 Unicode characters. The saved Pattern fixes resolved RGB values. Existing IDs are replaced.", authorSchema(false, false), false, false),
+		newTool("list_devices", text.ToolDescriptions["list_devices"], object(nil), true, true),
+		newTool("get_playback_status", text.ToolDescriptions["get_playback_status"], object(nil), true, true),
+		newTool("list_playback_requests", text.ToolDescriptions["list_playback_requests"], object(map[string]any{"limit": integer(1, 10000)}), true, true),
+		newTool("set_playback_override", text.ToolDescriptions["set_playback_override"], object(map[string]any{"mode": map[string]any{"type": "string", "enum": []string{"suppress", "permit"}}, "duration_ms": integer(1, 2592000000)}, "mode", "duration_ms"), false, false),
+		newTool("clear_playback_override", text.ToolDescriptions["clear_playback_override"], object(nil), false, false),
+		newTool("get_device_state", text.ToolDescriptions["get_device_state"], object(map[string]any{"serial": serialSchema()}, "serial"), true, true),
+		newTool("resolve_color", text.ToolDescriptions["resolve_color"], object(map[string]any{"color": colorSchema()}, "color"), true, true),
+		newTool("preview_light", text.ToolDescriptions["preview_light"], authorSchema(true, false), true, true),
+		newTool("run_light", text.ToolDescriptions["run_light"], authorSchema(true, true), false, false),
+		newTool("get_job", text.ToolDescriptions["get_job"], object(map[string]any{"id": idSchema()}, "id"), true, true),
+		newTool("cancel_job", text.ToolDescriptions["cancel_job"], object(map[string]any{"id": idSchema(), "serial": serialSchema()}, "id"), false, true),
+		newTool("list_colors", text.ToolDescriptions["list_colors"], object(nil), true, true),
+		newTool("save_color", text.ToolDescriptions["save_color"], object(map[string]any{"name": map[string]any{"type": "string", "pattern": "^[a-z][a-z0-9-]{0,31}$"}, "color": colorSchema()}, "name", "color"), false, false),
+		newTool("list_patterns", text.ToolDescriptions["list_patterns"], object(nil), true, true),
+		newTool("get_pattern", text.ToolDescriptions["get_pattern"], object(map[string]any{"id": idSchema()}, "id"), true, true),
+		newTool("save_pattern", text.ToolDescriptions["save_pattern"], authorSchema(false, false), false, false),
 	}
 }
 
@@ -76,10 +74,10 @@ func integer(min, max int) map[string]any {
 
 func colorSchema() map[string]any {
 	return map[string]any{"oneOf": []any{
-		map[string]any{"type": "string", "minLength": 1, "maxLength": 64, "description": "Hex3, Hex6, CSS color name or @local-name."},
+		map[string]any{"type": "string", "minLength": 1, "maxLength": 64, "description": embeddedSchemaDescription("color_string")},
 		object(map[string]any{"space": map[string]any{"const": "rgb8"}, "r": integer(0, 255), "g": integer(0, 255), "b": integer(0, 255)}, "space", "r", "g", "b"),
 		object(map[string]any{"space": map[string]any{"const": "hsv"}, "h_deg": map[string]any{"type": "number", "minimum": 0, "maximum": 360}, "s_pct": map[string]any{"type": "number", "minimum": 0, "maximum": 100}, "v_pct": map[string]any{"type": "number", "minimum": 0, "maximum": 100}}, "space", "h_deg", "s_pct", "v_pct"),
-	}, "description": "HSV decimals allow at most six fractional digits. The daemon resolves exact RGB without implicit gamma."}
+	}, "description": embeddedSchemaDescription("color_hsv")}
 }
 
 func authorSchema(pattern, run bool) map[string]any {
@@ -91,8 +89,8 @@ func authorSchema(pattern, run bool) map[string]any {
 		properties["serial"] = serialSchema()
 		choices = append(choices, map[string]any{"required": []string{"pattern_id"}})
 		if run {
-			properties["id"] = map[string]any{"type": "string", "pattern": "^[A-Za-z0-9_-]{0,64}$", "description": "Omit or use an empty string to generate j_ plus ten Crockford Base32 characters."}
-			properties["policy"] = map[string]any{"type": "string", "enum": []string{"reject", "queue", "preempt"}, "description": "Busy-device policy. The default is reject. queue waits in order. preempt cancels the active Job on the selected device and runs next, preserving waiting Jobs."}
+			properties["id"] = map[string]any{"type": "string", "pattern": "^[A-Za-z0-9_-]{0,64}$", "description": embeddedSchemaDescription("job_id")}
+			properties["policy"] = map[string]any{"type": "string", "enum": []string{"reject", "queue", "preempt"}, "description": embeddedSchemaDescription("job_policy")}
 			properties["trigger"] = map[string]any{"type": "string", "pattern": "^[a-z][a-z0-9.-]{0,63}$"}
 			choices = append(choices, map[string]any{"required": []string{"trigger"}})
 		}
@@ -135,7 +133,7 @@ func actionSchema() map[string]any {
 			required = append(required, "colors")
 		}
 		if kind == "breathe" || kind == "alternate" || kind == "orbit" || kind == "rainbow" {
-			properties["period_ms"] = map[string]any{"type": "integer", "minimum": 1, "description": "The compiler validates the full cycle against step, timing and duration limits."}
+			properties["period_ms"] = map[string]any{"type": "integer", "minimum": 1, "description": embeddedSchemaDescription("action_period_ms")}
 		}
 		if kind != "set" && kind != "off" && kind != "fade" {
 			properties["cycles"] = integer(1, sequence.MaxExecutedSteps)
@@ -172,5 +170,5 @@ func sequenceSchema() map[string]any {
 		properties["steps"] = map[string]any{"type": "array", "items": object(step, requiredStep...), "minItems": 1, "maxItems": sequence.MaxExecutedSteps}
 		variants = append(variants, object(properties, required...))
 	}
-	return map[string]any{"oneOf": variants, "description": "At most 1024 executed Steps including repeat and 24 hours nominal duration. Interval Steps retain initial LED order and use fade_ms <= interval_ms."}
+	return map[string]any{"oneOf": variants, "description": embeddedSchemaDescription("sequence")}
 }

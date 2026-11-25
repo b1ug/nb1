@@ -251,11 +251,20 @@ func TestOfficialStdioCanonicalToolsAndLocalLibrary(t *testing.T) {
 	var names []string
 	for _, tool := range listed.Tools {
 		names = append(names, tool.Name)
+		if tool.Description != protocolText.ToolDescriptions[tool.Name] || strings.TrimSpace(tool.Description) == "" {
+			t.Errorf("tool %q description differs from embedded text or is empty: %q", tool.Name, tool.Description)
+		}
+		if tool.Name == "run_light" {
+			checkRunLightSchemaDescriptions(t, tool.InputSchema)
+		}
 	}
 	sort.Strings(names)
 	want := []string{"cancel_job", "clear_playback_override", "get_device_state", "get_job", "get_pattern", "get_playback_status", "list_colors", "list_devices", "list_patterns", "list_playback_requests", "preview_light", "resolve_color", "run_light", "save_color", "save_pattern", "set_playback_override"}
 	if !reflect.DeepEqual(names, want) {
 		t.Fatalf("tool set=%v", names)
+	}
+	if len(protocolText.ToolDescriptions) != len(names) {
+		t.Errorf("embedded descriptions cover %d tools, server advertises %d", len(protocolText.ToolDescriptions), len(names))
 	}
 	var devices []control.DeviceState
 	requireSuccess(t, call(t, session, "list_devices", `{}`), &devices)
@@ -349,7 +358,10 @@ func TestOfficialStdioBuildIdentityAndRunWithoutPreview(t *testing.T) {
 	if initialized.ServerInfo.Name != "nb1" || initialized.ServerInfo.Version != testVersion {
 		t.Fatalf("initialize identity=%+v, want nb1/%s", initialized.ServerInfo, testVersion)
 	}
-	if !strings.Contains(initialized.Instructions, "Preview is optional.") || !strings.Contains(initialized.Instructions, "without a preceding preview") {
+	if !strings.Contains(initialized.Instructions, "Preview is optional.") ||
+		!strings.Contains(initialized.Instructions, "without a preceding preview") ||
+		!strings.Contains(initialized.Instructions, "This stdio adapter selects its local HTTP endpoint with --endpoint (default "+defaultEndpoint+")") ||
+		!strings.Contains(initialized.Instructions, "Foreground CLI direct Jobs are separate") {
 		t.Fatalf("initialize instructions still require preview: %s", initialized.Instructions)
 	}
 	var job control.SequenceJob
@@ -360,6 +372,57 @@ func TestOfficialStdioBuildIdentityAndRunWithoutPreview(t *testing.T) {
 	completed := waitJob(t, session, job.ID, "succeeded")
 	if completed.CompletedSteps != 1 || backend.setCount() != 1 {
 		t.Fatalf("run without preview=%+v Set=%d", completed, backend.setCount())
+	}
+}
+
+// run_light exposes all six shared schema descriptions. Check the field and a
+// distinguishing term so swapping either the lookup keys or the copy fails.
+func checkRunLightSchemaDescriptions(t *testing.T, inputSchema any) {
+	t.Helper()
+	type field struct {
+		Properties  map[string]field
+		OneOf       []field
+		Type        string
+		Const       string
+		Description string
+	}
+	var schema field
+	raw, err := json.Marshal(inputSchema)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := json.Unmarshal(raw, &schema); err != nil {
+		t.Fatal(err)
+	}
+	actions := make(map[string]field)
+	for _, action := range schema.Properties["action"].OneOf {
+		actions[action.Properties["kind"].Const] = action
+	}
+	color := actions["set"].Properties["color"]
+	var colorString field
+	for _, variant := range color.OneOf {
+		if variant.Type == "string" {
+			colorString = variant
+		}
+	}
+	bindings := []struct {
+		key, term string
+		field     field
+	}{
+		{"job_id", "Crockford Base32", schema.Properties["id"]},
+		{"job_policy", "preempt", schema.Properties["policy"]},
+		{"sequence", "interval_ms", schema.Properties["sequence"]},
+		{"action_period_ms", "full cycle", actions["breathe"].Properties["period_ms"]},
+		{"color_hsv", "HSV", color},
+		{"color_string", "Hex6", colorString},
+	}
+	if len(protocolText.SchemaDescriptions) != len(bindings) {
+		t.Errorf("embedded schema descriptions have %d entries, checked %d", len(protocolText.SchemaDescriptions), len(bindings))
+	}
+	for _, b := range bindings {
+		if got := b.field.Description; got != protocolText.SchemaDescriptions[b.key] || !strings.Contains(got, b.term) {
+			t.Errorf("run_light %s description = %q, want the catalog entry containing %q", b.key, got, b.term)
+		}
 	}
 }
 
@@ -457,10 +520,6 @@ func testTriggerRoutingPreservesJobTargetAndIdentity(t *testing.T, remote bool) 
 	t.Cleanup(server.Close)
 	endpoint, connect := testMCPTransport(t, server.URL, 3*time.Second, remote)
 	session := connect()
-	listed, err := session.ListTools(context.Background(), nil)
-	if err != nil || len(listed.Tools) != 16 {
-		t.Fatalf("routing changed the sixteen-tool surface: %+v, %v", listed, err)
-	}
 	saved := call(t, session, "save_pattern", `{"id":"gentle","action":{"kind":"set","color":"red"}}`)
 	if saved.Error != nil {
 		t.Fatalf("save fixture Pattern: %+v", *saved.Error)
@@ -585,8 +644,12 @@ func TestStreamableHTTPUsesSameTools(t *testing.T) {
 			t.Error(err)
 		}
 	})
-	if info := session.InitializeResult().ServerInfo; info.Name != "nb1" || info.Version != testVersion {
-		t.Fatalf("initialize identity=%+v, want nb1/%s", info, testVersion)
+	initialized := session.InitializeResult()
+	if initialized.ServerInfo.Name != "nb1" || initialized.ServerInfo.Version != testVersion {
+		t.Fatalf("initialize identity=%+v, want nb1/%s", initialized.ServerInfo, testVersion)
+	}
+	if !strings.Contains(initialized.Instructions, "This remote service uses Streamable HTTP.") {
+		t.Fatalf("HTTP transport instructions missing: %s", initialized.Instructions)
 	}
 	listed, err := session.ListTools(ctx, nil)
 	if err != nil {

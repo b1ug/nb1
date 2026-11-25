@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"net/url"
 	"time"
 
@@ -49,7 +50,7 @@ type toolArgs struct {
 }
 
 func newServer(d *daemon, version, recoveryEndpoint, transportInstructions string) *mcp.Server {
-	server := mcp.NewServer(&mcp.Implementation{Name: "nb1", Version: version}, &mcp.ServerOptions{Instructions: "Control the devices selected by the local nb1 daemon. Preview is optional. run_light validates and submits one Action, Sequence, saved pattern_id or trigger without a preceding preview. Omit serial to use routing on a daemon that supports it. Playback policy is shared across HTTP, MCP and managed CLI requests; get_playback_status explains the current decision and list_playback_requests shows bounded in-memory policy history. A suppress override rejects new playback; permit overrides the persistent policy until expiry. Only the daemon's configured Playback mode and weekly windows persist through restart; runtime overrides and request history are cleared when it restarts. " + transportInstructions + " Foreground CLI direct Jobs are separate process-local work and cannot be queried through these HTTP tools."})
+	server := mcp.NewServer(&mcp.Implementation{Name: "nb1", Version: version}, &mcp.ServerOptions{Instructions: "Control the devices selected by the local nb1 daemon. Preview is optional. run_light validates and submits one Action, Sequence, saved pattern_id or trigger without a preceding preview. Omit serial to use routing on a daemon that supports it. Playback tools require a daemon with Playback policy support. Playback policy is shared across HTTP, MCP and managed CLI requests; get_playback_status explains the current decision and list_playback_requests shows bounded in-memory policy history. A suppress override rejects new playback; permit overrides the persistent policy until expiry. The daemon reloads its configured Playback mode, timezone, weekly windows and history limit on restart. Temporary overrides and request history are cleared. " + transportInstructions + " Foreground CLI direct Jobs are separate process-local work and cannot be queried through these HTTP tools."})
 	for _, spec := range toolSpecifications() {
 		name := spec.Name
 		server.AddTool(spec, func(ctx context.Context, request *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
@@ -215,6 +216,15 @@ func invoke(ctx context.Context, d *daemon, recoveryEndpoint, name string, args 
 	}
 	if name == "run_light" || name == "cancel_job" || name == "save_color" || name == "save_pattern" {
 		out.Error.OutcomeUnknown = uncertainWrite(err)
+	}
+	if name == "set_playback_override" || name == "clear_playback_override" {
+		out.Error.OutcomeUnknown = uncertainWrite(err)
+		if rejected != nil && rejected.Status == http.StatusNotImplemented && rejected.Code == "playback_unsupported" {
+			out.Error.OutcomeUnknown = false
+		}
+		if out.Error.OutcomeUnknown {
+			out.Error.Message += "; query get_playback_status before retrying"
+		}
 	}
 	if name == "run_light" && daemonclient.SequenceSubmissionRejected(err) {
 		out.Error.OutcomeUnknown = false

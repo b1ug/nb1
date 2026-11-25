@@ -45,7 +45,7 @@ playback:
       overnight: true
 ```
 
-This Friday window also allows Saturday from midnight until 02:00. The next Saturday window, if configured, begins independently. Equal start and end times are invalid; use `never` for no scheduled playback or `always` for all-day playback.
+This window opens Friday at 22:00 and closes Saturday at 02:00. Friday at 01:00 falls under Thursday's schedule. A separate Saturday window starts at its own configured time. Use `never` for no scheduled playback or `always` for all-day playback. Equal window endpoints are invalid.
 
 ## Temporary override
 
@@ -71,6 +71,8 @@ nb1 playback requests --limit 20
 | `DELETE /v1/playback/override` | Clear the temporary override. |
 
 MCP exposes matching `get_playback_status`, `list_playback_requests`, `set_playback_override` and `clear_playback_override` tools. Remote HTTP and MCP use the existing HTTPS Bearer authentication. The loopback API keeps its existing optional token setting.
+
+The connected daemon must support Playback policy on its sequence-v1 API. If an older daemon reports an unknown route, use a matching daemon and MCP version. If a set or clear operation returns `outcome_unknown: true`, read `get_playback_status` before deciding whether to send another change. Repeating a set starts a new override duration.
 
 A rejected playback submission returns HTTP `423` with code `playback_suppressed`. It creates no Job, does not enter a device queue, sends no hardware command and is not replayed automatically after the policy changes. The client can retry as a new request when playback is allowed.
 

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"net/url"
 	"strings"
 	"time"
@@ -223,6 +224,15 @@ func invoke(ctx context.Context, d *daemon, recoveryEndpoint, name string, args 
 	}
 	if name == "run_light" || name == "cancel_job" || name == "save_color" || name == "save_pattern" {
 		out.Error.OutcomeUnknown = uncertainWrite(err)
+	}
+	if name == "set_playback_override" || name == "clear_playback_override" {
+		out.Error.OutcomeUnknown = uncertainWrite(err)
+		if rejected != nil && rejected.Status == http.StatusNotImplemented && rejected.Code == "playback_unsupported" {
+			out.Error.OutcomeUnknown = false
+		}
+		if out.Error.OutcomeUnknown {
+			out.Error.Message += "; query get_playback_status before retrying"
+		}
 	}
 	if name == "run_light" && daemonclient.SequenceSubmissionRejected(err) {
 		out.Error.OutcomeUnknown = false

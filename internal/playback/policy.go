@@ -123,16 +123,13 @@ func (p Policy) Allows(at time.Time) (bool, string) {
 	if window, ok := p.Weekly[weekdayName(local.Weekday())]; ok {
 		start, _ := parseClock(window.Start)
 		end, _ := parseClock(window.End)
-		if window.Overnight {
-			if minute >= start || minute < end {
-				return true, "weekly_window"
-			}
-		} else if minute >= start && minute < end {
+		if minute >= start && (window.Overnight || minute < end) {
 			return true, "weekly_window"
 		}
 	}
-	previous := local.AddDate(0, 0, -1)
-	if window, ok := p.Weekly[weekdayName(previous.Weekday())]; ok && window.Overnight {
+	// The same local clock time may not exist on the previous calendar day.
+	previousDay := (local.Weekday() + 6) % 7
+	if window, ok := p.Weekly[weekdayName(previousDay)]; ok && window.Overnight {
 		end, _ := parseClock(window.End)
 		if minute < end {
 			return true, "weekly_overnight_window"

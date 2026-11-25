@@ -45,7 +45,7 @@ playback:
       overnight: true
 ```
 
-周五这段时段也会允许周六凌晨 00:00 到 02:00。周六自己的规则独立生效。开始和结束相同是无效配置；全天禁止播放用 `never`，全天允许用 `always`。
+这条规则在周五 22:00 开始，到周六 02:00 结束。周五 01:00 是否允许播放取决于周四的规则。周六另设的时段按自己的开始时间生效。全天禁止播放用 `never`，全天允许用 `always`。时段的起止时间不能相同。
 
 ## 临时覆盖
 
@@ -71,6 +71,8 @@ nb1 playback requests --limit 20
 | `DELETE /v1/playback/override` | 清除临时覆盖。 |
 
 MCP 提供对应的 `get_playback_status`、`list_playback_requests`、`set_playback_override` 和 `clear_playback_override` 工具。远程 HTTP/MCP 继续使用现有 HTTPS Bearer 鉴权；本机 API 沿用现有可选 Token 设置。
+
+连接的 daemon 需要通过 sequence-v1 API 提供 Playback 策略。如果旧版 daemon 提示找不到该接口，请使用配套版本的 daemon 和 MCP。设置或清除临时覆盖时，若 MCP 返回 `outcome_unknown: true`，先用 `get_playback_status` 查询当前状态，再决定是否重新提交。重复设置会重新计算覆盖的到期时间。
 
 被策略挡下的播放请求返回 HTTP `423` 和错误码 `playback_suppressed`。它不会创建 Job、进入设备队列或发送硬件指令；策略稍后变为允许时也不会自动重放。恢复允许后，调用方可以用新请求重试。
 

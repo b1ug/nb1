@@ -28,6 +28,7 @@ func TestWeeklyWindowsAndExplicitOvernight(t *testing.T) {
 	policy := Policy{Mode: ModeWeekly, Timezone: "UTC", HistoryLimit: 10, Weekly: map[string]Window{
 		"mon": {Start: "08:00", End: "20:00"},
 		"fri": {Start: "22:00", End: "02:00", Overnight: true},
+		"sat": {Start: "23:00", End: "03:00", Overnight: true},
 	}}
 	var err error
 	policy, err = policy.Normalize()
@@ -42,9 +43,14 @@ func TestWeeklyWindowsAndExplicitOvernight(t *testing.T) {
 		{"start included", time.Date(2026, time.January, 5, 8, 0, 0, 0, time.UTC), true}, // Monday
 		{"end excluded", time.Date(2026, time.January, 5, 20, 0, 0, 0, time.UTC), false},
 		{"unlisted day closed", time.Date(2026, time.January, 6, 12, 0, 0, 0, time.UTC), false},
-		{"overnight start", time.Date(2026, time.January, 9, 23, 0, 0, 0, time.UTC), true}, // Friday
+		{"overnight start day morning closed", time.Date(2026, time.January, 9, 1, 0, 0, 0, time.UTC), false}, // Friday
+		{"before overnight start", time.Date(2026, time.January, 9, 21, 59, 0, 0, time.UTC), false},
+		{"overnight start included", time.Date(2026, time.January, 9, 22, 0, 0, 0, time.UTC), true},
 		{"overnight next day", time.Date(2026, time.January, 10, 1, 59, 0, 0, time.UTC), true},
 		{"overnight end excluded", time.Date(2026, time.January, 10, 2, 0, 0, 0, time.UTC), false},
+		{"next overnight start independent", time.Date(2026, time.January, 10, 23, 0, 0, 0, time.UTC), true},
+		{"week rollover at midnight", time.Date(2026, time.January, 11, 0, 0, 0, 0, time.UTC), true},
+		{"week rollover end excluded", time.Date(2026, time.January, 11, 3, 0, 0, 0, time.UTC), false},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			allowed, _ := policy.Allows(test.at)
@@ -52,6 +58,18 @@ func TestWeeklyWindowsAndExplicitOvernight(t *testing.T) {
 				t.Fatalf("at %s allowed=%t want %t", test.at, allowed, test.want)
 			}
 		})
+	}
+}
+
+func TestOvernightAfterSkippedLocalMidnight(t *testing.T) {
+	policy := Policy{Mode: ModeWeekly, Timezone: "America/Santiago", Weekly: map[string]Window{
+		"sun": {Start: "22:00", End: "02:00", Overnight: true},
+	}}
+	// Monday 00:30 in Santiago. On the preceding Sunday the clock jumped
+	// straight from Saturday 23:59 to Sunday 01:00.
+	at := time.Date(2024, time.September, 9, 3, 30, 0, 0, time.UTC)
+	if allowed, reason := policy.Allows(at); !allowed || reason != "weekly_overnight_window" {
+		t.Fatalf("Sunday's window should extend into Monday: allowed=%t reason=%s", allowed, reason)
 	}
 }
 

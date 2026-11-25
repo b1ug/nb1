@@ -890,6 +890,95 @@ func testLostResponseRecovery(t *testing.T, remote bool) {
 	}
 }
 
+func TestPlaybackOverrideRecoversByReadingStatus(t *testing.T) {
+	server, _ := engineServer(t)
+	var writes atomic.Int32
+	proxy := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/v1/playback/override" {
+			server.Config.Handler.ServeHTTP(w, r)
+			return
+		}
+		// Apply the mutation, then truncate the daemon's confirmation.
+		writes.Add(1)
+		applied := httptest.NewRecorder()
+		server.Config.Handler.ServeHTTP(applied, r)
+		if applied.Code != http.StatusOK {
+			t.Errorf("override returned %d: %s", applied.Code, applied.Body.String())
+		}
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprint(w, "{")
+	}))
+	defer proxy.Close()
+	session := connectStdio(t, proxy.URL, time.Second)
+	steps := []struct{ tool, args, status, override string }{
+		{"set_playback_override", `{"mode":"suppress","duration_ms":60000}`, "suppressed", "suppress"},
+		{"set_playback_override", `{"mode":"permit","duration_ms":60000}`, "allowed", "permit"},
+		{"clear_playback_override", `{}`, "allowed", ""},
+	}
+	for _, tc := range steps {
+		result := call(t, session, tc.tool, tc.args)
+		if result.Error == nil || result.Error.Code != "invalid_daemon_response" || !result.Error.OutcomeUnknown ||
+			!strings.Contains(result.Error.Message, "get_playback_status") || result.Data != nil {
+			t.Fatalf("%s returned %+v", tc.tool, result)
+		}
+		var state control.PlaybackState
+		requireSuccess(t, call(t, session, "get_playback_status", `{}`), &state)
+		var active string
+		if state.Override != nil {
+			active = state.Override.Mode
+		}
+		if state.Status != tc.status || active != tc.override {
+			t.Fatalf("%s recovered %+v, want %s with override %q", tc.tool, state, tc.status, tc.override)
+		}
+	}
+	if int(writes.Load()) != len(steps) {
+		t.Fatalf("expected one write per override operation, got %d", writes.Load())
+	}
+}
+
+func TestPlaybackToolErrorClassification(t *testing.T) {
+	const permit = `{"mode":"never","timezone":"local","status":"allowed","reason":"runtime_override_permit",
+		"evaluated_at":"2026-11-22T12:00:00Z","override":{"mode":"permit","expires_at":"2026-11-22T12:01:00Z"},"history_limit":100}`
+	for _, tc := range []struct {
+		name, tool, args string
+		status           int
+		body, code       string
+		unknown          bool
+	}{
+		{"null status", "get_playback_status", `{}`, 200, `null`, "invalid_daemon_response", false},
+		{"empty history envelope", "list_playback_requests", `{}`, 200, `{"requests":null,"count":0,"limit":0}`, "invalid_daemon_response", false},
+		{"empty override confirmation", "set_playback_override", `{"mode":"permit","duration_ms":1000}`, 200, `{}`, "invalid_daemon_response", true},
+		{"other override", "set_playback_override", `{"mode":"suppress","duration_ms":60000}`, 200, permit, "invalid_daemon_response", true},
+		{"excess duration", "set_playback_override", `{"mode":"permit","duration_ms":1000}`, 200, permit, "invalid_daemon_response", true},
+		{"override still active", "clear_playback_override", `{}`, 200, permit, "invalid_daemon_response", true},
+		{"old daemon", "clear_playback_override", `{}`, 404, `{"error":{"code":"not_found","message":"unknown API route"}}`, "playback_unsupported", false},
+		{"token rejected", "set_playback_override", `{"mode":"permit","duration_ms":1000}`, 401, `{"error":{"code":"unauthorized","message":"unauthorized"}}`, "unauthorized", false},
+		{"server failure", "clear_playback_override", `{}`, 503, `{"error":{"code":"unavailable","message":"service unavailable"}}`, "unavailable", true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(tc.status)
+				fmt.Fprint(w, tc.body)
+			}))
+			defer server.Close()
+			d, err := newDaemon(server.URL, time.Second, "")
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer d.close()
+			args, err := decodeArguments(tc.tool, json.RawMessage(tc.args))
+			if err != nil {
+				t.Fatal(err)
+			}
+			got := invoke(t.Context(), d, server.URL, tc.tool, args).Error
+			if got == nil || got.Code != tc.code || got.HTTPStatus != tc.status || got.OutcomeUnknown != tc.unknown {
+				t.Fatalf("unexpected error %+v", got)
+			}
+		})
+	}
+}
+
 func TestOfficialStdioMalformedAcceptanceKeepsCallerID(t *testing.T) {
 	var calls int32
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

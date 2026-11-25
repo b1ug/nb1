@@ -4,7 +4,7 @@
   "info": {
     "title": "nb1 API v1",
     "version": "1.0.0-dev",
-    "description": "Implementation contract for the sequence-v1 daemon in this source checkout. GET / returns runtime build identity and endpoint discovery. The API includes daemon-side target selection, named triggers, trigger checks, device-guarded Job cancellation and serial-targeted Flash preset reset. x-source lists route and implementation files. Examples use software fixtures or sample metadata. JSON request bodies are bounded to 1 MiB. The runtime rejects duplicate fields, unknown fields, explicit null, invalid Unicode, and unsupported number spellings. Cross-field execution budgets are validated by the core."
+    "description": "Implementation contract for the sequence-v1 daemon in this source checkout. GET / returns runtime build identity and endpoint discovery. The API includes daemon-side target selection, named triggers, trigger checks, device-guarded Job cancellation and serial-targeted Flash preset reset. x-source lists route and implementation files. Examples use software fixtures or sample metadata. JSON request bodies are bounded to 1 MiB. The runtime rejects duplicate fields, unknown fields, explicit null, invalid Unicode, and unsupported number spellings. Cross-field execution budgets are validated by the core. Persistent Playback admission policy, temporary daemon-memory overrides and bounded in-memory policy history are part of the current API."
   },
   "servers": [
     {
@@ -35,7 +35,7 @@
     }
   ],
   "x-source": {
-    "scope": "Sequence API, daemon target and Trigger routing, root discovery, serial-targeted Flash reset, and optional authenticated HTTPS",
+    "scope": "Sequence API, daemon target and Trigger routing, root discovery, serial-targeted Flash reset, and optional authenticated HTTPS, daemon Playback policy and temporary overrides",
     "files": [
       "internal/httpapi/sequence_api.go",
       "internal/httpapi/sequence_library.go",
@@ -58,7 +58,10 @@
       "cmd/server_remote.go",
       "internal/remoteaccess/http.go",
       "internal/httpapi/root_welcome.go",
-      "internal/httpapi/flash_reset.go"
+      "internal/httpapi/flash_reset.go",
+      "internal/playback/policy.go",
+      "internal/control/playback.go",
+      "internal/httpapi/playback.go"
     ],
     "route_baseline_commit": "8a348d3746be01311c957fe16a916c6be121db07"
   },
@@ -235,6 +238,16 @@
                           "description": "Read one configured blink(1) device and its cached status."
                         },
                         {
+                          "method": "GET",
+                          "path": "/v1/devices/{serial}/flash/reset-ticket",
+                          "description": "Issue a one-use ticket for a guarded Flash reset on a supported device."
+                        },
+                        {
+                          "method": "POST",
+                          "path": "/v1/devices/{serial}/flash/reset",
+                          "description": "Reset the supported device's startup Flash preset."
+                        },
+                        {
                           "method": "POST",
                           "path": "/v1/preview",
                           "description": "Validate and compile an Action, Sequence, or saved Pattern without playing it."
@@ -243,6 +256,26 @@
                           "method": "POST",
                           "path": "/v1/jobs",
                           "description": "Submit a Sequence Job. Omit serial to use the configured default; provide it to target a specific device."
+                        },
+                        {
+                          "method": "GET",
+                          "path": "/v1/playback",
+                          "description": "Read the effective Playback policy and temporary override."
+                        },
+                        {
+                          "method": "GET",
+                          "path": "/v1/playback/requests",
+                          "description": "Read bounded in-memory Playback policy decisions."
+                        },
+                        {
+                          "method": "POST",
+                          "path": "/v1/playback/override",
+                          "description": "Temporarily suppress or permit new Playback requests."
+                        },
+                        {
+                          "method": "DELETE",
+                          "path": "/v1/playback/override",
+                          "description": "Clear the temporary Playback override."
                         },
                         {
                           "method": "GET",
@@ -263,6 +296,11 @@
                           "method": "PUT",
                           "path": "/v1/colors/{name}",
                           "description": "Save or replace a named color in the local library."
+                        },
+                        {
+                          "method": "PUT",
+                          "path": "/v1/colors/resolve",
+                          "description": "Save or replace the named color whose name is the literal 'resolve'."
                         },
                         {
                           "method": "POST",
@@ -2259,6 +2297,16 @@
                 "description": "Relative URL of the accepted or retained Job."
               }
             }
+          },
+          "423": {
+            "description": "Playback policy suppressed admission; no Job or device command was created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           }
         },
         "x-query-policy": "rejected",
@@ -4152,6 +4200,333 @@
           }
         },
         "x-query-policy": "rejected"
+      }
+    },
+    "/v1/playback": {
+      "get": {
+        "operationId": "getPlaybackStatus",
+        "summary": "Read effective Playback Status",
+        "description": "Read the persistent policy and any temporary daemon-memory override. This reports admission policy, not the state of an accepted Job or physical light output.",
+        "tags": [
+          "Runtime"
+        ],
+        "responses": {
+          "200": {
+            "description": "Effective Playback Status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlaybackState"
+                },
+                "examples": {
+                  "response": {
+                    "value": {
+                      "mode": "always",
+                      "timezone": "local",
+                      "status": "allowed",
+                      "reason": "mode_always",
+                      "evaluated_at": "2026-11-22T12:00:00Z",
+                      "history_limit": 100
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Unexpected query or request body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "HTTP 403 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "HTTP 405 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/v1/playback/requests": {
+      "get": {
+        "operationId": "listPlaybackRequests",
+        "summary": "List recent Playback policy decisions",
+        "description": "Newest first. This bounded history is held in daemon memory and is cleared on restart. The response includes metadata only, never a request body or Pattern content.",
+        "tags": [
+          "Runtime"
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Maximum number of rows. Omitted uses the configured history limit; larger values are clamped to it.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10000
+            },
+            "example": 20
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Playback policy decisions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlaybackRequests"
+                },
+                "examples": {
+                  "response": {
+                    "value": {
+                      "requests": [
+                        {
+                          "id": 1,
+                          "received_at": "2026-11-22T12:00:00Z",
+                          "decision": "suppressed",
+                          "reason": "mode_never",
+                          "kind": "sequence",
+                          "target": "fixture-0001",
+                          "job_id": "doc-job-example"
+                        }
+                      ],
+                      "limit": 100,
+                      "count": 1
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid query or unexpected request body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "HTTP 403 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "HTTP 405 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/v1/playback/override": {
+      "post": {
+        "operationId": "setPlaybackOverride",
+        "summary": "Temporarily override Playback policy",
+        "description": "Set one daemon-memory override. A new override replaces the previous one. It expires automatically and is cleared by daemon restart.",
+        "tags": [
+          "Runtime"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlaybackOverrideRequest"
+              },
+              "examples": {
+                "suppress": {
+                  "value": {
+                    "mode": "suppress",
+                    "duration_ms": 3600000
+                  }
+                },
+                "permit": {
+                  "value": {
+                    "mode": "permit",
+                    "duration_ms": 900000
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated effective Playback Status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlaybackState"
+                },
+                "examples": {
+                  "response": {
+                    "value": {
+                      "mode": "never",
+                      "timezone": "local",
+                      "status": "allowed",
+                      "reason": "runtime_override_permit",
+                      "evaluated_at": "2026-11-22T12:00:00Z",
+                      "override": {
+                        "mode": "permit",
+                        "expires_at": "2026-11-22T12:15:00Z"
+                      },
+                      "history_limit": 100
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request or override duration",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "HTTP 403 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "HTTP 405 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Content-Type must be application/json",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "clearPlaybackOverride",
+        "summary": "Clear the temporary Playback override",
+        "description": "Remove the active daemon-memory override and immediately return to the persistent policy.",
+        "tags": [
+          "Runtime"
+        ],
+        "responses": {
+          "200": {
+            "description": "Effective Playback Status after clearing the override",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlaybackState"
+                },
+                "examples": {
+                  "response": {
+                    "value": {
+                      "mode": "always",
+                      "timezone": "local",
+                      "status": "allowed",
+                      "reason": "mode_always",
+                      "evaluated_at": "2026-11-22T12:00:00Z",
+                      "history_limit": 100
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Unexpected query or request body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "HTTP 403 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "HTTP 405 error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
       }
     }
   },
@@ -6058,7 +6433,8 @@
                   "flash_reset_unsupported",
                   "flash_outcome_unknown",
                   "flash_ticket_used_or_expired",
-                  "flash_ticket_capacity"
+                  "flash_ticket_capacity",
+                  "playback_suppressed"
                 ]
               },
               "message": {
@@ -6324,7 +6700,8 @@
             "enum": [
               "GET",
               "POST",
-              "PUT"
+              "PUT",
+              "DELETE"
             ]
           },
           "path": {
@@ -6555,6 +6932,241 @@
           "result"
         ],
         "additionalProperties": false
+      },
+      "PlaybackWindow": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "start",
+          "end"
+        ],
+        "properties": {
+          "start": {
+            "type": "string",
+            "pattern": "^(?:[01][0-9]|2[0-3]):[0-5][0-9]$"
+          },
+          "end": {
+            "type": "string",
+            "pattern": "^(?:[01][0-9]|2[0-3]):[0-5][0-9]$"
+          },
+          "overnight": {
+            "type": "boolean",
+            "default": false
+          }
+        },
+        "description": "One start-inclusive, end-exclusive local-time allow window. Set overnight true only when end is earlier than start."
+      },
+      "PlaybackOverrideRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "mode",
+          "duration_ms"
+        ],
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "suppress",
+              "permit"
+            ]
+          },
+          "duration_ms": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2592000000,
+            "description": "Positive duration, at most 720 hours."
+          }
+        },
+        "examples": [
+          {
+            "mode": "suppress",
+            "duration_ms": 3600000
+          },
+          {
+            "mode": "permit",
+            "duration_ms": 900000
+          }
+        ]
+      },
+      "PlaybackOverride": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "mode",
+          "expires_at"
+        ],
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "suppress",
+              "permit"
+            ]
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "PlaybackState": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "mode",
+          "timezone",
+          "status",
+          "reason",
+          "evaluated_at",
+          "history_limit"
+        ],
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "always",
+              "weekly",
+              "never"
+            ]
+          },
+          "timezone": {
+            "type": "string",
+            "description": "local or an IANA time zone identifier."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "allowed",
+              "suppressed"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "mode_always",
+              "mode_never",
+              "weekly_window",
+              "weekly_overnight_window",
+              "outside_weekly_window",
+              "runtime_override_permit",
+              "runtime_override_suppress"
+            ]
+          },
+          "evaluated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "override": {
+            "$ref": "#/components/schemas/PlaybackOverride"
+          },
+          "history_limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10000
+          }
+        },
+        "examples": [
+          {
+            "mode": "always",
+            "timezone": "local",
+            "status": "allowed",
+            "reason": "mode_always",
+            "evaluated_at": "2026-11-22T12:00:00Z",
+            "history_limit": 100
+          }
+        ]
+      },
+      "PlaybackRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "received_at",
+          "decision",
+          "reason",
+          "kind"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "received_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "decision": {
+            "type": "string",
+            "enum": [
+              "allowed",
+              "suppressed"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "mode_always",
+              "mode_never",
+              "weekly_window",
+              "weekly_overnight_window",
+              "outside_weekly_window",
+              "runtime_override_permit",
+              "runtime_override_suppress"
+            ]
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "program",
+              "sequence",
+              "frame",
+              "pattern"
+            ]
+          },
+          "target": {
+            "$ref": "#/components/schemas/Serial"
+          },
+          "request_id": {
+            "type": "string"
+          },
+          "job_id": {
+            "type": "string"
+          }
+        }
+      },
+      "PlaybackRequests": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "requests",
+          "limit",
+          "count"
+        ],
+        "properties": {
+          "requests": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlaybackRequest"
+            }
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10000
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "examples": [
+          {
+            "requests": [],
+            "limit": 100,
+            "count": 0
+          }
+        ]
       }
     },
     "securitySchemes": {

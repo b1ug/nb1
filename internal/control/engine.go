@@ -54,25 +54,29 @@ type worker struct {
 }
 
 type Engine struct {
-	mu             sync.Mutex
-	driver         Driver
-	options        Options
-	workers        map[string]*worker
-	jobs           map[string]*record
-	history        []string
-	started        bool
-	closed         bool
-	stop           chan struct{}
-	done           chan struct{}
-	shutdownErr    error
-	wg             sync.WaitGroup
-	events         chan ConnectionEvent
-	eventsClosed   bool
-	eventSequence  uint64
-	droppedEvents  uint64
-	deviceSessions uint64 // Successful connections, scoped to this Engine instance.
-	receipts       *receiptState
-	sequenceJobs   sequenceJobStore
+	mu               sync.Mutex
+	driver           Driver
+	options          Options
+	workers          map[string]*worker
+	jobs             map[string]*record
+	history          []string
+	started          bool
+	closed           bool
+	stop             chan struct{}
+	done             chan struct{}
+	shutdownErr      error
+	wg               sync.WaitGroup
+	events           chan ConnectionEvent
+	eventsClosed     bool
+	eventSequence    uint64
+	droppedEvents    uint64
+	deviceSessions   uint64 // Successful connections, scoped to this Engine instance.
+	receipts         *receiptState
+	sequenceJobs     sequenceJobStore
+	playbackOverride *PlaybackOverride
+	playbackHistory  []PlaybackRequest
+	playbackNextID   uint64
+	now              func() time.Time
 }
 
 func New(driver Driver, options Options) (*Engine, error) {
@@ -97,6 +101,11 @@ func New(driver Driver, options Options) (*Engine, error) {
 	if options.TerminalJobTTL == 0 {
 		options.TerminalJobTTL = SequenceJobRetention
 	}
+	playbackPolicy, policyErr := options.PlaybackPolicy.Normalize()
+	if policyErr != nil {
+		return nil, fmt.Errorf("%w: %v", ErrInvalid, policyErr)
+	}
+	options.PlaybackPolicy = playbackPolicy
 	if options.TerminalJobLimit < 1 || options.TerminalJobTTL <= 0 {
 		return nil, fmt.Errorf("%w: terminal Job limit and TTL must be positive", ErrInvalid)
 	}
@@ -107,6 +116,7 @@ func New(driver Driver, options Options) (*Engine, error) {
 		driver: driver, options: options,
 		workers: make(map[string]*worker), jobs: make(map[string]*record),
 		stop: make(chan struct{}), done: make(chan struct{}),
+		now:          time.Now,
 		events:       make(chan ConnectionEvent, connectionEventBufferSize),
 		sequenceJobs: newSequenceJobStore(),
 	}
@@ -306,6 +316,10 @@ func (e *Engine) Submit(ctx context.Context, serial string, program Program, pol
 	}
 	e.mu.Lock()
 	defer e.mu.Unlock()
+	now := e.now()
+	if err := e.requirePlaybackLocked("program", serial, "", "", now); err != nil {
+		return Job{}, err
+	}
 	w, err := e.canAdmitLocked(serial, policy)
 	if err != nil {
 		return Job{}, err
@@ -314,6 +328,7 @@ func (e *Engine) Submit(ctx context.Context, serial string, program Program, pol
 	if err != nil {
 		return Job{}, err
 	}
+	e.recordPlaybackAllowedLocked("program", serial, "", r.state.ID, now)
 	e.publishLocked(w, r, policy)
 	return r.legacySnapshot(), nil
 }

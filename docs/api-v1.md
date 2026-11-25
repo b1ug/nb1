@@ -24,10 +24,17 @@ server:
 jobs:
   terminal_limit: 16384
   terminal_ttl: 30m
+playback:
+  mode: always
+  timezone: local
+  history_limit: 100
+  weekly: {}
 library_dir: ""
 ```
 
 `device` is an empty string or a quoted eight-hexadecimal-digit serial. `server.devices` is an explicit list of such strings. `jobs.terminal_limit` is a positive integer and `jobs.terminal_ttl` is a positive duration, such as `30m` or `1h`. These are defaults that users may change. An empty `library_dir` selects `library` under the same application root as the default profile, including the selected XDG root on macOS/Linux. A custom library path must be absolute.
+
+`playback` is the persistent admission policy for daemon-managed playback. It defaults to `always`; see the [Playback policy guide](playback-policy.md) for `weekly`, `never`, temporary daemon overrides and in-memory request history. The daemon reads this section at startup.
 
 To allow a client on another computer, set `server.remote.enabled` and configure the separate HTTPS listener, certificate, key and Bearer token. Its `/v1` routes and Streamable HTTP `/mcp` share this daemon. The loopback listener has its own optional `server.local_token_file`. Default settings enable only the tokenless loopback listener. [Remote and local configuration](remote-access.md)
 
@@ -168,6 +175,10 @@ These operations are the current runtime's API v1 route table. Success bodies ar
 | `GET /` | No body or query. | None. | `200`, service/build identity, current API directory and cached device summary. |
 | `POST /v1/preview` | Exactly one of `action`, `sequence`, `pattern_id`. | `serial`: omitted means compile without a device check. | `200`, Preview object. |
 | `POST /v1/jobs` | Exactly one of `action`, `sequence`, `pattern_id`, `trigger`. | `serial`: omitted delegates target selection to the daemon. `id`: omitted or `""` generates an ID. `policy`: omitted means `reject`. | `202` for new acceptance; `200` for matching replay. Both return a Job and `Location: /v1/jobs/{id}`. |
+| `GET /v1/playback` | No body or query. | None. | `200`, effective Playback Status, persistent mode, reason, evaluation time and optional temporary override. |
+| `GET /v1/playback/requests` | No body. | `limit`: omitted uses `playback.history_limit`; larger values are clamped to that configured limit. | `200`, newest-first in-memory Playback policy decisions. |
+| `POST /v1/playback/override` | `mode`: `suppress` or `permit`; `duration_ms`: integer 1–2,592,000,000. | None. | `200`, updated Playback Status. The new override replaces any active override. |
+| `DELETE /v1/playback/override` | No body or query. | None. | `200`, Playback Status after clearing the override. |
 | `GET /v1/jobs/{id}` | Job ID in the path; no body. | None. | `200`, Job object, including when that Job failed. |
 | `POST /v1/jobs/{id}/cancel` | Job ID in the path; no body. | Query `serial`: require the accepted Job's serial to match. Omit it for ID-only cancellation. | `202` while cancellation remains in progress; `200` when already terminal or cancelled before execution. Returns the current Job. |
 | `POST /v1/colors/resolve` | `color`: one ColorInput. | None. | `200`, `{"color":"#rrggbb"}`. Does not save or play. |
@@ -277,6 +288,7 @@ An HTTP error is `{"error":{"code":"...","message":"..."}}`. Invalid Action comp
 | `413` | `body_too_large` | HTTP body exceeds 1 MiB. A smaller ColorInput or compiled-Pattern limit violation instead uses `400 invalid_request`. |
 | `415` | `json_required` | Missing, malformed or non-`application/json` Content-Type on a body-bearing operation. |
 | `422` | `unsupported_capability` | Submission needs capabilities absent from the device's cached profile. |
+| `423` | `playback_suppressed` | Persistent Playback mode or active temporary override suppresses a new daemon-managed request. No Job or hardware command is created; retry explicitly after Playback becomes allowed. |
 | `429` | `library_capacity` | Library record count exceeds its limit, or adding a new color/Pattern would exceed capacity. Replacing an existing record at capacity is allowed. |
 | `501` | `flash_reset_unsupported` | The service does not implement Flash reset. A daemon predating this route returns `404 not_found`. |
 | `502` | `flash_staging_failed` | The `result` field contains the RAM progress. A failed RAM write may have changed the next row. The daemon did not send the Flash save command. |

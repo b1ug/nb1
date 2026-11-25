@@ -26,6 +26,13 @@ jobs:
   # Eviction or daemon restart releases the ID; submitting it can run again.
   terminal_limit: 16384
   terminal_ttl: 30m
+playback:
+  # always preserves the familiar behavior. weekly closes requests outside
+  # the listed windows; never blocks all new playback requests.
+  mode: always
+  timezone: local
+  history_limit: 100
+  weekly: {}
 # Empty uses the stable user configuration directory's nb1/library.
 library_dir: ""
 `)

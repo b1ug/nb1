@@ -59,6 +59,7 @@ Device locks follow the established native OS coordination policy. On macOS they
 
 - [OpenAPI 3.1](docs/api-v1.openapi.json): machine-readable current HTTP contract.
 - [API v1 reference](docs/api-v1.md): Actions, Sequences, Jobs, colors, Patterns and limits.
+- [Playback policy](docs/playback-policy.md) ([简体中文](docs/playback-policy.zh-CN.md)): weekly allow windows, temporary overrides and in-memory decision history.
 - [Terminology](docs/api-v1-terminology.md): names shared by all interfaces.
 - Run `nb1 mcp` for a local agent, or connect a remote agent to the daemon’s optional HTTPS `/mcp` endpoint. [MCP tools](adapters/mcp/README.md) · [Remote setup](docs/remote-access.md)
 - [Web presentation](docs/web-typography.md): custom language menu, local fonts, SVG icons and embedded asset boundaries.

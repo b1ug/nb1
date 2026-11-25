@@ -59,6 +59,10 @@ func (e *Engine) SubmitFrameWithReceipt(ctx context.Context, serial string, prog
 	if err := ctx.Err(); err != nil {
 		return FrameReceiptResult{}, err
 	}
+	nowTime := e.now()
+	if err := e.requirePlaybackLocked("frame", serial, input.RequestID, "", nowTime); err != nil {
+		return FrameReceiptResult{}, err
+	}
 	w, err := e.canAdmitLocked(serial, policy)
 	if err != nil {
 		return FrameReceiptResult{}, err
@@ -76,6 +80,7 @@ func (e *Engine) SubmitFrameWithReceipt(ctx context.Context, serial string, prog
 	}
 	r.totalFrames, r.plannedTargetWrites = int(facts.totalFrames), int(facts.plannedTargetWrites)
 	entry := &receiptEntry{digest: digest, record: r, acceptUntilMS: deadline}
+	e.recordPlaybackAllowedLocked("frame", serial, input.RequestID, r.state.ID, nowTime)
 	r.receipt = entry
 	s.entries[key] = entry
 	s.steps += cost

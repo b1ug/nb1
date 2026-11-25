@@ -4,7 +4,7 @@ The adapter exposes the nb1 API v1 through the official [Go MCP SDK](https://git
 
 The v0.1.3 platform archive includes MCP in the `nb1` executable. For local stdio, configure the client to launch the executable with `mcp` as its first argument. If upgrading from a v0.1.2 `nb1-mcp` configuration, keep any existing flags after that argument. [Client setup and migration](../../docs/install.md#connect-a-local-mcp-client)
 
-An agent on another machine can connect directly to the daemon’s HTTPS `/mcp` endpoint with a Bearer token. Both transports expose the same twelve tools. [Remote setup](../../docs/remote-access.md)
+An agent on another machine can connect directly to the daemon’s HTTPS `/mcp` endpoint with a Bearer token. Both transports expose the same sixteen tools. [Remote setup](../../docs/remote-access.md)
 
 ## Build and run
 

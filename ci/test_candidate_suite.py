@@ -408,7 +408,7 @@ class ReleaseFixture:
 
     def smoke(self, *_):
         return {"status": "PASS", "system_PATH_only": True, "MCP_version": RELEASE_VERSION,
-                "MCP_tools": 12, "MCP_command": ["mcp"], "MCP_protocol_only": True, "USB_access": False, "daemon_started": False,
+                "MCP_tools": 16, "MCP_command": ["mcp"], "MCP_protocol_only": True, "USB_access": False, "daemon_started": False,
                 "CLI_version": {"version": RELEASE_VERSION, "build": {"revision": SOURCE, "modified": "false",
                     "os": self.target["GOOS"], "arch": self.target["GOARCH"], "cgo_enabled": True}}}
 

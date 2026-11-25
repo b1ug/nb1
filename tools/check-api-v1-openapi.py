@@ -103,6 +103,7 @@ expected_operations = {
     'listDevices', 'getDevice', 'getFlashResetTicket', 'resetDeviceFlash', 'preview', 'submitJob', 'getJob', 'cancelJob',
     'listColors', 'resolveColor', 'saveColor', 'saveColorNamedResolve',
     'listPatterns', 'getPattern', 'savePattern', 'listTriggers', 'checkTriggers',
+    'getPlaybackStatus', 'listPlaybackRequests', 'setPlaybackOverride', 'clearPlaybackOverride',
 }
 assert set(operations) == expected_operations, set(operations) ^ expected_operations
 rank = lambda request: 0 if request['method'] == 'PUT' else 1 if request['operation'] == 'preview' else 2 if request['operation'] == 'submitJob' else 3

@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/b1ug/nb1/internal/daemonaddr"
+	"github.com/b1ug/nb1/internal/playback"
 	"github.com/b1ug/nb1/internal/userconfig"
 	"gopkg.in/yaml.v3"
 )
@@ -28,10 +29,11 @@ const (
 )
 
 type Config struct {
-	Device     string       `json:"device" yaml:"device"`
-	Server     ServerConfig `json:"server" yaml:"server"`
-	Jobs       JobConfig    `json:"jobs" yaml:"jobs"`
-	LibraryDir string       `json:"library_dir" yaml:"library_dir"`
+	Device     string          `json:"device" yaml:"device"`
+	Server     ServerConfig    `json:"server" yaml:"server"`
+	Jobs       JobConfig       `json:"jobs" yaml:"jobs"`
+	Playback   playback.Policy `json:"playback" yaml:"playback"`
+	LibraryDir string          `json:"library_dir" yaml:"library_dir"`
 }
 
 type ServerConfig struct {
@@ -88,6 +90,7 @@ func Select(flagPath, envPath string) (Selection, error) {
 func Defaults(baseDir string) Config {
 	return Config{Server: ServerConfig{Devices: []string{}, Listen: DefaultListen},
 		Jobs:       JobConfig{TerminalLimit: DefaultTerminalLimit, TerminalTTL: DefaultTerminalTTL},
+		Playback:   playback.Defaults(),
 		LibraryDir: filepath.Join(baseDir, "library")}
 }
 
@@ -147,6 +150,9 @@ func Load(selected Selection) (Config, error) {
 var serialPattern = regexp.MustCompile(`^[0-9a-fA-F]{8}$`)
 
 func Validate(config Config) error {
+	if _, err := config.Playback.Normalize(); err != nil {
+		return err
+	}
 	switch config.Server.DefaultDeviceFallback {
 	case "", "error", "single_online":
 	default:
@@ -284,6 +290,49 @@ func decode(data []byte, config *Config) error {
 					return nil
 				default:
 					return fmt.Errorf("unknown configuration field jobs.%s", key)
+				}
+			})
+		case "playback":
+			return mapping(value, key, func(key string, value *yaml.Node) error {
+				switch key {
+				case "mode":
+					return stringValue(value, "playback.mode", &config.Playback.Mode)
+				case "timezone":
+					return stringValue(value, "playback.timezone", &config.Playback.Timezone)
+				case "history_limit":
+					if value.Kind != yaml.ScalarNode || value.Tag != "!!int" {
+						return fmt.Errorf("playback.history_limit must be an integer")
+					}
+					if err := value.Decode(&config.Playback.HistoryLimit); err != nil {
+						return fmt.Errorf("playback.history_limit must be an integer")
+					}
+					if config.Playback.HistoryLimit < 1 {
+						return fmt.Errorf("playback.history_limit must be a positive integer")
+					}
+					return nil
+				case "weekly":
+					return mapping(value, "playback.weekly", func(day string, value *yaml.Node) error {
+						window := playback.Window{}
+						err := mapping(value, "playback.weekly."+day, func(field string, value *yaml.Node) error {
+							switch field {
+							case "start":
+								return stringValue(value, "playback.weekly."+day+".start", &window.Start)
+							case "end":
+								return stringValue(value, "playback.weekly."+day+".end", &window.End)
+							case "overnight":
+								if value.Kind != yaml.ScalarNode || value.Tag != "!!bool" {
+									return fmt.Errorf("playback.weekly.%s.overnight must be a boolean", day)
+								}
+								return value.Decode(&window.Overnight)
+							default:
+								return fmt.Errorf("unknown configuration field playback.weekly.%s.%s", day, field)
+							}
+						})
+						config.Playback.Weekly[day] = window
+						return err
+					})
+				default:
+					return fmt.Errorf("unknown configuration field playback.%s", key)
 				}
 			})
 		case "title", "base_url", "port", "content_dir", "color":

@@ -25,7 +25,8 @@ STDOUT_LIMIT = 2 * LINE_LIMIT
 TOOLS = {
     "list_devices", "get_device_state", "resolve_color", "preview_light",
     "run_light", "get_job", "cancel_job", "list_colors", "save_color",
-    "list_patterns", "get_pattern", "save_pattern",
+    "list_patterns", "get_pattern", "save_pattern", "get_playback_status",
+    "list_playback_requests", "set_playback_override", "clear_playback_override",
 }
 
 
@@ -119,7 +120,7 @@ def request(process, reader, deadline, request_id, method, params, notifications
 def inspect_tools(result):
     tools = result.get("tools")
     require(isinstance(tools, list) and len(tools) == len(TOOLS) and not result.get("nextCursor"),
-            "tools/list must return all twelve known tools without pagination")
+            "tools/list must return all sixteen known tools without pagination")
     require(all(isinstance(tool, dict) for tool in tools), "invalid tools/list entry")
     require({tool.get("name") for tool in tools} == TOOLS, "MCP tool names differ from the API v1 contract")
     summaries = []

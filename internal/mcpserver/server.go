@@ -5,7 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"net/url"
+	"strings"
+	"time"
 
 	"github.com/b1ug/nb1/internal/control"
 	"github.com/b1ug/nb1/internal/daemonclient"
@@ -31,22 +34,32 @@ type output struct {
 }
 
 type toolArgs struct {
-	Serial    string          `json:"serial,omitempty"`
-	ID        string          `json:"id,omitempty"`
-	Name      string          `json:"name,omitempty"`
-	Title     string          `json:"title,omitempty"`
-	Color     json.RawMessage `json:"color,omitempty"`
-	Action    json.RawMessage `json:"action,omitempty"`
-	Sequence  json.RawMessage `json:"sequence,omitempty"`
-	PatternID *string         `json:"pattern_id,omitempty"`
-	Policy    string          `json:"policy,omitempty"`
-	Trigger   *string         `json:"trigger,omitempty"`
-	input     daemonclient.SequenceInput
+	Serial     string          `json:"serial,omitempty"`
+	ID         string          `json:"id,omitempty"`
+	Name       string          `json:"name,omitempty"`
+	Title      string          `json:"title,omitempty"`
+	Color      json.RawMessage `json:"color,omitempty"`
+	Action     json.RawMessage `json:"action,omitempty"`
+	Sequence   json.RawMessage `json:"sequence,omitempty"`
+	PatternID  *string         `json:"pattern_id,omitempty"`
+	Policy     string          `json:"policy,omitempty"`
+	Mode       string          `json:"mode,omitempty"`
+	DurationMS int64           `json:"duration_ms,omitempty"`
+	Limit      int             `json:"limit,omitempty"`
+	Trigger    *string         `json:"trigger,omitempty"`
+	input      daemonclient.SequenceInput
 }
 
-func newServer(d *daemon, version, recoveryEndpoint, transportInstructions string) *mcp.Server {
-	server := mcp.NewServer(&mcp.Implementation{Name: "nb1", Version: version}, &mcp.ServerOptions{Instructions: "Control the devices selected by the local nb1 daemon. Preview is optional. run_light validates and submits one Action, Sequence, saved pattern_id or trigger without a preceding preview. Omit serial to use routing on a daemon that supports it. It submits once and returns a Job, whose status is read with get_job. A cancelling Job is still cleaning up. Keep its ID and endpoint when a response is lost and query that ID without submitting it again. HTTP timeout or MCP session closure leaves accepted daemon Jobs running. Active Job records remain retained; terminal records default to a thirty-minute TTL and 16,384-entry LRU limit, configurable through jobs.terminal_ttl and jobs.terminal_limit. Capacity eviction or daemon restart may remove them earlier. Colors and Patterns are saved in the daemon's computer-side library. " + transportInstructions + " Foreground CLI direct Jobs are separate process-local work and cannot be queried through these HTTP tools."})
+func newServer(d *daemon, version, recoveryEndpoint, transportInstructions string) (*mcp.Server, error) {
+	instructions, err := serverInstructions(transportInstructions)
+	if err != nil {
+		return nil, fmt.Errorf("load embedded MCP instructions: %w", err)
+	}
+	server := mcp.NewServer(&mcp.Implementation{Name: "nb1", Version: version}, &mcp.ServerOptions{Instructions: instructions})
 	for _, spec := range toolSpecifications() {
+		if strings.TrimSpace(spec.Description) == "" {
+			return nil, fmt.Errorf("embedded MCP text is missing tool description %q", spec.Name)
+		}
 		name := spec.Name
 		server.AddTool(spec, func(ctx context.Context, request *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			args, err := decodeArguments(name, request.Params.Arguments)
@@ -58,7 +71,7 @@ func newServer(d *daemon, version, recoveryEndpoint, transportInstructions strin
 			return toolResult(invoke(ctx, d, recoveryEndpoint, name, args))
 		})
 	}
-	return server
+	return server, nil
 }
 
 func decodeArguments(name string, raw json.RawMessage) (toolArgs, error) {
@@ -103,6 +116,12 @@ func decodeArguments(name string, raw json.RawMessage) (toolArgs, error) {
 	if fields["policy"] != nil && !control.ValidSequencePolicy(args.Policy) {
 		return toolArgs{}, fmt.Errorf("policy must be reject, queue or preempt")
 	}
+	if name == "set_playback_override" && (args.Mode != control.PlaybackOverrideSuppress && args.Mode != control.PlaybackOverridePermit || args.DurationMS < 1 || args.DurationMS > int64((30*24*time.Hour)/time.Millisecond)) {
+		return toolArgs{}, fmt.Errorf("mode must be suppress or permit and duration_ms must be between 1 and 2592000000")
+	}
+	if name == "list_playback_requests" && fields["limit"] != nil && (args.Limit < 1 || args.Limit > 10000) {
+		return toolArgs{}, fmt.Errorf("limit must be between 1 and 10000")
+	}
 	if args.Trigger != nil {
 		if !triggerv1.ValidName(*args.Trigger) || args.Action != nil || args.Sequence != nil || args.PatternID != nil {
 			return toolArgs{}, fmt.Errorf("trigger must be a valid name and the only content selector")
@@ -134,6 +153,14 @@ func invoke(ctx context.Context, d *daemon, recoveryEndpoint, name string, args 
 	switch name {
 	case "list_devices":
 		out.Data, err = d.core.Devices(ctx)
+	case "get_playback_status":
+		out.Data, err = d.core.PlaybackStatus(ctx)
+	case "list_playback_requests":
+		out.Data, err = d.core.PlaybackRequests(ctx, args.Limit)
+	case "set_playback_override":
+		out.Data, err = d.core.SetPlaybackOverride(ctx, args.Mode, time.Duration(args.DurationMS)*time.Millisecond)
+	case "clear_playback_override":
+		out.Data, err = d.core.ClearPlaybackOverride(ctx)
 	case "get_device_state":
 		out.Data, err = d.core.Device(ctx, args.Serial)
 	case "resolve_color":
@@ -197,6 +224,15 @@ func invoke(ctx context.Context, d *daemon, recoveryEndpoint, name string, args 
 	}
 	if name == "run_light" || name == "cancel_job" || name == "save_color" || name == "save_pattern" {
 		out.Error.OutcomeUnknown = uncertainWrite(err)
+	}
+	if name == "set_playback_override" || name == "clear_playback_override" {
+		out.Error.OutcomeUnknown = uncertainWrite(err)
+		if rejected != nil && rejected.Status == http.StatusNotImplemented && rejected.Code == "playback_unsupported" {
+			out.Error.OutcomeUnknown = false
+		}
+		if out.Error.OutcomeUnknown {
+			out.Error.Message += "; query get_playback_status before retrying"
+		}
 	}
 	if name == "run_light" && daemonclient.SequenceSubmissionRejected(err) {
 		out.Error.OutcomeUnknown = false

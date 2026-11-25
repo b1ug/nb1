@@ -1,11 +1,20 @@
 package daemonclient
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"slices"
+	"strings"
 	"testing"
+	"time"
+
+	"github.com/b1ug/nb1/internal/control"
+	"github.com/b1ug/nb1/internal/playback"
 )
 
 const testClientToken = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -82,5 +91,55 @@ func TestAuthenticatedDialRejectsNonLoopbackResolution(t *testing.T) {
 		if err := loopbackOnly(context.Background(), "tcp", address, nil); err == nil {
 			t.Errorf("unverified socket address accepted: %s", address)
 		}
+	}
+}
+
+func TestPlaybackRequestsAtMaxHistoryLimit(t *testing.T) {
+	serial := strings.Repeat("x", 128)
+	requestID := "req_9223372036854775807_" + strings.Repeat("a", 32)
+	jobID := strings.Repeat("j", 64)
+	rows := make([]control.PlaybackRequest, playback.MaxHistoryLimit)
+	for i := range rows {
+		rows[i] = control.PlaybackRequest{
+			ID: uint64(len(rows) - i), ReceivedAt: time.Date(2026, 11, 26, 12, 0, 0, 123456789, time.UTC),
+			Kind: "sequence", Decision: "suppressed", Reason: "runtime_override_suppress",
+			Target: serial, RequestID: requestID, JobID: jobID,
+		}
+	}
+	body, err := json.Marshal(PlaybackRequests{Requests: rows, Limit: len(rows), Count: len(rows)})
+	if err != nil || len(body) <= 4<<20 {
+		t.Fatalf("expected a full history over 4 MiB, got %d bytes: %v", len(body), err)
+	}
+	for _, tc := range []struct {
+		name    string
+		padding int
+	}{
+		{"all decisions", 0},
+		{"over the history byte limit", maxPlaybackHistoryResponseBytes + 1 - len(body)},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				w.Write(body)
+				w.Write(bytes.Repeat([]byte(" "), tc.padding))
+			}))
+			defer server.Close()
+			client, err := New(server.URL)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer client.Close()
+			got, err := client.PlaybackRequests(t.Context(), len(rows))
+			if tc.padding > 0 {
+				var malformed *DecodeError
+				if !errors.As(err, &malformed) || got.Requests != nil {
+					t.Fatalf("oversized response: count=%d error=%v", got.Count, err)
+				}
+				return
+			}
+			if err != nil || got.Count != len(rows) || !slices.Equal(got.Requests, rows) {
+				t.Fatalf("full history: count=%d error=%v", got.Count, err)
+			}
+		})
 	}
 }

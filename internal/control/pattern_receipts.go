@@ -189,6 +189,10 @@ func (e *Engine) SubmitPatternWithReceipt(ctx context.Context, serial string, re
 	if resolveErr != nil {
 		return PatternReceiptResult{}, resolveErr
 	}
+	nowTime := e.now()
+	if err := e.requirePlaybackLocked("pattern", serial, input.RequestID, "", nowTime); err != nil {
+		return PatternReceiptResult{}, err
+	}
 	cost := candidate.retainedCost()
 	if len(s.entries) >= s.maxEntries || cost > s.maxSteps-s.steps {
 		return PatternReceiptResult{}, ErrReceiptCapacity
@@ -217,6 +221,7 @@ func (e *Engine) SubmitPatternWithReceipt(ctx context.Context, serial string, re
 	// Nothing after this point may fail admission. In particular replacement
 	// side effects happen only after source, capacity, capabilities and ID pass.
 	entry := &receiptEntry{digest: digest, record: candidate, acceptUntilMS: deadline}
+	e.recordPlaybackAllowedLocked("pattern", serial, input.RequestID, candidate.state.ID, nowTime)
 	candidate.receipt = entry
 	s.entries[receiptKey{serial, input.RequestID}] = entry
 	s.steps += cost

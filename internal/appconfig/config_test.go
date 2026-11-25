@@ -9,6 +9,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/b1ug/nb1/internal/playback"
 )
 
 func TestSelectionPrecedenceDoesNotCreateStorage(t *testing.T) {
@@ -64,7 +66,7 @@ func TestLoadDefaultsAndOpaqueLegacyFields(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if config.Device != "" || config.Server.Listen != DefaultListen || len(config.Server.Devices) != 0 || config.Server.Remote != nil || config.Server.LocalTokenFile != "" || config.Jobs.TerminalLimit != DefaultTerminalLimit || config.Jobs.TerminalTTL != DefaultTerminalTTL || config.LibraryDir != filepath.Join(selected.BaseDir, "library") {
+	if config.Device != "" || config.Server.Listen != DefaultListen || len(config.Server.Devices) != 0 || config.Server.Remote != nil || config.Server.LocalTokenFile != "" || config.Jobs.TerminalLimit != DefaultTerminalLimit || config.Jobs.TerminalTTL != DefaultTerminalTTL || config.Playback.Mode != "always" || config.Playback.HistoryLimit != 100 || config.LibraryDir != filepath.Join(selected.BaseDir, "library") {
 		t.Fatalf("wrong defaults: %+v", config)
 	}
 	data, _ := json.Marshal(config)
@@ -75,6 +77,17 @@ func TestLoadDefaultsAndOpaqueLegacyFields(t *testing.T) {
 	}
 	if _, err := os.Stat(selected.BaseDir); !os.IsNotExist(err) {
 		t.Fatalf("load created application storage: %v", err)
+	}
+}
+
+func TestPlaybackPolicyLoadsWeeklyWindows(t *testing.T) {
+	selected := configSelection(t, "playback:\n  mode: weekly\n  timezone: America/Los_Angeles\n  history_limit: 42\n  weekly:\n    mon:\n      start: '08:00'\n      end: '20:00'\n    fri:\n      start: '22:00'\n      end: '02:00'\n      overnight: true\n")
+	config, err := Load(selected)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if config.Playback.Mode != "weekly" || config.Playback.Timezone != "America/Los_Angeles" || config.Playback.HistoryLimit != 42 || config.Playback.Weekly["fri"] != (playback.Window{Start: "22:00", End: "02:00", Overnight: true}) {
+		t.Fatalf("Playback config=%+v", config.Playback)
 	}
 }
 
@@ -247,6 +260,11 @@ func TestLoadRejectsAmbiguousOrInvalidConfiguration(t *testing.T) {
 		"server:\n  listen: '0.0.0.0:8931'\n", "server:\n  listen: 'example.com:8931'\n", "server:\n  listen: '127.0.0.1:65536'\n", "server:\n  listen: '127.0.0.1:+80'\n",
 		"jobs:\n  terminal_limit: 0\n", "jobs:\n  terminal_limit: -1\n", "jobs:\n  terminal_limit: 1.5\n", "jobs:\n  terminal_limit: '3'\n", "jobs:\n  terminal_limit: 999999999999999999999999999999999999\n",
 		"jobs:\n  terminal_ttl: 0s\n", "jobs:\n  terminal_ttl: -1m\n", "jobs:\n  terminal_ttl: 30\n", "jobs:\n  terminal_ttl: forever\n",
+		"playback:\n  mode: quiet\n", "playback:\n  mode: weekly\n  weekly:\n    monday:\n      start: '08:00'\n      end: '20:00'\n",
+		"playback:\n  mode: weekly\n  weekly:\n    mon:\n      start: '22:00'\n      end: '02:00'\n",
+		"playback:\n  mode: weekly\n  weekly:\n    mon:\n      start: '8am'\n      end: '20:00'\n",
+		"playback:\n  history_limit: 0\n", "playback:\n  timezone: Mars/Olympus\n",
+		"playback:\n  weekly:\n    mon:\n      start: '08:00'\n      end: '20:00'\n      enabled: true\n",
 		"library_dir: relative/path\n", "library_dir: false\n", "library_dir: null\n",
 	} {
 		t.Run(strings.ReplaceAll(text, "\n", "_"), func(t *testing.T) {

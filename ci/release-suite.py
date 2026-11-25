@@ -516,7 +516,7 @@ def verify_platform(directory, version, source):
     outer = {p.name: BASE.regular_bytes(p) for p in directory.iterdir() if p.name != "SHA256SUMS"}
     require(BASE.regular_bytes(directory / "SHA256SUMS") == BASE.checksums(outer), "platform checksums differ")
     require(value["runtime"]["status"] == "PASS" and value["runtime"]["system_PATH_only"] is True
-            and value["runtime"]["extracted_archives"] is True and value["runtime"]["MCP_tools"] == 12
+            and value["runtime"]["extracted_archives"] is True and value["runtime"]["MCP_tools"] == 16
             and value["runtime"].get("MCP_command") == ["mcp"]
             and value["runtime"]["MCP_protocol_only"] is True and value["runtime"]["MCP_version"] == version
             and value["runtime"]["USB_access"] is False and value["runtime"]["daemon_started"] is False

@@ -14,6 +14,8 @@ var mcpTextJSON []byte
 
 type mcpText struct {
 	Instructions       string            `json:"instructions"`
+	StdioInstructions  string            `json:"stdio_instructions"`
+	HTTPInstructions   string            `json:"http_instructions"`
 	ToolDescriptions   map[string]string `json:"tool_descriptions"`
 	SchemaDescriptions map[string]string `json:"schema_descriptions"`
 }
@@ -31,6 +33,10 @@ func loadMCPText() (mcpText, error) {
 	if strings.Count(text.Instructions, "{{transport}}") != 1 {
 		return mcpText{}, fmt.Errorf("embedded MCP instructions must include one transport placeholder")
 	}
+	if strings.Count(text.StdioInstructions, "{{default_endpoint}}") != 1 || strings.TrimSpace(text.HTTPInstructions) == "" {
+		return mcpText{}, fmt.Errorf("embedded MCP text must include HTTP instructions and one stdio default endpoint placeholder")
+	}
+	text.StdioInstructions = strings.Replace(text.StdioInstructions, "{{default_endpoint}}", defaultEndpoint, 1)
 	return text, nil
 }
 

@@ -251,16 +251,20 @@ func TestOfficialStdioCanonicalToolsAndLocalLibrary(t *testing.T) {
 	var names []string
 	for _, tool := range listed.Tools {
 		names = append(names, tool.Name)
+		if tool.Description != protocolText.ToolDescriptions[tool.Name] || strings.TrimSpace(tool.Description) == "" {
+			t.Errorf("tool %q description differs from embedded text or is empty: %q", tool.Name, tool.Description)
+		}
+		if tool.Name == "run_light" {
+			checkRunLightSchemaDescriptions(t, tool.InputSchema)
+		}
 	}
 	sort.Strings(names)
 	want := []string{"cancel_job", "clear_playback_override", "get_device_state", "get_job", "get_pattern", "get_playback_status", "list_colors", "list_devices", "list_patterns", "list_playback_requests", "preview_light", "resolve_color", "run_light", "save_color", "save_pattern", "set_playback_override"}
 	if !reflect.DeepEqual(names, want) {
 		t.Fatalf("tool set=%v", names)
 	}
-	for _, tool := range listed.Tools {
-		if tool.Name == "run_light" && tool.Description != protocolText.ToolDescriptions[tool.Name] {
-			t.Fatalf("tool-list description=%q, want embedded MCP text", tool.Description)
-		}
+	if len(protocolText.ToolDescriptions) != len(names) {
+		t.Errorf("embedded descriptions cover %d tools, server advertises %d", len(protocolText.ToolDescriptions), len(names))
 	}
 	var devices []control.DeviceState
 	requireSuccess(t, call(t, session, "list_devices", `{}`), &devices)
@@ -356,7 +360,7 @@ func TestOfficialStdioBuildIdentityAndRunWithoutPreview(t *testing.T) {
 	}
 	if !strings.Contains(initialized.Instructions, "Preview is optional.") ||
 		!strings.Contains(initialized.Instructions, "without a preceding preview") ||
-		!strings.Contains(initialized.Instructions, "This stdio adapter selects its local HTTP endpoint") ||
+		!strings.Contains(initialized.Instructions, "This stdio adapter selects its local HTTP endpoint with --endpoint (default "+defaultEndpoint+")") ||
 		!strings.Contains(initialized.Instructions, "Foreground CLI direct Jobs are separate") {
 		t.Fatalf("initialize instructions still require preview: %s", initialized.Instructions)
 	}
@@ -371,50 +375,53 @@ func TestOfficialStdioBuildIdentityAndRunWithoutPreview(t *testing.T) {
 	}
 }
 
-func TestMCPTextIsCompleteAndUsed(t *testing.T) {
-	if protocolTextErr != nil {
-		t.Fatalf("load embedded MCP text: %v", protocolTextErr)
+// run_light exposes all six shared schema descriptions. Check the field and a
+// distinguishing term so swapping either the lookup keys or the copy fails.
+func checkRunLightSchemaDescriptions(t *testing.T, inputSchema any) {
+	t.Helper()
+	type field struct {
+		Properties  map[string]field
+		OneOf       []field
+		Type        string
+		Const       string
+		Description string
 	}
-	if len(protocolText.ToolDescriptions) != len(toolSpecifications()) {
-		t.Fatalf("embedded tool descriptions have %d entries for %d tools", len(protocolText.ToolDescriptions), len(toolSpecifications()))
-	}
-	schemaDescriptions := make(map[string]bool)
-	for _, tool := range toolSpecifications() {
-		if tool.Description != protocolText.ToolDescriptions[tool.Name] || strings.TrimSpace(tool.Description) == "" {
-			t.Errorf("tool %q description was not loaded from embedded MCP text: %q", tool.Name, tool.Description)
-		}
-		collectSchemaDescriptions(tool.InputSchema, schemaDescriptions)
-	}
-	for key, description := range protocolText.SchemaDescriptions {
-		if strings.TrimSpace(description) == "" || !schemaDescriptions[description] {
-			t.Errorf("schema description %q is empty or unused: %q", key, description)
-		}
-	}
-	if schemaDescriptions[""] {
-		t.Error("a schema description was missing from the embedded copy")
-	}
-	instructions, err := serverInstructions("transport-specific sentence")
+	var schema field
+	raw, err := json.Marshal(inputSchema)
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := strings.Replace(protocolText.Instructions, "{{transport}}", "transport-specific sentence", 1)
-	if instructions != want {
-		t.Fatalf("embedded and dynamic MCP instructions were not composed: %q", instructions)
+	if err := json.Unmarshal(raw, &schema); err != nil {
+		t.Fatal(err)
 	}
-}
-
-func collectSchemaDescriptions(value any, descriptions map[string]bool) {
-	switch value := value.(type) {
-	case map[string]any:
-		if description, ok := value["description"].(string); ok {
-			descriptions[description] = true
+	actions := make(map[string]field)
+	for _, action := range schema.Properties["action"].OneOf {
+		actions[action.Properties["kind"].Const] = action
+	}
+	color := actions["set"].Properties["color"]
+	var colorString field
+	for _, variant := range color.OneOf {
+		if variant.Type == "string" {
+			colorString = variant
 		}
-		for _, child := range value {
-			collectSchemaDescriptions(child, descriptions)
-		}
-	case []any:
-		for _, child := range value {
-			collectSchemaDescriptions(child, descriptions)
+	}
+	bindings := []struct {
+		key, term string
+		field     field
+	}{
+		{"job_id", "Crockford Base32", schema.Properties["id"]},
+		{"job_policy", "preempt", schema.Properties["policy"]},
+		{"sequence", "interval_ms", schema.Properties["sequence"]},
+		{"action_period_ms", "full cycle", actions["breathe"].Properties["period_ms"]},
+		{"color_hsv", "HSV", color},
+		{"color_string", "Hex6", colorString},
+	}
+	if len(protocolText.SchemaDescriptions) != len(bindings) {
+		t.Errorf("embedded schema descriptions have %d entries, checked %d", len(protocolText.SchemaDescriptions), len(bindings))
+	}
+	for _, b := range bindings {
+		if got := b.field.Description; got != protocolText.SchemaDescriptions[b.key] || !strings.Contains(got, b.term) {
+			t.Errorf("run_light %s description = %q, want the catalog entry containing %q", b.key, got, b.term)
 		}
 	}
 }

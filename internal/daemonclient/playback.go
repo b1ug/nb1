@@ -11,6 +11,10 @@ import (
 	"github.com/b1ug/nb1/internal/playback"
 )
 
+// Allow the daemon's full compact history with 10,000 rows and bounded
+// serials, request IDs and Job IDs. Other responses retain their usual limit.
+const maxPlaybackHistoryResponseBytes = 5 << 20
+
 type PlaybackRequests struct {
 	Requests []control.PlaybackRequest `json:"requests"`
 	Limit    int                       `json:"limit"`
@@ -27,8 +31,11 @@ func (c *Client) PlaybackRequests(ctx context.Context, limit int) (PlaybackReque
 		path = fmt.Sprintf("%s?limit=%d", path, limit)
 	}
 	var result PlaybackRequests
-	if err := c.playbackRequest(ctx, http.MethodGet, path, nil, &result); err != nil {
-		return PlaybackRequests{}, err
+	err := c.sequenceV1Response(ctx, http.MethodGet, path, nil, nil, func(response *http.Response) error {
+		return decodeBoundedResponse(response, &result, "Playback history", maxPlaybackHistoryResponseBytes)
+	}, http.StatusOK)
+	if err != nil {
+		return PlaybackRequests{}, playbackRouteError(err)
 	}
 	if result.Requests == nil || result.Limit < 1 || result.Limit > playback.MaxHistoryLimit || (limit > 0 && result.Limit > limit) ||
 		result.Count != len(result.Requests) || result.Count > result.Limit {
@@ -62,8 +69,8 @@ func (c *Client) ClearPlaybackOverride(ctx context.Context) (control.PlaybackSta
 
 func (c *Client) playbackState(ctx context.Context, method, path string, input any) (control.PlaybackState, error) {
 	var state control.PlaybackState
-	if err := c.playbackRequest(ctx, method, path, input, &state); err != nil {
-		return control.PlaybackState{}, err
+	if err := c.sequenceV1Request(ctx, method, path, input, &state, http.StatusOK); err != nil {
+		return control.PlaybackState{}, playbackRouteError(err)
 	}
 	if state.Timezone == "" || state.EvaluatedAt.IsZero() || state.HistoryLimit < 1 || state.HistoryLimit > playback.MaxHistoryLimit ||
 		!validPlaybackDecision(state) {
@@ -94,8 +101,7 @@ func validPlaybackDecision(state control.PlaybackState) bool {
 	}
 }
 
-func (c *Client) playbackRequest(ctx context.Context, method, path string, input, output any) error {
-	err := c.sequenceV1Request(ctx, method, path, input, output, http.StatusOK)
+func playbackRouteError(err error) error {
 	// None of these routes look up an ID. A structured not_found therefore
 	// identifies a daemon without the Playback API.
 	var failure *Error
